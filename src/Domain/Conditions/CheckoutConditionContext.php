@@ -1,15 +1,14 @@
 <?php
 /**
- * Trusted condition context for the Classic checkout.
+ * Trusted condition context for a checkout request.
  *
  * @package WCCheckoutSuite
  */
 
 declare( strict_types = 1 );
 
-namespace WCCheckoutSuite\Checkout\Classic;
+namespace WCCheckoutSuite\Domain\Conditions;
 
-use WCCheckoutSuite\Domain\Conditions\Sources;
 use WCCheckoutSuite\Domain\Fields\FieldContext;
 
 /**
@@ -35,9 +34,14 @@ use WCCheckoutSuite\Domain\Fields\FieldContext;
  * Both are text lists, which is what the `contains` operator searches and what the
  * published source type says.
  *
+ * It was born in the classic adapter and moved here when the Blocks checkout needed
+ * the same entries: what the customer's country is, what is in their cart and
+ * whether they are logged in are the same questions in both checkouts, and two
+ * implementations of them would disagree the first time one was edited.
+ *
  * @see \ROADMAP.md section 11
  */
-final class ClassicConditionContext {
+final class CheckoutConditionContext {
 
 	/**
 	 * Every entry this builder can supply, in one place.

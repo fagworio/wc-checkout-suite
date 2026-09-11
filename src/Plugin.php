@@ -16,6 +16,8 @@ use WCCheckoutSuite\Domain\Schema\CoreFieldGuard;
 use WCCheckoutSuite\Domain\Schema\SchemaRepository;
 use WCCheckoutSuite\Checkout\Blocks\BlocksCheckout;
 use WCCheckoutSuite\Checkout\Blocks\BlocksRenderer;
+use WCCheckoutSuite\Checkout\Blocks\BlocksValidation;
+use WCCheckoutSuite\Checkout\Blocks\StoreApiExtension;
 use WCCheckoutSuite\Checkout\Classic\ClassicAssets;
 use WCCheckoutSuite\Checkout\Classic\ClassicCheckout;
 use WCCheckoutSuite\Checkout\Classic\ClassicOrderFields;
@@ -157,6 +159,13 @@ final class Plugin {
 		// adapter because they are the two halves of one decision, and the gate that
 		// decides whether the bundle belongs on the request lives in the class.
 		BlocksRenderer::register();
+
+		// Blocks checkout: the namespace the controlled values travel under, and the
+		// validation that decides whether the order may be placed. Registered
+		// together because the namespace exists for the validation: a payload nobody
+		// checks would be a payload nobody should trust.
+		StoreApiExtension::register();
+		BlocksValidation::register();
 
 		// Storefront side: the checkout bundle and its component lifecycle.
 		//

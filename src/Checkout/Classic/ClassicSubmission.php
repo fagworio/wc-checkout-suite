@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Checkout\Classic;
 
+use WCCheckoutSuite\Domain\Conditions\CheckoutConditionContext;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Validation\ProcessedValue;
 use WCCheckoutSuite\Domain\Validation\ValueProcessor;
@@ -58,18 +59,18 @@ final class ClassicSubmission {
 	/**
 	 * Trusted context builder for the visibility rules.
 	 *
-	 * @var ClassicConditionContext
+	 * @var CheckoutConditionContext
 	 */
-	private ClassicConditionContext $conditions;
+	private CheckoutConditionContext $conditions;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ValueProcessor               $processor  Adapter-agnostic value pipeline.
-	 * @param ClassicConditionContext|null $conditions Trusted context builder.
+	 * @param ValueProcessor                $processor  Adapter-agnostic value pipeline.
+	 * @param CheckoutConditionContext|null $conditions Trusted context builder.
 	 */
-	public function __construct( private ValueProcessor $processor, ?ClassicConditionContext $conditions = null ) {
-		$this->conditions = $conditions ?? new ClassicConditionContext();
+	public function __construct( private ValueProcessor $processor, ?CheckoutConditionContext $conditions = null ) {
+		$this->conditions = $conditions ?? new CheckoutConditionContext();
 	}
 
 	/**

@@ -335,18 +335,18 @@ wccs_proof_check(
 wccs_proof_out( '' );
 wccs_proof_out( '3. The context the server builds' );
 
-$wccs_context = new \WCCheckoutSuite\Checkout\Classic\ClassicConditionContext();
+$wccs_context = new \WCCheckoutSuite\Domain\Conditions\CheckoutConditionContext();
 
 wccs_proof_check(
 	'Every source the vocabulary has is answered for, except the one only a submission can answer',
-	array() === \WCCheckoutSuite\Checkout\Classic\ClassicConditionContext::missing(),
-	'missing=' . wp_json_encode( \WCCheckoutSuite\Checkout\Classic\ClassicConditionContext::missing() )
+	array() === \WCCheckoutSuite\Domain\Conditions\CheckoutConditionContext::missing(),
+	'missing=' . wp_json_encode( \WCCheckoutSuite\Domain\Conditions\CheckoutConditionContext::missing() )
 );
 
 wp_set_current_user( 0 );
-$wccs_logged_out = ( new \WCCheckoutSuite\Checkout\Classic\ClassicConditionContext() )->context();
+$wccs_logged_out = ( new \WCCheckoutSuite\Domain\Conditions\CheckoutConditionContext() )->context();
 wp_set_current_user( 1 );
-$wccs_logged_in = ( new \WCCheckoutSuite\Checkout\Classic\ClassicConditionContext() )->context();
+$wccs_logged_in = ( new \WCCheckoutSuite\Domain\Conditions\CheckoutConditionContext() )->context();
 
 wccs_proof_check(
 	'Whether the customer is logged in comes from the request, not from the form',
