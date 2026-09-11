@@ -139,6 +139,7 @@ final class Registries {
 		CoreProcessing::register_masks( $instance->masks );
 		BrazilianDocuments::register_normalizers( $instance->normalizers );
 		BrazilianDocuments::register_masks( $instance->masks );
+		BrazilianDocuments::register_validators( $instance->validators );
 		$instance->conditions->register_evaluator( new PermissiveConditionEvaluator() );
 
 		$instance->registered = true;

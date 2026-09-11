@@ -8,7 +8,7 @@ WC CheckoutSuite · Planejamento 1.0 · artefatos da tarefa **WCCS-005** (F00)
 |---|---|---|---|---|
 | [ADR-0001](ADR-0001-storage-authority.md) | Autoridade única de persistência por origem de campo | **Aceito** | F04, F07, F10 | WCCS-005 (storage) |
 | [ADR-0002](ADR-0002-private-upload-storage.md) | Armazenamento privado de arquivos enviados | **Aceito** | F08 | WCCS-005 (upload privado) |
-| [ADR-0003](ADR-0003-cnpj-alphanumeric.md) | CNPJ como string alfanumérica | **Aceito** | F05, F07 | WCCS-005 (CNPJ alfanumérico) |
+| [ADR-0003](ADR-0003-cnpj-alphanumeric.md) | CNPJ como string alfanumérica | **Aceito** · questão aberta resolvida na WCCS-028 | F05, F07 | WCCS-005 (CNPJ alfanumérico) |
 | [ADR-0004](ADR-0004-checkout-sidebar-excluded.md) | Checkout Sidebar excluído da versão 1.0 | **Aceito** | Todas | WCCS-005 (exclusão de Sidebar) |
 | [ADR-0005](ADR-0005-preview-container-queries.md) | Prévia visual reflui por container queries, não por viewport | **Aceito** | F02, F03, F09, F10 | WCCS-015 (prévia visual) |
 | [ADR-0006](ADR-0006-core-field-protection.md) | Proteção dos campos centrais no ponto único de persistência | **Aceito** | F03, F04, F07, F09 | WCCS-016 (campos core protegidos) |

@@ -354,9 +354,13 @@ wccs_proof_check(
 	implode( ',', $wccs_preset_mismatch->error_codes() )
 );
 
-$wccs_unknown_validator = $wccs_definition_validator->validate_array( $wccs_case( array( 'validators' => array( array( 'key' => 'br.cpf' ) ) ) ) );
+// `br.cpf` was the example here while the Brazilian validators were a promise.
+// WCCS-028 registered them, so the probe moved to a key that is absent by
+// construction: an assertion that a *registered* validator is refused would be
+// asserting the opposite of the truth.
+$wccs_unknown_validator = $wccs_definition_validator->validate_array( $wccs_case( array( 'validators' => array( array( 'key' => 'not.registered' ) ) ) ) );
 wccs_proof_check(
-	'A validator that is not registered yet is rejected',
+	'A validator that is not registered is rejected',
 	in_array( 'unknown_validator', $wccs_unknown_validator->error_codes(), true ),
 	'validators and masks arrive in WCCS-028'
 );

@@ -77,6 +77,7 @@ final class BrazilianPresets {
 					'label'      => __( 'Phone', 'wc-checkoutsuite' ),
 					'normalizer' => 'br.phone',
 					'mask'       => self::mask( 'br.phone.landline' ),
+					'validators' => self::validator( 'br.phone.landline' ),
 				),
 				array( 'placeholder' => '(00) 0000-0000' ),
 				self::GROUP
@@ -92,6 +93,7 @@ final class BrazilianPresets {
 					'label'      => __( 'Mobile phone', 'wc-checkoutsuite' ),
 					'normalizer' => 'br.phone',
 					'mask'       => self::mask( 'br.phone.mobile' ),
+					'validators' => self::validator( 'br.phone.mobile' ),
 				),
 				array( 'placeholder' => '(00) 00000-0000' ),
 				self::GROUP
@@ -154,6 +156,7 @@ final class BrazilianPresets {
 				'label'      => $label,
 				'normalizer' => $key,
 				'mask'       => self::mask( $key ),
+				'validators' => self::validator( $key ),
 			),
 			array(
 				'placeholder' => self::written( $key ),
@@ -195,6 +198,22 @@ final class BrazilianPresets {
 		$settings = $max_length > 0 ? array( 'maxLength' => $max_length ) : array();
 
 		return new Preset( $key, $label, $type, array( 'label' => $label ), $settings, self::GROUP, false );
+	}
+
+	/**
+	 * The validator a document preset declares.
+	 *
+	 * One per preset, and the same key as the mask and the normalizer: the three
+	 * are one contract about one document, and spelling them differently is how
+	 * they drift apart. WCCS-026 left this out on purpose — naming a key that was
+	 * not registered would have made every field built from the preset unsaveable
+	 * — and WCCS-028 registers them.
+	 *
+	 * @param string $key Preset key.
+	 * @return array<int, array{key: string}>
+	 */
+	private static function validator( string $key ): array {
+		return array( array( 'key' => $key ) );
 	}
 
 	/**

@@ -123,5 +123,187 @@
 		"br.phone.mobile": {
 			"canonicalLength": 11
 		}
+	},
+	"validity": {
+		"br.cpf": {
+			"valid": [
+				{
+					"value": "52998224725",
+					"why": "a number whose check digits were computed from the first nine"
+				},
+				{
+					"value": "11144477735",
+					"why": "another, so the rule is not fitted to one example"
+				},
+				{
+					"value": "01234567890",
+					"why": "a leading zero is part of the number and survives the arithmetic"
+				}
+			],
+			"invalid": [
+				{
+					"value": "52998224724",
+					"why": "the second check digit does not match"
+				},
+				{
+					"value": "11144477736",
+					"why": "the second check digit is one too high"
+				},
+				{
+					"value": "11111111111",
+					"why": "one repeated digit satisfies the arithmetic and is still not a document anybody was issued"
+				},
+				{
+					"value": "1234567890",
+					"why": "ten digits"
+				},
+				{
+					"value": "1234567890A",
+					"why": "a letter where a digit belongs, kept by the normalizer so it can be refused here"
+				}
+			]
+		},
+		"br.cnpj": {
+			"valid": [
+				{
+					"value": "11222333000181",
+					"why": "the legacy numeric format"
+				},
+				{
+					"value": "12ABC34501DE35",
+					"why": "the worked alphanumeric example: twelve alphanumeric positions and two numeric check digits"
+				},
+				{
+					"value": "UKPVME1E8HI996",
+					"why": "the published alphanumeric test number"
+				}
+			],
+			"invalid": [
+				{
+					"value": "11222333000182",
+					"why": "the second check digit does not match"
+				},
+				{
+					"value": "12ABC34501DE36",
+					"why": "the second check digit of the alphanumeric example is one too high"
+				},
+				{
+					"value": "12ABC34501DE3A",
+					"why": "a check digit that is a letter: the two check digits are always numeric"
+				},
+				{
+					"value": "1122233300018",
+					"why": "thirteen characters"
+				},
+				{
+					"value": "12ABC34501DE3",
+					"why": "thirteen characters, alphanumeric"
+				}
+			]
+		},
+		"br.cep": {
+			"valid": [
+				{
+					"value": "01310100",
+					"why": "eight digits, the first a zero"
+				},
+				{
+					"value": "99999999",
+					"why": "the rule is the format: a postcode has no check digit to compute"
+				}
+			],
+			"invalid": [
+				{
+					"value": "0131010",
+					"why": "seven digits"
+				},
+				{
+					"value": "013101000",
+					"why": "nine digits"
+				},
+				{
+					"value": "0131010A",
+					"why": "a letter"
+				}
+			]
+		},
+		"br.phone.landline": {
+			"valid": [
+				{
+					"value": "1133334444",
+					"why": "ten digits with an area code"
+				},
+				{
+					"value": "2133334444",
+					"why": "another area code"
+				}
+			],
+			"invalid": [
+				{
+					"value": "113333444",
+					"why": "nine digits"
+				},
+				{
+					"value": "11333344445",
+					"why": "eleven digits is a mobile, not a landline"
+				},
+				{
+					"value": "0133334444",
+					"why": "an area code cannot start with zero"
+				},
+				{
+					"value": "113333444A",
+					"why": "a letter"
+				}
+			]
+		},
+		"br.phone.mobile": {
+			"valid": [
+				{
+					"value": "11999998888",
+					"why": "eleven digits, the first after the area code a nine"
+				}
+			],
+			"invalid": [
+				{
+					"value": "1199999888",
+					"why": "ten digits"
+				},
+				{
+					"value": "11899998888",
+					"why": "the first digit after the area code is an eight"
+				},
+				{
+					"value": "01999998888",
+					"why": "an area code cannot start with zero"
+				}
+			]
+		},
+		"br.rg": {
+			"note": "No validator: the format depends on the issuing state and on the type of document, and inventing a national rule was rejected in ADR-0003. The key is deliberately absent from the registry, so a definition cannot select a rule that does not exist."
+		}
+	},
+	"validity_scope": "Canonical values, as the named normalizer produces them before a validator sees them. Valid and invalid are assertions about the check digits and the format only: a valid entry says the number is well formed, never that the person or company exists or that the document belongs to whoever typed it.",
+	"not_canonical": {
+		"note": "Well-formed documents that are not in canonical form: either formatted, or lowercase. They are kept apart from the invalid list because the two sides answer them differently, and that difference is a decision rather than a drift. The server validates the value it stores, and ADR-0003 makes the named normalizer the only thing allowed to transform a document, so it refuses one that is not canonical instead of cleaning it. The browser validates what is in the field, which is the formatted value the mask produced, so it removes the punctuation and uppercases before checking. Both behaviours are asserted, each on its own side.",
+		"refused_by": "server",
+		"accepted_by": "browser",
+		"cases": [
+			{
+				"validator": "br.cpf",
+				"value": "529.982.247-25",
+				"why": "formatted: the value is not canonical, so the field contract is not met"
+			},
+			{
+				"validator": "br.cnpj",
+				"value": "12abc34501de35",
+				"why": "lowercase is not the canonical form, and a value reaching here unnormalized means the field is misconfigured"
+			},
+			{
+				"validator": "br.cep",
+				"value": "01310-100",
+				"why": "formatted"
+			}
+		]
 	}
 }

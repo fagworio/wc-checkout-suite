@@ -9,7 +9,9 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Domain\Validation;
 
+use WCCheckoutSuite\Domain\Fields\ValidatorRegistry;
 use WCCheckoutSuite\Domain\Validation\Normalizers\BrazilianDocumentNormalizer;
+use WCCheckoutSuite\Domain\Validation\Validators\DocumentValidator;
 
 /**
  * Registers the declarative layer of the Brazilian documents.
@@ -65,6 +67,49 @@ final class BrazilianDocuments {
 		// documents.
 		$normalizers->register_normalizer(
 			new BrazilianDocumentNormalizer( 'br.phone', BrazilianDocumentNormalizer::MODE_PUNCTUATION )
+		);
+	}
+
+	/**
+	 * Registers the validators of the Brazilian documents.
+	 *
+	 * Five keys, and each one is named after what it checks rather than after the
+	 * document: `br.phone` covers two lengths through the two codes below it, so a
+	 * definition that does not care which kind of line it is can say so.
+	 *
+	 * There is deliberately no `br.rg`. Its format depends on the issuing state and
+	 * on the type of document, and inventing a national rule was rejected in
+	 * ADR-0003. A key that existed and accepted everything would be worse than the
+	 * key being absent: a merchant who selected it would believe the field was
+	 * being checked.
+	 *
+	 * @param ValidatorRegistry $validators Validator registry.
+	 * @return void
+	 */
+	public static function register_validators( ValidatorRegistry $validators ): void {
+		$validators->register_validator(
+			'br.cpf',
+			new DocumentValidator( 'br.cpf', DocumentValidator::MODE_CPF )
+		);
+
+		$validators->register_validator(
+			'br.cnpj',
+			new DocumentValidator( 'br.cnpj', DocumentValidator::MODE_CNPJ )
+		);
+
+		$validators->register_validator(
+			'br.cep',
+			new DocumentValidator( 'br.cep', DocumentValidator::MODE_POSTCODE )
+		);
+
+		$validators->register_validator(
+			'br.phone.landline',
+			new DocumentValidator( 'br.phone.landline', DocumentValidator::MODE_LANDLINE )
+		);
+
+		$validators->register_validator(
+			'br.phone.mobile',
+			new DocumentValidator( 'br.phone.mobile', DocumentValidator::MODE_MOBILE )
 		);
 	}
 
