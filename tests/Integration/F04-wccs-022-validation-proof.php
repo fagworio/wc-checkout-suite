@@ -339,6 +339,7 @@ sort( $wccs_hook_set );
 
 $wccs_hook_expected = array(
 	'woocommerce_after_checkout_validation@20:collect_errors',
+	'woocommerce_checkout_create_order@20:persist',
 	'woocommerce_checkout_fields@20:filter_fields',
 	'woocommerce_checkout_posted_data@20:normalize_posted_data',
 );
@@ -346,7 +347,7 @@ $wccs_hook_expected = array(
 sort( $wccs_hook_expected );
 
 wccs_proof_check(
-	'The storefront half is exactly these three hooks and nothing else',
+	'The storefront half is exactly these hooks and nothing else',
 	$wccs_hook_expected === $wccs_hook_set,
 	'found ' . wp_json_encode( $wccs_hook_set )
 );

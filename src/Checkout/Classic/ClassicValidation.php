@@ -70,13 +70,45 @@ final class ClassicValidation {
 	 * a mask that shortens a forged 3000-character value would hide the length
 	 * error it should have raised.
 	 *
-	 * @return void
+	 * The instance is returned so the order-writing half can read the same
+	 * outcome. Persisting a value that was not the one validated would be the
+	 * other way to break the same promise.
+	 *
+	 * @return self
 	 */
-	public static function register(): void {
+	public static function register(): self {
 		$validation = new self();
 
 		add_filter( 'woocommerce_checkout_posted_data', array( $validation, 'normalize_posted_data' ), 20 );
 		add_action( 'woocommerce_after_checkout_validation', array( $validation, 'collect_errors' ), 20, 2 );
+
+		return $validation;
+	}
+
+	/**
+	 * The typed canonical values this submission produced that may be stored.
+	 *
+	 * The typed form and not the carried one. What WooCommerce's posted data
+	 * holds is WooCommerce's representation — an unchecked box is an empty string
+	 * there — while what belongs on the order is the value the field actually has,
+	 * which for that same box is `false`. WCCS-022 keeps them apart deliberately;
+	 * this is the seam where the typed form leaves the checkout.
+	 *
+	 * A discarded value is not here, and neither is an invalid one: nothing that
+	 * was rejected reaches an order.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function storable_values(): array {
+		$values = array();
+
+		foreach ( $this->results as $id => $processed ) {
+			if ( $processed->is_storable() ) {
+				$values[ (string) $id ] = $processed->value();
+			}
+		}
+
+		return $values;
 	}
 
 	/**

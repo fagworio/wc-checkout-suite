@@ -196,7 +196,7 @@ final class ClassicAdapter {
 	 * @return bool
 	 */
 	private function is_core_override( FieldDefinition $definition ): bool {
-		return 'core' === ( $definition->to_array()['origin'] ?? '' );
+		return 'core' === $definition->origin();
 	}
 
 	/**

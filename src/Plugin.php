@@ -15,6 +15,7 @@ use WCCheckoutSuite\Domain\Registries;
 use WCCheckoutSuite\Domain\Schema\CoreFieldGuard;
 use WCCheckoutSuite\Domain\Schema\SchemaRepository;
 use WCCheckoutSuite\Checkout\Classic\ClassicCheckout;
+use WCCheckoutSuite\Checkout\Classic\ClassicOrderFields;
 use WCCheckoutSuite\Checkout\Classic\ClassicValidation;
 use WCCheckoutSuite\Http\Admin\CatalogController;
 use WCCheckoutSuite\Http\Admin\SchemaController;
@@ -119,7 +120,13 @@ final class Plugin {
 		// decision seen from two ends of one request: the value that is validated
 		// is the value that was normalized, and splitting the registration would
 		// invite a caller to install one without the other.
-		ClassicValidation::register();
+		$validation = ClassicValidation::register();
+
+		// Storefront side: the validated values written onto the order.
+		//
+		// Handed the instance that ran the validation, so what lands on the order
+		// is what was validated rather than a second reading of the request.
+		ClassicOrderFields::register( $validation );
 
 		// Administrative screen and its assets.
 		//

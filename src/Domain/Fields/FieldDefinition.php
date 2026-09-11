@@ -135,6 +135,20 @@ final class FieldDefinition {
 	}
 
 	/**
+	 * Where the field comes from.
+	 *
+	 * `core` means the definition overrides a field WooCommerce owns, `custom`
+	 * means the Suite owns it. The distinction decides who persists the value, so
+	 * it is read through the model rather than from the raw array: the model is
+	 * the only place that knows an omitted origin means `custom`.
+	 *
+	 * @return string
+	 */
+	public function origin(): string {
+		return $this->origin;
+	}
+
+	/**
 	 * Registered type key.
 	 *
 	 * @return string
