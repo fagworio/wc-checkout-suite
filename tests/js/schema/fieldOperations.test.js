@@ -1,0 +1,999 @@
+/**
+ * Field operation tests.
+ *
+ * The behaviour under test is what the field manager does to a draft: create,
+ * edit, duplicate, archive and remove, and — the part that carries the risk — the
+ * line between a field the merchant owns and one WooCommerce owns.
+ *
+ * Every operation is also checked for purity. A manager that mutated the document
+ * in place would make the unsaved-work guard and the discard path lie about what
+ * changed.
+ */
+
+import {
+	activeCount,
+	adoptCoreField,
+	archiveField,
+	archiveFields,
+	bulkImpact,
+	createField,
+	createSection,
+	duplicateField,
+	fieldsInSection,
+	moveField,
+	moveFieldsToSection,
+	moveSection,
+	groupBySection,
+	identifierFrom,
+	isProtected,
+	nextPosition,
+	protectionReason,
+	removeField,
+	removeSection,
+	sectionGroups,
+	setFieldEnabled,
+	setFieldSection,
+	setFieldsEnabled,
+	setFieldsVisibility,
+	uniqueIdentifier,
+	updateField,
+	updateSection,
+} from '../../../resources/admin/app/schema/fieldOperations';
+
+/**
+ * Builds a document with the given fields.
+ *
+ * @param {any[]} fields   Field definitions.
+ * @param {any[]} sections Section definitions.
+ * @return {any} Document.
+ */
+function doc(
+	/** @type {any[]} */ fields = [],
+	/** @type {any[]} */ sections = []
+) {
+	return {
+		revision: 3,
+		fields,
+		sections,
+		settings: {},
+	};
+}
+
+/**
+ * Builds a custom field.
+ *
+ * @param {Object} overrides Values to override.
+ * @return {any} Field definition.
+ */
+function custom( overrides = {} ) {
+	return {
+		id: 'billing_document',
+		integration_id: 'wc-checkoutsuite/billing_document',
+		origin: 'custom',
+		type: 'text',
+		preset: null,
+		label: 'CPF',
+		section: 'billing',
+		enabled: true,
+		required: false,
+		position: 20,
+		layout: { desktop: 12, tablet: 12, mobile: 12 },
+		settings: {},
+		...overrides,
+	};
+}
+
+/**
+ * Builds a WooCommerce-owned field.
+ *
+ * @param {Object} overrides Values to override.
+ * @return {any} Field definition.
+ */
+function core( overrides = {} ) {
+	return custom( {
+		id: 'billing_first_name',
+		integration_id: 'billing_first_name',
+		origin: 'core',
+		label: 'First name',
+		required: true,
+		position: 10,
+		...overrides,
+	} );
+}
+
+/**
+ * Returns the field an operation produced.
+ *
+ * `OperationResult.field` is optional because a refusal has none. Failing here
+ * rather than letting a test read `undefined` keeps the assertion honest.
+ *
+ * @param {any} result Operation result.
+ * @return {any} Field definition.
+ */
+function fieldOf( result ) {
+	if ( ! result.field ) {
+		throw new Error( 'The operation produced no field.' );
+	}
+
+	return result.field;
+}
+
+/**
+ * Builds a complete inventory entry, as the core fields route sends it.
+ *
+ * @param {Object} overrides Values to override.
+ * @return {any} Inventory entry.
+ */
+function coreEntry( overrides = {} ) {
+	return {
+		id: 'billing_first_name',
+		section: 'billing',
+		label: 'First name',
+		type: 'text',
+		nativeType: 'text',
+		typeRemapped: false,
+		required: true,
+		priority: 10,
+		classes: [ 'form-row-first' ],
+		layout: { desktop: 6, tablet: 6, mobile: 12 },
+		protected: true,
+		...overrides,
+	};
+}
+
+describe( 'identifier generation', () => {
+	it( 'strips accents instead of dropping the letter', () => {
+		expect( identifierFrom( 'Endereço' ) ).toBe( 'endereco' );
+		expect( identifierFrom( 'Número do documento' ) ).toBe(
+			'numero_do_documento'
+		);
+	} );
+
+	it( 'produces identifiers the server accepts', () => {
+		const rule = /^[a-z0-9][a-z0-9_]*$/;
+
+		for ( const label of [
+			'CPF',
+			'  spaced  out  ',
+			'Pessoa Jurídica (CNPJ)',
+			'123',
+			'!!!',
+			'',
+		] ) {
+			expect( identifierFrom( label ) ).toMatch( rule );
+		}
+	} );
+
+	it( 'falls back to a usable identifier for a label with no letters', () => {
+		expect( identifierFrom( '!!!' ) ).toBe( 'field' );
+	} );
+
+	it( 'avoids an identifier that is already taken', () => {
+		const document = doc( [ custom( { id: 'cpf' } ) ] );
+
+		expect( uniqueIdentifier( document, 'cpf' ) ).toBe( 'cpf_2' );
+	} );
+
+	it( 'keeps counting until it finds a free identifier', () => {
+		const document = doc( [
+			custom( { id: 'cpf' } ),
+			custom( { id: 'cpf_2' } ),
+			custom( { id: 'cpf_3' } ),
+		] );
+
+		expect( uniqueIdentifier( document, 'cpf' ) ).toBe( 'cpf_4' );
+	} );
+} );
+
+describe( 'positions', () => {
+	it( 'places a new field after the last one in its section', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing', position: 10 } ),
+			custom( { id: 'b', section: 'billing', position: 30 } ),
+			custom( { id: 'c', section: 'shipping', position: 90 } ),
+		] );
+
+		expect( nextPosition( document, 'billing' ) ).toBe( 40 );
+	} );
+
+	it( 'starts at ten when the section is empty', () => {
+		expect( nextPosition( doc(), 'billing' ) ).toBe( 10 );
+	} );
+} );
+
+describe( 'creating', () => {
+	it( 'adds an enabled custom field with its own integration key', () => {
+		const result = createField( doc(), { type: 'text', label: 'CPF' } );
+
+		expect( result.ok ).toBe( true );
+		expect( fieldOf( result ).id ).toBe( 'cpf' );
+		expect( fieldOf( result ).origin ).toBe( 'custom' );
+		expect( fieldOf( result ).integration_id ).toBe(
+			'wc-checkoutsuite/cpf'
+		);
+		expect( fieldOf( result ).enabled ).toBe( true );
+		expect( result.document.fields ).toHaveLength( 1 );
+	} );
+
+	it( 'carries the preset it was created from', () => {
+		const result = createField( doc(), {
+			type: 'text',
+			label: 'CPF',
+			preset: 'br.cpf',
+			settings: { placeholder: '000.000.000-00' },
+		} );
+
+		expect( fieldOf( result ).preset ).toBe( 'br.cpf' );
+		expect( fieldOf( result ).settings ).toEqual( {
+			placeholder: '000.000.000-00',
+		} );
+	} );
+
+	it( 'never reuses an identifier', () => {
+		const first = createField( doc(), { type: 'text', label: 'CPF' } );
+		const second = createField( first.document, {
+			type: 'text',
+			label: 'CPF',
+		} );
+
+		expect( fieldOf( second ).id ).toBe( 'cpf_2' );
+	} );
+
+	it( 'creates the field in the section it was asked for', () => {
+		const result = createField( doc(), {
+			type: 'text',
+			label: 'CPF',
+			section: 'billing',
+		} );
+
+		expect( fieldOf( result ).section ).toBe( 'billing' );
+	} );
+} );
+
+describe( 'adopting a WooCommerce field', () => {
+	it( 'keeps the identifier the store already uses', () => {
+		const result = adoptCoreField( doc(), coreEntry() );
+
+		expect( result.ok ).toBe( true );
+		expect( fieldOf( result ).id ).toBe( 'billing_first_name' );
+		expect( fieldOf( result ).integration_id ).toBe( 'billing_first_name' );
+		expect( fieldOf( result ).origin ).toBe( 'core' );
+		expect( fieldOf( result ).layout ).toEqual( {
+			desktop: 6,
+			tablet: 6,
+			mobile: 12,
+		} );
+	} );
+
+	it( 'refuses to adopt the same field twice, and says why', () => {
+		const document = doc( [ core() ] );
+		const result = adoptCoreField( document, coreEntry() );
+
+		expect( result.ok ).toBe( false );
+		expect( result.reason ).toMatch( /already part of the schema/ );
+		expect( result.document ).toBe( document );
+	} );
+} );
+
+describe( 'editing', () => {
+	it( 'changes the label without touching identity', () => {
+		const result = updateField( doc( [ custom() ] ), 'billing_document', {
+			label: 'Documento',
+		} );
+
+		expect( result.ok ).toBe( true );
+		expect( fieldOf( result ).label ).toBe( 'Documento' );
+		expect( fieldOf( result ).id ).toBe( 'billing_document' );
+		expect( fieldOf( result ).integration_id ).toBe(
+			'wc-checkoutsuite/billing_document'
+		);
+	} );
+
+	it( 'ignores an attempt to rewrite the identifier or the origin', () => {
+		const result = updateField( doc( [ custom() ] ), 'billing_document', {
+			id: 'something_else',
+			origin: 'core',
+			integration_id: 'hijacked',
+		} );
+
+		expect( fieldOf( result ).id ).toBe( 'billing_document' );
+		expect( fieldOf( result ).origin ).toBe( 'custom' );
+		expect( fieldOf( result ).integration_id ).toBe(
+			'wc-checkoutsuite/billing_document'
+		);
+	} );
+
+	it( 'refuses a type change on a WooCommerce field', () => {
+		const result = updateField( doc( [ core() ] ), 'billing_first_name', {
+			type: 'hidden',
+		} );
+
+		expect( result.ok ).toBe( false );
+		expect( result.reason ).toMatch( /cannot change/ );
+	} );
+
+	it( 'allows a type change on a custom field', () => {
+		const result = updateField( doc( [ custom() ] ), 'billing_document', {
+			type: 'select',
+		} );
+
+		expect( result.ok ).toBe( true );
+		expect( fieldOf( result ).type ).toBe( 'select' );
+	} );
+
+	it( 'reports an unknown identifier instead of inventing a field', () => {
+		const result = updateField( doc(), 'nope', { label: 'x' } );
+
+		expect( result.ok ).toBe( false );
+		expect( result.reason ).toMatch( /does not exist/ );
+	} );
+} );
+
+describe( 'duplicating', () => {
+	it( 'copies under a new identifier and starts archived', () => {
+		const result = duplicateField(
+			doc( [ custom() ] ),
+			'billing_document'
+		);
+
+		expect( result.ok ).toBe( true );
+		expect( fieldOf( result ).id ).toBe( 'billing_document_copy' );
+		expect( fieldOf( result ).enabled ).toBe( false );
+		expect( fieldOf( result ).label ).toBe( 'CPF (copy)' );
+		expect( result.document.fields ).toHaveLength( 2 );
+	} );
+
+	it( 'never makes the copy a WooCommerce field, even from one', () => {
+		const result = duplicateField(
+			doc( [ core() ] ),
+			'billing_first_name'
+		);
+
+		expect( fieldOf( result ).origin ).toBe( 'custom' );
+		expect( fieldOf( result ).integration_id ).toBe(
+			'wc-checkoutsuite/billing_first_name_copy'
+		);
+		expect( isProtected( fieldOf( result ) ) ).toBe( false );
+	} );
+
+	it( 'keeps looking for a free copy identifier', () => {
+		const document = doc( [
+			custom(),
+			custom( { id: 'billing_document_copy' } ),
+		] );
+
+		expect(
+			fieldOf( duplicateField( document, 'billing_document' ) ).id
+		).toBe( 'billing_document_copy_2' );
+	} );
+} );
+
+describe( 'archiving and removing', () => {
+	it( 'archives a custom field', () => {
+		const result = archiveField( doc( [ custom() ] ), 'billing_document' );
+
+		expect( result.ok ).toBe( true );
+		expect( fieldOf( result ).enabled ).toBe( false );
+	} );
+
+	it( 'restores an archived field', () => {
+		const document = doc( [ custom( { enabled: false } ) ] );
+		const result = setFieldEnabled( document, 'billing_document', true );
+
+		expect( result.ok ).toBe( true );
+		expect( fieldOf( result ).enabled ).toBe( true );
+	} );
+
+	it( 'refuses to archive a WooCommerce field, and explains why', () => {
+		const document = doc( [ core() ] );
+		const result = archiveField( document, 'billing_first_name' );
+
+		expect( result.ok ).toBe( false );
+		expect( result.reason ).toMatch( /shipping, tax and payment/ );
+		expect( result.document ).toBe( document );
+	} );
+
+	it( 'refuses to remove a WooCommerce field', () => {
+		const result = removeField( doc( [ core() ] ), 'billing_first_name' );
+
+		expect( result.ok ).toBe( false );
+		expect( result.document.fields ).toHaveLength( 1 );
+	} );
+
+	it( 'removes a custom field', () => {
+		const result = removeField( doc( [ custom() ] ), 'billing_document' );
+
+		expect( result.ok ).toBe( true );
+		expect( result.document.fields ).toHaveLength( 0 );
+	} );
+
+	it( 'describes the protection in terms of the field', () => {
+		expect( protectionReason( core() ) ).toContain( 'billing_first_name' );
+		expect( protectionReason( custom() ) ).toBe( '' );
+	} );
+} );
+
+describe( 'grouping and counting', () => {
+	it( 'groups by section in position order', () => {
+		const document = doc( [
+			custom( { id: 'b', section: 'billing', position: 30 } ),
+			custom( { id: 'a', section: 'billing', position: 10 } ),
+			custom( { id: 'c', section: 'shipping', position: 5 } ),
+		] );
+
+		expect( groupBySection( document ) ).toEqual( [
+			{
+				section: 'billing',
+				fields: [
+					expect.objectContaining( { id: 'a' } ),
+					expect.objectContaining( { id: 'b' } ),
+				],
+			},
+			{
+				section: 'shipping',
+				fields: [ expect.objectContaining( { id: 'c' } ) ],
+			},
+		] );
+	} );
+
+	it( 'counts only the fields that are active', () => {
+		const document = doc( [
+			custom( { id: 'a' } ),
+			custom( { id: 'b', enabled: false } ),
+			custom( { id: 'c' } ),
+		] );
+
+		expect( activeCount( document ) ).toBe( 2 );
+	} );
+} );
+
+describe( 'purity', () => {
+	it( 'never mutates the document it was given', () => {
+		const document = doc( [ custom(), core() ] );
+		const before = JSON.stringify( document );
+
+		createField( document, { type: 'text', label: 'Novo' } );
+		updateField( document, 'billing_document', { label: 'Outro' } );
+		duplicateField( document, 'billing_document' );
+		archiveField( document, 'billing_document' );
+		removeField( document, 'billing_document' );
+
+		expect( JSON.stringify( document ) ).toBe( before );
+	} );
+
+	it( 'returns a new field array rather than the same one', () => {
+		const document = doc( [ custom() ] );
+		const result = updateField( document, 'billing_document', {
+			label: 'Outro',
+		} );
+
+		expect( result.document ).not.toBe( document );
+		expect( result.document.fields ).not.toBe( document.fields );
+	} );
+} );
+
+describe( 'ordering fields within a section', () => {
+	it( 'swaps two neighbours and renumbers them', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing', position: 10 } ),
+			custom( { id: 'b', section: 'billing', position: 20 } ),
+		] );
+
+		const result = moveField( document, 'b', 'up' );
+
+		expect( result.ok ).toBe( true );
+		expect(
+			fieldsInSection( result.document, 'billing' ).map( ( f ) => f.id )
+		).toEqual( [ 'b', 'a' ] );
+		expect(
+			fieldsInSection( result.document, 'billing' ).map(
+				( f ) => f.position
+			)
+		).toEqual( [ 10, 20 ] );
+	} );
+
+	it( 'refuses to move the first field up', () => {
+		const document = doc( [ custom( { id: 'a', section: 'billing' } ) ] );
+		const result = moveField( document, 'a', 'up' );
+
+		expect( result.ok ).toBe( false );
+		expect( result.reason ).toMatch( /end of its section/ );
+		expect( result.document ).toBe( document );
+	} );
+
+	it( 'refuses to move the last field down', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing', position: 10 } ),
+			custom( { id: 'b', section: 'billing', position: 20 } ),
+		] );
+
+		expect( moveField( document, 'b', 'down' ).ok ).toBe( false );
+	} );
+
+	it( 'leaves the fields of other sections alone', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing', position: 10 } ),
+			custom( { id: 'b', section: 'billing', position: 20 } ),
+			custom( { id: 'x', section: 'shipping', position: 10 } ),
+			custom( { id: 'y', section: 'shipping', position: 20 } ),
+		] );
+
+		const result = moveField( document, 'b', 'up' );
+
+		expect(
+			fieldsInSection( result.document, 'shipping' ).map( ( f ) => f.id )
+		).toEqual( [ 'x', 'y' ] );
+	} );
+
+	it( 'reports an unknown identifier instead of inventing a field', () => {
+		expect( moveField( doc(), 'nope', 'up' ).reason ).toMatch(
+			/does not exist/
+		);
+	} );
+} );
+
+describe( 'moving a field to another section', () => {
+	it( 'appends it at the end of the target section', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing', position: 10 } ),
+			custom( { id: 'b', section: 'shipping', position: 10 } ),
+			custom( { id: 'c', section: 'shipping', position: 20 } ),
+		] );
+
+		const result = setFieldSection( document, 'a', 'shipping' );
+
+		expect( result.ok ).toBe( true );
+		expect(
+			fieldsInSection( result.document, 'shipping' ).map( ( f ) => f.id )
+		).toEqual( [ 'b', 'c', 'a' ] );
+		expect( fieldsInSection( result.document, 'billing' ) ).toHaveLength(
+			0
+		);
+	} );
+
+	it( 'does nothing when the field is already there', () => {
+		const document = doc( [ custom( { id: 'a', section: 'billing' } ) ] );
+
+		expect( setFieldSection( document, 'a', 'billing' ).document ).toBe(
+			document
+		);
+	} );
+
+	it( 'reports an unknown identifier', () => {
+		expect( setFieldSection( doc(), 'nope', 'billing' ).ok ).toBe( false );
+	} );
+} );
+
+describe( 'section groups', () => {
+	it( 'includes the sections fields imply, in position order', () => {
+		const document = doc(
+			[
+				custom( { id: 'a', section: 'billing', position: 20 } ),
+				custom( { id: 'b', section: 'billing', position: 10 } ),
+				custom( { id: 'c', section: 'shipping', position: 10 } ),
+			],
+			[
+				{
+					id: 'custom_block',
+					title: 'Extra',
+					description: '',
+					position: 5,
+					location: 'order',
+				},
+			]
+		);
+
+		const groups = sectionGroups( document );
+
+		expect( groups.map( ( g ) => g.section.id ) ).toEqual( [
+			'custom_block',
+			'billing',
+			'shipping',
+		] );
+		expect( groups[ 1 ].fields.map( ( f ) => f.id ) ).toEqual( [
+			'b',
+			'a',
+		] );
+		expect( groups[ 0 ].declared ).toBe( true );
+		expect( groups[ 1 ].declared ).toBe( false );
+	} );
+
+	it( 'gives an implied section a readable title', () => {
+		const document = doc( [ custom( { id: 'a', section: 'billing' } ) ] );
+
+		expect( sectionGroups( document )[ 0 ].section.title ).toBe(
+			'Billing'
+		);
+	} );
+} );
+
+describe( 'sections', () => {
+	it( 'creates one with an identifier derived from the title', () => {
+		const result = createSection( doc(), {
+			title: 'Dados extras',
+			location: 'billing',
+		} );
+
+		expect( result.ok ).toBe( true );
+		expect( result.document.sections[ 0 ].id ).toBe( 'dados_extras' );
+		expect( result.document.sections[ 0 ].location ).toBe( 'billing' );
+	} );
+
+	it( 'places a new section after the last one', () => {
+		const document = doc(
+			[],
+			[
+				{
+					id: 'a',
+					title: 'A',
+					description: '',
+					position: 10,
+					location: 'billing',
+				},
+				{
+					id: 'b',
+					title: 'B',
+					description: '',
+					position: 30,
+					location: 'order',
+				},
+			]
+		);
+
+		expect(
+			createSection( document, { title: 'C', location: 'order' } )
+				.document.sections[ 2 ].position
+		).toBe( 40 );
+	} );
+
+	it( 'never reuses a section identifier', () => {
+		const document = doc(
+			[],
+			[
+				{
+					id: 'extra',
+					title: 'Extra',
+					description: '',
+					position: 10,
+					location: 'order',
+				},
+			]
+		);
+
+		expect(
+			createSection( document, { title: 'Extra', location: 'order' } )
+				.document.sections[ 1 ].id
+		).toBe( 'extra_2' );
+	} );
+
+	it( 'renames a section without changing its identifier', () => {
+		const document = doc(
+			[],
+			[
+				{
+					id: 'extra',
+					title: 'Extra',
+					description: '',
+					position: 10,
+					location: 'order',
+				},
+			]
+		);
+
+		const result = updateSection( document, 'extra', {
+			title: 'Mais dados',
+		} );
+
+		expect( result.document.sections[ 0 ].id ).toBe( 'extra' );
+		expect( result.document.sections[ 0 ].title ).toBe( 'Mais dados' );
+	} );
+
+	it( 'ignores an attempt to rewrite the identifier', () => {
+		const document = doc(
+			[],
+			[
+				{
+					id: 'extra',
+					title: 'Extra',
+					description: '',
+					position: 10,
+					location: 'order',
+				},
+			]
+		);
+
+		expect(
+			updateSection( document, 'extra', { id: 'outro' } ).document
+				.sections[ 0 ].id
+		).toBe( 'extra' );
+	} );
+
+	it( 'refuses to remove a section that still holds fields', () => {
+		const document = doc(
+			[ custom( { id: 'a', section: 'extra' } ) ],
+			[
+				{
+					id: 'extra',
+					title: 'Extra',
+					description: '',
+					position: 10,
+					location: 'order',
+				},
+			]
+		);
+
+		const result = removeSection( document, 'extra' );
+
+		expect( result.ok ).toBe( false );
+		expect( result.reason ).toMatch( /still belong/ );
+		expect( result.document ).toBe( document );
+	} );
+
+	it( 'removes an empty section', () => {
+		const document = doc(
+			[],
+			[
+				{
+					id: 'extra',
+					title: 'Extra',
+					description: '',
+					position: 10,
+					location: 'order',
+				},
+			]
+		);
+
+		expect(
+			removeSection( document, 'extra' ).document.sections
+		).toHaveLength( 0 );
+	} );
+
+	it( 'moves a section and renumbers the order', () => {
+		const document = doc(
+			[],
+			[
+				{
+					id: 'a',
+					title: 'A',
+					description: '',
+					position: 10,
+					location: 'billing',
+				},
+				{
+					id: 'b',
+					title: 'B',
+					description: '',
+					position: 20,
+					location: 'order',
+				},
+			]
+		);
+
+		const result = moveSection( document, 'b', 'up' );
+
+		expect( result.document.sections.map( ( s ) => s.id ) ).toEqual( [
+			'b',
+			'a',
+		] );
+		expect( result.document.sections.map( ( s ) => s.position ) ).toEqual( [
+			10, 20,
+		] );
+	} );
+
+	it( 'refuses to move the first section up', () => {
+		const document = doc(
+			[],
+			[
+				{
+					id: 'a',
+					title: 'A',
+					description: '',
+					position: 10,
+					location: 'billing',
+				},
+			]
+		);
+
+		expect( moveSection( document, 'a', 'up' ).ok ).toBe( false );
+	} );
+} );
+
+describe( 'section operations are pure too', () => {
+	it( 'never mutates the document it was given', () => {
+		const document = doc(
+			[
+				custom( { id: 'a', section: 'billing', position: 10 } ),
+				custom( { id: 'b', section: 'billing', position: 20 } ),
+			],
+			[
+				{
+					id: 'extra',
+					title: 'Extra',
+					description: '',
+					position: 10,
+					location: 'order',
+				},
+			]
+		);
+		const before = JSON.stringify( document );
+
+		moveField( document, 'b', 'up' );
+		setFieldSection( document, 'a', 'shipping' );
+		createSection( document, { title: 'Nova', location: 'order' } );
+		updateSection( document, 'extra', { title: 'Outra' } );
+		moveSection( document, 'extra', 'down' );
+		removeSection( document, 'extra' );
+
+		expect( JSON.stringify( document ) ).toBe( before );
+	} );
+} );
+
+describe( 'bulk operations', () => {
+	it( 'archives the custom fields and reports the protected ones', () => {
+		const document = doc( [
+			custom( { id: 'a', enabled: true } ),
+			core( { id: 'billing_first_name', enabled: true } ),
+			custom( { id: 'c', enabled: true } ),
+		] );
+
+		const result = archiveFields( document, [
+			'a',
+			'billing_first_name',
+			'c',
+		] );
+
+		expect( result.ok ).toBe( true );
+		expect( result.applied ).toEqual( [ 'a', 'c' ] );
+		expect( result.skipped ).toEqual( [
+			{
+				id: 'billing_first_name',
+				reason: expect.stringContaining( 'WooCommerce owns' ),
+			},
+		] );
+
+		const byId = Object.fromEntries(
+			result.document.fields.map( ( f ) => [ f.id, f.enabled ] )
+		);
+
+		expect( byId ).toEqual( {
+			a: false,
+			billing_first_name: true,
+			c: false,
+		} );
+	} );
+
+	it( 'reports a field that is already in the target state', () => {
+		const document = doc( [ custom( { id: 'a', enabled: false } ) ] );
+		const result = archiveFields( document, [ 'a' ] );
+
+		expect( result.ok ).toBe( false );
+		expect( result.skipped[ 0 ].reason ).toMatch( /already in that state/ );
+		expect( result.document ).toBe( document );
+	} );
+
+	it( 'enables many at once', () => {
+		const document = doc( [
+			custom( { id: 'a', enabled: false } ),
+			custom( { id: 'b', enabled: true } ),
+		] );
+
+		const result = setFieldsEnabled( document, [ 'a', 'b' ], true );
+
+		expect( result.applied ).toEqual( [ 'a' ] );
+		expect( result.skipped ).toHaveLength( 1 );
+	} );
+
+	it( 'moves many fields to a section and renumbers them', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing', position: 10 } ),
+			custom( { id: 'b', section: 'billing', position: 20 } ),
+			custom( { id: 'c', section: 'shipping', position: 10 } ),
+		] );
+
+		const result = moveFieldsToSection(
+			document,
+			[ 'a', 'c' ],
+			'shipping'
+		);
+
+		// `c` was already in the target section and is skipped; `a` is appended
+		// after it, exactly as moving one field appends.
+		expect( result.applied ).toEqual( [ 'a' ] );
+		expect(
+			fieldsInSection( result.document, 'shipping' ).map( ( f ) => f.id )
+		).toEqual( [ 'c', 'a' ] );
+		expect(
+			fieldsInSection( result.document, 'shipping' ).map(
+				( f ) => f.position
+			)
+		).toEqual( [ 10, 20 ] );
+	} );
+
+	it( 'sets one audience for many fields without touching the others', () => {
+		const document = doc( [
+			custom( {
+				id: 'a',
+				visibility: { admin_order: true, public_api: false },
+			} ),
+			custom( {
+				id: 'b',
+				visibility: { admin_order: true, public_api: false },
+			} ),
+		] );
+
+		const result = setFieldsVisibility(
+			document,
+			[ 'a', 'b' ],
+			'public_api',
+			true
+		);
+
+		expect( result.document.fields[ 0 ].visibility ).toEqual( {
+			admin_order: true,
+			public_api: true,
+		} );
+		expect( result.document.fields[ 1 ].visibility ).toEqual( {
+			admin_order: true,
+			public_api: true,
+		} );
+	} );
+
+	it( 'reports the impact before anything is applied', () => {
+		const document = doc( [
+			custom( { id: 'a', enabled: true } ),
+			core( { id: 'billing_first_name', enabled: true } ),
+			custom( { id: 'c', enabled: false } ),
+		] );
+
+		const impact = bulkImpact(
+			document,
+			[ 'a', 'billing_first_name', 'c' ],
+			'archive'
+		);
+
+		expect( impact.total ).toBe( 3 );
+		expect( impact.protected ).toEqual( [ 'billing_first_name' ] );
+		expect( impact.unchanged ).toEqual( [ 'c' ] );
+		expect( impact.affected ).toBe( 1 );
+	} );
+
+	it( 'does not treat a protected field as impacted when enabling', () => {
+		const document = doc( [
+			core( { id: 'billing_first_name', enabled: false } ),
+		] );
+
+		const impact = bulkImpact(
+			document,
+			[ 'billing_first_name' ],
+			'enable'
+		);
+
+		expect( impact.protected ).toEqual( [] );
+		expect( impact.affected ).toBe( 1 );
+	} );
+
+	it( 'never mutates the document it was given', () => {
+		const document = doc( [
+			custom( { id: 'a', enabled: true } ),
+			custom( { id: 'b', enabled: true } ),
+		] );
+		const before = JSON.stringify( document );
+
+		archiveFields( document, [ 'a', 'b' ] );
+		moveFieldsToSection( document, [ 'a' ], 'shipping' );
+		setFieldsVisibility( document, [ 'a' ], 'public_api', true );
+		bulkImpact( document, [ 'a' ], 'archive' );
+
+		expect( JSON.stringify( document ) ).toBe( before );
+	} );
+
+	it( 'refuses when nothing in the selection can change', () => {
+		const document = doc( [
+			core( { id: 'billing_first_name', enabled: true } ),
+		] );
+
+		expect( archiveFields( document, [ 'billing_first_name' ] ).ok ).toBe(
+			false
+		);
+	} );
+} );

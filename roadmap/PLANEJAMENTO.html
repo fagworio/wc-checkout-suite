@@ -1,0 +1,1417 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>WC CheckoutSuite · Planejamento completo</title><style>
+:root{--brand:#6d28d9;--ink:#202334;--muted:#626a7b;--line:#e5e7ef;--bg:#f6f7fb}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.7 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{padding:18px 5%;border-bottom:1px solid var(--line);background:#fff;display:flex;justify-content:space-between;gap:20px;align-items:center}.wordmark{font-size:18px;font-weight:750;letter-spacing:-.5px}.wordmark span{color:var(--brand)}a{color:var(--brand);text-decoration:none}a:hover{text-decoration:underline}
+.header-actions{display:flex;gap:14px;align-items:center;font-size:12px}.pill{display:inline-block;padding:7px 11px;border-radius:8px;background:#f3edff;color:var(--brand);font-weight:650;font-size:11px}.hero{padding:44px 5% 34px;max-width:1550px;margin:auto}.hero small{font-size:11px;letter-spacing:1.4px;color:var(--muted);font-weight:600}.hero h1{font-size:40px;letter-spacing:-1.5px;line-height:1.2;margin:12px 0}.hero p{color:var(--muted);max-width:800px;margin:14px 0}
+.layout{max-width:1550px;margin:0 auto;display:grid;grid-template-columns:265px minmax(0,1fr);padding:0 5% 60px;gap:32px}nav{position:sticky;top:18px;align-self:start;max-height:calc(100vh - 36px);overflow:auto;padding:12px 0}nav strong{display:block;font-size:10px;letter-spacing:1.4px;color:var(--muted);margin:0 0 16px}nav a{display:block;font-size:12px;padding:7px 0;color:var(--muted);line-height:1.5}nav a:hover{color:var(--brand)}
+article{background:white;padding:38px 42px;border:1px solid var(--line);border-radius:18px;min-width:0}article h1{font-size:27px;letter-spacing:-.6px;line-height:1.3;border-top:1px solid var(--line);padding-top:36px;margin:40px 0 19px;scroll-margin-top:20px}article h1:first-child{margin-top:0;padding-top:0;border-top:0}article h2{font-size:21px;line-height:1.4;margin:29px 0 14px;letter-spacing:-.3px}article h3{font-size:16px;margin:25px 0 12px}
+p{margin:13px 0}li{margin:7px 0}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#f3f4f9;border-radius:4px;padding:2px 5px;font-size:12px;overflow-wrap:anywhere}pre{background:#181d2d;color:#e6e9f5;padding:21px;border-radius:12px;overflow:auto;font-size:12px;line-height:1.65}pre code{background:transparent;padding:0;color:inherit;overflow-wrap:normal}
+.table-scroll{width:100%;overflow-x:auto;margin:22px 0;border:1px solid var(--line);border-radius:10px}table{width:100%;border-collapse:collapse;min-width:570px;font-size:12px}th,td{text-align:left;vertical-align:top;padding:13px 15px;border-bottom:1px solid var(--line)}th{background:#f5f3fa;font-size:11px;color:#493b63}tr:last-child td{border-bottom:0}blockquote{border-left:3px solid var(--brand);padding:4px 20px;background:#f7f2ff;margin:20px 0}hr{border:0;border-top:1px solid var(--line);margin:34px 0}footer{font-size:11px;color:var(--muted);text-align:center;padding:0 25px 30px}
+@media(max-width:1000px){.layout{grid-template-columns:1fr}.layout nav{display:none}.hero h1{font-size:34px}article{padding:28px}}@media(max-width:600px){header{align-items:flex-start;flex-direction:column;gap:10px}.hero{padding-top:28px}.hero h1{font-size:30px}.layout{padding:0 12px 35px}article{padding:22px 18px}article h1{font-size:23px}article h2{font-size:19px}body{font-size:14px}.header-actions{font-size:11px;flex-wrap:wrap}}
+@media print{header,.hero,nav,footer{display:none}.layout{display:block;padding:0}article{border:0;padding:0}body{background:#fff;font-size:10pt}article h1{break-before:page}article h1:first-child{break-before:auto}pre{white-space:pre-wrap;background:#f4f4f4;color:#111}table{min-width:0}tr{break-inside:avoid}a{color:#111;text-decoration:none}}
+</style></head><body>
+<header><div class="wordmark"><span>WC</span> CheckoutSuite</div><div class="header-actions"><a href="PROTOTIPO.html">Abrir protótipo visual</a><a href="ROADMAP.md">Roadmap em Markdown</a><span class="pill">Planejamento 1.0</span></div></header>
+<section class="hero"><small>ESPECIFICAÇÃO DE PRODUTO E ENGENHARIA · 11/09/2026</small><h1>Plano de construção</h1><p>14 fases, 70 tarefas e um design system para campos, admin e página de checkout. Arquitetura extensível com Classic, Blocks e HPOS.</p><span class="pill">Checkout Sidebar fora da versão 1.0</span></section>
+<div class="layout"><nav aria-label="Capítulos"><strong>NESTE DOCUMENTO</strong><a href="#chapter-4">1. Visão geral e limite do projeto</a><a href="#chapter-5">2. Revisão da referência e ajustes necessários</a><a href="#chapter-6">3. Princípios arquiteturais</a><a href="#chapter-7">4. Definição canônica de campos e seções</a><a href="#chapter-8">5. Tipos de campos e presets brasileiros</a><a href="#chapter-9">6. Criação de novos tipos customizados</a><a href="#chapter-10">7. Classic Checkout</a><a href="#chapter-11">8. Checkout Blocks e matriz de capacidades</a><a href="#chapter-12">9. Máscaras e normalização</a><a href="#chapter-13">10. Validação local, AJAX e finalização</a><a href="#chapter-14">11. Regras condicionais</a><a href="#chapter-15">12. Upload privado de arquivos</a><a href="#chapter-16">13. Persistência e banco de dados</a><a href="#chapter-17">14. Integração com pedidos, clientes e e-mails</a><a href="#chapter-18">15. Página customizada e gateways</a><a href="#chapter-19">16. Interface administrativa</a><a href="#chapter-20">17. Identidade visual e design system</a><a href="#chapter-21">18. Arquitetura JavaScript e PHP</a><a href="#chapter-22">19. APIs e configuração segura</a><a href="#chapter-23">20. Segurança, privacidade e operação</a><a href="#chapter-24">21. Performance e compatibilidade</a><a href="#chapter-25">22. Estrutura de diretórios proposta</a><a href="#chapter-26">23. Roadmap de execução</a><a href="#chapter-41">24. Testes automatizados e evidências</a><a href="#chapter-42">25. Riscos e decisões de mitigação</a><a href="#chapter-43">26. Critérios de aceite da versão 1.0</a><a href="#chapter-44">27. Governança, releases e evolução futura</a><a href="#chapter-45">28. Referências e rastreabilidade</a></nav><article><h1 id="chapter-0">WC CheckoutSuite</h1>
+<h2 id="chapter-1">Roadmap técnico, escopo de produto e identidade visual</h2>
+<p><strong>Versão do planejamento:</strong> 1.0 · <strong>Data:</strong> 11/09/2026<br/>
+<strong>Status:</strong> especificação e protótipo visual; não é um plugin implementado ou homologado.<br/>
+<strong>Produto:</strong> WC CheckoutSuite · <strong>Slug técnico proposto:</strong> <code>wc-checkoutsuite</code><br/>
+<strong>Namespace PHP:</strong> <code>WCCheckoutSuite\\</code> · <strong>Prefixo:</strong> <code>wccs_</code><br/>
+<strong>REST:</strong> <code>wc-checkoutsuite/v1</code> · <strong>Text domain:</strong> <code>wc-checkoutsuite</code></p>
+<h2 id="chapter-2">Leitura do pacote</h2>
+<p><code>ROADMAP.md</code> é a especificação principal. <code>BACKLOG.json</code> contém fases e tarefas identificadas. <code>PROTOTIPO.html</code> é uma referência visual interativa sem WordPress, backend, cobrança ou upload real. <code>DESIGN-TOKENS.json</code> contém os tokens de interface. <code>AUDITORIA-REFERENCIA.md</code> documenta a leitura estática do ZIP. <code>MATRIZ-REQUISITOS.md</code> faz a rastreabilidade do anexo.</p>
+<p>O nome adotado é o solicitado. Disponibilidade de domínio, slug no diretório e registro de marca não foram certificados. A revisão comercial de marca/licenças é um gate de distribuição, não uma mudança de nome decidida neste documento.</p>
+<h2 id="chapter-3">Origem das decisões</h2>
+<p><strong>Requisitos obrigatórios [R1]:</strong> editor de campos padrão e personalizados; ordenação; máscaras IMask; documentos brasileiros; validação local e no servidor; uploads; condições; persistência; Classic/Blocks/HPOS; página de checkout customizada opcional; pagamentos reais; interface administrativa moderna; APIs e novos tipos de campo.</p>
+<p><strong>Referência visual [R2]:</strong> página em duas colunas, contato, entrega, pagamento em accordion e resumo do pedido. Não é código transacional pronto.</p>
+<p><strong>Referência de implementação [R3]:</strong> leitura estática dos arquivos do ZIP. Não houve instalação, execução de PHP, pedido real ou auditoria de segurança dinâmica.</p>
+<p><strong>Verificações externas [S1–S11]:</strong> APIs e restrições técnicas oficiais consultadas em 11/09/2026. Não confundir documentação atual com recursos efetivamente presentes no ZIP.</p>
+<p><strong>Decisões propostas:</strong> arquitetura, tokens, limites iniciais, tarefas, fases e critérios de aceite a seguir. Não são alegações de funcionalidades já implementadas.</p>
+<hr/>
+<h1 id="chapter-4">1. Visão geral e limite do projeto</h1>
+<p>Criar um plugin modular para editar e estender os campos do checkout e, opcionalmente, aplicar uma página de checkout moderna, sem substituir a engine de transação do WooCommerce.</p>
+<h3>Incluído na versão 1.0</h3>
+<ol>
+<li>Core extensível, cadastro de tipos, presets, validações e renderizadores.</li>
+<li>Gerenciamento de campos nativos e personalizados, seções, regras, máscaras e layout responsivo.</li>
+<li>Classic Checkout e Checkout Blocks, com matriz explícita de suporte.</li>
+<li>Upload privado e persistência compatível com HPOS.</li>
+<li>Pedidos, administração, Minha Conta, e-mails e APIs com visibilidade por público.</li>
+<li>Página de checkout customizada opcional, preservando carrinho, frete, impostos, cupons e gateways.</li>
+<li>Admin moderno, prévia, rascunho, publicação, histórico, importação/exportação e diagnóstico.</li>
+<li>SDK mínimo documentado para novos tipos, testes e pacote comercial instalável.</li>
+</ol>
+<h3>Fora desta versão</h3>
+<p><strong>Checkout Sidebar</strong>, drawer lateral de compra, minicarrinho transacional, floating cart e finalização por overlay. Não haverá tela, botão desabilitado, pacote, rota, componente vazio nem feature flag dessa função na versão 1.0.</p>
+<p>Também não fazem parte da entrega atual: gateways próprios, construtor geral de páginas, checkout headless, upsell/downsell, order bumps, recuperação de carrinho, teste A/B, cobrança por opções de campo, repetidores complexos, CRM e serviço SaaS de licenciamento.</p>
+<p>O resumo lateral do pedido dentro da página de checkout <strong>faz parte do layout atual</strong>. Isso não é o Checkout Sidebar futuro. O painel de propriedades do editor administrativo também não é esse produto futuro.</p>
+<h3>Preparação suficiente para evolução</h3>
+<p>Manter os serviços de campos, validação, persistência e contexto independentes da página. Um checkout lateral futuro poderá reutilizar esses contratos. Não desenvolver integração de sidebar agora e não assumir que ela herdará compatibilidade com todos os gateways.</p>
+<hr/>
+<h1 id="chapter-5">2. Revisão da referência e ajustes necessários</h1>
+<p>No ZIP, o cabeçalho declara “Checkout Field Editor for WooCommerce”, versão 2.2.0, GPLv2 ou posterior. O nome do arquivo contendo “pro” não comprova que todos os recursos comerciais estejam no pacote. Foram encontrados modelos de campos, adaptadores Classic/Blocks, salvamento com <code>WC_Order</code>, configuração em options e ordenação administrativa. [R3]</p>
+<p>A factory <code>create_field()</code> em <code>includes/utils/class-thwcfd-utils-field.php:374–435</code> usa uma sequência de condições por tipo. Ela referencia classes de arquivo, multiselect e outros tipos que não constam entre os arquivos de modelos presentes. Isso não permite afirmar que o ZIP implementa integralmente essas funções. Também não basta para concluir uma vulnerabilidade ou falha de execução sem teste do fluxo. [R3]</p>
+<p><strong>Aproveitar conceitualmente:</strong> separação entre definição e valor; integração com hooks oficiais; adaptadores para checkouts diferentes; APIs CRUD de pedido.</p>
+<p><strong>Não reproduzir:</strong> factory fechada, dependência de seletores DOM internos do Blocks, armazenamento duplicado sem autoridade definida, ou promessa de paridade visual irrestrita.</p>
+<p><strong>Correção de requisito brasileiro:</strong> a máscara numérica de CNPJ do anexo não é suficiente. A Receita informa início efetivo do uso alfanumérico em 31/07/2026. O plugin deverá aceitar CNPJ numérico e alfanumérico, mantendo letras e zeros à esquerda. [S9]</p>
+<p><strong>Correção de ordem do desenvolvimento:</strong> Blocks, SDK e testes entram no início como provas de integração e contratos. A conclusão dos respectivos módulos ocorre depois; eles não podem ser descobertos apenas no fim.</p>
+<hr/>
+<h1 id="chapter-6">3. Princípios arquiteturais</h1>
+<p><strong>Monólito modular em PHP, com React/TypeScript no admin e nos componentes Blocks.</strong> Sem Next.js, Node em produção, microserviços ou dependência de serviço externo para concluir uma compra.</p>
+<p>Separação recomendada:</p>
+<pre><code class="language-text">Admin React
+    ↓ API administrativa autenticada
+Application services
+    ↓
+Domain
+    FieldDefinition / FieldType / FieldPreset / Section
+    Validation / Conditions / Normalization / Formatting
+    ↓
+Adapters
+    Classic | Blocks Native | Blocks Custom
+    ↓
+WooCommerce lifecycle
+    Cart / Checkout / Customer / Order / Payment
+
+Presentation
+    Default appearance | Suite page layout
+    (Não é outra engine de checkout)
+</code></pre>
+<p>O checkout customizado é uma <strong>camada de apresentação sobre Classic ou Blocks</strong>, não um terceiro fluxo que cria pedidos por conta própria. O mesmo schema pode ter mapeamentos de apresentação por adapter sem duplicar suas regras de negócio.</p>
+<p>Contrato público deve ser pequeno: registries de tipos, presets, validadores, máscaras e renderizadores; services explícitos; injeção simples pelo bootstrap. Não criar um framework genérico maior que o plugin.</p>
+<hr/>
+<h1 id="chapter-7">4. Definição canônica de campos e seções</h1>
+<p>Cada campo possui identificador permanente, chave de integração estável e versão de definição. Renomear o label não renomeia a chave de armazenamento. Mudar o tipo ou a normalização exige uma operação de migração, não apenas um select no painel.</p>
+<pre><code class="language-json">{
+  "id": "billing_document",
+  "integration_id": "wc-checkoutsuite/billing-document",
+  "origin": "custom",
+  "type": "text",
+  "preset": "br.cnpj",
+  "label": "CNPJ",
+  "section": "billing",
+  "enabled": true,
+  "required": true,
+  "position": 40,
+  "layout": { "desktop": 6, "tablet": 6, "mobile": 12 },
+  "mask": { "key": "br.cnpj", "version": 1 },
+  "normalizer": "br.cnpj",
+  "validators": [{ "key": "br.cnpj" }],
+  "conditions": {
+    "visible": {
+      "all": [{
+        "source": "field",
+        "path": "billing_person_type",
+        "operator": "equals",
+        "value": "pj"
+      }]
+    }
+  },
+  "hidden_value_policy": "discard",
+  "storage": { "scope": "order", "sensitivity": "personal" },
+  "visibility": {
+    "admin_order": true,
+    "customer_order": false,
+    "customer_email": false,
+    "admin_email": false,
+    "public_api": false
+  },
+  "schema_version": 1
+}
+</code></pre>
+<p>Esse exemplo é conceitual; <code>storage</code> será compilado conforme o adapter. Um registro nativo que persiste automaticamente no cliente não pode apresentar no admin a opção “somente pedido” como se fosse equivalente. Se a política não for representável nativamente, o compilador deverá escolher a implementação própria ou impedir a publicação.</p>
+<p>Além disso: label traduzível, descrição, placeholder, opções de valor/label, default, classes permitidas, atributos HTML permitidos, min/max/step, comprimento, nome acessível, política de visibilidade, capacidades por adapter e origem do campo.</p>
+<p><code>SectionDefinition</code>: ID estável, título, descrição, posição, localização lógica, regras e mapeamento de inserção. Billing, Shipping, Contact, Account e Order são conceitos do domínio; não correspondem automaticamente a slots idênticos em todos os checkouts.</p>
+<hr/>
+<h1 id="chapter-8">5. Tipos de campos e presets brasileiros</h1>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Grupo</th>
+<th>Tipos da versão 1.0</th>
+<th>Regras principais</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Texto</td>
+<td>text, textarea, email, tel/phone, url</td>
+<td>Comprimento, atributos permitidos e formato</td>
+</tr>
+<tr>
+<td>Número</td>
+<td>number</td>
+<td>Número real, min/max/step; não usar para documento</td>
+</tr>
+<tr>
+<td>Escolha</td>
+<td>select, multiselect, radio, checkbox, checkbox-group</td>
+<td>Opções com chaves estáveis; arrays para múltiplos</td>
+</tr>
+<tr>
+<td>Datas</td>
+<td>date, time, datetime</td>
+<td>Formato canônico e política de fuso explícita</td>
+</tr>
+<tr>
+<td>Conteúdo</td>
+<td>hidden, heading, paragraph, HTML restrito</td>
+<td>Conteúdo visual não gera meta de valor</td>
+</tr>
+<tr>
+<td>Arquivos</td>
+<td>file, único ou múltiplo</td>
+<td>Upload privado com token</td>
+</tr>
+<tr>
+<td>Endereço</td>
+<td>country, state</td>
+<td>Usar dados e dependências nativas quando aplicável</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>password</code> não será um campo genérico de pedido. Criação de conta e senha pertencem ao fluxo nativo; senhas nunca são gravadas como order meta, mostradas no admin ou enviadas por e-mail. Month/week podem ser extensões posteriores e não bloqueiam os tipos expressamente exigidos no anexo.</p>
+<p><strong>Presets:</strong> CPF, CNPJ, RG, CEP, telefone fixo, celular, tipo de pessoa PF/PJ, razão social, nome fantasia, número, bairro e complemento. Inscrição estadual/municipal e nascimento são presets opcionais, desativados inicialmente.</p>
+<p>CPF/CNPJ/CEP são strings. CNPJ aceita os dois formatos e mantém letras em caixa alta. RG não recebe um “validador nacional universal” inventado; regras específicas dependem de UF/tipo e permanecem opcionais. Validação matemática de documento não comprova titularidade, situação cadastral nem identidade.</p>
+<p>Número, bairro e complemento precisam de mapeamento explícito para integrações de entrega e faturamento; não duplicar silenciosamente campos que outro plugin brasileiro já criou.</p>
+<p>Datas: <code>date</code> é <code>YYYY-MM-DD</code>, sem conversão para UTC. <code>time</code> é hora local com contrato explícito. <code>datetime</code> guarda instante e informação de fuso conforme o uso. Valores como <code>0</code>, <code>false</code>, array vazio e ausência precisam de semânticas distintas.</p>
+<hr/>
+<h1 id="chapter-9">6. Criação de novos tipos customizados</h1>
+<p>Dois níveis de extensão:</p>
+<p><strong>Sem código:</strong> o lojista cria um preset a partir de um tipo existente, combina máscara, opções, validação, condições e aparência. Não pode colar PHP/JavaScript executável.</p>
+<p><strong>Com código:</strong> outro plugin registra um novo tipo com schema, normalização, validação, formatação e renderizadores. O editor de configurações é gerado por schema ou por um componente JS registrado.</p>
+<p>Contrato conceitual:</p>
+<pre><code class="language-php">interface FieldTypeInterface {
+    public function key(): string;
+    public function valueSchema(): array;
+    public function settingsSchema(): array;
+    public function normalize(mixed $value, FieldContext $context): mixed;
+    public function validate(mixed $value, FieldContext $context): ValidationResult;
+}
+</code></pre>
+<p>Renderizadores e formatação ficam em contratos separados para não acoplar o domínio a React, HTML ou <code>WC_Order</code>.</p>
+<p>A declaração do tipo inclui versão do contrato, tipos de valor, recursos suportados, settings schema, assets, renderizador Classic, renderizador Blocks, formatter de texto/e-mail e adapter de persistência quando necessário.</p>
+<p><strong>Critério de extensão:</strong> um plugin de exemplo “Código de associado” deve surgir no seletor, validar no servidor, aparecer nos pedidos e funcionar nos adapters declarados sem alterar o core.</p>
+<p>Ausência de componente Blocks não pode ser disfarçada com <code>supports: true</code>. Tipo indisponível porque a extensão foi desativada gera diagnóstico e bloqueio de publicação. Pedidos históricos continuam legíveis pelo snapshot/formatter de fallback seguro.</p>
+<p>Hooks propostos, não APIs já existentes:</p>
+<pre><code class="language-text">wccs_register_field_types
+wccs_register_presets
+wccs_register_validators
+wccs_register_masks
+wccs_register_renderers
+wccs_schema_before_publish
+wccs_field_validation_result
+wccs_order_fields_saved
+wccs_upload_bound_to_order
+</code></pre>
+<p>Eventos JS usam namespace <code>wccs/</code>. Documentar argumentos, ordem, versões, políticas de depreciação e ausência de dados pessoais em eventos globais.</p>
+<hr/>
+<h1 id="chapter-10">7. Classic Checkout</h1>
+<p>A implementação transforma o schema em configurações/hook callbacks compatíveis com o checkout clássico. Pontos de integração incluem <code>woocommerce_checkout_fields</code>, validação antes da finalização e criação de pedido no ciclo oficial; os hooks são confirmados também na referência anexada. [R3]</p>
+<p>Aplicar alterações aos campos padrão de forma seletiva, preservando requisitos do país, regras de endereço, checkout de visitante, cadastro e comportamento de plugins de terceiros.</p>
+<p>Requisitos: labels, descrições, opções, prioridades, larguras, conteúdo informativo, seções em posições homologadas, máscaras, condições, erros por campo e resumo de erros.</p>
+<p>Preservar IDs, names e contratos necessários ao WooCommerce. Custom fields devem usar nomes exclusivos. Campo obrigatório estrutural não pode ser removido sem diagnóstico do impacto no frete, fiscal ou pagamento.</p>
+<p>Inicialização dos componentes deve ser idempotente após refresh do checkout. Não duplicar handlers, IMask ou uploads a cada <code>updated_checkout</code>. Destruir instâncias de elementos removidos e não provocar loops de atualização.</p>
+<p>Sem JavaScript, os campos simples devem continuar permitindo o fluxo clássico quando o gateway suportar; mensagens server-side permanecem. Recursos intrinsicamente JS, como upload antecipado e validação remota, têm fallback explícito ou aviso, nunca sucesso falso.</p>
+<hr/>
+<h1 id="chapter-11">8. Checkout Blocks e matriz de capacidades</h1>
+<p>A documentação atual da API de campos adicionais lista <code>text</code>, <code>select</code>, <code>checkbox</code> e <code>date</code>, em <code>contact</code>, <code>address</code> ou <code>order</code>. O contrato e a versão instalada devem ser verificados em execução. <code>address</code> envolve os endereços de entrega e cobrança; isso não é sinônimo de “somente billing”. [S2]</p>
+<p>Para tipos fora desse contrato: inner blocks/componentes próprios e dados no namespace <code>extensions</code>, integrados à Store API; a API pública oferece esse caminho. [S5]</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Recurso</th>
+<th>Classic</th>
+<th>Blocks nativo</th>
+<th>Blocks próprio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Text/select/checkbox/date</td>
+<td>Adapter PHP</td>
+<td>Usar quando versão e política permitirem</td>
+<td>Só quando necessário</td>
+</tr>
+<tr>
+<td>CPF/CNPJ/CEP</td>
+<td>Preset textual</td>
+<td>Validação possível; máscara depende de extensão suportada</td>
+<td>Campo controlado quando preciso</td>
+</tr>
+<tr>
+<td>Textarea/radio/multiselect/time/datetime</td>
+<td>Renderer próprio quando preciso</td>
+<td>Não assumir suporte da API de additional fields</td>
+<td>Componente próprio</td>
+</tr>
+<tr>
+<td>Upload</td>
+<td>Token + campo</td>
+<td>Não usar como upload binário</td>
+<td>Upload separado + token</td>
+</tr>
+<tr>
+<td>Ordenação de campos da Suite</td>
+<td>Prioridades</td>
+<td>Dentro do que a API permitir</td>
+<td>Dentro do contêiner da Suite</td>
+</tr>
+<tr>
+<td>Reordenação arbitrária de campos core</td>
+<td>Avaliar dependências</td>
+<td>Não prometer</td>
+<td>Não substituir DOM core</td>
+</tr>
+<tr>
+<td>Novas seções</td>
+<td>Hooks homologados</td>
+<td>Localizações limitadas</td>
+<td>Locais permitidos pelo editor</td>
+</tr>
+<tr>
+<td>Estilo e larguras</td>
+<td>CSS escopado</td>
+<td>Não garantir controle irrestrito</td>
+<td>Controle nos componentes próprios</td>
+</tr>
+<tr>
+<td>Condições</td>
+<td>Motor compartilhado</td>
+<td>Compilação suportada</td>
+<td>Motor compartilhado + servidor</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Não conectar IMask diretamente a inputs React controlados pelo core sem um ponto de extensão oficial.</strong> Para um campo que exige máscara sem suporte de renderização, usar o renderer próprio em slot permitido. Não recorrer a MutationObserver para “dominar” o DOM do checkout.</p>
+<p>O admin mostra: “Nativo”, “Componente da Suite”, “Limitado” ou “Não suportado”, com motivo específico. Esses estados refletem versões e testes, não apenas a preferência visual.</p>
+<p>Gate obrigatório no início: criar um pedido em Blocks com um campo customizado, erro server-side, tipo próprio e leitura via HPOS. Nenhum compromisso de paridade total de posicionamento antes dessa prova.</p>
+<hr/>
+<h1 id="chapter-12">9. Máscaras e normalização</h1>
+<p>Usar IMask como dependência local versionada, sem CDN em runtime. O guia oferece masks de pattern, número, data e dinâmicas; a configuração do produto deverá ser declarativa e permitida por lista. [S7]</p>
+<p>CPF: formato visual conhecido, persistência normalizada em string. CEP: dígitos com zeros preservados. Telefone: formato por país; não impor máscara brasileira a pedidos internacionais. CNPJ: 12 posições alfanuméricas e dois dígitos verificadores, aceitando também o legado numérico. [S9]</p>
+<p>Registrar regras de normalização no servidor e reproduzir apenas a UX no cliente. Remover somente pontuação reconhecida; caracteres ilegais devem produzir erro, não ser descartados de forma que um dado incorreto vire “válido”.</p>
+<p>Máscaras são desvinculadas da validação. Estados incompletos durante digitação são permitidos. Não marcar o campo como inválido antes da interação. Tratar colagem, autocomplete, teclado móvel, cursor, exclusão, composição de texto e edição de valores salvos.</p>
+<p>No React usar wrapper controlado apropriado ao componente próprio, com cleanup. No Classic reidratar somente elementos novos. Testar vetores oficiais e fixtures compartilhadas de CNPJ. [S11]</p>
+<hr/>
+<h1 id="chapter-13">10. Validação local, AJAX e finalização</h1>
+<p>Pipeline: captura → normalização → validação estrutural → avaliação de condições → validações de valor → validações dependentes do servidor → persistência no ciclo autorizado do pedido.</p>
+<p>Frontend: required, comprimento, e-mail básico, CPF/CNPJ matemáticos, formato de CEP e limites visíveis de upload. AJAX apenas quando houver informação exclusiva do servidor ou provedor externo. A mesma regra crítica é revalidada no submit.</p>
+<p>Requisitos de UX: erro junto do campo, mensagem útil, não apagar valor; remover erro quando corrigido; focar primeiro erro no submit; resumo com links; <code>aria-invalid</code>, <code>aria-describedby</code> e anúncio moderado.</p>
+<p>Validação remota: debounce inicial proposto de 400 ms, abort de requisição anterior, request ID, descarte de resposta fora de ordem, limite por sessão/campo, timeout e estados <code>idle/checking/valid/invalid/unavailable</code>.</p>
+<p>O response não pode funcionar como autorização permanente. A versão do schema e o valor atual precisam ser validados novamente antes do pagamento. Um “valid” antigo não autoriza valor novo.</p>
+<p>Falhas: consulta opcional de CEP pode permitir endereço manual; regra crítica não pode liberar silenciosamente por timeout. Deve apresentar alternativa explícita ou bloquear com orientação. Não usar endpoint de validação para revelar se CPF/e-mail pertence a outro cliente.</p>
+<p>Endpoint aceita field IDs e valores; regras e tipos são carregados do servidor. Não aceitar regex, callback, caminho de arquivo ou endpoint remoto fornecido pelo comprador.</p>
+<hr/>
+<h1 id="chapter-14">11. Regras condicionais</h1>
+<p>Editor visual de grupos AND/OR, operadores iguais/diferentes, contém/não contém, maior/menor, preenchido/vazio e pertinência a conjunto. Tipos incompatíveis com o operador devem ser rejeitados na configuração.</p>
+<p>Fontes da V1: outros campos, país, estado, cliente logado, itens/categorias do carrinho, valor do carrinho, frete e método de pagamento, desde que o adapter exponha esse contexto. Qualquer fonte indisponível recebe bloqueio ou restrição explícita.</p>
+<p>Uma AST declarativa é avaliada em PHP e JS com fixtures comuns. Nos Blocks, compilar condições representáveis para os mecanismos nativos de <code>hidden/required</code>, que usam JSON Schema. [S3]</p>
+<p>Detectar ciclos, dependências removidas, contradições e regras que ocultem campos estruturais necessários. O servidor recalcula com contexto confiável do carrinho e do cliente.</p>
+<p>Campo customizado oculto por regra: padrão <code>discard</code>, sem erro required e sem persistência do valor residual. Alternativa <code>preserve</code> só por configuração explícita, com política de privacidade. Hidden input estático é diferente de campo condicionalmente ocultado: nunca carrega informação confiável de preço, permissão ou identidade.</p>
+<hr/>
+<h1 id="chapter-15">12. Upload privado de arquivos</h1>
+<p>Tratar como subsistema: <code>UploadService</code>, <code>UploadRepository</code>, <code>StorageProvider</code>, <code>DownloadPolicy</code>, <code>CleanupJob</code> e renderers de upload.</p>
+<p>Configuração: extensões, MIME, bytes máximos, quantidade, único/múltiplo, required, visibilidade, retenção, descrição da finalidade e permissão de acesso.</p>
+<p>Fluxo: selecionar → pré-validação → enviar ao endpoint → validar conteúdo → área temporária privada → token opaco → submit → vínculo idempotente com pedido → acesso autorizado. Upload ainda não vinculado não é dado definitivo do pedido.</p>
+<p><strong>Armazenamento padrão:</strong> fora do webroot, quando possível. Alternativa sob uploads somente com bloqueio HTTP efetivo verificado no ambiente Apache/Nginx/CDN. <code>.htaccess</code> isolado não protege Nginx. Se a proteção não puder ser garantida, desabilitar upload e explicar a causa.</p>
+<p>Não registrar documentos pessoais como mídia pública nem presumir que um plugin de offload para CDN pública preservará sigilo. Provider de object storage exige bucket privado e acesso assinado/autorizado.</p>
+<p>Metadados operacionais em tabela própria <code>{$wpdb-&gt;prefix}wccs_uploads</code>: ID, token hash, owner/session hash, estado, chave privada, nome original sanitizado, MIME, bytes, created/expires, order_id e política. Tabela é proposta para tokens, índices, limpeza e concorrência; definições dos campos continuam em options.</p>
+<p>Proteções: whitelist, inspeção MIME/conteúdo, tamanho, limites de quantidade e quota, nome aleatório, zero execução, path traversal, arquivos duplamente extensos, arquivos de compressão/bombas e concorrência. Não aceitar executáveis, HTML, SVG bruto ou arquivos compactados por padrão. Scanning pode ser integração adicional, sem prometer invulnerabilidade.</p>
+<p>Convidados: vínculo real à sessão WooCommerce, token imprevisível e proteção CSRF por sessão. Nonce padrão de visitante não é identidade individual; a documentação do WordPress explicita essa limitação. [S8]</p>
+<p>Downloads: administrador autorizado ou dono autenticado do pedido; visitante usa fluxo de acesso verificado e temporário. Nunca autorizar por <code>order_id</code> isolado. Preferir download como attachment com <code>nosniff</code>, cache privado e sem path exposto.</p>
+<p>Retenção inicial proposta: temporários não vinculados expiram em 24h, configurável. Pedidos rascunho, pagamentos falhos e pedidos efetivos têm políticas distintas. Retry do pagamento deve reutilizar o vínculo no mesmo pedido; token não pode servir a outro pedido. Limpeza idempotente, agendada e com exclusão segura de objetos/metadados.</p>
+<p>E-mails: mostrar informação ou link de acesso controlado apenas se configurado. Não anexar documentos pessoais por padrão.</p>
+<hr/>
+<h1 id="chapter-16">13. Persistência e banco de dados</h1>
+<h3>Configurações</h3>
+<p>Options sem autoload para schema publicado, draft e settings. Histórico limitado e configurável. Armazenar arrays/JSON de dados, não objetos PHP serializados de extensões.</p>
+<p>Campos têm IDs estáveis; settings possuem schema version, revision e migration history. Cache do schema compilado é indexado por revisão, adapter, idioma e capacidades relevantes.</p>
+<p>Salvar rascunho não altera checkout público. Publicar realiza validação integral e substituição atômica. <code>expected_revision</code> impede sobrescrita entre administradores; retorno <code>409</code> exige comparar/recarregar. Não basta ler uma revisão e depois gravar sem exclusão mútua/CAS atômico no repositório.</p>
+<p>Checkout aberto em revisão antiga: servidor revalida contra a revisão publicada e informa mudanças. Não cobrar com dados incompatíveis nem descartar silenciosamente campos novos obrigatórios.</p>
+<h3>Valores</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Origem</th>
+<th>Autoridade de persistência</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Campo padrão WooCommerce</td>
+<td>Fluxo/CRUD nativo; não criar meta paralela</td>
+</tr>
+<tr>
+<td>Additional field nativo Blocks</td>
+<td>Helpers e política da API WooCommerce</td>
+</tr>
+<tr>
+<td>Campo próprio via Classic/Store API</td>
+<td><code>WC_Order</code> + armazenamento canônico da Suite</td>
+</tr>
+<tr>
+<td>Perfil de cliente explicitamente persistente</td>
+<td>CRUD/serviço apropriado do cliente</td>
+</tr>
+<tr>
+<td>Arquivo</td>
+<td>Referência de token/registro; nunca bytes no order meta</td>
+</tr>
+</tbody>
+</table></div>
+<p>A documentação HPOS orienta o uso do CRUD do WooCommerce; acesso direto a tabelas de posts para pedido pode ler/gravar a fonte errada. A Suite seguirá esse contrato. [S4]</p>
+<p>Proposta de meta customizada: <code>_wccs_fields</code> com valores tipados; <code>_wccs_schema_revision</code>; snapshot mínimo de labels/opções/formatadores necessários à leitura histórica. Um <code>OrderFieldsService</code> oculta detalhes de backend e evita duplicação Classic/Blocks.</p>
+<p>Chave com underscore <strong>não é controle de acesso</strong>. Projeções em APIs e filtros de meta precisam de autorização e testes; dados pessoais não podem vazar por endpoints públicos ou exportações genéricas.</p>
+<p>Não modificar os pedidos históricos em massa para apenas trocar label. Exclusão do campo significa arquivar a definição para novas compras, preservando histórico. Migração destrutiva exige dry-run, backup, relatório e confirmação.</p>
+<hr/>
+<h1 id="chapter-17">14. Integração com pedidos, clientes e e-mails</h1>
+<p>Administradores: bloco “Campos do checkout” na edição do pedido, origem, label, valor formatado, edição autorizada e trilha de alterações sem logs desnecessários do conteúdo pessoal.</p>
+<p>Cliente: detalhe do pedido, thank-you e Minha Conta somente conforme política do campo. Separar valor do pedido de preferência atual do perfil; editar perfil não reescreve pedido passado.</p>
+<p>E-mail: configuração independente para lojista/cliente e HTML/texto puro. Arquivos e documentos são privados inicialmente. Heading/HTML não são valores de pedido; sanitizar em cada contexto.</p>
+<p>REST de integrações: schema documentado, tipos, autenticação, permissão por pedido/campo e paginação onde couber. Não expor automaticamente todos os order metas. Webhooks só com projeções autorizadas.</p>
+<p>Reembolso/cancelamento não deve apagar automaticamente dados necessários ao histórico. Tratamento e retenção de dados pessoais requerem política explícita da loja, compatível com sua finalidade, não uma promessa genérica de conformidade.</p>
+<hr/>
+<h1 id="chapter-18">15. Página customizada e gateways</h1>
+<p><code>Enable Custom Checkout</code> é opt-in e vem desligado. A desativação restaura a apresentação original preservando o editor de campos.</p>
+<p>Dois modos de apresentação: página clássica com hooks/templates mínimos; padrão/estilo de página Blocks com os componentes e regiões oficiais. Ambos usam os próprios fluxos transacionais. Uma incompatibilidade não autoriza trocar silenciosamente a engine da página.</p>
+<p>Visual: cabeçalho compacto, contato, dados pessoais/empresa, entrega quando aplicável, frete, pagamento, consentimentos e resumo do pedido em coluna. No mobile, resumo expansível na própria página, seguido do formulário.</p>
+<p>Grid 12 colunas, larguras 12/6/4/8 por viewport, DOM na mesma ordem visual. Não usar CSS <code>order</code> para fingir uma reordenação acessível.</p>
+<p><strong>Problema identificado no HTML original:</strong> <code>.field + .field { margin-top:9px; }</code> também afeta o segundo/terceiro elemento dentro do grid e provoca desalinhamento. A nova referência usa <code>gap</code> no contêiner e wrappers de campo, sem margem entre inputs irmãos. [R2]</p>
+<p>Produto, valores, impostos, moeda, cupons e envio do HTML são demonstrativos. Em produção vêm do carrinho WooCommerce. Botões “Shop Pay”, PayPal etc. da referência não são garantia de disponibilidade e não serão copiados como integração falsa. [R2]</p>
+<p>Pagamentos em accordion: radios reais e conteúdo do gateway, sem recolher cartão/CVV em campos próprios da Suite. Não duplicar inputs, clonar iframes, interceptar tokens ou recriar SDK de pagamento. Garantir inicialização, tokens salvos, redirecionamento, retorno, 3DS, retry e método sem campos.</p>
+<p>No Blocks, os métodos normais e expressos têm integração registrada própria; a Suite deve preservar esses componentes e seus ciclos. Não deve registrar novamente gateways de terceiros apenas para estilizar. [S6]</p>
+<p>Modo compatível deve existir quando um gateway homologado não tolerar determinada decoração. Registrar exatamente gateway, versão, modo e cenário testados. Não prometer compatibilidade com “todos os gateways”.</p>
+<p>Express checkout é gate de segurança funcional: um fluxo não pode concluir sem um campo crítico obrigatório. Dependendo do gateway, integrar, pedir preenchimento antes ou indisponibilizar esse caminho com explicação. Uma flag no campo não cria integração automaticamente.</p>
+<hr/>
+<h1 id="chapter-19">16. Interface administrativa</h1>
+<p>Navegação dentro de <code>WooCommerce → WC CheckoutSuite</code>:</p>
+<p><strong>Campos · Seções · Regras · Aparência · Página de checkout · Importar/Exportar · Diagnóstico · Configurações.</strong></p>
+<p>Evitar homepage de métricas inventadas. A primeira tela mostra o trabalho principal: estrutura e campos configurados.</p>
+<p>Editor em três áreas, quando houver espaço: navegação compacta; lista/canvas de campos; inspetor de propriedades. Não manter três colunas comprimidas em telas pequenas: inspetor vira modal/página, navegação recolhe.</p>
+<p>Topo: nome da configuração, estado “Rascunho / Publicado”, contexto Classic/Blocks, prévia, salvar rascunho e publicar alterações. A publicação mostra diferenças, validações e incompatibilidades.</p>
+<p>Campo na lista: handle, label, chave técnica, tipo/preset, required, ativo, seção, compatibilidade e menu. Ícones sempre têm nome acessível. Editar, duplicar, mover, arquivar; campos core não têm exclusão destrutiva.</p>
+<p>Criar campo: modal com busca e categorias; presets Brasil não ficam misturados aleatoriamente com primitivas. Um novo tipo de extensão aparece automaticamente.</p>
+<p>Inspetor: Geral; Aparência; Máscara/validação; Condições; Armazenamento/visibilidade; Avançado. Exibir somente propriedades suportadas. Configuração de arquivo mostra limites e política de privacidade, não opções de campo textual.</p>
+<p>Prévia: desktop/tablet/mobile, PF/PJ, logado/convidado e comparação Classic/Blocks quando representável. Selo “Prévia” e dados sintéticos; testes de pedido são outra etapa. Limites do adapter não podem desaparecer na prévia.</p>
+<p>Drag-and-drop tem alternativa “Mover para cima/baixo”, anúncio da posição e suporte por teclado. Reordenação preserva foco, grupo e ID.</p>
+<p>Estados obrigatórios: vazio; carregando; salvo; alterado; erro inline; conflito 409; falha de rede; permissão insuficiente; recurso incompatível; extensão ausente; versão não suportada; restauração de rascunho. Falha não descarta trabalho.</p>
+<p>Operações em lote: habilitar/desabilitar, seção, visibilidade e arquivamento de customizados, com confirmação de impacto. Undo local de edição e histórico de publicação são mecanismos separados.</p>
+<hr/>
+<h1 id="chapter-20">17. Identidade visual e design system</h1>
+<p><strong>Direção:</strong> interface clara, profissional, com violeta como ação e superfícies neutras. Tipografia legível, pouca decoração e estados funcionais. O acabamento vem de alinhamento, hierarquia e consistência, não de gradients, glow ou excesso de cards.</p>
+<p>Marca: “WC” como prefixo secundário; “CheckoutSuite” como wordmark principal. Símbolo conceitual simples de linhas de formulário e confirmação; não usar o logotipo oficial WooCommerce para sugerir vínculo.</p>
+<h3>Tokens claros</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Valor</th>
+<th>Uso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Brand</td>
+<td><code>#6D28D9</code></td>
+<td>Botões primários, seleção e foco</td>
+</tr>
+<tr>
+<td>Brand hover</td>
+<td><code>#5B21B6</code></td>
+<td>Hover ativo</td>
+</tr>
+<tr>
+<td>Brand subtle</td>
+<td><code>#F3EDFF</code></td>
+<td>Fundo leve de seleção</td>
+</tr>
+<tr>
+<td>App background</td>
+<td><code>#F6F7FB</code></td>
+<td>Fundo do admin</td>
+</tr>
+<tr>
+<td>Surface</td>
+<td><code>#FFFFFF</code></td>
+<td>Editor, inputs e painéis</td>
+</tr>
+<tr>
+<td>Ink</td>
+<td><code>#202334</code></td>
+<td>Texto principal</td>
+</tr>
+<tr>
+<td>Muted</td>
+<td><code>#626A7B</code></td>
+<td>Ajuda e texto secundário</td>
+</tr>
+<tr>
+<td>Decorative border</td>
+<td><code>#E5E7EF</code></td>
+<td>Separação de superfícies</td>
+</tr>
+<tr>
+<td>Control border</td>
+<td><code>#888F9F</code></td>
+<td>Contorno identificável de inputs</td>
+</tr>
+<tr>
+<td>Success</td>
+<td><code>#087F70</code></td>
+<td>Sucesso, acompanhado de texto</td>
+</tr>
+<tr>
+<td>Warning</td>
+<td><code>#9A5B00</code></td>
+<td>Aviso, acompanhado de texto</td>
+</tr>
+<tr>
+<td>Danger</td>
+<td><code>#B42338</code></td>
+<td>Erro, acompanhado de texto</td>
+</tr>
+</tbody>
+</table></div>
+<p>Admin pode ter modo escuro com tokens próprios. A preferência escura do admin não muda o checkout da loja. No frontend, o lojista escolhe estilo Suite ou herança do tema.</p>
+<p>Tipografia: stack de sistema sem download externo por padrão; família de marca customizada é opcional e hospedada localmente, com licença adequada. Corpo administrativo 14px; formulário público 16px; títulos 24–28px; descrição 13px com contraste; nunca usar tamanho pequeno para esconder informação.</p>
+<p>Escala: 4/8/12/16/24/32/48px. Campos 48px de altura, ações primárias 44–48px, raio de campo 10px, card 16px, bordas discretas, sombra só para modais/elevação necessária.</p>
+<p>Estados do campo: vazio, hover, foco, preenchido, válido, inválido, desativado, somente leitura e validação remota. Label fica visível; placeholder não substitui label. Asterisco tem explicação; erro não depende só de cor.</p>
+<p>Pagamentos: linha inteira selecionável com radio real, total do método quando fornecido pelo gateway, conteúdo expandido sem deslocamento brusco, ícones discretos. Sem contagem regressiva ou mensagem de escassez artificial.</p>
+<p>Acessibilidade é meta WCAG 2.2 AA, não certificação atual: contraste de texto, controles e foco; teclado; leitores de tela; zoom; reflow; reduced motion; área de toque preferencial de 44px; erro identificável. [S10]</p>
+<h3>Componentes previstos</h3>
+<p><code>AppShell</code>, <code>PageHeader</code>, <code>Button</code>, <code>IconButton</code>, <code>StatusBadge</code>, <code>FieldPicker</code>, <code>FieldRow</code>, <code>FieldInspector</code>, <code>SortableList</code>, <code>SectionCard</code>, <code>ConditionBuilder</code>, <code>MaskEditor</code>, <code>UploadSettings</code>, <code>VisibilityMatrix</code>, <code>CompatibilityBadge</code>, <code>PreviewFrame</code>, <code>PublishDiff</code>, <code>RevisionList</code>, <code>Dialog</code>, <code>Toast</code>, <code>EmptyState</code>, <code>ErrorSummary</code>.</p>
+<p>Frontend: <code>FieldShell</code>, <code>TextField</code>, <code>SelectField</code>, <code>RadioGroup</code>, <code>MultiSelect</code>, <code>CheckboxGroup</code>, <code>DateField</code>, <code>FileDropzone</code>, <code>InlineError</code>, <code>SectionHeading</code>, <code>PaymentFrame</code>, <code>OrderSummary</code>.</p>
+<p>CSS escopado em <code>.wccs-admin</code> e <code>.wccs-checkout</code>. Não redefinir globalmente <code>input</code>, <code>.button</code>, <code>h2</code> ou controles de gateways. Campos nativos e os da Suite devem parecer coesos sem quebrar CSS do tema.</p>
+<hr/>
+<h1 id="chapter-21">18. Arquitetura JavaScript e PHP</h1>
+<p>PHP: Composer/PSR-4, namespace próprio, serviços testáveis, contratos pequenos, bootstrap defensivo, registro em hooks apropriados e traduções. Proposta de baseline PHP 8.3; confirmação do ambiente alvo e versões suportadas faz parte da fase F00.</p>
+<p>Admin: React/TypeScript usando pacotes do WordPress quando apropriado; API client com nonce, mensagens e concorrência; dependências extraídas no build para não embutir outra cópia de React.</p>
+<p>Classic: bundle leve e específico, preservando eventos nativos. Blocks: componentes controlados, registry e stores públicos. Não instalar/embutir pacotes internos Woo como se fossem bibliotecas autônomas; mapear dependências para handles disponibilizados no ambiente. [S6]</p>
+<p>DS: tokens JSON e CSS variables como fonte compartilhada. Lógica de condição e validações locais testada com fixtures derivadas dos contratos PHP, sem distribuir segredos ou regras privadas.</p>
+<p>Build em desenvolvimento/CI; release inclui assets compilados. O lojista instala o ZIP sem executar npm ou Composer.</p>
+<hr/>
+<h1 id="chapter-22">19. APIs e configuração segura</h1>
+<h3>Endpoints administrativos propostos</h3>
+<pre><code class="language-text">GET/PUT  /wc-checkoutsuite/v1/schema/draft
+POST     /wc-checkoutsuite/v1/schema/validate
+POST     /wc-checkoutsuite/v1/schema/publish
+GET      /wc-checkoutsuite/v1/schema/revisions
+POST     /wc-checkoutsuite/v1/schema/restore
+GET      /wc-checkoutsuite/v1/registry
+POST     /wc-checkoutsuite/v1/import/preview
+POST     /wc-checkoutsuite/v1/import/apply
+GET      /wc-checkoutsuite/v1/export
+GET      /wc-checkoutsuite/v1/diagnostics
+</code></pre>
+<p>Uma atualização de draft pode reunir várias operações de campos e ordem de maneira atômica. CRUD por campo é fachada opcional, não exigência de endpoints redundantes.</p>
+<p>Capability administrativa <code>manage_woocommerce</code>, nonce para cookie auth, validação de schema, limites de payload, <code>expected_revision</code> e controles contra mass assignment. Administrador da configuração e leitor de documentos podem exigir permissões diferentes.</p>
+<h3>Endpoints de sessão/cliente</h3>
+<pre><code class="language-text">POST     /wc-checkoutsuite/v1/checkout/validate
+POST     /wc-checkoutsuite/v1/uploads
+DELETE   /wc-checkoutsuite/v1/uploads/{token}
+GET      /wc-checkoutsuite/v1/orders/{id}/files/{file}
+</code></pre>
+<p>O endpoint final depende de autorização por pedido e sessão. Nenhuma rota pública retorna draft, regras privadas, dados de outro comprador ou caminhos físicos.</p>
+<p>Não criar endpoint próprio para cobrar/criar pedido fora do fluxo WooCommerce.</p>
+<h3>Importação/exportação</h3>
+<p>JSON versionado; sem PHP, JS executável, credenciais, tokens de download ou documentos. Preview de diff, mapeamento de IDs, avisos de incompatibilidade e backup anterior.</p>
+<p>Migração do ThemeHigh é um escopo limitado: mapear configurações comprovadas no ZIP e relatar campos não suportados. Não importar configurações Premium ausentes por suposição. Importar schema não migra automaticamente valores históricos de pedidos.</p>
+<hr/>
+<h1 id="chapter-23">20. Segurança, privacidade e operação</h1>
+<p>Sanitizar por tipo; validar no servidor; escapar no contexto; HTML restrito; schemas com limites; regex segura sem execução de código e sem padrões ilimitados de alto custo.</p>
+<p>Não confiar em names, required, enabled, price, role ou visibility enviados pelo cliente. Não permitir chamar callbacks PHP por nome recebido em JSON.</p>
+<p>Nonces protegem contra CSRF, não substituem autenticação/autorização. Endpoints de convidados usam sessão e proteção própria adequada. [S8]</p>
+<p>Dados pessoais: minimização, finalidade visível, retenção configurável, exportação/eliminação pelos mecanismos de privacidade do WordPress, e logs redigidos. A loja decide a base e finalidade; o produto não deve anunciar conformidade legal automática.</p>
+<p>Logs: request ID, tipo de erro, módulo e versão; não CPF/CNPJ integral, RG, tokens, cartão, CVV ou conteúdo de arquivos. Dados de diagnóstico exportados precisam ser sanitizados e revistos.</p>
+<p>REST, AJAX, checkout, downloads e sessão não podem ser cacheados publicamente. Configuração por ambiente deve verificar CDN/WAF e respostas, sem assumir acesso universal.</p>
+<p>Ativação: checar WooCommerce, versões e diretórios antes de habilitar módulos. Desativação preserva dados. Uninstall remove configurações somente mediante política explícita; pedido histórico não é apagado. Jobs são cancelados/limpos conforme lifecycle.</p>
+<p>Ambientes: local → staging → produção. Banco de produção continua fonte dos pedidos; não enviar banco de staging sobre produção. Deploy migra somente estruturas/configurações aprovadas com backup e rollback.</p>
+<hr/>
+<h1 id="chapter-24">21. Performance e compatibilidade</h1>
+<p>Assets sob demanda: nada no catálogo quando não há uso; admin só na tela da Suite; frontend apenas em checkout/Mínha Conta que renderizam seus campos; IMask/Upload/Conditions carregados conforme uso.</p>
+<p>Orçamentos iniciais propostos, a medir em F13: bundle Classic adicional até 80 KB gzip; Blocks adicional até 120 KB gzip, excluindo runtime compartilhado; nenhuma consulta externa obrigatória para campos básicos; zero AJAX por tecla em validadores locais; nenhuma chamada <code>save()</code> por campo; cache do schema sem dados pessoais.</p>
+<p>Meta de regressão: latência p95 adicional de validação local no servidor até 30ms em benchmark controlado com 50 campos/100 regras, sem provedores remotos. É objetivo de engenharia, não desempenho comprovado. Documentar ambiente, hardware, dataset e amostras.</p>
+<p>Testar configuração de referência de 50 campos e 100 regras; limites de segurança reais são configuráveis e testados. UI virtualizada só se medição justificar.</p>
+<p>Compatibilidade: Classic; Blocks; HPOS on/off com sync off em teste HPOS; temas clássicos/blocos; visitante/logado; produtos virtuais/físicos/mistos; fretes, cupons, impostos e moeda; endereço separado; países; gateways selecionados e suas versões.</p>
+<p>Versões mínimas e máximas reais de WordPress/Woo/PHP/Node são fixadas na F00 em <code>compatibility.json</code>, a partir da matriz de CI e capabilities necessárias. Não usar o “tested up to” do ZIP como teste do nosso produto. <code>date</code>, condições e APIs Blocks exigem feature detection e versão mínima confirmada.</p>
+<p>Plugins brasileiros, frete, notas fiscais, memberships/subscriptions e multilíngue são mapeados como “testado / não testado / incompatível”. Recursos avançados específicos de terceiros não são garantidos sem cenários explícitos.</p>
+<hr/>
+<h1 id="chapter-25">22. Estrutura de diretórios proposta</h1>
+<pre><code class="language-text">wc-checkoutsuite/
+├── wc-checkoutsuite.php
+├── uninstall.php
+├── composer.json
+├── package.json
+├── src/
+│   ├── Plugin.php
+│   ├── Domain/{Fields,Sections,Validation,Conditions}
+│   ├── Application/{Schema,Checkout,Orders,Uploads}
+│   ├── Infrastructure/{WordPress,WooCommerce,Storage,Repositories}
+│   ├── Integrations/{Classic,Blocks,Gateways,Privacy}
+│   ├── Http/{Admin,Checkout,Downloads}
+│   ├── Admin/
+│   ├── Migrations/
+│   └── Compatibility/
+├── resources/
+│   ├── admin/
+│   ├── classic/
+│   ├── blocks/
+│   ├── shared/
+│   └── design-tokens/
+├── build/
+├── templates/
+│   ├── checkout/
+│   ├── order/
+│   └── emails/
+├── languages/
+├── tests/{Unit,Integration,E2E,Fixtures,Security,Visual}
+├── examples/custom-field-type/
+├── docs/{adr,api,operations,compatibility}
+└── .github/workflows/
+</code></pre>
+<p>Não existe diretório <code>sidebar-checkout</code>. A estrutura acima é planejada, não um scaffold de plugin incluído neste pacote.</p>
+<h1 id="chapter-26">23. Roadmap de execução</h1>
+<p>Cada fase inclui entregáveis, dependências, riscos e gate. Esforço é relativo, não prazo prometido. QA participa desde F00 e CI desde F01. F10 pode avançar em paralelo à página customizada depois de suas dependências.</p>
+<h2 id="chapter-27">F00 · Escopo, inventário e provas técnicas</h2>
+<p><strong>Objetivo:</strong> Fixar capacidades reais antes de desenvolver o editor completo.</p>
+<p><strong>Responsáveis:</strong> Arquitetura e QA. <strong>Dependências:</strong> nenhuma. <strong>Complexidade:</strong> Alta.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Entrega</th>
+<th>Componentes</th>
+<th>Aceite da tarefa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WCCS-001</td>
+<td>Inventariar requisitos e ambiente</td>
+<td>Auditoria, compatibility.json</td>
+<td>Requisitos rastreados; versões de WordPress/Woo/PHP e gateways alvo registradas.</td>
+</tr>
+<tr>
+<td>WCCS-002</td>
+<td>Provar fluxo Classic e HPOS</td>
+<td>Classic, OrderFieldsService</td>
+<td>Um campo de teste é validado e persistido com HPOS ligado e sincronização desligada.</td>
+</tr>
+<tr>
+<td>WCCS-003</td>
+<td>Provar fluxo Blocks</td>
+<td>Blocks, Store API</td>
+<td>Text, campo customizado controlado e erro server-side chegam ao pedido sem manipulação do DOM core.</td>
+</tr>
+<tr>
+<td>WCCS-004</td>
+<td>Provar layout e gateways</td>
+<td>Page layout, payment</td>
+<td>Pagamento de sandbox, refresh e retorno verificados no conjunto inicial; slots permitidos documentados.</td>
+</tr>
+<tr>
+<td>WCCS-005</td>
+<td>Congelar decisões arquiteturais</td>
+<td>ADRs, threat model</td>
+<td>ADRs aprovadas para storage, upload privado, CNPJ alfanumérico e exclusão de Sidebar.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Risco principal:</strong> Versões/API ou gateways sem suporte podem inviabilizar uma promessa de layout.</p>
+<p><strong>Gate de conclusão:</strong> Nenhuma capacidade crítica permanece apenas presumida; limitações de Blocks viram regras do produto.</p>
+<h2 id="chapter-28">F01 · Core, schema e contratos de extensão</h2>
+<p><strong>Objetivo:</strong> Criar o domínio independente dos renderizadores e a fundação de qualidade.</p>
+<p><strong>Responsáveis:</strong> Backend. <strong>Dependências:</strong> F00. <strong>Complexidade:</strong> Alta.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Entrega</th>
+<th>Componentes</th>
+<th>Aceite da tarefa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WCCS-006</td>
+<td>Criar bootstrap e build</td>
+<td>PHP, Composer, WordPress</td>
+<td>Ativação segura sem Woo; assets compiláveis; namespace e i18n definidos.</td>
+</tr>
+<tr>
+<td>WCCS-007</td>
+<td>Implementar schema e registries</td>
+<td>Domain, Types, Presets</td>
+<td>Tipos, valores e settings validados; registro externo funciona sem editar factory.</td>
+</tr>
+<tr>
+<td>WCCS-008</td>
+<td>Implementar draft, publicação e revisões</td>
+<td>Repository, Migrations</td>
+<td>Gravação atômica e conflito 409 testados; publicar não perde histórico.</td>
+</tr>
+<tr>
+<td>WCCS-009</td>
+<td>Criar normalizadores e contratos</td>
+<td>Validation, Conditions, Renderers</td>
+<td>Interfaces versionadas; mesmo contrato serve Classic/Blocks/pedidos.</td>
+</tr>
+<tr>
+<td>WCCS-010</td>
+<td>Ativar CI desde o início</td>
+<td>Tests, CI</td>
+<td>PHPCS, análise estática, lint, typecheck e testes mínimos obrigatórios no merge.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Risco principal:</strong> IDs instáveis ou acoplamento ao frontend causam migração e retrabalho.</p>
+<p><strong>Gate de conclusão:</strong> Plugin-base instalável com schema versionado, concorrência e extensão de exemplo mínima.</p>
+<h2 id="chapter-29">F02 · Design system e shell administrativo</h2>
+<p><strong>Objetivo:</strong> Transformar a identidade visual em componentes reutilizáveis e acessíveis.</p>
+<p><strong>Responsáveis:</strong> Frontend e Design. <strong>Dependências:</strong> F01. <strong>Complexidade:</strong> Média.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Entrega</th>
+<th>Componentes</th>
+<th>Aceite da tarefa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WCCS-011</td>
+<td>Formalizar tokens e estados</td>
+<td>Design system</td>
+<td>Tokens claros/escuros, campos e botões documentados sem contraste reprovado.</td>
+</tr>
+<tr>
+<td>WCCS-012</td>
+<td>Criar shell dentro do WordPress</td>
+<td>Admin React</td>
+<td>Navegação e assets restritos à tela da Suite; responsividade funcional.</td>
+</tr>
+<tr>
+<td>WCCS-013</td>
+<td>Criar componentes básicos</td>
+<td>UI library</td>
+<td>Botões, diálogos, tabs, mensagens, badges e formulários têm teclado e foco.</td>
+</tr>
+<tr>
+<td>WCCS-014</td>
+<td>Implementar client REST</td>
+<td>Admin API</td>
+<td>Nonce, erro 403/409/422, retry seguro e estado não salvo tratados.</td>
+</tr>
+<tr>
+<td>WCCS-015</td>
+<td>Criar preview visual</td>
+<td>PreviewFrame</td>
+<td>Desktop/tablet/mobile identificados como prévia; nenhum dado real necessário.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Risco principal:</strong> CSS global e componentes visuais inacessíveis contaminam o WordPress.</p>
+<p><strong>Gate de conclusão:</strong> Biblioteca visual aprovada em três larguras e com navegação por teclado.</p>
+<h2 id="chapter-30">F03 · Field Manager, seções e publicação</h2>
+<p><strong>Objetivo:</strong> Permitir configurar campos sem produzir schemas inválidos.</p>
+<p><strong>Responsáveis:</strong> Frontend e Backend. <strong>Dependências:</strong> F01, F02. <strong>Complexidade:</strong> Alta.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Entrega</th>
+<th>Componentes</th>
+<th>Aceite da tarefa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WCCS-016</td>
+<td>Criar Field Picker e CRUD</td>
+<td>Admin, FieldDefinition</td>
+<td>Criar/editar/duplicar/arquivar; campos core protegidos; busca por categorias.</td>
+</tr>
+<tr>
+<td>WCCS-017</td>
+<td>Criar inspector por tipo</td>
+<td>SettingsSchema</td>
+<td>Máscaras, opções, descrição, largura, storage e visibilidade somente onde suportados.</td>
+</tr>
+<tr>
+<td>WCCS-018</td>
+<td>Criar seções e ordenação</td>
+<td>Sections, SortableList</td>
+<td>Ordem por seção salva; mover por teclado e botões preserva foco.</td>
+</tr>
+<tr>
+<td>WCCS-019</td>
+<td>Implementar draft e PublishDiff</td>
+<td>Revisions, Preview</td>
+<td>Salvar draft não afeta a loja; publicação mostra diferenças e incompatibilidades.</td>
+</tr>
+<tr>
+<td>WCCS-020</td>
+<td>Criar estados e ações em lote</td>
+<td>Admin state</td>
+<td>Vazio, erro, rede, conflito e permissão tratados; desfazer local e revisão separados.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Risco principal:</strong> Drag-and-drop e salvar automático podem alterar produção sem intenção.</p>
+<p><strong>Gate de conclusão:</strong> Lojista monta e publica um formulário completo, restaura revisão e não perde trabalho em conflito.</p>
+<h2 id="chapter-31">F04 · Classic Checkout e persistência canônica</h2>
+<p><strong>Objetivo:</strong> Entregar o primeiro fluxo transacional completo sem recriar checkout.</p>
+<p><strong>Responsáveis:</strong> Backend. <strong>Dependências:</strong> F03. <strong>Complexidade:</strong> Alta.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Entrega</th>
+<th>Componentes</th>
+<th>Aceite da tarefa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WCCS-021</td>
+<td>Implementar Classic adapter</td>
+<td>Hooks, Renderers</td>
+<td>Tipos básicos, seções e larguras refletem schema; campos core mantêm contratos.</td>
+</tr>
+<tr>
+<td>WCCS-022</td>
+<td>Integrar normalização e validação final</td>
+<td>Checkout lifecycle</td>
+<td>POST adulterado falha mesmo sem JS; erros apontam campos corretos.</td>
+</tr>
+<tr>
+<td>WCCS-023</td>
+<td>Implementar OrderFieldsService</td>
+<td>Orders, WC CRUD</td>
+<td>Valores tipados, zeros e false preservados; autoridade única por campo.</td>
+</tr>
+<tr>
+<td>WCCS-024</td>
+<td>Implementar histórico de valores</td>
+<td>Snapshots, Migrations</td>
+<td>Renomear/arquivar campo não torna pedido antigo ilegível.</td>
+</tr>
+<tr>
+<td>WCCS-025</td>
+<td>Tratar lifecycle e refresh</td>
+<td>Classic JS</td>
+<td>Refresh preserva valores e cria apenas uma instância por componente.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Risco principal:</strong> Conflitos com locale/campos de terceiros e duplicação de metadados.</p>
+<p><strong>Gate de conclusão:</strong> Pedidos Classic válidos e inválidos testados em HPOS on/off, visitante/logado e carrinho físico/virtual.</p>
+<h2 id="chapter-32">F05 · Presets Brasil, IMask e validação remota</h2>
+<p><strong>Objetivo:</strong> Entregar documentos e máscaras corretos, com validação sem fricção.</p>
+<p><strong>Responsáveis:</strong> Backend e Frontend. <strong>Dependências:</strong> F04. <strong>Complexidade:</strong> Alta.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Entrega</th>
+<th>Componentes</th>
+<th>Aceite da tarefa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WCCS-026</td>
+<td>Implementar presets brasileiros</td>
+<td>Presets, Fixtures</td>
+<td>CPF, CNPJ numérico/alfanumérico, RG, CEP, telefone e endereço com contratos próprios.</td>
+</tr>
+<tr>
+<td>WCCS-027</td>
+<td>Integrar IMask localmente</td>
+<td>Classic, Shared fields</td>
+<td>Colar, apagar, autocomplete, mobile e refresh não quebram cursor/valor.</td>
+</tr>
+<tr>
+<td>WCCS-028</td>
+<td>Implementar validadores PHP/JS</td>
+<td>Validation</td>
+<td>Mesmos fixtures passam/falham; DV não é apresentado como validação de identidade.</td>
+</tr>
+<tr>
+<td>WCCS-029</td>
+<td>Implementar endpoint de validação</td>
+<td>Checkout API</td>
+<td>Sessão, rate limit, timeout, abort e request ID impedem estado obsoleto.</td>
+</tr>
+<tr>
+<td>WCCS-030</td>
+<td>Implementar UX de erro</td>
+<td>FieldShell, ErrorSummary</td>
+<td>Mensagens por campo; primeiro erro focado; regra crítica revalidada no submit.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Risco principal:</strong> Validação numérica de CNPJ, falsos erros e respostas AJAX fora de ordem.</p>
+<p><strong>Gate de conclusão:</strong> Documento inválido não finaliza; CNPJ alfanumérico válido não é truncado nem convertido em número.</p>
+<h2 id="chapter-33">F06 · Conditional Logic e política de valores</h2>
+<p><strong>Objetivo:</strong> Executar as mesmas condições em PHP, JS e integração Blocks.</p>
+<p><strong>Responsáveis:</strong> Backend e Frontend. <strong>Dependências:</strong> F03, F05. <strong>Complexidade:</strong> Alta.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Entrega</th>
+<th>Componentes</th>
+<th>Aceite da tarefa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WCCS-031</td>
+<td>Criar AST e tipos de operadores</td>
+<td>Condition engine</td>
+<td>AND/OR e operadores tipados; ciclos e referências inválidas rejeitados.</td>
+</tr>
+<tr>
+<td>WCCS-032</td>
+<td>Criar editor de regras</td>
+<td>ConditionBuilder</td>
+<td>Regras legíveis, preview de resultado e mensagens de contradição.</td>
+</tr>
+<tr>
+<td>WCCS-033</td>
+<td>Implementar evaluators PHP/JS</td>
+<td>Shared fixtures</td>
+<td>Paridade em vazio, zero, false, arrays, contexto e negações.</td>
+</tr>
+<tr>
+<td>WCCS-034</td>
+<td>Implementar discard/preserve</td>
+<td>Checkout policies</td>
+<td>Valor residual oculto é descartado por padrão; required segue estado no servidor.</td>
+</tr>
+<tr>
+<td>WCCS-035</td>
+<td>Criar compilador de condições nativas</td>
+<td>Blocks compiler</td>
+<td>Somente condições representáveis são compiladas; demais capacidades ficam explícitas.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Risco principal:</strong> Campo oculto obrigatório ou divergência de contexto causa pedidos bloqueados/incompletos.</p>
+<p><strong>Gate de conclusão:</strong> Fluxo PF/PJ funciona após múltiplas trocas; adulteração do browser não burla regra.</p>
+<h2 id="chapter-34">F07 · Checkout Blocks nativo e tipos próprios</h2>
+<p><strong>Objetivo:</strong> Suportar Blocks com componentes e APIs apropriados.</p>
+<p><strong>Responsáveis:</strong> Frontend e Backend. <strong>Dependências:</strong> F04, F05, F06. <strong>Complexidade:</strong> Muito alta.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Entrega</th>
+<th>Componentes</th>
+<th>Aceite da tarefa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WCCS-036</td>
+<td>Implementar native additional fields</td>
+<td>Blocks adapter</td>
+<td>Text/select/checkbox/date com feature detection e políticas de localização/storage.</td>
+</tr>
+<tr>
+<td>WCCS-037</td>
+<td>Implementar campos controlados próprios</td>
+<td>Blocks renderers</td>
+<td>Textarea, radio, multiselect, time/datetime e presets mascarados nos slots permitidos.</td>
+</tr>
+<tr>
+<td>WCCS-038</td>
+<td>Integrar Store API e validação</td>
+<td>Blocks, extensions</td>
+<td>Erro final bloqueia pagamento; payload tipado; retry não duplica gravação.</td>
+</tr>
+<tr>
+<td>WCCS-039</td>
+<td>Implementar matriz no admin</td>
+<td>CapabilityResolver</td>
+<td>Limites de core, largura, seção e tipo visíveis antes de publicar.</td>
+</tr>
+<tr>
+<td>WCCS-040</td>
+<td>Testar edição e lifecycle Blocks</td>
+<td>E2E, components</td>
+<td>Troca de endereço/frete, remount e rerender preservam valores sem DOM hacks.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Risco principal:</strong> Expectativa de posições livres, regressões de React e duplicação de valor.</p>
+<p><strong>Gate de conclusão:</strong> Todos os tipos não-file da V1 possuem renderer homologado ou restrição explícita coerente; nenhum modo é anunciado além do testado.</p>
+<h2 id="chapter-35">F08 · Upload privado nos dois checkouts</h2>
+<p><strong>Objetivo:</strong> Entregar arquivos privados, associáveis ao pedido e recuperáveis com autorização.</p>
+<p><strong>Responsáveis:</strong> Backend, Frontend e Segurança. <strong>Dependências:</strong> F07. <strong>Complexidade:</strong> Muito alta.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Entrega</th>
+<th>Componentes</th>
+<th>Aceite da tarefa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WCCS-041</td>
+<td>Criar storage e tabela operacional</td>
+<td>Uploads, StorageProvider</td>
+<td>Privacidade HTTP/CDN comprovada; ambiente sem proteção desativa recurso.</td>
+</tr>
+<tr>
+<td>WCCS-042</td>
+<td>Criar upload e tokens por sessão</td>
+<td>Upload API</td>
+<td>MIME, bytes, quota e ownership validados; sessão A não usa token B.</td>
+</tr>
+<tr>
+<td>WCCS-043</td>
+<td>Criar componente único/múltiplo</td>
+<td>Classic, Blocks</td>
+<td>Progresso, cancelar, remover, retry e erros acessíveis sem upload duplicado.</td>
+</tr>
+<tr>
+<td>WCCS-044</td>
+<td>Vincular ao pedido e proteger download</td>
+<td>Order binding, DownloadPolicy</td>
+<td>Vínculo atômico/idempotente; dono autorizado acessa e terceiro recebe negação.</td>
+</tr>
+<tr>
+<td>WCCS-045</td>
+<td>Criar retenção e limpeza</td>
+<td>Scheduled jobs</td>
+<td>Temporários expiram; draft/falha/efetivo têm regras testadas; cleanups podem repetir.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Risco principal:</strong> Vazamento público, IDOR, quota, token reutilizado e exclusão de arquivo de pedido válido.</p>
+<p><strong>Gate de conclusão:</strong> Teste direto por URL, token copiado e pedido alheio não revela o arquivo; compra e retry conservam vínculo.</p>
+<h2 id="chapter-36">F09 · Página customizada e pagamento</h2>
+<p><strong>Objetivo:</strong> Aplicar o layout moderno à página sem assumir o papel do gateway.</p>
+<p><strong>Responsáveis:</strong> Frontend, Backend e QA. <strong>Dependências:</strong> F02, F07, F08. <strong>Complexidade:</strong> Muito alta.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Entrega</th>
+<th>Componentes</th>
+<th>Aceite da tarefa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WCCS-046</td>
+<td>Implementar apresentação Classic</td>
+<td>Templates, scoped CSS</td>
+<td>Layout responsivo do anexo com gap correto; hooks preservados.</td>
+</tr>
+<tr>
+<td>WCCS-047</td>
+<td>Implementar apresentação Blocks</td>
+<td>Pattern, styles, integration</td>
+<td>Layout nas regiões suportadas; não clona campos nem componentes de pagamento.</td>
+</tr>
+<tr>
+<td>WCCS-048</td>
+<td>Integrar accordion e resumo</td>
+<td>PaymentFrame, OrderSummary</td>
+<td>Radios reais; totals/cupons/frete vêm do Woo; teclado e focus funcionam.</td>
+</tr>
+<tr>
+<td>WCCS-049</td>
+<td>Homologar gateways e express</td>
+<td>Payment matrix</td>
+<td>Sandbox, 3DS/redirect, tokens salvos, retry e dados required verificados.</td>
+</tr>
+<tr>
+<td>WCCS-050</td>
+<td>Criar opt-in, diagnóstico e fallback</td>
+<td>Settings, Compatibility</td>
+<td>Ativar/desativar não muda engine nem apaga campos; falha tem retorno seguro.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Risco principal:</strong> Iframe/tokenização, refresh, 3DS e express checkout podem quebrar.</p>
+<p><strong>Gate de conclusão:</strong> Pedidos reais de sandbox nos cenários homologados, sem inputs de cartão próprios e sem Checkout Sidebar.</p>
+<h2 id="chapter-37">F10 · Pedidos, Minha Conta, APIs e privacidade</h2>
+<p><strong>Objetivo:</strong> Disponibilizar valores apenas aos públicos autorizados.</p>
+<p><strong>Responsáveis:</strong> Backend e Frontend. <strong>Dependências:</strong> F04, F07, F08. <strong>Complexidade:</strong> Alta.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Entrega</th>
+<th>Componentes</th>
+<th>Aceite da tarefa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WCCS-051</td>
+<td>Criar editor de dados do pedido</td>
+<td>Order admin</td>
+<td>CRUD, edição autorizada e validação idêntica nos dois backends de pedidos.</td>
+</tr>
+<tr>
+<td>WCCS-052</td>
+<td>Criar exibição ao cliente</td>
+<td>My Account, thank-you</td>
+<td>Visibilidade por campo respeitada; conta atual não reescreve pedido passado.</td>
+</tr>
+<tr>
+<td>WCCS-053</td>
+<td>Criar e-mails HTML/texto</td>
+<td>Email projections</td>
+<td>Públicos distintos; documentos sem anexos por padrão; links autorizados.</td>
+</tr>
+<tr>
+<td>WCCS-054</td>
+<td>Criar API pública de integração</td>
+<td>REST, OrderFieldsService</td>
+<td>Contrato autenticado; nenhum dado pessoal aparece em Store API pública.</td>
+</tr>
+<tr>
+<td>WCCS-055</td>
+<td>Implementar exportação/eliminação de dados</td>
+<td>Privacy, retention</td>
+<td>Fluxos por titular e política da loja testados, com retenção explicável.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Risco principal:</strong> Meta privada exposta em REST/e-mail e edição de perfil alterando histórico.</p>
+<p><strong>Gate de conclusão:</strong> Auditoria por papel/endpoint/e-mail confirma ausência de exposição indevida e leitura histórica.</p>
+<h2 id="chapter-38">F11 · Portabilidade, SDK e documentação</h2>
+<p><strong>Objetivo:</strong> Permitir migrar configuração e estender produto sem alterar seu core.</p>
+<p><strong>Responsáveis:</strong> Backend, Frontend e Documentação. <strong>Dependências:</strong> F03, F07, F10. <strong>Complexidade:</strong> Alta.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Entrega</th>
+<th>Componentes</th>
+<th>Aceite da tarefa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WCCS-056</td>
+<td>Implementar export/import com preview</td>
+<td>Schema IO</td>
+<td>JSON versionado, diff, limites, conflitos e rollback testados; sem segredos.</td>
+</tr>
+<tr>
+<td>WCCS-057</td>
+<td>Criar migrador ThemeHigh limitado</td>
+<td>Migration adapters</td>
+<td>Mapeia apenas estruturas comprovadas; unsupported gera relatório e não descarte silencioso.</td>
+</tr>
+<tr>
+<td>WCCS-058</td>
+<td>Concluir exemplo de novo tipo</td>
+<td>SDK example</td>
+<td>Código de associado aparece no picker, nos dois checkouts declarados e no pedido.</td>
+</tr>
+<tr>
+<td>WCCS-059</td>
+<td>Documentar hooks e contratos</td>
+<td>Developer docs</td>
+<td>Ordem, assinaturas, versão, depreciação e componente React demonstrados.</td>
+</tr>
+<tr>
+<td>WCCS-060</td>
+<td>Documentar operação do lojista</td>
+<td>Merchant docs</td>
+<td>Configurar PF/PJ, uploads, layout, restore e diagnóstico sem editar código.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Risco principal:</strong> Importação executável, perda de IDs e falsa compatibilidade de tipo externo.</p>
+<p><strong>Gate de conclusão:</strong> Exportar e importar em staging mantém IDs; plugin de exemplo adiciona tipo sem patch do core.</p>
+<h2 id="chapter-39">F12 · Hardening, acessibilidade e matriz final</h2>
+<p><strong>Objetivo:</strong> Fechar a entrega por evidência, não por declaração de compatibilidade.</p>
+<p><strong>Responsáveis:</strong> QA, Segurança e Performance. <strong>Dependências:</strong> F09, F10, F11. <strong>Complexidade:</strong> Muito alta.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Entrega</th>
+<th>Componentes</th>
+<th>Aceite da tarefa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WCCS-061</td>
+<td>Executar suíte de segurança</td>
+<td>Security tests</td>
+<td>IDOR, XSS, CSRF, token replay, payloads, MIME e concorrência exercitados.</td>
+</tr>
+<tr>
+<td>WCCS-062</td>
+<td>Executar matriz funcional</td>
+<td>E2E, Compatibility</td>
+<td>Classic/Blocks/HPOS, tipos de carrinho, clientes e gateways registrados por versão.</td>
+</tr>
+<tr>
+<td>WCCS-063</td>
+<td>Executar QA visual e a11y</td>
+<td>Visual, keyboard, screen reader</td>
+<td>320/375/768/1280/1440px, zoom, foco e reduced motion revisados.</td>
+</tr>
+<tr>
+<td>WCCS-064</td>
+<td>Medir performance e estabilidade</td>
+<td>Benchmarks</td>
+<td>Budgets reportados; zero loops/handlers duplicados; memória após refresh estável.</td>
+</tr>
+<tr>
+<td>WCCS-065</td>
+<td>Executar testes de recuperação</td>
+<td>Release safety</td>
+<td>Rollback, schemas antigos, checkout aberto, jobs e extensão desativada tratados.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Risco principal:</strong> Combinações de plugins, acessibilidade, cache e corrida só aparecem na integração.</p>
+<p><strong>Gate de conclusão:</strong> Nenhum defeito crítico de pagamento, exposição de dados ou perda de configuração; matriz publicada.</p>
+<h2 id="chapter-40">F13 · Release 1.0 e operação comercial</h2>
+<p><strong>Objetivo:</strong> Distribuir um pacote instalável, documentado e suportável.</p>
+<p><strong>Responsáveis:</strong> Release e Produto. <strong>Dependências:</strong> F12. <strong>Complexidade:</strong> Alta.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Entrega</th>
+<th>Componentes</th>
+<th>Aceite da tarefa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WCCS-066</td>
+<td>Gerar pacote de release</td>
+<td>CI, artifacts</td>
+<td>ZIP limpo com assets e autoload; instalação sem ferramentas de build.</td>
+</tr>
+<tr>
+<td>WCCS-067</td>
+<td>Revisar licenças, nome e distribuição</td>
+<td>Commercial checklist</td>
+<td>Dependências inventariadas; política de atualização, suporte e marca revisada.</td>
+</tr>
+<tr>
+<td>WCCS-068</td>
+<td>Preparar manual e release notes</td>
+<td>Docs, support</td>
+<td>Limitações, privacy, uninstall, backup e suporte claramente documentados.</td>
+</tr>
+<tr>
+<td>WCCS-069</td>
+<td>Executar smoke de instalação/upgrade</td>
+<td>Staging</td>
+<td>Instalação limpa e upgrade/rollback com pedidos existentes aprovados.</td>
+</tr>
+<tr>
+<td>WCCS-070</td>
+<td>Publicar versão e registro de homologação</td>
+<td>Release manifest</td>
+<td>Checksums, versões testadas, resultados, changelog e plano de hotfix presentes.</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Risco principal:</strong> Update quebrado, licença bloqueando checkout e claim comercial não demonstrado.</p>
+<p><strong>Gate de conclusão:</strong> Release 1.0 distribuível; Sidebar ausente; cobrança continua independente de servidor de licença.</p>
+<h1 id="chapter-41">24. Testes automatizados e evidências</h1>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Camada</th>
+<th>Cobertura exigida</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unitários PHP</td>
+<td>Schema, normalizadores, validadores, condições, capacidades, projeções de dados e decisões de download</td>
+</tr>
+<tr>
+<td>Unitários JS</td>
+<td>Campos controlados, máscaras, regras, estados, responses fora de ordem e formatação</td>
+</tr>
+<tr>
+<td>Fixtures comuns</td>
+<td>CPF/CNPJ, strings com zeros, bool, arrays, datas, país, condições e valores ocultos</td>
+</tr>
+<tr>
+<td>Integração WordPress/Woo</td>
+<td>Classic, Store API, order CRUD, HPOS on/off, cliente, permissões e migrations</td>
+</tr>
+<tr>
+<td>E2E navegador</td>
+<td>Criar campo → publicar → checkout → pedido → e-mail/conta; erros, reload, retry e mobile</td>
+</tr>
+<tr>
+<td>Segurança</td>
+<td>CSRF, IDOR, XSS, upload, MIME, path traversal, sessão, replay, quota e rate limit</td>
+</tr>
+<tr>
+<td>Visual/a11y</td>
+<td>Grid, tema claro/escuro do admin, estados de campo, zoom, leitor, teclado e movimento reduzido</td>
+</tr>
+<tr>
+<td>Operação</td>
+<td>Atualização, desativação, uninstall, backup, concorrência, cache e jobs</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Casos que não podem faltar:</strong> número <code>0</code>; checkbox false; UTF-8 e acentos; endereço internacional; CPF/CNPJ com zero inicial; CNPJ alfanumérico; troca PF→PJ→PF; hidden required; select adulterado; envio de chave inexistente; upload de outro cliente; duas abas; dois admins publicando; compra iniciada antes de publicar novo campo obrigatório.</p>
+<p><strong>Pagamento:</strong> crédito aprovado/recusado em sandbox; Pix e boleto pelos gateways testados; endereço alterado após seleção do pagamento; frete alterado; cupom aplicado/removido; carrinho sem pagamento; 3DS/redirect; retry; refresh; duplicidade de submit; checkout expresso com required crítico.</p>
+<p><strong>Critério de teste:</strong> relatório informa o que passou, falhou e não foi testado. Código compilado, badge HPOS ou ausência de erro no console não constituem homologação de pagamento.</p>
+<h1 id="chapter-42">25. Riscos e decisões de mitigação</h1>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Risco</th>
+<th>Severidade</th>
+<th>Mitigação</th>
+<th>Gate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Prometer paridade irrestrita no Blocks</td>
+<td>Crítica</td>
+<td>POC cedo, capability matrix e slots públicos</td>
+<td>F00/F07</td>
+</tr>
+<tr>
+<td>Arquivo privado acessível via CDN</td>
+<td>Crítica</td>
+<td>Storage privado + teste HTTP efetivo + fail-closed</td>
+<td>F08</td>
+</tr>
+<tr>
+<td>CNPJ truncado para somente dígitos</td>
+<td>Alta</td>
+<td>String alfanumérica, normalizador e fixtures</td>
+<td>F05</td>
+</tr>
+<tr>
+<td>Gateway quebrado pela apresentação</td>
+<td>Crítica</td>
+<td>Preservar componente/SDK; matriz por versão; fallback</td>
+<td>F09</td>
+</tr>
+<tr>
+<td>Express checkout ignora obrigatório</td>
+<td>Crítica</td>
+<td>Verificação por gateway e bloqueio explícito</td>
+<td>F09</td>
+</tr>
+<tr>
+<td>Gravação duplicada Classic/Blocks</td>
+<td>Alta</td>
+<td>Autoridade única por tipo de storage</td>
+<td>F04/F07</td>
+</tr>
+<tr>
+<td>Admin sobrescreve outra edição</td>
+<td>Alta</td>
+<td>Revisão + escrita atômica + 409</td>
+<td>F01/F03</td>
+</tr>
+<tr>
+<td>Publicação invalida checkout aberto</td>
+<td>Alta</td>
+<td>Revalidação e comunicação sem cobrança indevida</td>
+<td>F12</td>
+</tr>
+<tr>
+<td>Tipo externo removido</td>
+<td>Alta</td>
+<td>Diagnóstico, bloqueio e leitura histórica segura</td>
+<td>F11</td>
+</tr>
+<tr>
+<td>Conflito com plugin brasileiro/fiscal</td>
+<td>Alta</td>
+<td>Mapear campos existentes; não duplicar por nome</td>
+<td>F00/F12</td>
+</tr>
+<tr>
+<td>Injeção por import/configuração</td>
+<td>Crítica</td>
+<td>JSON schema, limites e nenhum código executável</td>
+<td>F11</td>
+</tr>
+<tr>
+<td>Expansão descontrolada para Sidebar</td>
+<td>Média</td>
+<td>Fora da V1, sem tasks/componentes disfarçados</td>
+<td>F13</td>
+</tr>
+</tbody>
+</table></div>
+<h1 id="chapter-43">26. Critérios de aceite da versão 1.0</h1>
+<ol>
+<li>Instalar e ativar não quebra WordPress sem WooCommerce; pré-requisitos têm mensagens úteis.</li>
+<li>O lojista cria, edita, duplica, arquiva, habilita e ordena campos com teclado ou mouse.</li>
+<li>Campos padrão respeitam país, requisitos de negócio e limitações do adapter.</li>
+<li>Todos os tipos exigidos no anexo são cobertos em locais homologados; suporte parcial está explícito no admin.</li>
+<li>Presets Brasil funcionam, incluindo CNPJ numérico e alfanumérico.</li>
+<li>Máscara não substitui validação; servidor rejeita dados adulterados.</li>
+<li>AJAX não é disparado desnecessariamente e nunca autoriza um valor desatualizado.</li>
+<li>Condições têm paridade PHP/JS; ocultar campo não deixa required residual nem dado indevido.</li>
+<li>Arquivos não são públicos; tokens e downloads têm vínculo e autorização testados.</li>
+<li>Classic e Blocks geram pedidos com o mesmo significado de dados, sem cópias divergentes.</li>
+<li>HPOS e legado leem/gravam via APIs de pedido; sem dependência direta de postmeta para orders.</li>
+<li>Pedido, admin, Minha Conta, e-mail e REST respeitam políticas distintas de exposição.</li>
+<li>Trocar label/tipo/desativar campo não apaga silenciosamente dados históricos.</li>
+<li>Rascunho, publicação, diff, conflito, restauração e importação são reproduzíveis.</li>
+<li>Layout customizado é opcional; desativá-lo mantém os campos e o checkout original.</li>
+<li>Frete, imposto, cupom, gateways, nonce, sessão, mensagens e criação do pedido continuam no fluxo WooCommerce.</li>
+<li>Não existem campos próprios coletando cartão/CVV nem botão de gateway fictício.</li>
+<li>Admin e frontend passam os testes visuais/responsivos e as verificações de acessibilidade definidas.</li>
+<li>CSS/JS não vazam para páginas não relacionadas; bundles e latência são medidos.</li>
+<li>Novo tipo registrado por plugin externo funciona sem alterar o core, nos adapters declarados.</li>
+<li>Pacote final tem documentação, matriz de versões, changelog, build, checksum e rollback.</li>
+<li>Nenhum Checkout Sidebar é incluído na versão 1.0, nem como funcionalidade incompleta.</li>
+</ol>
+<h1 id="chapter-44">27. Governança, releases e evolução futura</h1>
+<p>Merges exigem teste e revisão nos módulos afetados. Toda task informa requisito, alteração, risco e evidência. Mudança pública de schema/API segue versionamento e depreciação, não renomeação silenciosa.</p>
+<p>Definição de pronto de cada task: implementada; coberta por testes proporcionais ao risco; revisada; documentada; traduzível; sem dados pessoais em logs; capacidades atualizadas; acessibilidade revisada quando visual.</p>
+<p>Atualizações não podem apagar campos ou pedidos. Expiração/falha de licença comercial jamais bloqueia a compra ou remove validadores/arquivos de pedidos existentes. Política de distribuição e atualização deve ser definida antes da release; não implementar um serviço SaaS de licenciamento só para o MVP.</p>
+<p>Desativar o plugin não significa apagar dados; uninstall explicita o que é removido. Dados de pedido devem permanecer legíveis/recuperáveis com exportação apropriada e política documentada.</p>
+<p><strong>Checkout Sidebar futuro:</strong> abrir projeto próprio somente após V1 estável. Reutilizar core, validação, storage, tokens e componentes possíveis; nova pesquisa de UX, contexto, acessibilidade, checkout expresso e gateways será necessária. Nenhuma estimativa ou compromisso dessa evolução está incluído na V1.</p>
+<h1 id="chapter-45">28. Referências e rastreabilidade</h1>
+<p>Os requisitos anexados continuam a fonte do escopo. As verificações externas complementam apenas contratos técnicos e a atualização de CNPJ. Tokens, fases, limites e módulos são decisões propostas deste planejamento.</p>
+<ul>
+<li><strong>R1</strong> — Requisitos anexados: Markdown(5).md colado</li>
+<li><strong>R2</strong> — Checkout HTML anexado: index(20260911-132619).html</li>
+<li><strong>R3</strong> — Plugin ThemeHigh 2.2.0 anexado: woo-checkout-field-editor-pro.2.2.0.zip</li>
+<li><strong>S1</strong> — ThemeHigh — Overview: https://www.themehigh.com/docs/overview-of-checkout-field-editor/</li>
+<li><strong>S2</strong> — WooCommerce — Additional checkout fields: https://developer.woocommerce.com/docs/block-development/extensible-blocks/cart-and-checkout-blocks/additional-checkout-fields/</li>
+<li><strong>S3</strong> — WooCommerce — Conditional additional fields: https://developer.woocommerce.com/docs/block-development/tutorials/how-to-conditional-additional-fields/</li>
+<li><strong>S4</strong> — WooCommerce — HPOS extension recipe book: https://developer.woocommerce.com/docs/features/orders/high-performance-order-storage/recipe-book/</li>
+<li><strong>S5</strong> — WooCommerce — Adding fields and passing values: https://developer.woocommerce.com/docs/apis/store-api/extending-store-api/extend-store-api-add-custom-fields/</li>
+<li><strong>S6</strong> — WooCommerce — Payment method integration: https://developer.woocommerce.com/docs/block-development/extensible-blocks/cart-and-checkout-blocks/checkout-payment-methods/payment-method-integration/</li>
+<li><strong>S7</strong> — IMask — Guide: https://imask.js.org/guide.html</li>
+<li><strong>S8</strong> — WordPress — Nonces: https://developer.wordpress.org/apis/security/nonces/</li>
+<li><strong>S9</strong> — Receita Federal — Primeiro CNPJ alfanumérico, 31/07/2026: https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/julho/receita-federal-gera-o-primeiro-cnpj-em-formato-alfanumerico</li>
+<li><strong>S10</strong> — W3C — WCAG 2.2: https://www.w3.org/TR/WCAG22/</li>
+<li><strong>S11</strong> — Receita Federal — Simulador de CNPJ: https://www.gov.br/pt-br/servicos/simulador-cnpj-alfanumerico</li>
+</ul>
+<p>Ver <code>AUDITORIA-REFERENCIA.md</code> para caminhos e linhas de código observados no ZIP; <code>MATRIZ-REQUISITOS.md</code> para associação de cada seção do anexo às fases deste roadmap.</p>
+<p><strong>Limitação desta entrega:</strong> há análise estática, especificação e protótipo visual. Não foi implementado nem homologado o plugin WC CheckoutSuite, não houve integração com um WordPress real e nenhuma compra foi processada.</p>
+</article></div><footer>Especificação e protótipo. Não é um plugin implementado ou homologado.</footer></body></html>

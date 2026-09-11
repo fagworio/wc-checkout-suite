@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="description" content="Checkout seguro para concluir sua compra." />
+  <title>Checkout | Shop</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235b16c9'/%3E%3Cpath d='M9 12h14l-1 12H10L9 12Zm3 0a4 4 0 0 1 8 0' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E" />
+  <style>
+    :root { --purple:#5b16c9; --orange:#ff5329; --ink:#111; --muted:#6c6c6c; --line:#dedede; --soft:#f5f5f5; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size:15px; background:#fff; }
+    button,input,select { font:inherit; }
+    button { cursor:pointer; }
+    .topbar { height:72px; border-bottom:1px solid #e5e5e5; display:flex; align-items:center; justify-content:space-between; padding:0 5.5%; }
+    .brand { font-size:20px; font-weight:800; letter-spacing:-.04em; }
+    .bag { width:22px; height:22px; color:#3c3c3c; }
+    .checkout-grid { display:grid; grid-template-columns:minmax(0, 1fr) minmax(360px, 43%); min-height:calc(100vh - 72px); }
+    .form-side { max-width:570px; width:100%; margin:0 auto; padding:34px 28px 48px; }
+    .summary-side { background:#f7f7f7; border-left:1px solid #e0e0e0; padding:44px 7.5%; }
+    .notice { display:flex; gap:10px; align-items:flex-start; border:1px solid #c9ddff; color:#173a64; background:#f1f6ff; padding:13px 14px; border-radius:5px; margin-bottom:24px; line-height:1.45; font-size:13px; }
+    .notice b { font-weight:750; }
+    .express-label { text-align:center; color:#666; font-size:12px; margin:0 0 9px; }
+    .express { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .express button { height:44px; border:0; border-radius:4px; color:#fff; font-weight:800; font-size:16px; }
+    .shop { background:#5b2bf5; } .paypal-fast { background:#ffbd2d; color:#052d9a !important; font-style:italic; } .gpay { background:#000; }
+    .or { display:flex; align-items:center; gap:10px; color:#777; font-size:12px; margin:18px 0; } .or:before,.or:after { content:""; height:1px; flex:1; background:#e2e2e2; }
+    h2 { font-size:20px; margin:22px 0 6px; letter-spacing:-.02em; } h2:first-of-type { margin-top:0; }
+    .subcopy { color:#6d6d6d; margin:0 0 15px; font-size:13px; }
+    .field { width:100%; height:48px; border:1px solid #d6d6d6; border-radius:5px; padding:0 13px; color:#222; background:white; outline:none; }
+    .field:focus { border-color:#7b39df; box-shadow:0 0 0 2px #eadcff; }
+    .field::placeholder { color:#707070; }
+    .field + .field { margin-top:9px; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:9px; } .row.three { grid-template-columns:1fr 1fr 1fr; }
+    select.field { appearance:auto; }
+    .checkline { display:flex; align-items:center; gap:8px; font-size:13px; margin:10px 0; }
+    input[type=checkbox] { width:16px; height:16px; accent-color:var(--purple); }
+    .linkish { color:#076ab5; font-size:13px; margin:9px 0 22px; }
+    .shipping-note { padding:15px 13px; background:#f4f4f4; color:#707070; border-radius:5px; font-size:12px; margin-top:12px; }
+    .payment-title { margin-top:22px; }
+    .payment-box { border:1px solid #d8d8d8; border-radius:10px; overflow:hidden; }
+    .payment-option { background:#fff; border-bottom:1px solid #d8d8d8; }
+    .payment-option:last-child { border-bottom:0; }
+    .payment-trigger { border:0; background:transparent; width:100%; min-height:54px; display:flex; align-items:center; gap:10px; padding:0 14px; text-align:left; font-weight:750; }
+    .payment-trigger:hover { background:#faf7ff; }
+    .radio { width:18px; height:18px; border:1px solid #d3d3d3; border-radius:50%; flex:0 0 auto; position:relative; }
+    .selected .radio { border:5px solid var(--purple); }
+    .payment-option.selected .payment-trigger { background:#f7f2ff; }
+    .logos { margin-left:auto; display:flex; gap:5px; align-items:center; color:#0b55be; font-weight:900; font-size:11px; }
+    .logo-chip { border-radius:3px; padding:4px 6px; background:#fff; border:1px solid #e1e1e1; line-height:1; }
+    .visa { color:#1434cb; } .master { color:#e92948; } .amex { color:#1681c4; }
+    .payment-content { background:#f5f5f5; padding:14px; display:none; } .selected .payment-content { display:block; }
+    .card-input { position:relative; } .card-input .field { padding-right:42px; } .lock { position:absolute; right:13px; top:14px; color:#777; }
+    .billing { margin:11px 0 0; }
+    .paypal-logo { color:#1c3e93; font-weight:900; font-style:italic; margin-left:auto; }
+    .klarna-logo { background:#ffb3d1; color:#111; padding:5px 6px; font-size:10px; margin-left:auto; }
+    .remember { margin-top:24px; } .save-row { border:1px solid #d6d6d6; padding:13px; border-radius:5px; }
+    .save-account { display:flex; justify-content:space-between; align-items:flex-start; gap:15px; font-size:13px; line-height:1.4; margin:18px 0 38px; }
+    .save-account a { color:var(--purple); white-space:nowrap; }
+    .pay-now { width:100%; height:52px; border:0; border-radius:11px; background:var(--orange); color:#fff; font-size:16px; font-weight:800; }
+    .pay-now:hover { background:#e8441e; } .pay-now:active { transform:translateY(1px); }
+    .footer-links { display:flex; flex-wrap:wrap; gap:10px 16px; border-top:1px solid #eee; margin:27px -28px -48px; padding:17px 28px 0; font-size:12px; }
+    .footer-links a { color:#5a09bb; }
+    .product-line { display:grid; grid-template-columns:64px 1fr auto; gap:14px; align-items:center; margin-bottom:24px; }
+    .product-thumb { width:64px; height:64px; border-radius:14px; border:1px solid #d6d6d6; background:linear-gradient(135deg,#e8d6c1 0 46%,#ae7558 47% 53%,#f6efe7 54%); box-shadow:0 2px 4px #0000000f; position:relative; }
+    .product-thumb:after { content:""; position:absolute; left:16px; right:12px; bottom:13px; height:13px; background:#fff8ef; border:1px solid #c49f85; transform:rotate(-7deg); }
+    .qty { position:absolute; right:-6px; top:-7px; background:#050505; color:white; border-radius:50%; width:22px; height:22px; display:grid; place-items:center; font-size:12px; font-weight:800; }
+    .product-name { font-size:14px; line-height:1.35; } .price { font-size:14px; white-space:nowrap; }
+    .discount { display:flex; border:1px solid #d7d7d7; background:#fff; border-radius:12px; padding:5px; margin-bottom:34px; } .discount input { border:0; outline:0; flex:1; padding:0 9px; min-width:0; } .discount button { border:0; background:#f5f5f5; color:#888; border-radius:10px; padding:8px 12px; font-weight:700; }
+    .discount.applied { border-color:#81c784; } .discount.applied button { color:#258b3a; }
+    .totals { display:grid; gap:12px; font-size:14px; } .total-row { display:flex; justify-content:space-between; gap:20px; } .total-row small { color:#707070; } .total-main { margin-top:4px; font-size:18px; font-weight:800; } .tax { color:#777; margin-top:-6px; }
+    .error { color:#b00020; font-size:12px; margin-top:8px; display:none; } .error.show { display:block; }
+    .toast { position:fixed; left:50%; bottom:24px; transform:translate(-50%, 20px); background:#111; color:#fff; padding:13px 18px; border-radius:8px; opacity:0; pointer-events:none; transition:.25s ease; font-size:14px; box-shadow:0 8px 30px #0003; } .toast.show { opacity:1; transform:translate(-50%,0); }
+    @media (max-width: 800px) { .topbar { height:62px; padding:0 20px; } .checkout-grid { display:block; } .summary-side { border-left:0; border-top:1px solid #e0e0e0; padding:28px 20px 40px; } .form-side { padding:26px 20px 38px; } .footer-links { margin-left:-20px; margin-right:-20px; padding-left:20px; padding-right:20px; } }
+    @media (max-width: 480px) { .express { grid-template-columns:1fr; } .express button { height:42px; } .row.three { grid-template-columns:1fr; } .product-line { grid-template-columns:56px 1fr auto; gap:10px; } .product-thumb { width:56px; height:56px; } }
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="brand">Shop</div><svg class="bag" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8Z" stroke="currentColor" stroke-width="1.5"/><path d="M9 8a3 3 0 0 1 6 0" stroke="currentColor" stroke-width="1.5"/></svg></header>
+  <main class="checkout-grid">
+    <section class="form-side">
+      <div class="notice"><span>ⓘ</span><span>Seu carrinho foi atualizado com base no seu país de envio.</span></div>
+      <div class="express-label">Checkout expresso</div>
+      <div class="express"><button class="shop" type="button">shop<span style="font-size:12px"> Pay</span></button><button class="paypal-fast" type="button">PayPal</button><button class="gpay" type="button"><span style="color:#4285f4">G</span> Pay</button></div>
+      <div class="or">OU</div>
+      <form id="checkoutForm" novalidate>
+        <h2>Contato</h2><input class="field" id="email" type="email" placeholder="E-mail ou número de celular" autocomplete="email" required /><label class="checkline"><input type="checkbox" /> Envie-me novidades e ofertas</label>
+        <h2>Entrega</h2>
+        <select class="field" id="country"><option>Brasil</option><option>Portugal</option><option>Estados Unidos</option></select>
+        <div class="row"><input class="field" placeholder="Nome (opcional)" /><input class="field" placeholder="Sobrenome" /></div>
+        <input class="field" id="address" placeholder="Endereço" autocomplete="street-address" required />
+        <div class="linkish">＋ Adicionar apartamento, suíte etc.</div>
+        <div class="row three"><input class="field" placeholder="Cidade" /><select class="field"><option>Estado</option><option>SP</option><option>RJ</option><option>MG</option></select><input class="field" placeholder="CEP" inputmode="numeric" /></div>
+        <h3 style="font-size:13px;margin:20px 0 0">Método de envio</h3><div class="shipping-note" id="shippingNote">Introduza o endereço de entrega para ver os métodos de envio disponíveis.</div>
+        <h2 class="payment-title">Pagamento</h2><p class="subcopy">Todas as transações são seguras e encriptadas.</p>
+        <div class="payment-box" role="radiogroup" aria-label="Formas de pagamento">
+          <div class="payment-option selected" data-payment="card"><button class="payment-trigger" type="button" aria-expanded="true"><span class="radio"></span><span>Cartão de Crédito ou Débito</span><span class="logos"><span class="logo-chip visa">VISA</span><span class="logo-chip master">●●</span><span class="logo-chip amex">AMEX</span><span class="logo-chip">+4</span></span></button><div class="payment-content"><div class="card-input"><input class="field" placeholder="Número do cartão" inputmode="numeric" /><span class="lock">♙</span></div><div class="row"><input class="field" placeholder="Data de expiração (MM/AA)" /><input class="field" placeholder="Código de segurança" /></div><input class="field" placeholder="Nome no cartão" /><label class="checkline billing"><input type="checkbox" checked /> Utilizar o endereço de envio como endereço de faturação</label></div></div>
+          <div class="payment-option" data-payment="alt-card"><button class="payment-trigger" type="button"><span class="radio"></span><span>Cartão de Crédito ou Débito</span><span class="logos"><span class="logo-chip">MB</span><span class="logo-chip">MB WAY</span></span></button><div class="payment-content"><p class="subcopy">Você será direcionado para concluir o pagamento com cartão.</p></div></div>
+          <div class="payment-option" data-payment="paypal"><button class="payment-trigger" type="button"><span class="radio"></span><span>PayPal</span><span class="paypal-logo">PayPal</span></button><div class="payment-content"><p class="subcopy">Você será direcionado ao PayPal com segurança.</p></div></div>
+          <div class="payment-option" data-payment="klarna"><button class="payment-trigger" type="button"><span class="radio"></span><span>Klarna - Pagamentos flexíveis com Klarna</span><span class="klarna-logo">Klarna</span></button><div class="payment-content"><p class="subcopy">Escolha parcelar sua compra com Klarna.</p></div></div>
+        </div>
+        <h2 class="remember">Lembrar de mim</h2><label class="checkline save-row"><input type="checkbox" /> Salvar minhas informações para um checkout mais rápido</label>
+        <div class="save-account"><span>Ao efetuar o pagamento, você concorda em criar uma conta Shop, sujeita aos <u>Termos</u> e à <u>Política de privacidade</u> do Shop.</span><a href="#">Agora não</a></div>
+        <button class="pay-now" type="submit">Pagar agora</button><p id="formError" class="error">Preencha seu e-mail e endereço para continuar.</p>
+      </form>
+      <nav class="footer-links"><a href="#">Política de reembolso</a><a href="#">Envio</a><a href="#">Política de privacidade</a><a href="#">Termos do serviço</a><a href="#">Cancelamentos</a></nav>
+    </section>
+    <aside class="summary-side"><div class="product-line"><div class="product-thumb"><span class="qty">1</span></div><div class="product-name">Pasta de óleo Van Gogh</div><div class="price">59,99 €</div></div><div class="discount" id="discount"><input id="discountCode" placeholder="Código de desconto ou cartão de oferta" /><button type="button" id="applyDiscount">Aplicar</button></div><div class="totals"><div class="total-row"><span>Subtotal</span><span>59,99 €</span></div><div class="total-row"><span>Envio ⓘ</span><small>Introduzir o endereço de envio</small></div><div class="total-row total-main"><span>Total</span><span><small>EUR&nbsp;</small>59,99 €</span></div><div class="tax">A incluir 11,22 € em impostos</div></div></aside>
+  </main><div class="toast" id="toast">Pedido pronto para revisão.</div>
+  <script>
+    const options = document.querySelectorAll('.payment-option');
+    options.forEach(option => option.querySelector('.payment-trigger').addEventListener('click', () => { options.forEach(item => { item.classList.remove('selected'); item.querySelector('.payment-trigger').setAttribute('aria-expanded','false'); }); option.classList.add('selected'); option.querySelector('.payment-trigger').setAttribute('aria-expanded','true'); }));
+    const address = document.querySelector('#address'); const shippingNote = document.querySelector('#shippingNote');
+    address.addEventListener('input', () => { shippingNote.textContent = address.value.trim() ? 'Entrega padrão — calculada no próximo passo.' : 'Introduza o endereço de entrega para ver os métodos de envio disponíveis.'; });
+    document.querySelector('#applyDiscount').addEventListener('click', () => { const box=document.querySelector('#discount'); const input=document.querySelector('#discountCode'); if(input.value.trim()){ box.classList.add('applied'); input.value='Código aplicado'; input.disabled=true; document.querySelector('#applyDiscount').textContent='Aplicado'; } });
+    document.querySelector('#checkoutForm').addEventListener('submit', e => { e.preventDefault(); const email=document.querySelector('#email'); const error=document.querySelector('#formError'); if(!email.value.trim() || !address.value.trim() || !email.checkValidity()){ error.classList.add('show'); email.focus(); return; } error.classList.remove('show'); document.querySelector('#toast').classList.add('show'); setTimeout(()=>document.querySelector('#toast').classList.remove('show'),3000); });
+  </script>
+</body>
+</html>

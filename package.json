@@ -1,0 +1,31 @@
+{
+	"name": "wc-checkoutsuite",
+	"version": "0.1.0",
+	"description": "Advanced checkout field management for WooCommerce.",
+	"private": true,
+	"license": "UNLICENSED",
+	"engines": {
+		"node": "^20.19.0 || >=22.13.0",
+		"npm": ">=8.19.2"
+	},
+	"scripts": {
+		"build": "wp-scripts build --webpack-src-dir=resources/admin --output-path=build/admin",
+		"start": "wp-scripts start --webpack-src-dir=resources/admin --output-path=build/admin",
+		"lint:js": "wp-scripts lint-js resources tests/js",
+		"lint:js:fix": "wp-scripts lint-js resources tests/js --fix",
+		"test:unit-js": "jest",
+		"check-types": "tsc --noEmit",
+		"format": "wp-scripts format resources tests/js"
+	},
+	"devDependencies": {
+		"@testing-library/dom": "^10.4.1",
+		"@testing-library/jest-dom": "^7.0.1",
+		"@testing-library/react": "^16.3.3",
+		"@testing-library/user-event": "^14.6.7",
+		"@types/jest": "^30.0.0",
+		"@types/react": "^19.3.0",
+		"@wordpress/element": "^8.7.0",
+		"@wordpress/i18n": "^6.28.0",
+		"@wordpress/scripts": "^35.0.0"
+	}
+}

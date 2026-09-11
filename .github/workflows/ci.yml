@@ -1,0 +1,97 @@
+# Continuous integration for WC CheckoutSuite.
+#
+# Every gate that must pass before a merge runs here:
+#
+#   - WordPress coding standards (PHPCS) with the project ruleset
+#   - static analysis with the WordPress and WooCommerce stubs (PHPStan)
+#   - the unit suite, which needs neither WordPress nor WooCommerce
+#   - the frontend build, JavaScript lint and the JavaScript type check
+#
+# The integration proofs under tests/Integration run through `wp eval-file`
+# against a live WordPress with WooCommerce installed. They are not run here:
+# a GitHub runner has no checkout, no WooCommerce and no payment sandbox, and
+# a gate that silently skips itself is worse than no gate. They run against the
+# local Devilbox installation and, later, against a staging environment.
+# See docs/validation/WCCS-010.md for how they are executed today.
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  php-quality:
+    name: PHP coding standards and static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Coding standards
+        run: composer lint
+
+      - name: Static analysis
+        run: composer analyse
+
+  php-unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run the unit suite
+        run: composer test
+
+  frontend:
+    name: Frontend build, lint and type check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint JavaScript
+        run: npm run lint:js
+
+      - name: Unit tests (JavaScript)
+        run: npm run test:unit-js
+
+      - name: Type check
+        run: npm run check-types

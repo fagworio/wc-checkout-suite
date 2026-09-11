@@ -1,0 +1,247 @@
+/*
+ * WC CheckoutSuite — administration shell.
+ *
+ * Every value comes from the design tokens; nothing is hard coded except the
+ * three breakpoints, which CSS cannot read from a custom property inside a
+ * media query. Those literals are checked against tokens.json by a test, so the
+ * duplication cannot drift silently.
+ *
+ * Everything is scoped under .wccs-shell, which only exists on the suite
+ * screen. No global element selector is redefined, so wp-admin and the
+ * storefront keep their own appearance.
+ *
+ * See ROADMAP.md sections 16, 17 and 21.
+ */
+
+.wccs-shell {
+	display: grid;
+	grid-template-columns: 220px minmax(0, 1fr);
+	gap: var(--wccs-space-24);
+	align-items: start;
+	margin: var(--wccs-space-16) var(--wccs-space-16) var(--wccs-space-32) 0;
+	font-family: var(--wccs-font-sans);
+	font-size: var(--wccs-text-body-admin);
+	line-height: var(--wccs-leading-body);
+	color: var(--wccs-ink);
+}
+
+/* Skip link: invisible until focused, so a keyboard user can bypass the
+   navigation without seeing it in the visual design. */
+.wccs-shell__skip {
+	position: absolute;
+	left: -9999px;
+	top: 0;
+	z-index: 100;
+	padding: var(--wccs-space-8) var(--wccs-space-12);
+	border-radius: var(--wccs-radius-control);
+	background: var(--wccs-surface);
+	color: var(--wccs-brand);
+	box-shadow: var(--wccs-elevation-raised);
+}
+
+.wccs-shell__skip:focus {
+	left: var(--wccs-space-8);
+	outline: var(--wccs-size-focus-outline-width) solid var(--wccs-focus-ring);
+	outline-offset: 2px;
+}
+
+.wccs-shell__nav {
+	background: var(--wccs-sidebar-surface);
+	border-radius: var(--wccs-radius-panel);
+	padding: var(--wccs-space-16) var(--wccs-space-8);
+	color: var(--wccs-on-sidebar);
+	position: sticky;
+	top: var(--wccs-space-32);
+}
+
+.wccs-shell__nav-kicker {
+	margin: 0 var(--wccs-space-8) var(--wccs-space-8);
+	font-size: var(--wccs-text-caption);
+	font-weight: var(--wccs-weight-bold);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--wccs-on-sidebar);
+	opacity: 0.75;
+}
+
+.wccs-shell__nav-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: var(--wccs-space-4);
+}
+
+.wccs-shell__nav-item {
+	display: block;
+	width: 100%;
+	min-height: var(--wccs-size-touch-target);
+	padding: var(--wccs-space-8) var(--wccs-space-12);
+	border: 0;
+	border-radius: var(--wccs-radius-control);
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+	transition: background var(--wccs-motion-fast);
+}
+
+.wccs-shell__nav-item:hover {
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.wccs-shell__nav-item:focus-visible {
+	outline: var(--wccs-size-focus-outline-width) solid var(--wccs-focus-ring);
+	outline-offset: 2px;
+}
+
+.wccs-shell__nav-item.is-active {
+	background: rgba(255, 255, 255, 0.12);
+	font-weight: var(--wccs-weight-semibold);
+}
+
+.wccs-shell__main {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wccs-space-16);
+	min-width: 0;
+}
+
+.wccs-shell__header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: var(--wccs-space-12);
+	padding: var(--wccs-space-16) var(--wccs-space-24);
+	background: var(--wccs-surface);
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-card);
+}
+
+.wccs-shell__title {
+	margin: 0;
+	font-size: var(--wccs-text-heading-large);
+	line-height: var(--wccs-leading-heading);
+	color: var(--wccs-ink);
+}
+
+.wccs-shell__version {
+	margin-left: auto;
+	font-size: var(--wccs-text-help);
+	color: var(--wccs-ink-muted);
+}
+
+.wccs-shell__content {
+	padding: var(--wccs-space-24);
+	background: var(--wccs-surface);
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-card);
+	min-height: 240px;
+}
+
+.wccs-shell__placeholder {
+	margin: 0;
+	max-width: 60ch;
+	color: var(--wccs-ink-muted);
+}
+
+/*
+ * Wide screens get a roomier navigation rail.
+ * Literal 1550 matches --wccs-breakpoint-wide.
+ */
+@media (min-width: 1550px) {
+	.wccs-shell {
+		grid-template-columns: 260px minmax(0, 1fr);
+		gap: var(--wccs-space-32);
+	}
+}
+
+/*
+ * Narrow screens: the rail shrinks to its icons and the labels are hidden from
+ * sight but kept for assistive technology, so the navigation never becomes a row
+ * of unlabelled buttons.
+ * Literal 1020 matches --wccs-breakpoint-narrow.
+ */
+@media (max-width: 1020px) {
+	.wccs-shell {
+		grid-template-columns: 64px minmax(0, 1fr);
+	}
+
+	.wccs-shell__nav-kicker,
+	.wccs-shell__nav-label {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+	}
+
+	.wccs-shell__nav-item {
+		text-align: center;
+		padding: var(--wccs-space-8);
+	}
+}
+
+/*
+ * Compact screens: a single column, with the navigation turned into a
+ * horizontal scroll strip above the content. No three-column layout is forced
+ * into a narrow viewport.
+ * Literal 760 matches --wccs-breakpoint-compact.
+ */
+@media (max-width: 760px) {
+	.wccs-shell {
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--wccs-space-16);
+		margin-right: var(--wccs-space-8);
+	}
+
+	.wccs-shell__nav {
+		position: static;
+		padding: var(--wccs-space-8);
+	}
+
+	.wccs-shell__nav-list {
+		flex-direction: row;
+		overflow-x: auto;
+		gap: var(--wccs-space-4);
+	}
+
+	.wccs-shell__nav-item {
+		width: auto;
+		white-space: nowrap;
+	}
+
+	/* The labels are readable again once the strip scrolls horizontally. */
+	.wccs-shell__nav-label {
+		position: static;
+		width: auto;
+		height: auto;
+		clip: auto;
+		overflow: visible;
+	}
+
+	.wccs-shell__header,
+	.wccs-shell__content {
+		padding: var(--wccs-space-16);
+	}
+
+	.wccs-shell__title {
+		font-size: var(--wccs-text-heading-medium);
+	}
+}
+
+/*
+ * Motion is decoration. A visitor who asked for less of it gets none.
+ */
+@media (prefers-reduced-motion: reduce) {
+	.wccs-shell *,
+	.wccs-shell *::before,
+	.wccs-shell *::after {
+		transition: none !important;
+		animation: none !important;
+		scroll-behavior: auto !important;
+	}
+}

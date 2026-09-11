@@ -1,0 +1,27 @@
+includes:
+	- vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+	level: 5
+	phpVersion: 80200
+
+	paths:
+		- wc-checkoutsuite.php
+		- src
+		- tests/Unit
+
+	# Makes the constants the plugin bootstrap defines visible to static
+	# analysis without executing the bootstrap, which calls WordPress functions.
+	bootstrapFiles:
+		- tests/phpstan-bootstrap.php
+
+	# WooCommerce symbols are provided by the stubs rather than by an installed
+	# WooCommerce, so static analysis can run without a WordPress checkout.
+	scanFiles:
+		- vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
+		- vendor/php-stubs/woocommerce-stubs/woocommerce-packages-stubs.php
+
+	# The F00/F01 proof harnesses run through `wp eval-file` against a live
+	# installation; they are executed, not analysed. Unit tests are analysed.
+	excludePaths:
+		- tests/Integration/*

@@ -1,0 +1,1232 @@
+{
+  "product": "WC CheckoutSuite",
+  "planning_version": "1.0",
+  "status": "planned_not_implemented",
+  "excluded": [
+    "Checkout Sidebar",
+    "Checkout drawer",
+    "Custom payment gateways"
+  ],
+  "phases": [
+    {
+      "id": "F00",
+      "title": "Escopo, inventário e provas técnicas",
+      "owner_role": "Arquitetura e QA",
+      "depends_on": [],
+      "relative_effort": "Alta",
+      "objective": "Fixar capacidades reais antes de desenvolver o editor completo.",
+      "main_risk": "Versões/API ou gateways sem suporte podem inviabilizar uma promessa de layout.",
+      "gate": "Nenhuma capacidade crítica permanece apenas presumida; limitações de Blocks viram regras do produto.",
+      "status": "planned",
+      "tasks": [
+        {
+          "id": "WCCS-001",
+          "title": "Inventariar requisitos e ambiente",
+          "components": [
+            "Auditoria",
+            "compatibility.json"
+          ],
+          "acceptance": "Requisitos rastreados; versões de WordPress/Woo/PHP e gateways alvo registradas.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": []
+        },
+        {
+          "id": "WCCS-002",
+          "title": "Provar fluxo Classic e HPOS",
+          "components": [
+            "Classic",
+            "OrderFieldsService"
+          ],
+          "acceptance": "Um campo de teste é validado e persistido com HPOS ligado e sincronização desligada.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": []
+        },
+        {
+          "id": "WCCS-003",
+          "title": "Provar fluxo Blocks",
+          "components": [
+            "Blocks",
+            "Store API"
+          ],
+          "acceptance": "Text, campo customizado controlado e erro server-side chegam ao pedido sem manipulação do DOM core.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": []
+        },
+        {
+          "id": "WCCS-004",
+          "title": "Provar layout e gateways",
+          "components": [
+            "Page layout",
+            "payment"
+          ],
+          "acceptance": "Pagamento de sandbox, refresh e retorno verificados no conjunto inicial; slots permitidos documentados.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": []
+        },
+        {
+          "id": "WCCS-005",
+          "title": "Congelar decisões arquiteturais",
+          "components": [
+            "ADRs",
+            "threat model"
+          ],
+          "acceptance": "ADRs aprovadas para storage, upload privado, CNPJ alfanumérico e exclusão de Sidebar.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": []
+        }
+      ]
+    },
+    {
+      "id": "F01",
+      "title": "Core, schema e contratos de extensão",
+      "owner_role": "Backend",
+      "depends_on": [
+        "F00"
+      ],
+      "relative_effort": "Alta",
+      "objective": "Criar o domínio independente dos renderizadores e a fundação de qualidade.",
+      "main_risk": "IDs instáveis ou acoplamento ao frontend causam migração e retrabalho.",
+      "gate": "Plugin-base instalável com schema versionado, concorrência e extensão de exemplo mínima.",
+      "status": "planned",
+      "tasks": [
+        {
+          "id": "WCCS-006",
+          "title": "Criar bootstrap e build",
+          "components": [
+            "PHP",
+            "Composer",
+            "WordPress"
+          ],
+          "acceptance": "Ativação segura sem Woo; assets compiláveis; namespace e i18n definidos.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F00"
+          ]
+        },
+        {
+          "id": "WCCS-007",
+          "title": "Implementar schema e registries",
+          "components": [
+            "Domain",
+            "Types",
+            "Presets"
+          ],
+          "acceptance": "Tipos, valores e settings validados; registro externo funciona sem editar factory.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F00"
+          ]
+        },
+        {
+          "id": "WCCS-008",
+          "title": "Implementar draft, publicação e revisões",
+          "components": [
+            "Repository",
+            "Migrations"
+          ],
+          "acceptance": "Gravação atômica e conflito 409 testados; publicar não perde histórico.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F00"
+          ]
+        },
+        {
+          "id": "WCCS-009",
+          "title": "Criar normalizadores e contratos",
+          "components": [
+            "Validation",
+            "Conditions",
+            "Renderers"
+          ],
+          "acceptance": "Interfaces versionadas; mesmo contrato serve Classic/Blocks/pedidos.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F00"
+          ]
+        },
+        {
+          "id": "WCCS-010",
+          "title": "Ativar CI desde o início",
+          "components": [
+            "Tests",
+            "CI"
+          ],
+          "acceptance": "PHPCS, análise estática, lint, typecheck e testes mínimos obrigatórios no merge.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F00"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F02",
+      "title": "Design system e shell administrativo",
+      "owner_role": "Frontend e Design",
+      "depends_on": [
+        "F01"
+      ],
+      "relative_effort": "Média",
+      "objective": "Transformar a identidade visual em componentes reutilizáveis e acessíveis.",
+      "main_risk": "CSS global e componentes visuais inacessíveis contaminam o WordPress.",
+      "gate": "Biblioteca visual aprovada em três larguras e com navegação por teclado.",
+      "status": "planned",
+      "tasks": [
+        {
+          "id": "WCCS-011",
+          "title": "Formalizar tokens e estados",
+          "components": [
+            "Design system"
+          ],
+          "acceptance": "Tokens claros/escuros, campos e botões documentados sem contraste reprovado.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F01"
+          ]
+        },
+        {
+          "id": "WCCS-012",
+          "title": "Criar shell dentro do WordPress",
+          "components": [
+            "Admin React"
+          ],
+          "acceptance": "Navegação e assets restritos à tela da Suite; responsividade funcional.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F01"
+          ]
+        },
+        {
+          "id": "WCCS-013",
+          "title": "Criar componentes básicos",
+          "components": [
+            "UI library"
+          ],
+          "acceptance": "Botões, diálogos, tabs, mensagens, badges e formulários têm teclado e foco.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F01"
+          ]
+        },
+        {
+          "id": "WCCS-014",
+          "title": "Implementar client REST",
+          "components": [
+            "Admin API"
+          ],
+          "acceptance": "Nonce, erro 403/409/422, retry seguro e estado não salvo tratados.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F01"
+          ]
+        },
+        {
+          "id": "WCCS-015",
+          "title": "Criar preview visual",
+          "components": [
+            "PreviewFrame"
+          ],
+          "acceptance": "Desktop/tablet/mobile identificados como prévia; nenhum dado real necessário.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F01"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F03",
+      "title": "Field Manager, seções e publicação",
+      "owner_role": "Frontend e Backend",
+      "depends_on": [
+        "F01",
+        "F02"
+      ],
+      "relative_effort": "Alta",
+      "objective": "Permitir configurar campos sem produzir schemas inválidos.",
+      "main_risk": "Drag-and-drop e salvar automático podem alterar produção sem intenção.",
+      "gate": "Lojista monta e publica um formulário completo, restaura revisão e não perde trabalho em conflito.",
+      "status": "planned",
+      "tasks": [
+        {
+          "id": "WCCS-016",
+          "title": "Criar Field Picker e CRUD",
+          "components": [
+            "Admin",
+            "FieldDefinition"
+          ],
+          "acceptance": "Criar/editar/duplicar/arquivar; campos core protegidos; busca por categorias.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F01",
+            "F02"
+          ]
+        },
+        {
+          "id": "WCCS-017",
+          "title": "Criar inspector por tipo",
+          "components": [
+            "SettingsSchema"
+          ],
+          "acceptance": "Máscaras, opções, descrição, largura, storage e visibilidade somente onde suportados.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F01",
+            "F02"
+          ]
+        },
+        {
+          "id": "WCCS-018",
+          "title": "Criar seções e ordenação",
+          "components": [
+            "Sections",
+            "SortableList"
+          ],
+          "acceptance": "Ordem por seção salva; mover por teclado e botões preserva foco.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F01",
+            "F02"
+          ]
+        },
+        {
+          "id": "WCCS-019",
+          "title": "Implementar draft e PublishDiff",
+          "components": [
+            "Revisions",
+            "Preview"
+          ],
+          "acceptance": "Salvar draft não afeta a loja; publicação mostra diferenças e incompatibilidades.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F01",
+            "F02"
+          ]
+        },
+        {
+          "id": "WCCS-020",
+          "title": "Criar estados e ações em lote",
+          "components": [
+            "Admin state"
+          ],
+          "acceptance": "Vazio, erro, rede, conflito e permissão tratados; desfazer local e revisão separados.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F01",
+            "F02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F04",
+      "title": "Classic Checkout e persistência canônica",
+      "owner_role": "Backend",
+      "depends_on": [
+        "F03"
+      ],
+      "relative_effort": "Alta",
+      "objective": "Entregar o primeiro fluxo transacional completo sem recriar checkout.",
+      "main_risk": "Conflitos com locale/campos de terceiros e duplicação de metadados.",
+      "gate": "Pedidos Classic válidos e inválidos testados em HPOS on/off, visitante/logado e carrinho físico/virtual.",
+      "status": "planned",
+      "tasks": [
+        {
+          "id": "WCCS-021",
+          "title": "Implementar Classic adapter",
+          "components": [
+            "Hooks",
+            "Renderers"
+          ],
+          "acceptance": "Tipos básicos, seções e larguras refletem schema; campos core mantêm contratos.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03"
+          ]
+        },
+        {
+          "id": "WCCS-022",
+          "title": "Integrar normalização e validação final",
+          "components": [
+            "Checkout lifecycle"
+          ],
+          "acceptance": "POST adulterado falha mesmo sem JS; erros apontam campos corretos.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03"
+          ]
+        },
+        {
+          "id": "WCCS-023",
+          "title": "Implementar OrderFieldsService",
+          "components": [
+            "Orders",
+            "WC CRUD"
+          ],
+          "acceptance": "Valores tipados, zeros e false preservados; autoridade única por campo.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03"
+          ]
+        },
+        {
+          "id": "WCCS-024",
+          "title": "Implementar histórico de valores",
+          "components": [
+            "Snapshots",
+            "Migrations"
+          ],
+          "acceptance": "Renomear/arquivar campo não torna pedido antigo ilegível.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03"
+          ]
+        },
+        {
+          "id": "WCCS-025",
+          "title": "Tratar lifecycle e refresh",
+          "components": [
+            "Classic JS"
+          ],
+          "acceptance": "Refresh preserva valores e cria apenas uma instância por componente.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F05",
+      "title": "Presets Brasil, IMask e validação remota",
+      "owner_role": "Backend e Frontend",
+      "depends_on": [
+        "F04"
+      ],
+      "relative_effort": "Alta",
+      "objective": "Entregar documentos e máscaras corretos, com validação sem fricção.",
+      "main_risk": "Validação numérica de CNPJ, falsos erros e respostas AJAX fora de ordem.",
+      "gate": "Documento inválido não finaliza; CNPJ alfanumérico válido não é truncado nem convertido em número.",
+      "status": "planned",
+      "tasks": [
+        {
+          "id": "WCCS-026",
+          "title": "Implementar presets brasileiros",
+          "components": [
+            "Presets",
+            "Fixtures"
+          ],
+          "acceptance": "CPF, CNPJ numérico/alfanumérico, RG, CEP, telefone e endereço com contratos próprios.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F04"
+          ]
+        },
+        {
+          "id": "WCCS-027",
+          "title": "Integrar IMask localmente",
+          "components": [
+            "Classic",
+            "Shared fields"
+          ],
+          "acceptance": "Colar, apagar, autocomplete, mobile e refresh não quebram cursor/valor.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F04"
+          ]
+        },
+        {
+          "id": "WCCS-028",
+          "title": "Implementar validadores PHP/JS",
+          "components": [
+            "Validation"
+          ],
+          "acceptance": "Mesmos fixtures passam/falham; DV não é apresentado como validação de identidade.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F04"
+          ]
+        },
+        {
+          "id": "WCCS-029",
+          "title": "Implementar endpoint de validação",
+          "components": [
+            "Checkout API"
+          ],
+          "acceptance": "Sessão, rate limit, timeout, abort e request ID impedem estado obsoleto.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F04"
+          ]
+        },
+        {
+          "id": "WCCS-030",
+          "title": "Implementar UX de erro",
+          "components": [
+            "FieldShell",
+            "ErrorSummary"
+          ],
+          "acceptance": "Mensagens por campo; primeiro erro focado; regra crítica revalidada no submit.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F04"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F06",
+      "title": "Conditional Logic e política de valores",
+      "owner_role": "Backend e Frontend",
+      "depends_on": [
+        "F03",
+        "F05"
+      ],
+      "relative_effort": "Alta",
+      "objective": "Executar as mesmas condições em PHP, JS e integração Blocks.",
+      "main_risk": "Campo oculto obrigatório ou divergência de contexto causa pedidos bloqueados/incompletos.",
+      "gate": "Fluxo PF/PJ funciona após múltiplas trocas; adulteração do browser não burla regra.",
+      "status": "planned",
+      "tasks": [
+        {
+          "id": "WCCS-031",
+          "title": "Criar AST e tipos de operadores",
+          "components": [
+            "Condition engine"
+          ],
+          "acceptance": "AND/OR e operadores tipados; ciclos e referências inválidas rejeitados.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03",
+            "F05"
+          ]
+        },
+        {
+          "id": "WCCS-032",
+          "title": "Criar editor de regras",
+          "components": [
+            "ConditionBuilder"
+          ],
+          "acceptance": "Regras legíveis, preview de resultado e mensagens de contradição.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03",
+            "F05"
+          ]
+        },
+        {
+          "id": "WCCS-033",
+          "title": "Implementar evaluators PHP/JS",
+          "components": [
+            "Shared fixtures"
+          ],
+          "acceptance": "Paridade em vazio, zero, false, arrays, contexto e negações.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03",
+            "F05"
+          ]
+        },
+        {
+          "id": "WCCS-034",
+          "title": "Implementar discard/preserve",
+          "components": [
+            "Checkout policies"
+          ],
+          "acceptance": "Valor residual oculto é descartado por padrão; required segue estado no servidor.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03",
+            "F05"
+          ]
+        },
+        {
+          "id": "WCCS-035",
+          "title": "Criar compilador de condições nativas",
+          "components": [
+            "Blocks compiler"
+          ],
+          "acceptance": "Somente condições representáveis são compiladas; demais capacidades ficam explícitas.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03",
+            "F05"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F07",
+      "title": "Checkout Blocks nativo e tipos próprios",
+      "owner_role": "Frontend e Backend",
+      "depends_on": [
+        "F04",
+        "F05",
+        "F06"
+      ],
+      "relative_effort": "Muito alta",
+      "objective": "Suportar Blocks com componentes e APIs apropriados.",
+      "main_risk": "Expectativa de posições livres, regressões de React e duplicação de valor.",
+      "gate": "Todos os tipos não-file da V1 possuem renderer homologado ou restrição explícita coerente; nenhum modo é anunciado além do testado.",
+      "status": "planned",
+      "tasks": [
+        {
+          "id": "WCCS-036",
+          "title": "Implementar native additional fields",
+          "components": [
+            "Blocks adapter"
+          ],
+          "acceptance": "Text/select/checkbox/date com feature detection e políticas de localização/storage.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F04",
+            "F05",
+            "F06"
+          ]
+        },
+        {
+          "id": "WCCS-037",
+          "title": "Implementar campos controlados próprios",
+          "components": [
+            "Blocks renderers"
+          ],
+          "acceptance": "Textarea, radio, multiselect, time/datetime e presets mascarados nos slots permitidos.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F04",
+            "F05",
+            "F06"
+          ]
+        },
+        {
+          "id": "WCCS-038",
+          "title": "Integrar Store API e validação",
+          "components": [
+            "Blocks",
+            "extensions"
+          ],
+          "acceptance": "Erro final bloqueia pagamento; payload tipado; retry não duplica gravação.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F04",
+            "F05",
+            "F06"
+          ]
+        },
+        {
+          "id": "WCCS-039",
+          "title": "Implementar matriz no admin",
+          "components": [
+            "CapabilityResolver"
+          ],
+          "acceptance": "Limites de core, largura, seção e tipo visíveis antes de publicar.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F04",
+            "F05",
+            "F06"
+          ]
+        },
+        {
+          "id": "WCCS-040",
+          "title": "Testar edição e lifecycle Blocks",
+          "components": [
+            "E2E",
+            "components"
+          ],
+          "acceptance": "Troca de endereço/frete, remount e rerender preservam valores sem DOM hacks.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F04",
+            "F05",
+            "F06"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F08",
+      "title": "Upload privado nos dois checkouts",
+      "owner_role": "Backend, Frontend e Segurança",
+      "depends_on": [
+        "F07"
+      ],
+      "relative_effort": "Muito alta",
+      "objective": "Entregar arquivos privados, associáveis ao pedido e recuperáveis com autorização.",
+      "main_risk": "Vazamento público, IDOR, quota, token reutilizado e exclusão de arquivo de pedido válido.",
+      "gate": "Teste direto por URL, token copiado e pedido alheio não revela o arquivo; compra e retry conservam vínculo.",
+      "status": "planned",
+      "tasks": [
+        {
+          "id": "WCCS-041",
+          "title": "Criar storage e tabela operacional",
+          "components": [
+            "Uploads",
+            "StorageProvider"
+          ],
+          "acceptance": "Privacidade HTTP/CDN comprovada; ambiente sem proteção desativa recurso.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F07"
+          ]
+        },
+        {
+          "id": "WCCS-042",
+          "title": "Criar upload e tokens por sessão",
+          "components": [
+            "Upload API"
+          ],
+          "acceptance": "MIME, bytes, quota e ownership validados; sessão A não usa token B.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F07"
+          ]
+        },
+        {
+          "id": "WCCS-043",
+          "title": "Criar componente único/múltiplo",
+          "components": [
+            "Classic",
+            "Blocks"
+          ],
+          "acceptance": "Progresso, cancelar, remover, retry e erros acessíveis sem upload duplicado.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F07"
+          ]
+        },
+        {
+          "id": "WCCS-044",
+          "title": "Vincular ao pedido e proteger download",
+          "components": [
+            "Order binding",
+            "DownloadPolicy"
+          ],
+          "acceptance": "Vínculo atômico/idempotente; dono autorizado acessa e terceiro recebe negação.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F07"
+          ]
+        },
+        {
+          "id": "WCCS-045",
+          "title": "Criar retenção e limpeza",
+          "components": [
+            "Scheduled jobs"
+          ],
+          "acceptance": "Temporários expiram; draft/falha/efetivo têm regras testadas; cleanups podem repetir.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F07"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F09",
+      "title": "Página customizada e pagamento",
+      "owner_role": "Frontend, Backend e QA",
+      "depends_on": [
+        "F02",
+        "F07",
+        "F08"
+      ],
+      "relative_effort": "Muito alta",
+      "objective": "Aplicar o layout moderno à página sem assumir o papel do gateway.",
+      "main_risk": "Iframe/tokenização, refresh, 3DS e express checkout podem quebrar.",
+      "gate": "Pedidos reais de sandbox nos cenários homologados, sem inputs de cartão próprios e sem Checkout Sidebar.",
+      "status": "planned",
+      "tasks": [
+        {
+          "id": "WCCS-046",
+          "title": "Implementar apresentação Classic",
+          "components": [
+            "Templates",
+            "scoped CSS"
+          ],
+          "acceptance": "Layout responsivo do anexo com gap correto; hooks preservados.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F02",
+            "F07",
+            "F08"
+          ]
+        },
+        {
+          "id": "WCCS-047",
+          "title": "Implementar apresentação Blocks",
+          "components": [
+            "Pattern",
+            "styles",
+            "integration"
+          ],
+          "acceptance": "Layout nas regiões suportadas; não clona campos nem componentes de pagamento.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F02",
+            "F07",
+            "F08"
+          ]
+        },
+        {
+          "id": "WCCS-048",
+          "title": "Integrar accordion e resumo",
+          "components": [
+            "PaymentFrame",
+            "OrderSummary"
+          ],
+          "acceptance": "Radios reais; totals/cupons/frete vêm do Woo; teclado e focus funcionam.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F02",
+            "F07",
+            "F08"
+          ]
+        },
+        {
+          "id": "WCCS-049",
+          "title": "Homologar gateways e express",
+          "components": [
+            "Payment matrix"
+          ],
+          "acceptance": "Sandbox, 3DS/redirect, tokens salvos, retry e dados required verificados.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F02",
+            "F07",
+            "F08"
+          ]
+        },
+        {
+          "id": "WCCS-050",
+          "title": "Criar opt-in, diagnóstico e fallback",
+          "components": [
+            "Settings",
+            "Compatibility"
+          ],
+          "acceptance": "Ativar/desativar não muda engine nem apaga campos; falha tem retorno seguro.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F02",
+            "F07",
+            "F08"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F10",
+      "title": "Pedidos, Minha Conta, APIs e privacidade",
+      "owner_role": "Backend e Frontend",
+      "depends_on": [
+        "F04",
+        "F07",
+        "F08"
+      ],
+      "relative_effort": "Alta",
+      "objective": "Disponibilizar valores apenas aos públicos autorizados.",
+      "main_risk": "Meta privada exposta em REST/e-mail e edição de perfil alterando histórico.",
+      "gate": "Auditoria por papel/endpoint/e-mail confirma ausência de exposição indevida e leitura histórica.",
+      "status": "planned",
+      "tasks": [
+        {
+          "id": "WCCS-051",
+          "title": "Criar editor de dados do pedido",
+          "components": [
+            "Order admin"
+          ],
+          "acceptance": "CRUD, edição autorizada e validação idêntica nos dois backends de pedidos.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F04",
+            "F07",
+            "F08"
+          ]
+        },
+        {
+          "id": "WCCS-052",
+          "title": "Criar exibição ao cliente",
+          "components": [
+            "My Account",
+            "thank-you"
+          ],
+          "acceptance": "Visibilidade por campo respeitada; conta atual não reescreve pedido passado.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F04",
+            "F07",
+            "F08"
+          ]
+        },
+        {
+          "id": "WCCS-053",
+          "title": "Criar e-mails HTML/texto",
+          "components": [
+            "Email projections"
+          ],
+          "acceptance": "Públicos distintos; documentos sem anexos por padrão; links autorizados.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F04",
+            "F07",
+            "F08"
+          ]
+        },
+        {
+          "id": "WCCS-054",
+          "title": "Criar API pública de integração",
+          "components": [
+            "REST",
+            "OrderFieldsService"
+          ],
+          "acceptance": "Contrato autenticado; nenhum dado pessoal aparece em Store API pública.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F04",
+            "F07",
+            "F08"
+          ]
+        },
+        {
+          "id": "WCCS-055",
+          "title": "Implementar exportação/eliminação de dados",
+          "components": [
+            "Privacy",
+            "retention"
+          ],
+          "acceptance": "Fluxos por titular e política da loja testados, com retenção explicável.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F04",
+            "F07",
+            "F08"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F11",
+      "title": "Portabilidade, SDK e documentação",
+      "owner_role": "Backend, Frontend e Documentação",
+      "depends_on": [
+        "F03",
+        "F07",
+        "F10"
+      ],
+      "relative_effort": "Alta",
+      "objective": "Permitir migrar configuração e estender produto sem alterar seu core.",
+      "main_risk": "Importação executável, perda de IDs e falsa compatibilidade de tipo externo.",
+      "gate": "Exportar e importar em staging mantém IDs; plugin de exemplo adiciona tipo sem patch do core.",
+      "status": "planned",
+      "tasks": [
+        {
+          "id": "WCCS-056",
+          "title": "Implementar export/import com preview",
+          "components": [
+            "Schema IO"
+          ],
+          "acceptance": "JSON versionado, diff, limites, conflitos e rollback testados; sem segredos.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03",
+            "F07",
+            "F10"
+          ]
+        },
+        {
+          "id": "WCCS-057",
+          "title": "Criar migrador ThemeHigh limitado",
+          "components": [
+            "Migration adapters"
+          ],
+          "acceptance": "Mapeia apenas estruturas comprovadas; unsupported gera relatório e não descarte silencioso.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03",
+            "F07",
+            "F10"
+          ]
+        },
+        {
+          "id": "WCCS-058",
+          "title": "Concluir exemplo de novo tipo",
+          "components": [
+            "SDK example"
+          ],
+          "acceptance": "Código de associado aparece no picker, nos dois checkouts declarados e no pedido.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03",
+            "F07",
+            "F10"
+          ]
+        },
+        {
+          "id": "WCCS-059",
+          "title": "Documentar hooks e contratos",
+          "components": [
+            "Developer docs"
+          ],
+          "acceptance": "Ordem, assinaturas, versão, depreciação e componente React demonstrados.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03",
+            "F07",
+            "F10"
+          ]
+        },
+        {
+          "id": "WCCS-060",
+          "title": "Documentar operação do lojista",
+          "components": [
+            "Merchant docs"
+          ],
+          "acceptance": "Configurar PF/PJ, uploads, layout, restore e diagnóstico sem editar código.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03",
+            "F07",
+            "F10"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F12",
+      "title": "Hardening, acessibilidade e matriz final",
+      "owner_role": "QA, Segurança e Performance",
+      "depends_on": [
+        "F09",
+        "F10",
+        "F11"
+      ],
+      "relative_effort": "Muito alta",
+      "objective": "Fechar a entrega por evidência, não por declaração de compatibilidade.",
+      "main_risk": "Combinações de plugins, acessibilidade, cache e corrida só aparecem na integração.",
+      "gate": "Nenhum defeito crítico de pagamento, exposição de dados ou perda de configuração; matriz publicada.",
+      "status": "planned",
+      "tasks": [
+        {
+          "id": "WCCS-061",
+          "title": "Executar suíte de segurança",
+          "components": [
+            "Security tests"
+          ],
+          "acceptance": "IDOR, XSS, CSRF, token replay, payloads, MIME e concorrência exercitados.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F09",
+            "F10",
+            "F11"
+          ]
+        },
+        {
+          "id": "WCCS-062",
+          "title": "Executar matriz funcional",
+          "components": [
+            "E2E",
+            "Compatibility"
+          ],
+          "acceptance": "Classic/Blocks/HPOS, tipos de carrinho, clientes e gateways registrados por versão.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F09",
+            "F10",
+            "F11"
+          ]
+        },
+        {
+          "id": "WCCS-063",
+          "title": "Executar QA visual e a11y",
+          "components": [
+            "Visual",
+            "keyboard",
+            "screen reader"
+          ],
+          "acceptance": "320/375/768/1280/1440px, zoom, foco e reduced motion revisados.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F09",
+            "F10",
+            "F11"
+          ]
+        },
+        {
+          "id": "WCCS-064",
+          "title": "Medir performance e estabilidade",
+          "components": [
+            "Benchmarks"
+          ],
+          "acceptance": "Budgets reportados; zero loops/handlers duplicados; memória após refresh estável.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F09",
+            "F10",
+            "F11"
+          ]
+        },
+        {
+          "id": "WCCS-065",
+          "title": "Executar testes de recuperação",
+          "components": [
+            "Release safety"
+          ],
+          "acceptance": "Rollback, schemas antigos, checkout aberto, jobs e extensão desativada tratados.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F09",
+            "F10",
+            "F11"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F13",
+      "title": "Release 1.0 e operação comercial",
+      "owner_role": "Release e Produto",
+      "depends_on": [
+        "F12"
+      ],
+      "relative_effort": "Alta",
+      "objective": "Distribuir um pacote instalável, documentado e suportável.",
+      "main_risk": "Update quebrado, licença bloqueando checkout e claim comercial não demonstrado.",
+      "gate": "Release 1.0 distribuível; Sidebar ausente; cobrança continua independente de servidor de licença.",
+      "status": "planned",
+      "tasks": [
+        {
+          "id": "WCCS-066",
+          "title": "Gerar pacote de release",
+          "components": [
+            "CI",
+            "artifacts"
+          ],
+          "acceptance": "ZIP limpo com assets e autoload; instalação sem ferramentas de build.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F12"
+          ]
+        },
+        {
+          "id": "WCCS-067",
+          "title": "Revisar licenças, nome e distribuição",
+          "components": [
+            "Commercial checklist"
+          ],
+          "acceptance": "Dependências inventariadas; política de atualização, suporte e marca revisada.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F12"
+          ]
+        },
+        {
+          "id": "WCCS-068",
+          "title": "Preparar manual e release notes",
+          "components": [
+            "Docs",
+            "support"
+          ],
+          "acceptance": "Limitações, privacy, uninstall, backup e suporte claramente documentados.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F12"
+          ]
+        },
+        {
+          "id": "WCCS-069",
+          "title": "Executar smoke de instalação/upgrade",
+          "components": [
+            "Staging"
+          ],
+          "acceptance": "Instalação limpa e upgrade/rollback com pedidos existentes aprovados.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F12"
+          ]
+        },
+        {
+          "id": "WCCS-070",
+          "title": "Publicar versão e registro de homologação",
+          "components": [
+            "Release manifest"
+          ],
+          "acceptance": "Checksums, versões testadas, resultados, changelog e plano de hotfix presentes.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F12"
+          ]
+        }
+      ]
+    }
+  ]
+}

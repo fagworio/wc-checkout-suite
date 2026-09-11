@@ -1,0 +1,911 @@
+{
+  "artifact": "compatibility.json",
+  "artifact_version": 1,
+  "task": "WCCS-001",
+  "phase": "F00",
+  "planning_version": "1.0",
+  "product": "WC CheckoutSuite",
+  "captured_at": "2026-09-11T12:16:18-03:00",
+  "captured_by": "agent session on the Devilbox host, via read-only queries",
+  "status": "verified_in_local_environment",
+  "scope_note": "This file records the REAL capabilities of the local development environment and the target gateways. It is NOT gateway homologation, NOT a support declaration and NOT a test report. Every entry carries its provenance. Anything not exercised is listed under 'not_verified' and must never be read as a positive result.",
+  "identifier_policy": {
+    "decision": "follow_roadmap_proposal",
+    "decided_by": "product owner (confirmed in session)",
+    "directory": "wc-checkout-suite",
+    "plugin_main_file": "wc-checkoutsuite.php",
+    "php_namespace": "WCCheckoutSuite\\",
+    "global_prefix": "wccs_",
+    "text_domain": "wc-checkoutsuite",
+    "rest_namespace": "wc-checkoutsuite/v1",
+    "source": "roadmap/ROADMAP.md sections 4 and 22",
+    "known_divergence": "ROADMAP.md proposes the technical slug 'wc-checkoutsuite', but the physical plugin directory is 'wc-checkout-suite'. The WordPress plugin folder slug in a release ZIP is derived from the directory name, so the distribution folder and the text domain will differ.",
+    "consequence_for_F13": "WCCS-066 (release package) must record this divergence explicitly; it is acceptable for a commercially distributed plugin but must not be an accidental mismatch.",
+    "single_source_of_truth_required": "These values must be declared once (bootstrap constants) so a future change is a single edit."
+  },
+  "environment": {
+    "session_origin": "host",
+    "host": {
+      "hostname": "lx",
+      "user": "joaofagner",
+      "uid": 1001,
+      "docker_root": "/home/joaofagner/workfolder/devilbox",
+      "wordpress_root_host": "/home/joaofagner/workfolder/devilbox/data/www/wpagf/htdocs",
+      "plugin_root_host": "/home/joaofagner/workfolder/devilbox/data/www/wpagf/htdocs/wp-content/plugins/wc-checkout-suite"
+    },
+    "container": {
+      "wordpress_root": "/shared/httpd/wpagf/htdocs",
+      "plugin_root": "/shared/httpd/wpagf/htdocs/wp-content/plugins/wc-checkout-suite",
+      "mount": {
+        "host": "./data/www",
+        "container": "/shared/httpd"
+      },
+      "ownership": "uid/gid 1001 (NEW_UID=1001), matches the host user"
+    },
+    "urls": {
+      "site_url": "http://wpagf.dvl.to:8080",
+      "home_url": "http://wpagf.dvl.to:8080",
+      "tld_suffix": "dvl.to",
+      "http_port": 8080,
+      "https_port": 8443
+    },
+    "services": [
+      {
+        "container": "devilbox-httpd-1",
+        "image": "devilbox/nginx-stable:alpine-1.0",
+        "ports": [
+          "8080->80",
+          "8443->443"
+        ],
+        "state": "running"
+      },
+      {
+        "container": "devilbox-php-1",
+        "image": "devilbox/php-fpm:8.2-work-0.150",
+        "ports": [
+          "9000/tcp"
+        ],
+        "state": "running"
+      },
+      {
+        "container": "devilbox-mysql-1",
+        "image": "devilbox/mysql:mariadb-10.6-0.21",
+        "ports": [
+          "3307->3306"
+        ],
+        "state": "running"
+      },
+      {
+        "container": "devilbox-bind-1",
+        "image": "cytopia/bind:alpine-0.35",
+        "ports": [
+          "1053->53"
+        ],
+        "state": "running"
+      }
+    ],
+    "http_checks": [
+      {
+        "url": "http://wpagf.dvl.to:8080/",
+        "method": "GET",
+        "result": 200
+      },
+      {
+        "url": "http://wpagf.dvl.to:8080/carrinho/",
+        "method": "GET",
+        "result": 200
+      },
+      {
+        "url": "http://wpagf.dvl.to:8080/finalizar-compra/",
+        "method": "GET",
+        "result": 302,
+        "note": "redirect target not investigated"
+      }
+    ],
+    "logs": [
+      "/home/joaofagner/workfolder/devilbox/log/nginx-stable",
+      "/home/joaofagner/workfolder/devilbox/log/php-fpm-8.2",
+      "/home/joaofagner/workfolder/devilbox/log/mariadb-10.6"
+    ]
+  },
+  "versions_verified": {
+    "wordpress": {
+      "value": "7.1",
+      "provenance": "wp core version"
+    },
+    "woocommerce": {
+      "value": "11.1.0",
+      "provenance": "wp plugin get woocommerce"
+    },
+    "woocommerce_db_version": {
+      "value": "11.1.0-1",
+      "provenance": "wp option get woocommerce_db_version"
+    },
+    "php": {
+      "value": "8.2.1",
+      "detail": "cli, NTS, built 2023-01-08",
+      "provenance": "php -v in devilbox-php-1"
+    },
+    "wp_cli": {
+      "value": "2.7.1",
+      "provenance": "wp --version",
+      "note": "older than WordPress 7.1 / WooCommerce 11.1; emits PHP 8.2 deprecation notices unless error_reporting is lowered"
+    },
+    "composer": {
+      "value": "2.5.1",
+      "provenance": "composer --version in container"
+    },
+    "mariadb": {
+      "value": "10.6.12-MariaDB-1:10.6.12+maria~ubu2004-log",
+      "provenance": "SELECT VERSION()"
+    },
+    "nginx": {
+      "value": "1.22.1",
+      "provenance": "nginx -v in devilbox-httpd-1"
+    },
+    "git_container": {
+      "value": "2.30.2",
+      "provenance": "git --version in container"
+    },
+    "docker_host": {
+      "value": "26.0.2",
+      "provenance": "docker version"
+    },
+    "docker_compose_host": {
+      "value": "v2.26.1",
+      "provenance": "docker compose version"
+    },
+    "node_container": {
+      "value": "18.13.0",
+      "provenance": "node -v in container"
+    },
+    "npm_container": {
+      "value": "8.19.3",
+      "provenance": "npm -v in container"
+    },
+    "yarn_container": {
+      "value": "1.22.22",
+      "provenance": "yarn -v in container"
+    },
+    "node_host": {
+      "value": "22.21.1",
+      "provenance": "node -v on host"
+    },
+    "npm_host": {
+      "value": "10.9.4",
+      "provenance": "npm -v on host"
+    },
+    "pnpm_host": {
+      "value": "10.15.1",
+      "provenance": "pnpm -v on host",
+      "note": "pnpm is NOT installed in the PHP container"
+    },
+    "yarn_host": {
+      "value": "4.17.1",
+      "provenance": "yarn -v on host"
+    }
+  },
+  "php_runtime": {
+    "available_in_devilbox_config": [
+      "5.2",
+      "5.3",
+      "5.4",
+      "5.5",
+      "5.6",
+      "7.0",
+      "7.1",
+      "7.2",
+      "7.3",
+      "7.4",
+      "8.0",
+      "8.1",
+      "8.2"
+    ],
+    "php_fpm_images_present_locally": [
+      "8.1",
+      "8.2"
+    ],
+    "php_83_available": false,
+    "roadmap_proposed_baseline": "8.3 (ROADMAP.md section 18)",
+    "effective_local_runtime": "8.2.1",
+    "extensions_present": [
+      "bcmath",
+      "curl",
+      "exif",
+      "fileinfo",
+      "gd",
+      "imagick",
+      "imap",
+      "intl",
+      "json",
+      "mbstring",
+      "mysqli",
+      "openssl",
+      "pdo_mysql",
+      "sodium",
+      "xdebug",
+      "zip"
+    ],
+    "ini": {
+      "memory_limit": "512M",
+      "error_reporting": 32767,
+      "display_errors": 1
+    },
+    "xdebug": {
+      "loaded": true,
+      "mode": "",
+      "effective_debugging": "inactive",
+      "note": "enabling step debugging requires an ini change under cfg/php-ini-8.2, outside the plugin root"
+    },
+    "host_php": {
+      "php": "not installed",
+      "composer": "not installed",
+      "wp_cli": "not installed",
+      "note": "all PHP tooling must run inside the container"
+    }
+  },
+  "tooling": {
+    "present_in_container": [
+      "wp",
+      "composer",
+      "phpunit",
+      "phpcs",
+      "phpcbf",
+      "node",
+      "npm",
+      "npx",
+      "yarn",
+      "git"
+    ],
+    "absent_in_container": [
+      "phpstan",
+      "psalm",
+      "php-cs-fixer",
+      "pnpm"
+    ],
+    "browser_automation": {
+      "installed": false,
+      "note": "Chrome/Chromium/Firefox exist on the host but no Playwright/Puppeteer install was found; attempting one failed read-only (EROFS) and was not retried"
+    },
+    "dangerous_tools_policy": "Tests and builds must run inside the container against /shared/httpd/wpagf/htdocs; the host has no PHP."
+  },
+  "wordpress_state": {
+    "theme_active": {
+      "name": "storefront",
+      "version": "4.6.2"
+    },
+    "is_block_theme": false,
+    "themes_installed": [
+      "storefront 4.6.2 (active)",
+      "twentytwentyfive 1.5",
+      "twentytwentyfour 1.6",
+      "twentytwentythree 1.7",
+      "twentytwentytwo 2.2",
+      "wp-agf-real-estate 0.1.0"
+    ],
+    "plugins": [
+      {
+        "name": "woocommerce",
+        "version": "11.1.0",
+        "status": "active"
+      },
+      {
+        "name": "woocommerce-mercadopago",
+        "version": "8.9.3",
+        "status": "active"
+      },
+      {
+        "name": "woocommerce-paypal-payments",
+        "version": "4.1.3",
+        "status": "active"
+      },
+      {
+        "name": "wp-agf",
+        "version": "0.1.0",
+        "status": "active",
+        "note": "belongs to this WordPress directory, unrelated to this product"
+      },
+      {
+        "name": "wp-agf-real-estate",
+        "version": "0.1.0",
+        "status": "active",
+        "note": "belongs to this WordPress directory, unrelated to this product"
+      },
+      {
+        "name": "akismet",
+        "version": "5.7.2",
+        "status": "inactive"
+      },
+      {
+        "name": "wc-checkout-suite",
+        "version": null,
+        "status": "not_installed",
+        "note": "no plugin header exists yet; the directory contains only roadmap/ and docs/"
+      }
+    ],
+    "cache_plugins_active": [],
+    "security_plugins_active": [],
+    "pages": {
+      "checkout": {
+        "id": 2755,
+        "slug": "finalizar-compra",
+        "title": "Finalização de compra",
+        "status": "publish"
+      },
+      "cart": {
+        "id": 2754,
+        "slug": "carrinho",
+        "status": "publish"
+      },
+      "my_account": {
+        "id": 2756,
+        "slug": "minha-conta",
+        "status": "publish"
+      }
+    }
+  },
+  "woocommerce_state": {
+    "store_currency": "BRL",
+    "default_country": "BR:MG",
+    "guest_checkout_enabled": true,
+    "signup_and_login_from_checkout": false,
+    "calc_taxes": false,
+    "prices_include_tax": false,
+    "checkout_implementation": {
+      "type": "checkout_blocks",
+      "evidence": "page 2755 content contains 23 wp:woocommerce/checkout-* blocks and zero [woocommerce_checkout] shortcodes",
+      "classic_checkout_page_present": false,
+      "cart_implementation": "cart_blocks",
+      "note": "There is NO Classic Checkout page in this site. F04 (Classic adapter) cannot be exercised without creating or switching a checkout page, which is a change outside the plugin root."
+    },
+    "checkout_blocks_additional_fields": {
+      "verified_against_version": "11.1.0",
+      "verified_in_task": "WCCS-003",
+      "supported_types": [
+        "text",
+        "select",
+        "checkbox"
+      ],
+      "date_supported": false,
+      "supported_locations": [
+        "contact",
+        "address",
+        "order"
+      ],
+      "deprecated_location": "additional (silently mapped to order)",
+      "hidden_true_supported": false,
+      "required_accepts_rules": true,
+      "field_id_format": "namespace/name",
+      "validation_hooks": [
+        "woocommerce_validate_additional_field",
+        "woocommerce_blocks_validate_location_{location}_fields"
+      ],
+      "meta_prefix_group_other": "_wc_other/",
+      "deprecated_meta_prefix": "_wc_additional/",
+      "custom_field_path": "Store API extensions namespace registered with woocommerce_store_api_register_endpoint_data() on the 'checkout' endpoint",
+      "persistence_api": "CheckoutFields::persist_field_for_order( $key, $value, WC_Order, $group, $set_customer )",
+      "roadmap_correction_required": "ROADMAP.md section 8 and the WCCS-036 deliverable list 'date' among the natively supported additional-field types. In the installed WooCommerce 11.1.0 the supported set is a hardcoded private array without a filter and contains only text, select and checkbox. A date field therefore requires a custom controlled component (WCCS-037). The planning must be corrected; it was not edited here."
+    },
+    "hpos": {
+      "enabled": true,
+      "orders_table_created": true,
+      "authoritative_store": true,
+      "data_sync_enabled": false,
+      "data_sync_option_row_present": false,
+      "data_sync_option_constant": "woocommerce_custom_orders_table_data_sync_enabled",
+      "tables_present": [
+        "wp_wc_orders",
+        "wp_wc_orders_meta"
+      ],
+      "legacy_shop_order_posts": 0,
+      "orders_in_hpos_table": 0,
+      "interpretation_status": "resolved",
+      "resolution": "Resolved by observation in WCCS-002. DataSynchronizer::data_sync_is_enabled() is implemented as 'yes' === get_option( ORDERS_DATA_SYNC_ENABLED_OPTION ) and the option row is absent, so it evaluates to false. At runtime custom_orders_table_usage_is_enabled() returns true and the active order data store is OrdersTableDataStore. HPOS is therefore ON with synchronization OFF, which is exactly the state the WCCS-002 acceptance requires.",
+      "placeholder_note": "Deleting/creating orders in this state still produces a wp_posts row of type 'shop_order_placehold' for compatibility, even though the value itself is stored only in wp_wc_orders_meta. Any code that lists posts must not treat that placeholder as an order.",
+      "wc_get_order_class_note": "wc_get_order() returns Automattic\\WooCommerce\\Admin\\Overrides\\Order, a subclass of WC_Order. Type checks must use instanceof WC_Order and never an exact class comparison."
+    }
+  },
+  "target_gateways": {
+    "note": "Registered as targets for F09 homologation. NONE is enabled and NONE was exercised. Two of the roadmaps referenced payment methods are not fully available in this environment.",
+    "available_in_environment": [
+      {
+        "id": "ppcp-gateway",
+        "provider": "woocommerce-paypal-payments 4.1.3",
+        "title": "PayPal",
+        "enabled": false,
+        "supports": [
+          "products",
+          "refunds",
+          "tokenization",
+          "add_payment_method"
+        ]
+      },
+      {
+        "id": "woo-mercado-pago-custom",
+        "provider": "woocommerce-mercadopago 8.9.3",
+        "title": "Cartão de crédito ou débito",
+        "enabled": false,
+        "supports": [
+          "products",
+          "refunds"
+        ]
+      },
+      {
+        "id": "woo-mercado-pago-pix",
+        "provider": "woocommerce-mercadopago 8.9.3",
+        "title": "Pix",
+        "enabled": false,
+        "supports": [
+          "products",
+          "refunds"
+        ]
+      },
+      {
+        "id": "woo-mercado-pago-basic",
+        "provider": "woocommerce-mercadopago 8.9.3",
+        "title": "Mercado Pago",
+        "enabled": false,
+        "supports": [
+          "products",
+          "refunds"
+        ]
+      },
+      {
+        "id": "bacs",
+        "provider": "woocommerce core",
+        "title": "Transferência bancária",
+        "enabled": false,
+        "supports": [
+          "products"
+        ]
+      },
+      {
+        "id": "cheque",
+        "provider": "woocommerce core",
+        "title": "Cheque",
+        "enabled": false,
+        "supports": [
+          "products"
+        ]
+      },
+      {
+        "id": "cod",
+        "provider": "woocommerce core",
+        "title": "Pagamento na entrega",
+        "enabled": false,
+        "supports": [
+          "products"
+        ]
+      }
+    ],
+    "proposed_target_set": [
+      "ppcp-gateway",
+      "woo-mercado-pago-pix",
+      "woo-mercado-pago-custom",
+      "bacs"
+    ],
+    "express_capable": [
+      "ppcp-gateway"
+    ],
+    "gaps": [
+      "ROADMAP.md section 24 references 'Pix e boleto pelos gateways testados'. Pix is available (woo-mercado-pago-pix); a boleto/ticket gateway is NOT present in this installation.",
+      "No gateway is enabled, so no payment flow can be exercised until one is configured.",
+      "Sandbox credentials were neither requested nor inspected."
+    ],
+    "status": "installed_not_configured_not_enabled_not_tested"
+  },
+  "checkout_extension_points": {
+    "verified_in_task": "WCCS-004",
+    "verified_against_version": "11.1.0",
+    "reference_doc": "docs/api/checkout-extension-points.md",
+    "slot_fill_slots": [
+      "ExperimentalOrderMeta",
+      "ExperimentalDiscountsMeta",
+      "ExperimentalOrderShippingPackages",
+      "ExperimentalOrderLocalPickupPackages"
+    ],
+    "slot_fill_stability": "all slots carry the Experimental prefix; feature detection and safe degradation are mandatory",
+    "additional_field_locations": [
+      "contact",
+      "address",
+      "order"
+    ],
+    "registered_checkout_blocks": 24,
+    "block_insertion_roots": [
+      "woocommerce/checkout -> checkout-fields-block, checkout-totals-block",
+      "woocommerce/checkout-fields-block -> contact-information, billing-address, shipping-address, shipping-method, shipping-methods, pickup-options, payment, order-note, additional-information, terms, express-payment, actions",
+      "woocommerce/checkout-totals-block -> checkout-order-summary-block",
+      "woocommerce/checkout-order-summary-block -> cart-items, coupon-form, totals",
+      "woocommerce/checkout-order-summary-totals-block -> subtotal, discount, shipping, fee, taxes"
+    ],
+    "express_payment_block_registered": true,
+    "express_payment_renders_content": false,
+    "order_confirmation_blocks_available": true,
+    "forbidden": [
+      "rewriting or observing the core checkout DOM (no MutationObserver)",
+      "arbitrary reordering of core fields inside a core block",
+      "cloning or duplicating payment inputs, iframes or gateway SDKs",
+      "re-registering third-party gateways only to restyle them",
+      "attaching a mask directly to core-controlled React inputs without an official extension point",
+      "promising unrestricted visual positioning parity"
+    ]
+  },
+  "blockers": [
+    {
+      "id": "SANDBOX-PAYMENT",
+      "task": "WCCS-004",
+      "first_seen": "2026-09-11",
+      "condition": "No payment gateway is enabled and no sandbox credentials exist in this environment, so the 'sandbox payment, refresh and return' clause of the WCCS-004 acceptance cannot be met.",
+      "runtime_evidence": "WC()->payment_gateways->get_available_payment_gateways() returned 0 gateways; 0 gateways declare express support; all 7 installed gateways report enabled=no.",
+      "requires": "External configuration: enable at least one gateway in sandbox mode with valid credentials. Enabling a gateway is a store settings change outside the plugin root and was NOT performed.",
+      "impact": "WCCS-004 is partially complete. WCCS-049 (gateway and express homologation) and WCCS-062 (functional matrix by gateway version) depend on the same external configuration."
+    }
+  ],
+  "build_toolchain": {
+    "verified_in_task": "WCCS-006",
+    "frontend": {
+      "tool": "@wordpress/scripts",
+      "version": "35.0.0",
+      "engines_required": "node ^20.19.0 || >=22.13.0, npm >=8.19.2",
+      "webpack_version_observed": "5.110.3",
+      "build_runtime_used": "host (Node 22.21.1 / npm 10.9.4)",
+      "container_runtime": "Node 18.13.0 / npm 8.19.3",
+      "container_compatible": false,
+      "output": "build/admin/index.js (211 bytes) + build/admin/index.asset.php",
+      "dependency_extraction_verified": true,
+      "extracted_dependencies": [
+        "wp-i18n"
+      ],
+      "react_bundled": false
+    },
+    "php": {
+      "composer_version": "2.5.1",
+      "installed_dev_tools": [
+        "squizlabs/php_codesniffer 3.13.6",
+        "wp-coding-standards/wpcs 3.4.1",
+        "phpcompatibility/phpcompatibility-wp 2.1.8",
+        "phpstan/phpstan 1.12.34",
+        "szepeviktor/phpstan-wordpress 1.3.5",
+        "php-stubs/wordpress-stubs 6.9.4",
+        "php-stubs/woocommerce-stubs 9.9.5"
+      ]
+    },
+    "runtime_dependency_policy": "The released plugin must work without Composer or npm, so the bootstrap registers its own PSR-4 autoloader and only loads vendor/autoload.php when it exists (ROADMAP.md section 18).",
+    "coding_standard_conflict": {
+      "finding": "phpcs --standard=WordPress reports 4 errors on the new code, all of them WordPress.Files.FileName: it expects class-plugin.php while PSR-4 requires Plugin.php.",
+      "resolution": "Exclude WordPress.Files.FileName, as WooCommerce core itself does. With that exclusion the code is clean (0 errors).",
+      "encoded_by": "WCCS-010 (phpcs.xml.dist was deliberately not created in WCCS-006 to avoid anticipating scope)"
+    }
+  },
+  "architecture_decisions": {
+    "index": "docs/adr/README.md",
+    "threat_model": "docs/operations/threat-model.md",
+    "verified_in_task": "WCCS-005",
+    "adrs": [
+      {
+        "id": "ADR-0001",
+        "file": "docs/adr/ADR-0001-storage-authority.md",
+        "subject": "storage authority per field origin",
+        "status": "accepted",
+        "impact_phases": [
+          "F04",
+          "F07",
+          "F10"
+        ]
+      },
+      {
+        "id": "ADR-0002",
+        "file": "docs/adr/ADR-0002-private-upload-storage.md",
+        "subject": "private upload storage",
+        "status": "accepted",
+        "impact_phases": [
+          "F08"
+        ]
+      },
+      {
+        "id": "ADR-0003",
+        "file": "docs/adr/ADR-0003-cnpj-alphanumeric.md",
+        "subject": "CNPJ as an alphanumeric string",
+        "status": "accepted",
+        "impact_phases": [
+          "F05",
+          "F07"
+        ]
+      },
+      {
+        "id": "ADR-0004",
+        "file": "docs/adr/ADR-0004-checkout-sidebar-excluded.md",
+        "subject": "Checkout Sidebar excluded from v1",
+        "status": "accepted",
+        "impact_phases": [
+          "all"
+        ]
+      },
+      {
+        "id": "ADR-0005",
+        "file": "docs/adr/ADR-0005-preview-container-queries.md",
+        "subject": "visual preview reflows through container queries, not viewport media queries",
+        "status": "accepted",
+        "provenance": "implementation decision taken during WCCS-015, not a planning directive; the first ADR of that kind",
+        "impact_phases": [
+          "F02",
+          "F03",
+          "F09",
+          "F10"
+        ]
+      },
+      {
+        "id": "ADR-0006",
+        "file": "docs/adr/ADR-0006-core-field-protection.md",
+        "subject": "core field protection at the single persistence choke point, with an immutable origin",
+        "status": "accepted",
+        "provenance": "implementation decision taken during WCCS-016, filling a gap that ROADMAP.md section 7 leaves open about where the rule is enforced",
+        "impact_phases": [
+          "F03",
+          "F04",
+          "F07",
+          "F09"
+        ]
+      },
+      {
+        "id": "ADR-0007",
+        "file": "docs/adr/ADR-0007-closed-vocabularies.md",
+        "subject": "closed vocabularies are single-sourced, and a value the admin does not offer is refused rather than ignored",
+        "status": "accepted",
+        "provenance": "implementation decision taken during WCCS-017, sustaining ROADMAP.md section 428 outside the panel",
+        "impact_phases": [
+          "F03",
+          "F05",
+          "F06",
+          "F07",
+          "F09"
+        ]
+      },
+      {
+        "id": "ADR-0008",
+        "file": "docs/adr/ADR-0008-incompatibility-is-not-validation.md",
+        "subject": "an incompatibility is not a validation: it warns and never blocks publication",
+        "status": "accepted",
+        "provenance": "implementation decision taken during WCCS-019, keeping section 8 capabilities from being turned into validation errors that block the merchant",
+        "impact_phases": [
+          "F03",
+          "F04",
+          "F07",
+          "F09"
+        ]
+      }
+    ],
+    "acceptance_basis": "ADR-0001 to ADR-0004 introduce no new direction; they record decisions already fixed by ROADMAP.md sections 13, 12, 2/5/9 and 1, using the evidence gathered in WCCS-001 to WCCS-004. ADR-0005 to ADR-0008 are different and say so: each records a decision taken while executing a task. ADR-0005 determined how the preview reproduces the section 17 breakpoints inside a frame narrower than the window; ADR-0006 determined where and how section 7's protection of structurally required fields is enforced; ADR-0007 sustained section 428 outside the inspector by making the published and the enforced vocabularies one class; ADR-0008 kept section 8's capability limits from becoming validation errors that block the merchant. None contradicts the planning. Because their origin differs, all four are candidates for explicit ratification by the product owner.",
+    "open_questions_carried_forward": [
+      "ADR-0003 records that ROADMAP.md sections 5 and 9 disagree on whether the two CNPJ check digits may themselves be alphanumeric. To be resolved in WCCS-028 against the official source."
+    ]
+  },
+  "phase_status": {
+    "F00": {
+      "title": "Escopo, inventário e provas técnicas",
+      "gate": "Nenhuma capacidade crítica permanece apenas presumida; limitações de Blocks viram regras do produto.",
+      "gate_met": false,
+      "tasks": {
+        "WCCS-001": "completed",
+        "WCCS-002": "completed",
+        "WCCS-003": "completed",
+        "WCCS-004": "partially_completed_blocked",
+        "WCCS-005": "completed"
+      },
+      "why_gate_is_open": "Payment behaviour remains presumed rather than verified because no gateway is enabled and no sandbox credentials exist (blocker SANDBOX-PAYMENT). Payment is a critical capability, so the first half of the gate is not satisfied. The second half is only partially satisfied: the Blocks limitation was discovered and recorded (date is not a native additional-field type in 11.1.0), but it has not yet become a product rule because that requires correcting ROADMAP.md section 8 and the WCCS-036 deliverable, which the current instruction forbids.",
+      "way_forward": "F00 stays open on WCCS-004. Later phases may proceed on items that do not depend on payment, starting with F01/WCCS-006."
+    },
+    "F01": {
+      "title": "Core, schema e contratos de extensão",
+      "gate": "Plugin-base instalável com schema versionado, concorrência e extensão de exemplo mínima.",
+      "gate_met": true,
+      "gate_evidence": {
+        "installable_plugin_base": "WCCS-006: real activation verified, requirements guard keeps the site safe without WooCommerce",
+        "versioned_schema": "WCCS-008: schema_version plus a recorded migration history",
+        "concurrency": "WCCS-008: atomic compare-and-swap write and a 409 conflict on a stale expected_revision",
+        "minimal_example_extension": "examples/custom-field-type registers example.membership-code through the public hook, proven by tests/Integration/F01-wccs-010-ci-wiring-proof.php"
+      },
+      "quality_gates": "composer check runs phpcs, phpstan and phpunit; all green. npm run build, lint:js and check-types are green. The gates were proven non-decorative by inserting a deliberate violation, which both PHPCS and PHPStan caught.",
+      "ci_workflow_executed": false,
+      "ci_note": "The GitHub Actions workflow is syntactically valid and every command it runs passed locally, but it has never run: the plugin has no Git repository yet (GIT-REPOSITORY is open).",
+      "tasks": {
+        "WCCS-006": "completed",
+        "WCCS-007": "completed",
+        "WCCS-008": "completed",
+        "WCCS-009": "completed",
+        "WCCS-010": "completed"
+      },
+      "detail": "WCCS-006 delivered the first implementation: plugin header, identity constants, PSR-4 autoloader that does not require Composer, requirements guard that keeps activation safe without WooCommerce, i18n wiring with a generated POT catalog, and a working frontend build with dependency extraction. Proven by 33 assertions. WCCS-007 delivered the domain: the public FieldTypeInterface contract, three registries (types, presets, validators) with collision diagnostics, a schema validator that rejects undeclared settings, the canonical FieldDefinition, and the 21 v1 field types registered through the same public API an external plugin uses. Proven by 38 assertions. WCCS-008 delivered persistence: a compare-and-swap schema repository (draft, published, bounded revision history, restore-as-new-revision), schema versioning with a migration history, and the administrative REST endpoints that map the repository outcome to 200/401/409/422. Proven by 38 assertions.",
+      "quality_state": {
+        "phpcs_wordpress": "clean (exit 0) with only WordPress.Files.FileName excluded for PSR-4",
+        "phpstan_level_5": "no errors when pointed at the WordPress stubs",
+        "phpstan_note": "phpstan.neon and phpcs.xml.dist are WCCS-010 deliverables; without the stub configuration PHPStan reports spurious 'Function not found' errors",
+        "codestandard_conflict": "ROADMAP.md section 6 declares valueSchema() and settingsSchema() in camelCase while WPCS requires snake_case. The published contract names were kept and a scoped, justified phpcs:ignore was applied to those two declarations."
+      }
+    },
+    "F02": {
+      "title": "Design system e shell administrativo",
+      "gate": "Biblioteca visual aprovada em três larguras e com navegação por teclado.",
+      "gate_met": false,
+      "tasks": {
+        "WCCS-011": "completed",
+        "WCCS-012": "completed",
+        "WCCS-013": "completed",
+        "WCCS-014": "completed",
+        "WCCS-015": "completed"
+      },
+      "detail": "WCCS-011 produced the design tokens the planning referenced but which never existed on disk: resources/design-tokens/tokens.json is now canonical, with matching CSS custom properties scoped to .wccs-admin and .wccs-checkout. 33 contrast pairs are measured by a unit test against WCAG 2.2 AA floors and none fails. WCCS-012 delivered the first real screen: a submenu under WooCommerce with the eight sections the planning fixes, assets gated to that screen alone, and a responsive shell whose breakpoints are checked against the tokens. WCCS-013 delivered the component library — Button, IconButton, Dialog, Tabs, Notice, Badge, StatusBadge, CompatibilityBadge, Field, the four controls, ErrorSummary and EmptyState — proven by a JavaScript suite that renders them in jsdom and operates them with real keyboard events. jsdom 26 does not implement the modal API of <dialog>, so focus containment is explicitly deferred to WCCS-063. The JSDoc-with-checkJs approach is a documented dead end for components that forward arbitrary native attributes; migrating the components to TypeScript is scheduled for F03, as section 18 of the planning intends. WCCS-014 delivered the REST client: error classification that keeps 403/409/422 distinct instead of flattening them into 'something failed', retries restricted to reads (a retried write would manufacture a conflict the user never caused), out-of-order response rejection, and an unsaved-work guard removed as soon as the work is saved. Proven by 18 JavaScript tests and 16 assertions. WCCS-015 delivered the visual preview, and its central problem was honesty rather than layout: narrowing a wrapper and calling it 'mobile' would have satisfied the acceptance while still rendering the desktop layout, because viewport media queries keep answering to the browser window. The frame therefore establishes a named inline-size query container and drives its width from design tokens per device class, so previewed content reflows with the frame; content that only has viewport rules does not reflow, and the frame says so through a mandatory capability surface rather than rendering a preview that looks complete. The preview introduced no REST route and reads nothing, proven by an assertion that the route set is unchanged and by a fetch spy that is never called. 20 new JavaScript tests, 24 assertions. See ADR-0005.",
+      "why_gate_is_open": "The gate has two halves and only one is satisfied. Keyboard navigation is proven: the JavaScript suite renders the shell and the component library in jsdom and operates them with real keyboard events, and the stylesheet declares a focus ring for every interactive element. The other half, 'aprovada em três larguras', has not been observed: no browser was opened in this phase, so no one has seen the layout at any of the three widths, let alone approved it. The preview now makes that reflow mechanically checkable — the container-query wiring is verified in the shipped bundle — but a verified mechanism is not a visual approval.",
+      "way_forward": "Two items close the gate and both belong to WCCS-063 (F10): a real-browser visual review at the desktop, tablet and mobile widths, and the accessibility audit, which is also where the deferred <dialog> focus containment lands. Phase F03 may proceed meanwhile because it depends on the component library's contracts, not on the visual sign-off.",
+      "quality_state": {
+        "phpcs_wordpress": "clean (exit 0)",
+        "phpstan_level_5": "no errors",
+        "php_unit": "57 tests, 322 assertions",
+        "javascript": "79 tests across 9 suites",
+        "integration_assertions": "307 across 11 proof harnesses, 0 failures",
+        "defects_found_and_fixed": [
+          "Field.js documented help, error and required as mandatory in JSDoc, so under strict checkJs the component was unusable by any consumer. Latent since WCCS-013 and only exposed when the preview became Field's first caller.",
+          "The preview stage centred a scroll container with justify-content: center, which clips the start edge and would have put the left of a 1280px preview permanently out of reach on a narrower admin screen.",
+          "The selector-scope parsers in the WCCS-012 and WCCS-013 harnesses used } as the only boundary, so the first selector inside every at-rule block escaped the check while the harness reported full coverage. Fixed in both by treating { as a boundary as well."
+        ]
+      }
+    },
+    "F03": {
+      "title": "Field Manager, seções e publicação",
+      "gate": "Lojista monta e publica um formulário completo, restaura revisão e não perde trabalho em conflito.",
+      "gate_met": false,
+      "tasks": {
+        "WCCS-016": "completed",
+        "WCCS-017": "completed",
+        "WCCS-018": "completed",
+        "WCCS-019": "completed",
+        "WCCS-020": "completed"
+      },
+      "why_gate_is_open": "Every part of the gate is proven at the seam level: a merchant can assemble fields and sections, order them, configure each type, publish with a diff, validation and incompatibilities, restore a revision, and keep their work through a 409. But the gate describes an end-to-end action — 'Lojista monta e publica um formulário completo' — and no merchant has performed it, because no browser was opened in this phase. Proven at every joint and performed by someone are different claims, and the gate asks for the second.",
+      "way_forward": "Two things close it and both are already scheduled: the browser review in WCCS-063 (F10), which is also where the deferred <dialog> focus containment and the three-width visual approval of F02 land, and the end-to-end proof in F12. F04 may proceed meanwhile: it depends on the schema contracts, which are proven, not on visual approval.",
+      "detail": "WCCS-016 delivered the field picker and the CRUD over the draft, and three findings shaped it; all three are recorded in docs/validation/WCCS-016.md. (1) The first version read WooCommerce's checkout fields during plugins_loaded to build the validator. WooCommerce builds its countries object later, so that read was a fatal error which took down the front end, the admin and WP-CLI alike; function_exists('WC') is true long before WooCommerce exists, so it was the wrong readiness check. It was fixed by waiting for did_action('woocommerce_init'), by catching Throwable around the read, by refusing to cache an unavailable read (a memoised empty list would silently disable the origin rule) and by constructing the repository inside the rest_api_init callback. (2) The REST client never included the namespace: it asked /wp-json/schema/draft while the registered route is /wp-json/wc-checkoutsuite/v1/schema/draft. That was latent since WCCS-014 and hidden because the JavaScript test fixture baked the namespace into the root, which is not what the server sends. (3) The origin rule lived only in DefinitionValidator, which runs at publication, so a forged declaration could be parked in the draft; the rule was extracted so the repository applies it on every draft write as well. The picker is driven by the registry, so a third-party type appears with no change to the admin: 21 types in 7 categories, 12 presets, and the 20 real core fields of this store, read live through woocommerce_checkout_fields rather than from a hard-coded list. Core protection lives in CoreFieldGuard at the single persistence choke point and is proven through the real route: removal, archiving, retyping, relaxing a requirement and re-declaring the origin each return 422 with a stable code, while renaming, moving and resizing a core field is accepted — the limit of the rule is asserted, not only the rule. The TypeScript migration scheduled for F03 started where it pays (resources/admin/app/schema/types.ts and fieldOperations.ts) with no build configuration change, and the component library keeps its JSDoc migration for later. WCCS-017 delivered the inspector, whose requirement is one sentence about the whole system: show only the properties a field supports. An inspector that hides a control while the server accepts the value behind it satisfies the screenshot and not the requirement, so the work was split into three halves and all three are proven. The controls for a type are generated from the settingsSchema it declares, so a third-party type gets an editor with no change to the admin. Three real gaps were found: mask was stored and never read or validated (a schema could reference a mask that does not exist); storage and visibility were free maps, so 'redis' was a valid scope and 'twitter' a valid audience; and SchemaValidator did not know items, so the only requirement on an option was that the list had between 1 and 500 entries — the string 'banana' passed. minItems was declared on options since F01 and never read either. DefinitionVocabulary became the single source of every closed set, read by the validator and published to the client, with accepted values derived from the labelled lists rather than written twice; the integration proof compares the two arrays directly and asserts both directions, that every published value is accepted and every off-list value is refused. A mask reference is now {key, version} and the version must match the registered one, which is what makes the version Mask already carried mean something. description was added to the definition: ROADMAP.md section 7 requires descriptions and section 4 repeats them, but there was nowhere to keep one. The Conditions tab is absent on purpose: section 428 fixes six inspector groups and the sixth belongs to F06, so the tab appears only once there is an engine behind it rather than as a panel that opens onto nothing. See ADR-0007. WCCS-018 delivered sections and ordering, and closed two gaps that had been open since F01: sections were stored without ever being validated, and a field's section was never checked against anything, so a field could belong to a section that does not exist and be configured, saved and rendered nowhere. The valid targets are the declared sections plus the five domain locations of section 4, which are always valid because a WooCommerce field adopted from the inventory already carries one. Section locations are modelled as logical places rather than slots, which is what section 4 warns about, and the rules and insertion mapping it also lists were deliberately not modelled: the rules are the conditions engine (F06) and the mapping belongs to the adapter (F04), and a key nothing reads is a promise the code does not keep. Ordering is proven as a storage claim — send an order, read it back, send the reverse, read it back — because a pure function proved in isolation says nothing about whether the order survives. Positions are renumbered on every move rather than swapped, so no ties are left behind and the saved order is the order that was chosen. The reorderable list offers buttons, announces the new position in a live region, and restores focus to the same item after each move, falling back to the opposite control when the one that was used became disabled at the end of the list; 19 DOM specs use a harness that really reorders, because a spy would leave the order intact and a reorder that never happens cannot lose focus. IconButton gained ref forwarding, without which focus management is impossible for whoever uses it. A real bug was found by the integration proofs: validate_references read the raw section key while FieldDefinition::from_array defaults an omitted one to 'order', so the same document was valid to the model and invalid to the check — the same two-sources-for-one-fact class as ADR-0007. Fixed at the root, with two regression tests. Pointer drag-and-drop is deliberately not implemented, and the accessibility reasoning for the keyboard path is recorded in docs/validation/WCCS-018.md rather than in an ADR: it is a reversible interface convention, not an architectural constraint, and adding it to the ADR set would dilute it. WCCS-019 delivered the publication surface. \"Saving a draft does not affect the store\" is proven on the stored documents rather than on what the interface shows: a document is published, a different draft is saved on top of it, and the published document is read back and compared byte for byte. The report answers three separate questions, which section 428 asks for and which lead to opposite actions: what will change (SchemaDiff), whether the schema is valid (422 on publish), and whether a checkout will honour it as written (PublishIncompatibilities). They are returned under separate keys so the interface cannot merge them by accident. The second is what gives the third its value: a valid draft can have incompatibilities, and blocking publication for a platform limitation the Suite can still answer would turn every gap in the Block checkout into a wall for the merchant. See ADR-0008. The capability matrix of section 8 became executable data rather than prose, and the Block answer is not an opinion: WCCS-003 verified against the installed WooCommerce 11.1.0 that the additional-fields API registers exactly text, select and checkbox, and that date is not among them, so the reason shown in the interface is that verification. Today's list of Block incompatibilities is therefore the list of what F07 must deliver, unsoftened. A second family is reported too: a core override whose WooCommerce field has gone, which is the drift ADR-0001 chose to be able to detect, reported only when the inventory was actually read. One difference is reported once rather than once per field below it: moving the first of twenty fields renumbers nineteen positions and is still one decision. Publication remains a single POST with compare-and-swap and the report is a read, because a read route that published would be the easiest way to change a store by accident. Two of my own defects were found by the proof itself: count() over a variable that was already an integer killed the harness after section 7, so sections 8 and 9 never ran, the cleanup never happened and each run inherited the previous run's draft — which surfaced first as a failure in an earlier section for an unrelated reason; and the proof was sending only the field it cared about instead of the whole document, the way a client does, which correctly tripped core_field_removed. Both fixed, and the proof is now verified to be idempotent across consecutive runs. An assertion from F02-015 that pinned the schema route count at four was rewritten without weakening it: it now asserts that the controller publishes exactly the paths it declares as constants and that none renders the preview. WCCS-020 delivered the states, bulk actions and local undo, and closed the last of the four parts of the gate at the seam level. Before it, four of the five states named in the acceptance reached the screen as error.message — a string, which is the same shape for all of them. The classifier turns them into distinct results with distinct remedies, and every one of them keeps the work, which is the rule ROADMAP.md section 428 states as 'falha não descarta trabalho'. The server half of that rule is proven too: a refused write changes nothing at all. A real defect was found while writing the classifier and it was in the worst possible place: ApiError exposes its classification as getters, not methods, and the code from WCCS-016 called them as functions — so the branch that handled a failed save threw a TypeError of its own, exactly when a merchant most needs to know what happened. No test caught it because no test exercised a failing save in the screen; it surfaced because the client tests used property access and the screen used calls. Fixed in four places, and the classifier's fixtures now build ApiError through its real constructor, because a fixture that builds the object differently from production tests something else. A third honesty gap was closed: a document written by a newer build decoded as empty, indistinguishable from a fresh install, so the screen said 'no fields yet' while the fields existed invisibly. read_status() now distinguishes absent, readable, unsupported_version and corrupt, and the proof asserts the state and the empty read side by side. This is the third instance in this phase of the same principle — two different situations must not look identical — after ADR-0007 and ADR-0008; it was recorded in the validation document rather than as a fourth ADR, and it is now a checklist item for later phases: every new storage slot must be able to report its own state. Local undo is separate from the publication history in the type, not in a comment: saving resets it, because after a save the server is the authority and undoing into a state the server never had would be a lie. The proof failed first for the third round in a row on the same family of mistake — inherited state between sections — and was fixed by establishing the state explicitly; it is now verified idempotent across consecutive runs.",
+      "quality_state": {
+        "phpcs_wordpress": "clean (exit 0)",
+        "phpstan_level_5": "no errors",
+        "php_unit": "122 tests, 435 assertions",
+        "javascript": "325 tests across 21 suites",
+        "integration_assertions": "452 across 16 proof harnesses, 0 failures",
+        "defects_found_and_fixed": [
+          "Reading WooCommerce's checkout fields during plugins_loaded was a fatal error that took down the whole site, including WP-CLI. Found by running a command, not by review.",
+          "The REST client built /wp-json/schema/draft instead of /wp-json/wc-checkoutsuite/v1/schema/draft: the namespace was published into the page and never used. Latent since WCCS-014 and hidden by a test fixture that baked the namespace into the root.",
+          "core_field_origin_required was enforced only at publication, so a definition claiming a WooCommerce id as custom could be parked in the draft. Found by the WCCS-016 integration proof.",
+          "mask was stored on every definition and never read or validated, so a schema could reference a mask that does not exist. Found by reading the domain before writing the inspector.",
+          "SchemaValidator had no items support and never enforced minItems, so the only requirement on a choice field's options was that the list had 1 to 500 entries of any shape. Both are now declared and enforced.",
+          "storage and visibility were free maps: any string was a valid scope and any key a valid audience, so a client could write scope 'redis' or expose a value to a nonexistent audience and nothing complained.",
+          "SectionValidator::validate_references read the raw `section` key while FieldDefinition::from_array defaults an omitted one to 'order', so the same document was valid to the definition model and invalid to the reference check simultaneously. Found by two integration proofs failing at once (F01-008 returned 409 instead of 422, F03-017 rejected an ordinary field). Fixed by resolving the section through the definition model.",
+          "sections were stored without ever being validated since F01: no id rule, no title requirement, no duplicate detection, no location check.",
+          "IconButton could not forward a ref, which made focus management impossible for any component that needed to restore focus after a DOM rewrite.",
+          "The WCCS-019 proof called count() on a variable that was already an integer, which was a fatal TypeError. It killed the harness after section 7, so the cleanup in section 9 never ran and every subsequent run inherited the previous run's draft — surfacing first as a failure in an earlier, unrelated section. Fixed, and the proof is now verified idempotent.",
+          "The WCCS-019 proof saved only the field it was interested in rather than the whole document the way a client does, which removes every other field including core overrides; the guard refused correctly and the proof was reading state it had not written.",
+          "ApiError exposes isForbidden, isConflict, isValidationFailure and isTransient as getters, not methods. The code from WCCS-016 called them as functions, so the branch handling a failed save threw a TypeError of its own at exactly the moment a save fails. Found while writing the classifier; no test exercised a failing save in the screen.",
+          "The classifier's own test fixture built ApiError as new ApiError(status, body) instead of new ApiError({status, data}), so every error classified as generic. A fixture that builds the object differently from production tests something else.",
+          "A document written by a newer build decoded as empty, indistinguishable from a fresh install, so the screen would say 'no fields yet' while the fields existed invisibly. SchemaRepository::read_status() now reports absent, readable, unsupported_version and corrupt.",
+          "Bulk move-to-section interleaved the moved fields where they were instead of appending them the way moving a single field does. Fixed so both do the same thing.",
+          "The WCCS-020 proof assumed a draft existed in section 5 after section 3 had deleted it, so both the 'someone else saves first' step and the assertion that followed failed silently on inherited state. Third consecutive task with this family of mistake; the proof is now verified idempotent.",
+          "REGRESSION reported by the user after the task was reported complete: the Fields tab rendered nothing. useDocumentHistory returned a new object on every render, the screen's loading effect depended on that object, and the effect re-ran after each of its own updates until React aborted. The screen had no test at all, which is why it shipped; tests/js/screens/FieldsScreen.test.js now renders it and its first assertion is that it loads exactly once. Verified the guard works by reintroducing the bad dependency: five tests fail with it and all pass without.",
+          "sectionHref dropped the origin from the address it returned, because it was assembled from pathname, query and hash. Fixed to keep the origin: the function returns an address, and an address without one is only usable by a caller that already knows where it is."
+        ]
+      },
+      "gate_evidence": {
+        "assemble": "WCCS-016 to WCCS-018: field picker and CRUD, per-type inspector, sections and ordering, all proven through the real routes and the DOM",
+        "publish": "WCCS-019: the report answers what will change, whether the schema is valid and whether a checkout will honour it; publication is a single CAS write",
+        "restore": "WCCS-019: an earlier revision is published again as a new revision and the history grows instead of losing an entry",
+        "keep_work_through_conflict": "WCCS-020: a 409 names the winning revision, writes nothing at all, and the merchant can save again by acknowledging it",
+        "not_observed": "No browser was opened, so no one has assembled and published a form through the interface"
+      }
+    }
+  },
+  "compatibility_targets": {
+    "status": "provisional_pending_ci_matrix",
+    "min_supported": {
+      "wordpress": "7.1 (provisional floor = local runtime)",
+      "woocommerce": "11.1.0 (provisional floor = local runtime)",
+      "php": "proposed 8.3 per ROADMAP.md section 18; the only runtime available locally is 8.2.1, so code must execute correctly on 8.2.1 for local validation"
+    },
+    "max_supported": "not determined",
+    "ratified_by": "F01 / WCCS-010 (CI matrix) and re-verified in F12 / WCCS-062",
+    "rationale": "ROADMAP.md section 21 states that real min/max versions are fixed in F00 from the CI matrix and required capabilities. The CI matrix is a WCCS-010 deliverable, so the floor above is provisional and explicitly not a support promise.",
+    "prohibited_practice": "Do not use the reference plugin's 'tested up to' header as a test of this product."
+  },
+  "scenario_matrix_to_cover": [
+    "HPOS on and legacy order storage",
+    "guest and logged-in customer",
+    "virtual, physical and mixed cart",
+    "Classic Checkout page and Checkout Blocks page",
+    "block theme and classic theme",
+    "shipping, coupons, taxes and currency",
+    "selected gateways by exact version",
+    "express checkout with a critical required field"
+  ],
+  "excluded_from_v1": [
+    "Checkout Sidebar",
+    "lateral purchase drawer",
+    "transactional mini-cart",
+    "floating cart",
+    "overlay checkout completion",
+    "custom payment gateways",
+    "general page builder",
+    "headless checkout",
+    "upsell/downsell, order bumps, cart recovery, A/B testing",
+    "per-field-option charging",
+    "complex repeaters",
+    "CRM and SaaS licensing service"
+  ],
+  "open_decisions": [
+    {
+      "id": "PHP-BASELINE",
+      "question": "Keep the 8.3 design baseline from ROADMAP.md section 18, or lower the floor to 8.2 to match the only runtime available in Devilbox?",
+      "blocking": "F01 / WCCS-006 and WCCS-010",
+      "options": [
+        "raise the local stack to PHP 8.3 (requires recreating a container, outside the plugin root)",
+        "accept 8.2 as the effective floor and keep 8.3 only as a forward target"
+      ],
+      "recommendation": "Accept PHP 8.2.1 as the validated floor for development and record 8.3 as the design baseline to be ratified by the CI matrix."
+    },
+    {
+      "id": "CLASSIC-TEST-SURFACE",
+      "question": "How will F04 be exercised when the site has no Classic Checkout page?",
+      "blocking": "F04 acceptance",
+      "options": [
+        "create an additional page with the [woocommerce_checkout] shortcode (change outside the plugin root)",
+        "switch page 2755 temporarily",
+        "defer F04 validation"
+      ],
+      "recommendation": "Request explicit authorization before creating or switching any checkout page."
+    },
+    {
+      "id": "NODE-RUNTIME",
+      "question": "Which runtime builds the frontend assets: the container or the host?",
+      "blocking": "F01 / WCCS-006 build",
+      "finding": "Evidence from WCCS-006 makes the container option infeasible with the chosen toolchain: @wordpress/scripts 35.0.0 requires Node ^20.19.0 || >=22.13.0, and the php container runs Node 18.13.0.",
+      "provisional_choice": "Build on the host (Node 22.21.1 / npm 10.9.4). WCCS-006 built successfully there.",
+      "to_close": "Either accept host-only builds and pin the runtime in the repository, or upgrade the container Node version (a change outside the plugin root that needs authorization).",
+      "recommendation": "Pin the runtime in the repository so local and CI builds agree, and record the container as unable to build until its Node is upgraded."
+    },
+    {
+      "id": "GIT-REPOSITORY",
+      "question": "Where does the plugin source live under version control, given that the Devilbox repository ignores /data/www/* ?",
+      "blocking": "WCCS-010 (CI) and WCCS-066 (release package)",
+      "recommendation": "Initialize or attach a dedicated repository for the plugin before CI is configured. No repository was initialized in this task."
+    }
+  ],
+  "not_verified": [
+    "Any payment, order creation, refund or gateway sandbox flow",
+    "A real Blocks checkout submission through the Store API checkout route with a cart and a payment method (registration, validation, the extensions namespace and order persistence were each proven independently in WCCS-003, but the full POST /wc/store/v1/checkout round trip was not executed)",
+    "End-to-end Classic checkout submission from a real Classic checkout page (WCCS-002 proved field registration and server-side validation through the real Classic code path, but no Classic checkout page exists and no order was placed through process_checkout())",
+    "HPOS behaviour with the legacy post-based store active (only the authoritative HPOS store with sync off was exercised)",
+    "Upload, private storage and download authorization",
+    "CPF/CNPJ validation vectors and CNPJ alphanumeric handling",
+    "IMask behaviour in a real checkout",
+    "Conditional logic parity between PHP and JS",
+    "Page rendering in a browser, responsiveness and accessibility",
+    "Performance budgets (80/120 KB gzip, p95 latency)",
+    "Interference from the active wp-agf / wp-agf-real-estate plugins on checkout",
+    "The reference plugin ZIP and the original requirement annex, both absent from this environment",
+    "The DESIGN-TOKENS.json artefact the planning names by that filename. The content was delivered in WCCS-011 as resources/design-tokens/tokens.json, which is canonical and drift-checked against tokens.css, but the filename divergence from the planning is unresolved and is scheduled for WCCS-066."
+  ],
+  "evidence_commands": [
+    "docker ps",
+    "docker compose config --services",
+    "docker compose config",
+    "docker exec -u devilbox devilbox-php-1 php -d error_reporting=0 -d display_errors=0 /usr/local/bin/wp --path=/shared/httpd/wpagf/htdocs core version",
+    "… wp plugin list --fields=name,status,version --format=csv",
+    "… wp theme list --fields=name,version,status --format=csv",
+    "… wp option get <key>",
+    "… wp option list --search='*orders_table*' --fields=option_name,option_value --format=csv",
+    "… wp post get 2755 --field=content",
+    "… wp db query 'SELECT VERSION()' --skip-column-names",
+    "… wp eval 'foreach ( WC_Payment_Gateways::instance()->payment_gateways() as $id => $gw ) { … }'",
+    "docker exec devilbox-php-1 php -v ; php -m ; php -r 'echo ini_get(\"xdebug.mode\");'",
+    "docker exec -u devilbox devilbox-php-1 sh -c 'command -v phpunit phpcs phpcbf'",
+    "docker exec devilbox-mysql-1 mysql --version",
+    "docker exec devilbox-httpd-1 nginx -v",
+    "curl -sS -o /dev/null -w '%{http_code}' http://wpagf.dvl.to:8080/finalizar-compra/"
+  ],
+  "secrets_policy": "No password, key, token, salt or database credential was read, stored or reproduced in this artifact."
+}

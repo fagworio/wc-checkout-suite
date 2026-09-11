@@ -1,0 +1,437 @@
+# Copyright (C) 2026 
+# This file is distributed under the same license as the WC CheckoutSuite plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: WC CheckoutSuite 0.1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wc-checkout-suite\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-09-11T15:59:48+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.7.1\n"
+"X-Domain: wc-checkoutsuite\n"
+
+#. Plugin Name of the plugin
+#: resources/admin/index.js:26
+msgid "WC CheckoutSuite"
+msgstr ""
+
+#. Description of the plugin
+msgid "Advanced checkout field management for WooCommerce: field types, Brazilian presets, masks, server-side validation, conditional logic, private uploads and order persistence for Classic Checkout, Checkout Blocks and HPOS."
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:40
+msgid "Text"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:41
+msgid "Textarea"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:42
+msgid "Email"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:43
+#: src/Domain/Fields/CoreTypes.php:129
+msgid "Phone"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:44
+msgid "URL"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:50
+msgid "Select"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:51
+msgid "Multi Select"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:52
+msgid "Radio"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:53
+msgid "Checkbox Group"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:57
+msgid "Date"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:58
+msgid "Time"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:59
+msgid "Date and time"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:62
+msgid "Hidden"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:63
+msgid "Heading"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:64
+msgid "Paragraph"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:65
+msgid "Restricted HTML"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:68
+msgid "File"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:71
+msgid "Country"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:72
+msgid "State"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:92
+#: src/Domain/Fields/CoreTypes.php:94
+msgid "CPF"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:105
+#: src/Domain/Fields/CoreTypes.php:107
+msgid "CNPJ"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:115
+msgid "RG"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:119
+#: src/Domain/Fields/CoreTypes.php:121
+msgid "CEP"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:129
+msgid "Landline phone"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:130
+msgid "Mobile phone"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:131
+msgid "Person type (PF/PJ)"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:131
+msgid "Person type"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:132
+msgid "Legal name"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:133
+msgid "Trade name"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:134
+msgid "Address number"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:134
+#: src/Domain/Fields/Types/NumberFieldType.php:40
+msgid "Number"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:135
+msgid "Neighborhood"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:136
+msgid "Address complement"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:136
+msgid "Complement"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:139
+msgid "State registration"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:140
+msgid "Municipal registration"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:141
+msgid "Date of birth"
+msgstr ""
+
+#: src/Domain/Fields/DefinitionValidator.php:65
+msgid "A field definition requires an id."
+msgstr ""
+
+#. translators: %s: field id
+#: src/Domain/Fields/DefinitionValidator.php:74
+msgid "The field id \"%s\" must use lowercase letters, digits and underscores only."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionValidator.php:86
+msgid "A field definition requires a label."
+msgstr ""
+
+#. translators: %s: field type key
+#: src/Domain/Fields/DefinitionValidator.php:99
+msgid "The field type \"%s\" is not registered."
+msgstr ""
+
+#. translators: %s: field type key
+#: src/Domain/Fields/DefinitionValidator.php:117
+msgid "The field type \"%s\" stores no value and cannot carry validators."
+msgstr ""
+
+#. translators: %s: preset key
+#: src/Domain/Fields/DefinitionValidator.php:138
+msgid "The preset \"%s\" is not registered."
+msgstr ""
+
+#. translators: 1: preset key, 2: preset type, 3: field type
+#: src/Domain/Fields/DefinitionValidator.php:150
+msgid "The preset \"%1$s\" is built on type \"%2$s\" but the field declares \"%3$s\"."
+msgstr ""
+
+#. translators: %s: validator key
+#: src/Domain/Fields/DefinitionValidator.php:170
+#: src/Domain/Fields/ValidatorRegistry.php:75
+msgid "The validator \"%s\" is not registered."
+msgstr ""
+
+#. translators: %s: normalizer key
+#: src/Domain/Fields/DefinitionValidator.php:187
+msgid "The normalizer \"%s\" is not registered."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionValidator.php:199
+msgid "The field position cannot be negative."
+msgstr ""
+
+#. translators: 1: viewport name, 2: width
+#: src/Domain/Fields/DefinitionValidator.php:211
+msgid "The %1$s width must be between 1 and 12 columns; %2$d was given."
+msgstr ""
+
+#. translators: %s: setting name
+#: src/Domain/Fields/SchemaValidator.php:43
+msgid "The setting \"%s\" is not supported."
+msgstr ""
+
+#. translators: %s: setting name
+#: src/Domain/Fields/SchemaValidator.php:65
+msgid "The setting \"%s\" is required."
+msgstr ""
+
+#. translators: 1: setting name, 2: expected type
+#: src/Domain/Fields/SchemaValidator.php:93
+msgid "The setting \"%1$s\" must be of type %2$s."
+msgstr ""
+
+#. translators: 1: setting name, 2: comma separated list of accepted values
+#: src/Domain/Fields/SchemaValidator.php:109
+msgid "The setting \"%1$s\" must be one of: %2$s."
+msgstr ""
+
+#. translators: 1: setting name, 2: minimum length
+#: src/Domain/Fields/SchemaValidator.php:126
+msgid "The setting \"%1$s\" must be at least %2$d characters long."
+msgstr ""
+
+#. translators: 1: setting name, 2: maximum length
+#: src/Domain/Fields/SchemaValidator.php:141
+msgid "The setting \"%1$s\" must be at most %2$d characters long."
+msgstr ""
+
+#. translators: 1: setting name, 2: minimum value
+#: src/Domain/Fields/SchemaValidator.php:158
+msgid "The setting \"%1$s\" must be at least %2$s."
+msgstr ""
+
+#. translators: 1: setting name, 2: maximum value
+#: src/Domain/Fields/SchemaValidator.php:173
+msgid "The setting \"%1$s\" must be at most %2$s."
+msgstr ""
+
+#. translators: 1: setting name, 2: maximum number of items
+#: src/Domain/Fields/SchemaValidator.php:189
+msgid "The setting \"%1$s\" must contain at most %2$d items."
+msgstr ""
+
+#: src/Domain/Fields/Types/AddressFieldType.php:130
+msgid "This field expects a country or state code."
+msgstr ""
+
+#. translators: %s: submitted value
+#: src/Domain/Fields/Types/AddressFieldType.php:146
+msgid "\"%s\" is not an available option."
+msgstr ""
+
+#: src/Domain/Fields/Types/CheckboxFieldType.php:39
+msgid "Checkbox"
+msgstr ""
+
+#: src/Domain/Fields/Types/CheckboxFieldType.php:112
+msgid "This field expects a checked or unchecked value."
+msgstr ""
+
+#: src/Domain/Fields/Types/ChoiceFieldType.php:143
+msgid "This field has no selectable options configured."
+msgstr ""
+
+#: src/Domain/Fields/Types/ChoiceFieldType.php:151
+msgid "This field expects a list of choices."
+msgstr ""
+
+#. translators: %s: submitted value
+#: src/Domain/Fields/Types/ChoiceFieldType.php:161
+#: src/Domain/Fields/Types/ChoiceFieldType.php:184
+msgid "\"%s\" is not one of the available choices."
+msgstr ""
+
+#: src/Domain/Fields/Types/ChoiceFieldType.php:175
+msgid "This field expects a single choice."
+msgstr ""
+
+#: src/Domain/Fields/Types/ContentFieldType.php:155
+msgid "This field is presentational and cannot store a value."
+msgstr ""
+
+#: src/Domain/Fields/Types/ContentFieldType.php:166
+#: src/Domain/Fields/Types/TextFieldType.php:143
+msgid "This field expects text."
+msgstr ""
+
+#: src/Domain/Fields/Types/ContentFieldType.php:173
+msgid "Please enter at most 500 characters."
+msgstr ""
+
+#: src/Domain/Fields/Types/FileFieldType.php:153
+msgid "This field expects a list of uploaded files."
+msgstr ""
+
+#: src/Domain/Fields/Types/FileFieldType.php:161
+msgid "An uploaded file reference is not valid."
+msgstr ""
+
+#. translators: %d: maximum number of files
+#: src/Domain/Fields/Types/FileFieldType.php:173
+msgid "Please attach at most %d files."
+msgstr ""
+
+#: src/Domain/Fields/Types/FileFieldType.php:183
+msgid "Please attach a single file."
+msgstr ""
+
+#: src/Domain/Fields/Types/NumberFieldType.php:125
+msgid "Please enter a number."
+msgstr ""
+
+#. translators: %s: minimum value
+#: src/Domain/Fields/Types/NumberFieldType.php:138
+msgid "Please enter a value of at least %s."
+msgstr ""
+
+#. translators: %s: maximum value
+#: src/Domain/Fields/Types/NumberFieldType.php:152
+msgid "Please enter a value of at most %s."
+msgstr ""
+
+#: src/Domain/Fields/Types/TemporalFieldType.php:148
+msgid "This field expects a date or time value."
+msgstr ""
+
+#. translators: %s: expected format
+#: src/Domain/Fields/Types/TemporalFieldType.php:159
+msgid "Please use the format %s."
+msgstr ""
+
+#. translators: %s: earliest accepted value
+#: src/Domain/Fields/Types/TemporalFieldType.php:175
+msgid "Please choose a value on or after %s."
+msgstr ""
+
+#. translators: %s: latest accepted value
+#: src/Domain/Fields/Types/TemporalFieldType.php:187
+msgid "Please choose a value on or before %s."
+msgstr ""
+
+#. translators: %d: minimum number of characters
+#: src/Domain/Fields/Types/TextFieldType.php:155
+msgid "Please enter at least %d characters."
+msgstr ""
+
+#. translators: %d: maximum number of characters
+#: src/Domain/Fields/Types/TextFieldType.php:167
+msgid "Please enter at most %d characters."
+msgstr ""
+
+#: src/Domain/Fields/Types/TextFieldType.php:189
+msgid "Please enter a valid email address."
+msgstr ""
+
+#: src/Domain/Fields/Types/TextFieldType.php:200
+msgid "Please enter a valid URL."
+msgstr ""
+
+#: src/Domain/Fields/Types/TextFieldType.php:211
+msgid "Please enter a valid phone number."
+msgstr ""
+
+#. translators: %s: validator key
+#: src/Domain/Fields/ValidatorRegistry.php:92
+msgid "The validator \"%s\" did not return a ValidationResult."
+msgstr ""
+
+#. translators: %s: field label
+#: src/Domain/Validation/ValueProcessor.php:110
+msgid "%s is a required field."
+msgstr ""
+
+#: src/Http/Admin/SchemaController.php:141
+msgid "You are not allowed to manage the checkout schema."
+msgstr ""
+
+#: src/Http/Admin/SchemaController.php:268
+msgid "Another administrator changed this configuration. Reload it and review the differences before saving again."
+msgstr ""
+
+#: src/Http/Admin/SchemaController.php:278
+msgid "The schema was not published because it contains invalid definitions."
+msgstr ""
+
+#. translators: 1: plugin name, 2: list of missing requirements
+#: src/Plugin.php:231
+msgid "%1$s is inactive. %2$s"
+msgstr ""
+
+#. translators: 1: component name, 2: required version
+#: src/Support/Requirements.php:83
+msgid "%1$s %2$s or higher is required but was not detected."
+msgstr ""
+
+#. translators: 1: component name, 2: required version, 3: detected version
+#: src/Support/Requirements.php:91
+msgid "%1$s %2$s or higher is required. Version %3$s was detected."
+msgstr ""
+
+#. translators: 1: required PHP version, 2: current PHP version
+#: wc-checkoutsuite.php:83
+msgid "WC CheckoutSuite requires PHP %1$s or higher. This server runs PHP %2$s, so the plugin is inactive."
+msgstr ""

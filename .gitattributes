@@ -1,0 +1,20 @@
+# Line endings. The project is developed on Linux and built inside a Linux
+# container, so a checked-out file is the same bytes everywhere. Marking this
+# explicitly stops an editor on another platform from rewriting every line and
+# turning one change into a diff of the whole file.
+* text=auto eol=lf
+
+# Generated or binary files: never diff them, and never let a merge tool touch
+# them. The lock files are versioned but are output, not source.
+package-lock.json -diff
+composer.lock     -diff
+*.pot             -diff
+
+# Images and fonts are binary whatever their extension suggests.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.woff binary
+*.woff2 binary

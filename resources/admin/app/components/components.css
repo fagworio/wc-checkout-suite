@@ -1,0 +1,1115 @@
+/*
+ * WC CheckoutSuite — component library.
+ *
+ * Every rule is scoped under .wccs-admin, which is the mount node of the suite
+ * screen. Nothing here can reach wp-admin, another plugin or the storefront,
+ * and no global element is redefined.
+ *
+ * Focus is never removed: every interactive element keeps a visible
+ * :focus-visible ring built from --wccs-focus-ring, which the token tests hold
+ * at 3:1 or better against the surface.
+ *
+ * See ROADMAP.md sections 16 and 17.
+ */
+
+/* Visible to assistive technology only. Kept as real text, never as a
+   background image or a title attribute. */
+.wccs-admin .wccs-screen-reader-text {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+}
+
+.wccs-admin button:focus-visible,
+.wccs-admin a:focus-visible,
+.wccs-admin input:focus-visible,
+.wccs-admin select:focus-visible,
+.wccs-admin textarea:focus-visible,
+.wccs-admin [tabindex]:focus-visible {
+	outline: var(--wccs-size-focus-outline-width) solid var(--wccs-focus-ring);
+	outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ Button */
+
+.wccs-admin .wccs-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--wccs-space-8);
+	min-height: var(--wccs-size-action-height-min);
+	padding: 0 var(--wccs-space-16);
+	border: 1px solid transparent;
+	border-radius: var(--wccs-radius-field);
+	font: inherit;
+	font-weight: var(--wccs-weight-semibold);
+	cursor: pointer;
+	transition: background var(--wccs-motion-fast);
+}
+
+.wccs-admin .wccs-button--small {
+	min-height: 32px;
+	padding: 0 var(--wccs-space-12);
+	font-size: var(--wccs-text-help);
+}
+
+.wccs-admin .wccs-button--primary {
+	background: var(--wccs-brand);
+	color: var(--wccs-on-brand);
+}
+
+.wccs-admin .wccs-button--primary:hover:not(:disabled) {
+	background: var(--wccs-brand-hover);
+}
+
+.wccs-admin .wccs-button--secondary {
+	background: var(--wccs-surface);
+	color: var(--wccs-ink);
+	border-color: var(--wccs-border-control);
+}
+
+.wccs-admin .wccs-button--secondary:hover:not(:disabled) {
+	background: var(--wccs-app-background);
+}
+
+.wccs-admin .wccs-button--danger {
+	background: var(--wccs-danger);
+	color: var(--wccs-on-brand);
+}
+
+.wccs-admin .wccs-button:disabled {
+	cursor: not-allowed;
+	opacity: 0.55;
+}
+
+/* A busy button stays perceivable and keeps its focus. */
+.wccs-admin .wccs-button.is-busy {
+	cursor: progress;
+}
+
+/* -------------------------------------------------------------- IconButton */
+
+.wccs-admin .wccs-icon-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--wccs-size-touch-target);
+	height: var(--wccs-size-touch-target);
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: var(--wccs-radius-control);
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	line-height: 1;
+	cursor: pointer;
+	transition: background var(--wccs-motion-fast);
+}
+
+.wccs-admin .wccs-icon-button:hover:not(:disabled) {
+	background: var(--wccs-app-background);
+}
+
+.wccs-admin .wccs-icon-button:disabled {
+	cursor: not-allowed;
+	opacity: 0.55;
+}
+
+/* ------------------------------------------------------------------ Dialog */
+
+.wccs-admin .wccs-dialog {
+	width: min(560px, calc(100vw - var(--wccs-space-32)));
+	padding: 0;
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-dialog);
+	background: var(--wccs-surface);
+	color: var(--wccs-ink);
+	box-shadow: var(--wccs-elevation-overlay);
+}
+
+.wccs-admin .wccs-dialog::backdrop {
+	background: rgba(18, 23, 40, 0.5);
+}
+
+.wccs-admin .wccs-dialog__header {
+	display: flex;
+	align-items: center;
+	gap: var(--wccs-space-12);
+	padding: var(--wccs-space-16) var(--wccs-space-24);
+	border-bottom: 1px solid var(--wccs-border-decorative);
+}
+
+.wccs-admin .wccs-dialog__title {
+	margin: 0;
+	font-size: var(--wccs-text-heading-medium);
+	line-height: var(--wccs-leading-heading);
+}
+
+.wccs-admin .wccs-dialog__close {
+	margin-left: auto;
+}
+
+.wccs-admin .wccs-dialog__body {
+	padding: var(--wccs-space-24);
+}
+
+.wccs-admin .wccs-dialog__footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--wccs-space-8);
+	padding: var(--wccs-space-16) var(--wccs-space-24);
+	border-top: 1px solid var(--wccs-border-decorative);
+}
+
+/* -------------------------------------------------------------------- Tabs */
+
+.wccs-admin .wccs-tabs__list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--wccs-space-4);
+	border-bottom: 1px solid var(--wccs-border-decorative);
+	margin-bottom: var(--wccs-space-16);
+}
+
+.wccs-admin .wccs-tabs__tab {
+	min-height: var(--wccs-size-touch-target);
+	padding: 0 var(--wccs-space-12);
+	border: 0;
+	border-bottom: 2px solid transparent;
+	background: transparent;
+	color: var(--wccs-ink-muted);
+	font: inherit;
+	font-weight: var(--wccs-weight-medium);
+	cursor: pointer;
+	transition: color var(--wccs-motion-fast);
+}
+
+.wccs-admin .wccs-tabs__tab:hover {
+	color: var(--wccs-ink);
+}
+
+.wccs-admin .wccs-tabs__tab.is-active {
+	color: var(--wccs-brand);
+	border-bottom-color: var(--wccs-brand);
+}
+
+.wccs-admin .wccs-tabs__panel:focus-visible {
+	outline: var(--wccs-size-focus-outline-width) solid var(--wccs-focus-ring);
+	outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ Notice */
+
+.wccs-admin .wccs-notice {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--wccs-space-12);
+	padding: var(--wccs-space-12) var(--wccs-space-16);
+	border: 1px solid var(--wccs-border-decorative);
+	border-left-width: 4px;
+	border-radius: var(--wccs-radius-control);
+	background: var(--wccs-surface);
+}
+
+.wccs-admin .wccs-notice--info {
+	border-left-color: var(--wccs-brand);
+}
+
+.wccs-admin .wccs-notice--success {
+	border-left-color: var(--wccs-success);
+}
+
+.wccs-admin .wccs-notice--warning {
+	border-left-color: var(--wccs-warning);
+}
+
+.wccs-admin .wccs-notice--error {
+	border-left-color: var(--wccs-danger);
+}
+
+.wccs-admin .wccs-notice__glyph {
+	flex: 0 0 auto;
+	font-weight: var(--wccs-weight-bold);
+	line-height: var(--wccs-leading-body);
+}
+
+.wccs-admin .wccs-notice--info .wccs-notice__glyph {
+	color: var(--wccs-brand);
+}
+
+.wccs-admin .wccs-notice--success .wccs-notice__glyph {
+	color: var(--wccs-success);
+}
+
+.wccs-admin .wccs-notice--warning .wccs-notice__glyph {
+	color: var(--wccs-warning);
+}
+
+.wccs-admin .wccs-notice--error .wccs-notice__glyph {
+	color: var(--wccs-danger);
+}
+
+.wccs-admin .wccs-notice__body {
+	min-width: 0;
+}
+
+.wccs-admin .wccs-notice__title {
+	margin: 0 0 var(--wccs-space-4);
+	font-weight: var(--wccs-weight-semibold);
+}
+
+.wccs-admin .wccs-notice__text {
+	color: var(--wccs-ink-muted);
+}
+
+.wccs-admin .wccs-notice__dismiss {
+	margin-left: auto;
+}
+
+/* ------------------------------------------------------------------- Badge */
+
+.wccs-admin .wccs-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px var(--wccs-space-8);
+	border-radius: var(--wccs-radius-pill);
+	font-size: var(--wccs-text-caption);
+	font-weight: var(--wccs-weight-semibold);
+	white-space: nowrap;
+}
+
+.wccs-admin .wccs-badge--neutral {
+	background: var(--wccs-app-background);
+	color: var(--wccs-ink-muted);
+}
+
+.wccs-admin .wccs-badge--brand {
+	background: var(--wccs-brand-subtle);
+	color: var(--wccs-brand);
+}
+
+.wccs-admin .wccs-badge--success {
+	background: var(--wccs-brand-subtle);
+	color: var(--wccs-success);
+}
+
+.wccs-admin .wccs-badge--warning {
+	background: var(--wccs-app-background);
+	color: var(--wccs-warning);
+}
+
+.wccs-admin .wccs-badge--danger {
+	background: var(--wccs-app-background);
+	color: var(--wccs-danger);
+}
+
+.wccs-admin .wccs-compatibility {
+	display: inline-flex;
+	align-items: baseline;
+	gap: var(--wccs-space-8);
+}
+
+.wccs-admin .wccs-compatibility__reason {
+	font-size: var(--wccs-text-help);
+	color: var(--wccs-ink-muted);
+}
+
+/* ------------------------------------------------------------------- Field */
+
+.wccs-admin .wccs-field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wccs-space-4);
+	margin-bottom: var(--wccs-space-16);
+}
+
+.wccs-admin .wccs-field__label {
+	font-size: var(--wccs-text-label);
+	font-weight: var(--wccs-weight-medium);
+}
+
+.wccs-admin .wccs-field__required {
+	color: var(--wccs-danger);
+	margin-left: 2px;
+}
+
+.wccs-admin .wccs-field__help {
+	margin: 0;
+	font-size: var(--wccs-text-help);
+	color: var(--wccs-ink-muted);
+}
+
+.wccs-admin .wccs-field__error {
+	margin: 0;
+	font-size: var(--wccs-text-help);
+	font-weight: var(--wccs-weight-medium);
+	color: var(--wccs-danger);
+}
+
+.wccs-admin .wccs-input {
+	width: 100%;
+	min-height: var(--wccs-size-field-height);
+	padding: var(--wccs-space-8) var(--wccs-space-12);
+	border: 1px solid var(--wccs-border-control);
+	border-radius: var(--wccs-radius-field);
+	background: var(--wccs-surface);
+	color: var(--wccs-ink);
+	font: inherit;
+}
+
+.wccs-admin .wccs-input--textarea {
+	min-height: 96px;
+	resize: vertical;
+}
+
+.wccs-admin .wccs-field.has-error .wccs-input {
+	border-color: var(--wccs-danger);
+	border-width: 2px;
+}
+
+.wccs-admin .wccs-checkbox {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--wccs-space-8);
+	min-height: var(--wccs-size-touch-target);
+}
+
+.wccs-admin .wccs-checkbox__input {
+	width: 18px;
+	height: 18px;
+	accent-color: var(--wccs-brand);
+}
+
+/* ----------------------------------------------------------- ErrorSummary */
+
+.wccs-admin .wccs-error-summary {
+	margin-bottom: var(--wccs-space-16);
+	padding: var(--wccs-space-16);
+	border: 2px solid var(--wccs-danger);
+	border-radius: var(--wccs-radius-control);
+	background: var(--wccs-surface);
+}
+
+.wccs-admin .wccs-error-summary__title {
+	margin: 0 0 var(--wccs-space-8);
+	font-weight: var(--wccs-weight-semibold);
+}
+
+.wccs-admin .wccs-error-summary__list {
+	margin: 0;
+	padding-left: var(--wccs-space-24);
+}
+
+/* ------------------------------------------------------------- EmptyState */
+
+.wccs-admin .wccs-empty-state {
+	padding: var(--wccs-space-32) var(--wccs-space-24);
+	text-align: center;
+	border: 1px dashed var(--wccs-border-control);
+	border-radius: var(--wccs-radius-card);
+}
+
+.wccs-admin .wccs-empty-state__title {
+	margin: 0 0 var(--wccs-space-4);
+	font-size: var(--wccs-text-heading-small);
+	font-weight: var(--wccs-weight-semibold);
+}
+
+.wccs-admin .wccs-empty-state__description {
+	margin: 0 auto;
+	max-width: 48ch;
+	color: var(--wccs-ink-muted);
+}
+
+.wccs-admin .wccs-empty-state__action {
+	margin-top: var(--wccs-space-16);
+}
+
+/* --------------------------------------------------------------- Segmented */
+
+.wccs-admin .wccs-segmented {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: var(--wccs-space-4);
+	padding: var(--wccs-space-4);
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-pill);
+	background: var(--wccs-app-background);
+}
+
+/* The compact variant changes the padding only. The height stays at the touch
+   target size, because "compact" must not mean "harder to tap". */
+.wccs-admin .wccs-segmented__option {
+	min-height: var(--wccs-size-action-height-min);
+	padding: 0 var(--wccs-space-16);
+	border: 0;
+	border-radius: var(--wccs-radius-pill);
+	background: transparent;
+	color: var(--wccs-ink-muted);
+	font: inherit;
+	font-size: var(--wccs-text-label);
+	cursor: pointer;
+	transition: background var(--wccs-motion-fast) ease,
+		color var(--wccs-motion-fast) ease;
+}
+
+.wccs-admin .wccs-segmented--compact .wccs-segmented__option {
+	min-height: var(--wccs-size-touch-target);
+	padding: 0 var(--wccs-space-12);
+}
+
+/* Selection is carried by fill, weight and the pressed state at once, so it
+   survives a monochrome display and is announced to assistive technology. */
+.wccs-admin .wccs-segmented__option[aria-pressed="true"] {
+	background: var(--wccs-surface);
+	color: var(--wccs-ink);
+	font-weight: var(--wccs-weight-semibold);
+	box-shadow: var(--wccs-elevation-raised);
+}
+
+/* ----------------------------------------------------------------- Preview */
+
+.wccs-admin .wccs-preview__header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--wccs-space-12);
+}
+
+.wccs-admin .wccs-preview__title {
+	margin: 0;
+	font-size: var(--wccs-text-heading-medium);
+	line-height: var(--wccs-leading-heading);
+}
+
+.wccs-admin .wccs-preview__statement {
+	margin: var(--wccs-space-8) 0 0;
+	max-width: 72ch;
+	color: var(--wccs-ink-muted);
+}
+
+.wccs-admin .wccs-preview__controls {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--wccs-space-12);
+	margin-block: var(--wccs-space-16);
+}
+
+.wccs-admin .wccs-preview__capabilities {
+	display: grid;
+	gap: var(--wccs-space-8);
+	margin: 0 0 var(--wccs-space-16);
+	padding: 0;
+	list-style: none;
+}
+
+.wccs-admin .wccs-preview__capability {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: var(--wccs-space-8);
+}
+
+.wccs-admin .wccs-preview__capability-label {
+	font-weight: var(--wccs-weight-semibold);
+}
+
+/* The stage scrolls when the selected device is wider than the admin content
+   area. The alternative — shrinking the surface — would show a layout that does
+   not match the device the person selected. */
+.wccs-admin .wccs-preview__stage {
+	display: flex;
+	/* `flex-start` rather than `center`, with `margin-inline: auto` on the
+	   surface doing the centring. Centring a scroll container clips the start
+	   edge, which would put the left of a 1280px preview permanently out of
+	   reach on a narrower admin screen. */
+	justify-content: flex-start;
+	overflow-x: auto;
+	padding: var(--wccs-space-16);
+	background: var(--wccs-app-background);
+	border-radius: var(--wccs-radius-panel);
+}
+
+/* The selected device class decides the width the previewed content is laid out
+   at, independently of the browser window. */
+.wccs-admin .wccs-preview__surface[data-viewport="desktop"] {
+	--wccs-preview-width: var(--wccs-size-preview-desktop);
+}
+
+.wccs-admin .wccs-preview__surface[data-viewport="tablet"] {
+	--wccs-preview-width: var(--wccs-size-preview-tablet);
+}
+
+.wccs-admin .wccs-preview__surface[data-viewport="mobile"] {
+	--wccs-preview-width: var(--wccs-size-preview-mobile);
+}
+
+/*
+ * The query container.
+ *
+ * This is the rule that makes the preview mean something. Narrowing a plain
+ * wrapper would leave viewport media queries answering to the browser window, so
+ * "mobile" would keep rendering the desktop layout. Declaring `inline-size`
+ * containment publishes the wrapper's own width, and previewed content that
+ * opts into `@container` then reflows with the frame.
+ */
+.wccs-admin .wccs-preview__surface {
+	box-sizing: border-box;
+	flex: 0 0 auto;
+	margin-inline: auto;
+	inline-size: var(--wccs-preview-width, 100%);
+	container-name: wccs-preview;
+	container-type: inline-size;
+	background: var(--wccs-surface);
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-card);
+	box-shadow: var(--wccs-elevation-raised);
+}
+
+.wccs-admin .wccs-preview__surface-inner {
+	padding: var(--wccs-space-24);
+}
+
+/*
+ * The synthetic sample, laid out through container queries so the three device
+ * classes produce three visibly different arrangements.
+ */
+.wccs-admin .wccs-preview__sample {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: var(--wccs-space-16);
+	align-items: start;
+}
+
+.wccs-admin .wccs-preview__sample-notice,
+.wccs-admin .wccs-preview__sample-line,
+.wccs-admin .wccs-preview__sample-adapter {
+	grid-column: 1 / -1;
+	margin: 0;
+}
+
+.wccs-admin .wccs-preview__sample-notice,
+.wccs-admin .wccs-preview__sample-adapter {
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+}
+
+@container wccs-preview (max-width: 1020px) {
+	.wccs-admin .wccs-preview__sample {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@container wccs-preview (max-width: 760px) {
+	.wccs-admin .wccs-preview__sample {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+/* ------------------------------------------------------------------ Picker */
+
+.wccs-admin .wccs-picker__controls {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: var(--wccs-space-12);
+	margin-bottom: var(--wccs-space-12);
+}
+
+.wccs-admin .wccs-picker__group {
+	margin-top: var(--wccs-space-24);
+}
+
+.wccs-admin .wccs-picker__group-title {
+	margin: 0 0 var(--wccs-space-8);
+	font-size: var(--wccs-text-heading-small);
+	font-weight: var(--wccs-weight-semibold);
+}
+
+.wccs-admin .wccs-picker__list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: var(--wccs-space-8);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.wccs-admin .wccs-picker__item {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--wccs-space-4);
+	inline-size: 100%;
+	min-height: var(--wccs-size-touch-target);
+	padding: var(--wccs-space-12);
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-control);
+	background: var(--wccs-surface);
+	color: var(--wccs-ink);
+	font: inherit;
+	text-align: start;
+	cursor: pointer;
+	transition: border-color var(--wccs-motion-fast) ease;
+}
+
+.wccs-admin .wccs-picker__item:hover {
+	border-color: var(--wccs-brand);
+}
+
+.wccs-admin .wccs-picker__item-label {
+	font-weight: var(--wccs-weight-semibold);
+}
+
+.wccs-admin .wccs-picker__item-meta {
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+}
+
+.wccs-admin .wccs-picker__hint,
+.wccs-admin .wccs-picker__empty {
+	max-width: 72ch;
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+}
+
+/* ------------------------------------------------------------------ Fields */
+
+.wccs-admin .wccs-fields__header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--wccs-space-16);
+	margin-bottom: var(--wccs-space-16);
+}
+
+.wccs-admin .wccs-fields__title {
+	margin: 0;
+	font-size: var(--wccs-text-heading-medium);
+	line-height: var(--wccs-leading-heading);
+}
+
+.wccs-admin .wccs-fields__summary {
+	margin: var(--wccs-space-4) 0 0;
+	max-width: 72ch;
+	color: var(--wccs-ink-muted);
+}
+
+.wccs-admin .wccs-fields__actions {
+	display: flex;
+	align-items: center;
+	gap: var(--wccs-space-8);
+}
+
+.wccs-admin .wccs-fields__group {
+	margin-bottom: var(--wccs-space-24);
+}
+
+.wccs-admin .wccs-fields__group-title {
+	margin: 0 0 var(--wccs-space-8);
+	font-size: var(--wccs-text-heading-small);
+	font-weight: var(--wccs-weight-semibold);
+}
+
+.wccs-admin .wccs-fields__list {
+	display: grid;
+	gap: var(--wccs-space-8);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.wccs-admin .wccs-fields__row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--wccs-space-12);
+	padding: var(--wccs-space-12) var(--wccs-space-16);
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-row);
+	background: var(--wccs-surface);
+}
+
+/* An archived field stays visible and keeps its actions: hiding it would make
+   restoring it impossible. */
+.wccs-admin .wccs-fields__row.is-archived {
+	background: var(--wccs-app-background);
+	color: var(--wccs-ink-muted);
+}
+
+.wccs-admin .wccs-fields__row-main {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 220px;
+}
+
+.wccs-admin .wccs-fields__row-label {
+	font-weight: var(--wccs-weight-semibold);
+}
+
+.wccs-admin .wccs-fields__row-id {
+	color: var(--wccs-ink-muted);
+	font-family: var(--wccs-font-mono);
+	font-size: var(--wccs-text-caption);
+}
+
+.wccs-admin .wccs-fields__row-badges,
+.wccs-admin .wccs-fields__row-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--wccs-space-8);
+}
+
+.wccs-admin .wccs-fields__protected {
+	max-width: 40ch;
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+}
+
+.wccs-admin .wccs-fields__picker {
+	margin-top: var(--wccs-space-32);
+	padding-top: var(--wccs-space-24);
+	border-top: 1px solid var(--wccs-border-decorative);
+}
+
+/* --------------------------------------------------------------- Inspector */
+
+.wccs-admin .wccs-inspector__panel {
+	display: grid;
+	gap: var(--wccs-space-16);
+}
+
+.wccs-admin .wccs-inspector__group {
+	margin: 0;
+	padding: var(--wccs-space-12);
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-control);
+}
+
+.wccs-admin .wccs-inspector__legend {
+	padding-inline: var(--wccs-space-4);
+	font-weight: var(--wccs-weight-semibold);
+}
+
+.wccs-admin .wccs-inspector__rows {
+	display: grid;
+	gap: var(--wccs-space-8);
+	margin: 0 0 var(--wccs-space-12);
+	padding: 0;
+	list-style: none;
+}
+
+.wccs-admin .wccs-inspector__row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: var(--wccs-space-8);
+}
+
+.wccs-admin .wccs-inspector__row > * {
+	flex: 1 1 160px;
+}
+
+.wccs-admin .wccs-inspector__hint {
+	margin: var(--wccs-space-4) 0 0;
+	max-width: 72ch;
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+}
+
+/* The technical identity of a field. Read-only on purpose: none of these values
+   is the merchant's to change, and showing them prevents a support conversation
+   from starting with a screenshot request. */
+.wccs-admin .wccs-inspector__identity {
+	display: grid;
+	grid-template-columns: minmax(120px, auto) minmax(0, 1fr);
+	gap: var(--wccs-space-4) var(--wccs-space-16);
+	margin: 0;
+}
+
+.wccs-admin .wccs-inspector__identity dt {
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+}
+
+.wccs-admin .wccs-inspector__identity dd {
+	margin: 0;
+	overflow-wrap: anywhere;
+	font-family: var(--wccs-font-mono);
+	font-size: var(--wccs-text-caption);
+}
+
+/* ------------------------------------------------------------- SortableList */
+
+.wccs-admin .wccs-sortable__list {
+	display: grid;
+	gap: var(--wccs-space-8);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.wccs-admin .wccs-sortable__item {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--wccs-space-12);
+	padding: var(--wccs-space-8) var(--wccs-space-12);
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-row);
+	background: var(--wccs-surface);
+}
+
+/* The position is decoration for the eye; the live region carries the same fact
+   to a screen reader, so the number is hidden from the accessibility tree. */
+.wccs-admin .wccs-sortable__position {
+	min-inline-size: 1.5em;
+	color: var(--wccs-ink-muted);
+	font-family: var(--wccs-font-mono);
+	font-size: var(--wccs-text-caption);
+	text-align: end;
+}
+
+.wccs-admin .wccs-sortable__content {
+	flex: 1 1 240px;
+	min-inline-size: 0;
+}
+
+.wccs-admin .wccs-sortable__actions {
+	display: flex;
+	gap: var(--wccs-space-4);
+}
+
+.wccs-admin .wccs-sortable__empty {
+	margin: 0;
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+}
+
+/* ----------------------------------------------------------------- Sections */
+
+.wccs-admin .wccs-fields__group-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--wccs-space-8);
+	margin-bottom: var(--wccs-space-8);
+}
+
+.wccs-admin .wccs-fields__group-header .wccs-fields__group-title {
+	margin: 0;
+}
+
+.wccs-admin .wccs-fields__group-note {
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+}
+
+.wccs-admin .wccs-fields__sections {
+	margin-top: var(--wccs-space-32);
+	padding-top: var(--wccs-space-24);
+	border-top: 1px solid var(--wccs-border-decorative);
+}
+
+.wccs-admin .wccs-fields__section-form {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: var(--wccs-space-12);
+}
+
+.wccs-admin .wccs-fields__section-form > * {
+	flex: 1 1 200px;
+}
+
+/* A row inside a sortable list already carries its own frame. */
+.wccs-admin .wccs-sortable .wccs-fields__row {
+	flex-wrap: nowrap;
+	padding: 0;
+	border: 0;
+	background: transparent;
+}
+
+/* ----------------------------------------------------------------- Publish */
+
+.wccs-admin .wccs-publish,
+.wccs-admin .wccs-revisions {
+	margin-block: var(--wccs-space-24);
+	padding: var(--wccs-space-16);
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-panel);
+	background: var(--wccs-surface);
+}
+
+.wccs-admin .wccs-publish__header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--wccs-space-12);
+}
+
+.wccs-admin .wccs-publish__title,
+.wccs-admin .wccs-revisions__title {
+	margin: 0;
+	font-size: var(--wccs-text-heading-small);
+	font-weight: var(--wccs-weight-semibold);
+}
+
+.wccs-admin .wccs-publish__statement,
+.wccs-admin .wccs-revisions__statement {
+	margin: var(--wccs-space-4) 0 var(--wccs-space-16);
+	max-width: 72ch;
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+}
+
+.wccs-admin .wccs-publish__changes {
+	display: grid;
+	gap: var(--wccs-space-16);
+	margin-block: var(--wccs-space-16);
+}
+
+.wccs-admin .wccs-publish__group-title {
+	display: flex;
+	align-items: center;
+	gap: var(--wccs-space-8);
+	margin: 0 0 var(--wccs-space-4);
+	font-size: var(--wccs-text-label);
+	font-weight: var(--wccs-weight-semibold);
+}
+
+.wccs-admin .wccs-publish__list,
+.wccs-admin .wccs-publish__differences {
+	margin: 0;
+	padding-inline-start: var(--wccs-space-24);
+}
+
+.wccs-admin .wccs-publish__differences {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--wccs-space-8);
+	margin-block: var(--wccs-space-4);
+	list-style: none;
+	padding-inline-start: 0;
+}
+
+.wccs-admin .wccs-publish__differences li {
+	display: flex;
+	align-items: center;
+	gap: var(--wccs-space-4);
+	font-size: var(--wccs-text-help);
+}
+
+.wccs-admin .wccs-publish__key {
+	color: var(--wccs-ink-muted);
+}
+
+.wccs-admin .wccs-publish__ok {
+	margin: var(--wccs-space-4) 0;
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+}
+
+.wccs-admin .wccs-publish__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--wccs-space-12);
+	margin-top: var(--wccs-space-16);
+}
+
+.wccs-admin .wccs-publish__hint {
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+}
+
+/* --------------------------------------------------------------- Revisions */
+
+.wccs-admin .wccs-revisions__list {
+	display: grid;
+	gap: var(--wccs-space-8);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.wccs-admin .wccs-revisions__item {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--wccs-space-12);
+	padding: var(--wccs-space-8) var(--wccs-space-12);
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-row);
+}
+
+/* The revision the store is running is marked by weight and wording as well as
+   by colour, so it does not depend on seeing the difference. */
+.wccs-admin .wccs-revisions__item.is-current {
+	border-color: var(--wccs-success);
+	font-weight: var(--wccs-weight-semibold);
+}
+
+.wccs-admin .wccs-revisions__main {
+	display: flex;
+	flex-direction: column;
+}
+
+.wccs-admin .wccs-revisions__when {
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-caption);
+}
+
+/* -------------------------------------------------------------------- Bulk */
+
+.wccs-admin .wccs-bulk {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: var(--wccs-space-16);
+	margin-bottom: var(--wccs-space-16);
+	padding: var(--wccs-space-12) var(--wccs-space-16);
+	border: 1px solid var(--wccs-border-control);
+	border-radius: var(--wccs-radius-panel);
+	background: var(--wccs-brand-subtle);
+}
+
+.wccs-admin .wccs-bulk__count {
+	margin: 0;
+	font-weight: var(--wccs-weight-semibold);
+}
+
+.wccs-admin .wccs-bulk__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: var(--wccs-space-8);
+}
+
+/* The selection control sits before the row body, and its hit area follows the
+   touch target token even though the box itself is smaller. */
+.wccs-admin .wccs-fields__select {
+	flex: 0 0 auto;
+	inline-size: 18px;
+	block-size: 18px;
+	min-block-size: var(--wccs-size-touch-target);
+	margin: 0;
+}
+
+/* ------------------------------------------------------------------- Motion */
+
+@media (prefers-reduced-motion: reduce) {
+	.wccs-admin *,
+	.wccs-admin *::before,
+	.wccs-admin *::after {
+		transition: none !important;
+		animation: none !important;
+	}
+}

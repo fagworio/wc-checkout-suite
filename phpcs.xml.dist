@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+<ruleset name="WC CheckoutSuite">
+	<description>Coding standards for the WC CheckoutSuite plugin.</description>
+
+	<file>wc-checkoutsuite.php</file>
+	<file>src/</file>
+	<file>tests/Unit/</file>
+	<file>tests/phpstan-bootstrap.php</file>
+	<file>examples/</file>
+
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/node_modules/*</exclude-pattern>
+	<exclude-pattern>/build/*</exclude-pattern>
+	<exclude-pattern>/languages/*</exclude-pattern>
+	<exclude-pattern>/docs/*</exclude-pattern>
+	<exclude-pattern>/roadmap/*</exclude-pattern>
+
+	<!--
+		tests/Integration holds runnable proof harnesses executed with
+		`wp eval-file`. They are scripts, not shipped code: they print to stdout
+		on purpose and they hook into WooCommerce hooks that are not prefixed.
+		They are executed against a real installation instead of being linted.
+	-->
+	<exclude-pattern>/tests/Integration/*</exclude-pattern>
+
+	<!--
+		tests/Unit/Stubs/WooCommerceLoadOrderStubs.php stands in for WordPress's
+		own `WC()` and `did_action()` on purpose, because the behaviour it helps
+		prove is how the code behaves at particular points in WordPress's load
+		order. The standard forbids unprefixed global functions, so the file is
+		excluded rather than annotated; every other unit test file remains inside
+		the ruleset.
+	-->
+	<exclude-pattern>/tests/Unit/Stubs/WooCommerceLoadOrderStubs.php</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg name="basepath" value="."/>
+	<arg name="parallel" value="8"/>
+	<arg name="cache" value=".phpcs-cache"/>
+	<arg name="colors"/>
+	<arg value="ps"/>
+
+	<config name="minimum_supported_wp_version" value="7.1"/>
+
+	<!-- The plugin floor is PHP 8.2; PHPCompatibility checks the range this
+	     code must remain valid across, starting at the floor. -->
+	<config name="testVersion" value="8.2-"/>
+
+	<rule ref="WordPress">
+		<!--
+			PSR-4 autoloading is mandated by ROADMAP.md section 18, so a class
+			lives in src/Domain/Fields/FieldTypeRegistry.php rather than in
+			class-field-type-registry.php. WooCommerce core excludes this same
+			sniff for its own src/ tree.
+		-->
+		<exclude name="WordPress.Files.FileName"/>
+	</rule>
+
+	<rule ref="PHPCompatibilityWP"/>
+
+	<!--
+		manage_woocommerce is registered by WooCommerce at runtime and required by
+		ROADMAP.md section 19. Teaching the sniff about it here is why the plugin
+		needs no per-line suppression for capabilities.
+	-->
+	<rule ref="WordPress.WP.Capabilities">
+		<properties>
+			<property name="custom_capabilities" type="array">
+				<element value="manage_woocommerce"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<!--
+				The example extension under examples/ is a separate plugin and
+				therefore carries its own text domain, as a real extension would.
+			-->
+			<property name="text_domain" type="array">
+				<element value="wc-checkoutsuite"/>
+				<element value="wccs-example"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="wccs"/>
+				<element value="WCCS"/>
+				<element value="WCCheckoutSuite"/>
+				<element value="WCCheckoutSuiteExample"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!--
+		Unit tests name their methods in snake_case and may use assert helpers
+		that the production rules do not expect, but they are still held to the
+		standard so the suite cannot rot.
+	-->
+	<rule ref="WordPress.PHP.DevelopmentFunctions">
+		<exclude-pattern>/tests/Unit/*</exclude-pattern>
+	</rule>
+</ruleset>
