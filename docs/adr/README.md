@@ -15,6 +15,7 @@ WC CheckoutSuite · Planejamento 1.0 · artefatos da tarefa **WCCS-005** (F00)
 | [ADR-0007](ADR-0007-closed-vocabularies.md) | Vocabulários fechados: o publicado e o exigido são o mesmo | **Aceito** | F03, F05, F06, F07, F09 | WCCS-017 (inspector por tipo) |
 | [ADR-0008](ADR-0008-incompatibility-is-not-validation.md) | Incompatibilidade não é validação | **Aceito** | F03, F04, F07, F09 | WCCS-019 (draft e PublishDiff) |
 | [ADR-0009](ADR-0009-version-control.md) | O plugin é versionado num repositório próprio, dentro do Devilbox | **Aceito** | Todas | Instrução do responsável do produto |
+| [ADR-0010](ADR-0010-order-snapshot-preserves-history.md) | O snapshot do pedido torna a mudança de tipo segura para o histórico | **Aceito** | F04, F07, F10 | WCCS-024 (histórico de valores) |
 
 Documento correlato: [Modelo de ameaças](../operations/threat-model.md).
 
@@ -37,8 +38,11 @@ tomadas durante a execução**, não de diretrizes do planejamento.
 - **ADR-0008** — impede que uma limitação de plataforma seja tratada como erro do lojista.
 - **ADR-0009** — de natureza diferente das anteriores: não é uma decisão de implementação, é a decisão do
   responsável do produto sobre onde o código vive, e encerra a decisão aberta `GIT-REPOSITORY`.
+- **ADR-0010** — o `§5` e o `§13` dizem que mudar o tipo de um campo exige uma migração, sem dizer se isso
+  significa recusar a mudança ou garantir que ela não estraga o histórico. A WCCS-024 teve de escolher, e o ADR
+  registra a escolha e o que ela obriga.
 
-Por terem origem distinta do planejamento, os cinco são candidatos à ratificação explícita do responsável do
+Por terem origem distinta do planejamento, os seis são candidatos à ratificação explícita do responsável do
 produto.
 
 Três consequências práticas:
@@ -47,8 +51,8 @@ Três consequências práticas:
    edição silenciosa deste diretório.
 2. **A ratificação formal do responsável do produto** sobre os registros 0001–0004 permanece recomendada,
    mas não bloqueia as fases seguintes, porque nenhum rumo novo foi aberto.
-3. **O ADR-0005 abriu precedente, e o ADR-0006 o confirma:** decisões de implementação que restrinjam
-   trabalho futuro passam a ser registradas aqui, e não apenas as que o planejamento já fixava.
+3. **O ADR-0005 abriu precedente, e os ADRs 0006 a 0008 e 0010 o confirmam:** decisões de implementação que
+   restrinjam trabalho futuro passam a ser registradas aqui, e não apenas as que o planejamento já fixava.
 
 ## Decisões ainda abertas (sem ADR)
 

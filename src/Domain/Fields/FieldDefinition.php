@@ -167,6 +167,46 @@ final class FieldDefinition {
 	}
 
 	/**
+	 * The declared options as `value => label`.
+	 *
+	 * Only the choice types declare options, so this is empty for everything else.
+	 * It exists because three callers now need the same map — the adapter that
+	 * renders a select, the validator that decides whether a submitted key is
+	 * allowed, and the snapshot that has to remember what a key meant — and a set
+	 * of choices read three different ways is three chances to disagree.
+	 *
+	 * A bare string in the list is its own label, which is the shape the choice
+	 * type already accepts.
+	 *
+	 * @return array<string, string>
+	 */
+	public function options(): array {
+		$declared = $this->settings['options'] ?? null;
+
+		if ( ! is_array( $declared ) ) {
+			return array();
+		}
+
+		$options = array();
+
+		foreach ( $declared as $option ) {
+			if ( is_array( $option ) && isset( $option['value'] ) ) {
+				$value = (string) $option['value'];
+
+				$options[ $value ] = isset( $option['label'] ) ? (string) $option['label'] : $value;
+
+				continue;
+			}
+
+			if ( is_string( $option ) ) {
+				$options[ $option ] = $option;
+			}
+		}
+
+		return $options;
+	}
+
+	/**
 	 * Translatable label.
 	 *
 	 * @return string

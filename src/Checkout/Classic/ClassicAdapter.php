@@ -421,22 +421,10 @@ final class ClassicAdapter {
 			$field['placeholder'] = $placeholder;
 		}
 
-		$options = $this->setting( $definition, 'options' );
+		$options = $definition->options();
 
-		if ( is_array( $options ) ) {
-			$map = array();
-
-			foreach ( $options as $option ) {
-				if ( is_array( $option ) && isset( $option['value'] ) ) {
-					$map[ (string) $option['value'] ] = isset( $option['label'] )
-						? (string) $option['label']
-						: (string) $option['value'];
-				}
-			}
-
-			if ( array() !== $map ) {
-				$field['options'] = $map;
-			}
+		if ( array() !== $options ) {
+			$field['options'] = $options;
 		}
 
 		$max_length = $this->setting( $definition, 'maxLength' );

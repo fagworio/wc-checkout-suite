@@ -462,8 +462,8 @@ if ( is_wp_error( $wccs_order ) ) {
 
 	wccs_proof_check(
 		'The payload carries its own format version',
-		1 === ( $wccs_payload['format'] ?? null ),
-		'format=' . var_export( $wccs_payload['format'] ?? null, true )
+		2 === ( $wccs_payload['format'] ?? null ),
+		'format=' . var_export( $wccs_payload['format'] ?? null, true ) . ' (WCCS-024 added the snapshot and bumped 1 -> 2)'
 	);
 
 	wccs_proof_check(
@@ -668,14 +668,14 @@ if ( is_wp_error( $wccs_state_order ) ) {
 		$wccs_service->read( $wccs_state_order )->is_empty()
 	);
 
-	$wccs_state_order->update_meta_data( '_wccs_fields', '{ "format": 2, "values": { "wccs_cpf": "x" } }' );
+	$wccs_state_order->update_meta_data( '_wccs_fields', '{ "format": 3, "values": { "wccs_cpf": "x" } }' );
 	$wccs_state_order->save();
 
 	$wccs_unsupported = $wccs_service->read_status( $wccs_state_order );
 
 	wccs_proof_check(
 		'A payload from a newer build is reported, not read as empty',
-		'unsupported_format' === $wccs_unsupported['state'] && 2 === $wccs_unsupported['format'],
+		'unsupported_format' === $wccs_unsupported['state'] && 3 === $wccs_unsupported['format'],
 		'state=' . $wccs_unsupported['state'] . ' format=' . var_export( $wccs_unsupported['format'], true )
 	);
 
