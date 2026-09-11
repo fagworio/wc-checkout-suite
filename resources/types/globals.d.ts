@@ -45,6 +45,15 @@ declare global {
 		definition: string | Record< string, unknown >;
 	}
 
+	/**
+	 * A rule the server published for one field.
+	 */
+	interface WccsCheckoutRule {
+		key: string;
+		code: string;
+		message: string;
+	}
+
 	interface Window {
 		/**
 		 * What the checkout bundle needs before it can run.
@@ -55,6 +64,7 @@ declare global {
 		 */
 		wccsCheckout?: {
 			masks?: Record< string, WccsCheckoutMask >;
+			rules?: Record< string, WccsCheckoutRule[] >;
 			validation?: {
 				url?: string;
 				nonce?: string;

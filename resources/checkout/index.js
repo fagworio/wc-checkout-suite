@@ -26,8 +26,12 @@
 // eslint-disable-next-line import/no-unresolved
 import $ from 'jquery';
 
+import { createFieldErrors } from './errors';
+import { createFormValidation } from './form';
 import { createLifecycle } from './lifecycle';
 import { createMaskedFields } from './masks';
+import { createRemoteValidation } from './remote';
+import { createFieldChecker } from './validate';
 import { createValueKeeper } from './values';
 
 const bootstrap = window.wccsCheckout || {};
@@ -35,6 +39,22 @@ const bootstrap = window.wccsCheckout || {};
 const lifecycle = createLifecycle();
 const keeper = createValueKeeper();
 const masked = createMaskedFields( bootstrap.masks || {}, keeper.attribute );
+
+const rules = bootstrap.rules || {};
+const endpoint = bootstrap.validation || {};
+
+const checker = createFieldChecker( {
+	rules,
+	remote: createRemoteValidation( endpoint ),
+	attribute: keeper.attribute,
+} );
+
+const errors = createFieldErrors( { attribute: keeper.attribute } );
+const form = createFormValidation( {
+	checker,
+	errors,
+	attribute: keeper.attribute,
+} );
 
 const selector = `[${ keeper.attribute }]`;
 
@@ -64,3 +84,20 @@ $( document.body ).on( 'update_checkout', () => {
 $( document.body ).on( 'updated_checkout', () => {
 	lifecycle.run( document.body );
 } );
+
+// A field is checked when it is left, not while it is being typed: an incomplete
+// document is a normal state to be in.
+$( document.body ).on( 'focusout', selector, ( /** @type {any} */ event ) => {
+	form.checkField( event.target );
+} );
+
+// Submitting revalidates rather than remembering. `checkout_place_order` is
+// WooCommerce's own extension point: it fires on the form before the order is
+// placed, and an answer of `false` abandons it.
+//
+// The guard is synchronous on purpose. WooCommerce decides on the spot, and a
+// promise is not `false` — a guard that returned one would let every order
+// through while looking like it checked something.
+$( document.body ).on( 'checkout_place_order', ( /** @type {any} */ event ) =>
+	form.guard( event.target )
+);

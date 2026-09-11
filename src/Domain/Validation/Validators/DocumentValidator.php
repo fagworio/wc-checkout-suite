@@ -12,6 +12,7 @@ namespace WCCheckoutSuite\Domain\Validation\Validators;
 use WCCheckoutSuite\Domain\Fields\FieldContext;
 use WCCheckoutSuite\Domain\Fields\ValidationResult;
 use WCCheckoutSuite\Domain\Validation\CheckDigits;
+use WCCheckoutSuite\Domain\Validation\FailureMessageInterface;
 
 /**
  * Checks one Brazilian document against the value it carries.
@@ -36,7 +37,7 @@ use WCCheckoutSuite\Domain\Validation\CheckDigits;
  * @see \ROADMAP.md sections 9 and 10
  * @see \docs/adr/ADR-0003-cnpj-alphanumeric.md
  */
-final class DocumentValidator {
+final class DocumentValidator implements FailureMessageInterface {
 
 	/**
 	 * Version of the validation contract.
@@ -182,20 +183,59 @@ final class DocumentValidator {
 	}
 
 	/**
+	 * The code a value of this mode is refused with.
+	 *
+	 * Published so the checkout can build the same message the server would,
+	 * without a second copy of the wording written in JavaScript. A message
+	 * maintained in two languages is a message that says two different things the
+	 * first time one of them is edited.
+	 *
+	 * @return string
+	 */
+	public function failure_code(): string {
+		return match ( $this->mode ) {
+			self::MODE_CPF        => 'invalid_cpf',
+			self::MODE_CNPJ       => 'invalid_cnpj',
+			self::MODE_POSTCODE   => 'invalid_postcode',
+			self::MODE_LANDLINE,
+			self::MODE_MOBILE     => 'invalid_phone',
+			default               => 'invalid',
+		};
+	}
+
+	/**
+	 * The message a value of this mode is refused with.
+	 *
+	 * @return string
+	 */
+	public function failure_message(): string {
+		return $this->messages()[ $this->failure_code() ] ?? '';
+	}
+
+	/**
 	 * A refusal, with the message the customer reads.
 	 *
 	 * @param string $code Stable machine code.
 	 * @return ValidationResult
 	 */
 	private function refuse( string $code ): ValidationResult {
-		$messages = array(
+		$messages = $this->messages();
+
+		return ValidationResult::invalid( $code, $messages[ $code ] ?? $code );
+	}
+
+	/**
+	 * Every message this validator can produce.
+	 *
+	 * @return array<string, string>
+	 */
+	private function messages(): array {
+		return array(
 			'invalid_type'     => __( 'This field expects a number written as text.', 'wc-checkoutsuite' ),
 			'invalid_cpf'      => __( 'This CPF is not a valid number. Check the digits you entered.', 'wc-checkoutsuite' ),
 			'invalid_cnpj'     => __( 'This CNPJ is not a valid number. Check the digits you entered.', 'wc-checkoutsuite' ),
 			'invalid_postcode' => __( 'Enter a postcode with eight digits.', 'wc-checkoutsuite' ),
 			'invalid_phone'    => __( 'Enter a phone number with its area code.', 'wc-checkoutsuite' ),
 		);
-
-		return ValidationResult::invalid( $code, $messages[ $code ] ?? $code );
 	}
 }

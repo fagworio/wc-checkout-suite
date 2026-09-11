@@ -167,6 +167,7 @@ final class ClassicAssets {
 
 		return array(
 			'masks'      => $registered,
+			'rules'      => self::rules(),
 			'validation' => array(
 				'url'      => rest_url(
 					\WCCheckoutSuite\Http\Admin\SchemaController::rest_namespace()
@@ -227,6 +228,69 @@ final class ClassicAssets {
 		}
 
 		return false;
+	}
+
+	/**
+	 * The validators each field declares, with the code and message a failure
+	 * produces.
+	 *
+	 * The wording is not repeated in JavaScript: it is written once, beside the
+	 * rule, and travels with it. A field whose validator the browser does not
+	 * implement is one the checkout has to ask the server about, which is what
+	 * section 10 means by asking only when the answer needs the server.
+	 *
+	 * Only enabled fields the classic checkout can render are sent, for the same
+	 * reason the masks are: there is no form field to put an answer next to.
+	 *
+	 * @return array<string, array<int, array{key: string, code: string, message: string}>>
+	 */
+	private static function rules(): array {
+		$validators = \WCCheckoutSuite\Domain\Registries::instance()->validators();
+		$rules      = array();
+
+		foreach ( PublishedDocument::read()->fields() as $raw ) {
+			if ( ! is_array( $raw ) ) {
+				continue;
+			}
+
+			$definition = \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array( $raw );
+
+			if ( ! $definition->is_enabled() || ! ClassicAdapter::can_render( $definition->type() ) ) {
+				continue;
+			}
+
+			$declared = array();
+
+			foreach ( $definition->validators() as $reference ) {
+				$key = is_array( $reference ) && isset( $reference['key'] ) ? (string) $reference['key'] : '';
+
+				if ( '' === $key ) {
+					continue;
+				}
+
+				$validator = $validators->validator( $key );
+
+				if ( ! $validator instanceof \WCCheckoutSuite\Domain\Validation\FailureMessageInterface ) {
+					// A validator registered as a closure, or one that simply does
+					// not describe itself, has no wording to publish. The field is
+					// still checked on the server; the browser has nothing to say
+					// about it in advance.
+					continue;
+				}
+
+				$declared[] = array(
+					'key'     => $key,
+					'code'    => $validator->failure_code(),
+					'message' => $validator->failure_message(),
+				);
+			}
+
+			if ( array() !== $declared ) {
+				$rules[ $definition->id() ] = $declared;
+			}
+		}
+
+		return $rules;
 	}
 
 	/**

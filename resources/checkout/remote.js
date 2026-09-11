@@ -36,6 +36,8 @@ export const STATUS = {
 	INVALID: 'invalid',
 	UNAVAILABLE: 'unavailable',
 	CANCELLED: 'cancelled',
+	/** The field declares no rule, so there is nothing to answer. */
+	SKIP: 'skip',
 };
 
 /**
