@@ -19,6 +19,7 @@ use WCCheckoutSuite\Checkout\Blocks\BlocksRenderer;
 use WCCheckoutSuite\Checkout\Blocks\BlocksValidation;
 use WCCheckoutSuite\Checkout\Blocks\StoreApiExtension;
 use WCCheckoutSuite\Domain\Uploads\UploadsTable;
+use WCCheckoutSuite\Http\Checkout\UploadController;
 use WCCheckoutSuite\Checkout\Classic\ClassicAssets;
 use WCCheckoutSuite\Checkout\Classic\ClassicCheckout;
 use WCCheckoutSuite\Checkout\Classic\ClassicOrderFields;
@@ -173,6 +174,19 @@ final class Plugin {
 		// checks would be a payload nobody should trust.
 		StoreApiExtension::register();
 		BlocksValidation::register();
+
+		// Checkout side: the upload endpoint.
+		//
+		// Registered inside `rest_api_init` for the same reason the other two
+		// controllers are, and its own gate decides whether it accepts anything: a
+		// store whose private directory is not protected refuses every upload with
+		// that as the reason.
+		add_action(
+			'rest_api_init',
+			static function (): void {
+				( new UploadController() )->register_routes();
+			}
+		);
 
 		// Storefront side: the checkout bundle and its component lifecycle.
 		//
