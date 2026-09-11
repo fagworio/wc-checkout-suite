@@ -18,6 +18,7 @@
 import { createElement } from '@wordpress/element';
 
 import { componentFor, unrenderable } from './fields';
+import { createFieldLifecycle, createValueStore } from './values';
 
 /**
  * The payload the server wrote before this bundle loaded.
@@ -25,6 +26,18 @@ import { componentFor, unrenderable } from './fields';
  * @type {{fields?: Array<any>, report?: Array<any>}}
  */
 const payload = /** @type {any} */ ( window ).wccsBlocks || {};
+
+/**
+ * Where the values live while the checkout re-renders itself.
+ *
+ * One store for the page, created once. A component is a view over it: the checkout
+ * unmounts and mounts subtrees whenever the address, the shipping method or the
+ * payment method changes, and a value kept inside a component would go with it.
+ */
+const lifecycle = createFieldLifecycle( {
+	store: createValueStore(),
+	fields: payload.fields ?? [],
+} );
 
 /**
  * The Blocks checkout API, when the platform has loaded it.
@@ -105,7 +118,13 @@ export function register( { api = null, fields = null, render = null } = {} ) {
 	const declared = fields ?? payload.fields ?? [];
 	const resolved = api ?? checkoutApi();
 
-	const { elements, missing } = buildFields( declared );
+	// What the components render comes from the store, and what they report goes
+	// back into it. Nothing here reads the document to find a value again.
+	const { elements, missing } = buildFields(
+		declared,
+		lifecycle.values(),
+		lifecycle.onChange
+	);
 
 	if ( 'function' === typeof render ) {
 		render( elements, declared );

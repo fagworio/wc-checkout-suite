@@ -162,6 +162,12 @@ final class BlocksRenderer {
 				'location' => $location,
 				'required' => $definition->is_required(),
 				'section'  => $section,
+				// The hidden-value policy travels because the page applies it too:
+				// a field a rule hides either keeps what the customer typed or
+				// loses it, and the two checkouts have to answer alike. The server
+				// re-applies it when the order is placed, so this is the page
+				// agreeing with the store rather than deciding for it.
+				'policy'   => (string) $stored['hidden_value_policy'],
 			);
 
 			if ( '' !== $definition->description() ) {
