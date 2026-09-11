@@ -26,6 +26,7 @@
 // eslint-disable-next-line import/no-unresolved
 import $ from 'jquery';
 
+import { createConditionalFields } from './conditional';
 import { createFieldErrors } from './errors';
 import { createFormValidation } from './form';
 import { createLifecycle } from './lifecycle';
@@ -49,6 +50,14 @@ const checker = createFieldChecker( {
 	attribute: keeper.attribute,
 } );
 
+// The rules the page can answer, applied to the rows they concern. Registered
+// before the value keeper and the masks so the first pass hides what should be
+// hidden before anything formats a field that is about to disappear.
+const conditional = createConditionalFields( {
+	rules: bootstrap.conditions || {},
+	attribute: keeper.attribute,
+} );
+
 const errors = createFieldErrors( { attribute: keeper.attribute } );
 const form = createFormValidation( {
 	checker,
@@ -57,6 +66,13 @@ const form = createFormValidation( {
 } );
 
 const selector = `[${ keeper.attribute }]`;
+
+// The visibility rule first: a field the customer should not see must not be
+// focused, formatted or restored.
+lifecycle.register( 'suite-conditions', {
+	selector,
+	start: () => conditional.run(),
+} );
 
 // First the value, then the mask over it. See the note above.
 lifecycle.register( 'suite-values', {
@@ -73,6 +89,7 @@ lifecycle.register( 'suite-masks', {
 // only ever offered the elements it actually replaced.
 $( () => {
 	lifecycle.run( document.body );
+	conditional.attach();
 } );
 
 // Before the request: remember what the customer has typed.
@@ -80,9 +97,28 @@ $( document.body ).on( 'update_checkout', () => {
 	keeper.capture( document.body );
 } );
 
-// After the new HTML is in the page: start what is new.
+// After the new HTML is in the page: start what is new. The rules run again
+// afterwards, because a refresh can change the country, the shipping method or
+// the payment method, and every one of them can be what a rule reads.
 $( document.body ).on( 'updated_checkout', () => {
 	lifecycle.run( document.body );
+	conditional.run();
+} );
+
+// A rule is re-decided while the form is being filled in: the country the
+// customer picks is the whole point of the rule. The server is asked to
+// recompute at the same time, so the page and the store never disagree about a
+// field for longer than a refresh.
+$( document.body ).on(
+	'change',
+	'select, input[type="radio"], input[type="checkbox"]',
+	() => {
+		conditional.run();
+	}
+);
+
+$( document.body ).on( 'input', selector, () => {
+	conditional.run();
 } );
 
 // A field is checked when it is left, not while it is being typed: an incomplete

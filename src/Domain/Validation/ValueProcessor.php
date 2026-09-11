@@ -86,9 +86,8 @@ final class ValueProcessor {
 
 		$visible = $this->is_visible( $definition, $context );
 
-		if ( ! $visible && 'discard' === $definition->to_array()['hidden_value_policy'] ) {
-			// A hidden field stores nothing and never raises a required error.
-			return new ProcessedValue( null, ValidationResult::valid(), false, true );
+		if ( ! $visible ) {
+			return $this->hidden( $definition, $canonical, $context );
 		}
 
 		$result = $type->validate( $canonical, $context );
@@ -101,7 +100,10 @@ final class ValueProcessor {
 			}
 		}
 
-		if ( $definition->is_required() && $visible && $this->is_absent( $canonical ) ) {
+		// Reaching this line means the field is visible: the hidden path returned
+		// above, with the policy applied. Requiredness therefore does not have to ask
+		// again, and it is enforced once, here.
+		if ( $definition->is_required() && $this->is_absent( $canonical ) ) {
 			$result = $result->merge(
 				ValidationResult::invalid(
 					'required',
@@ -116,6 +118,62 @@ final class ValueProcessor {
 		}
 
 		return new ProcessedValue( $canonical, $result, $visible, false );
+	}
+
+	/**
+	 * Applies the hidden-value policy of a field a rule has hidden.
+	 *
+	 * Section 11 fixes the default and one alternative:
+	 *
+	 * - `discard`, the default: nothing is stored and no error is raised. A field
+	 *   the customer cannot see must not be able to refuse the order, which is why
+	 *   requiredness and the value's own rules are both dropped here.
+	 * - `preserve`, only by explicit configuration: what the customer had typed is
+	 *   kept, including on the order, and it is kept only when the store would
+	 *   accept it. A value the store would refuse is dropped rather than stored
+	 *   unvalidated, and its refusal is not raised either, because there is no field
+	 *   on the form to attach the message to and nothing the customer could do
+	 *   about it. Preserving is what the merchant asked for; preserving garbage is
+	 *   not, and §11 attaches a privacy policy to this choice for the same reason:
+	 *   the value survives a question the customer believed they had answered.
+	 *
+	 * Both branches answer `visible: false`, and neither answers `discarded: true`
+	 * for a preserved value: the flag is about what reaches the store, and what
+	 * reaches the store is exactly what it says.
+	 *
+	 * @param FieldDefinition $definition Definition.
+	 * @param mixed           $canonical  Canonical value.
+	 * @param FieldContext    $context    Trusted context.
+	 * @return ProcessedValue
+	 */
+	private function hidden( FieldDefinition $definition, mixed $canonical, FieldContext $context ): ProcessedValue {
+		$policy = (string) $definition->to_array()['hidden_value_policy'];
+
+		if ( 'preserve' !== $policy ) {
+			return new ProcessedValue( null, ValidationResult::valid(), false, true );
+		}
+
+		$type = $this->types->type( $definition->type() );
+
+		if ( null === $type ) {
+			return new ProcessedValue( null, ValidationResult::valid(), false, true );
+		}
+
+		$result = $type->validate( $canonical, $context );
+
+		foreach ( $definition->validators() as $reference ) {
+			$key = is_array( $reference ) && isset( $reference['key'] ) ? (string) $reference['key'] : '';
+
+			if ( '' !== $key ) {
+				$result = $result->merge( $this->validators->run( $key, $canonical, $context ) );
+			}
+		}
+
+		if ( ! $result->is_valid() ) {
+			return new ProcessedValue( null, ValidationResult::valid(), false, true );
+		}
+
+		return new ProcessedValue( $canonical, ValidationResult::valid(), false, false );
 	}
 
 	/**

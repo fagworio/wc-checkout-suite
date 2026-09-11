@@ -168,6 +168,7 @@ final class ClassicAssets {
 		return array(
 			'masks'      => $registered,
 			'rules'      => self::rules(),
+			'conditions' => self::conditions(),
 			'validation' => array(
 				'url'      => rest_url(
 					\WCCheckoutSuite\Http\Admin\SchemaController::rest_namespace()
@@ -291,6 +292,89 @@ final class ClassicAssets {
 		}
 
 		return $rules;
+	}
+
+	/**
+	 * The visibility rules the browser is allowed to decide.
+	 *
+	 * Only the rules whose every source the page owns travel. A rule that reads the
+	 * cart or whether the customer is logged in is a rule only the server can
+	 * answer, and section 11 says what happens to it: the server recomputes it with
+	 * trusted context. Publishing it would invite the browser to answer a question
+	 * it cannot answer, and the two answers would disagree in the direction that
+	 * blocks an order — the browser hiding a field the server considers required.
+	 *
+	 * The policy travels with the rule because the browser applies it too: a hidden
+	 * discard field is cleared, and a hidden preserve field keeps what the customer
+	 * typed. Neither decision is the browser's to make on its own, and both are
+	 * checked again on the server.
+	 *
+	 * @return array<string, array{policy: string, visible: array<string, mixed>}>
+	 */
+	private static function conditions(): array {
+		$client    = \WCCheckoutSuite\Domain\Conditions\Sources::client_keys();
+		$published = array();
+
+		foreach ( PublishedDocument::read()->fields() as $raw ) {
+			if ( ! is_array( $raw ) ) {
+				continue;
+			}
+
+			$definition = \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array( $raw );
+
+			if ( ! $definition->is_enabled() || ! ClassicAdapter::can_render( $definition->type() ) ) {
+				continue;
+			}
+
+			$conditions = $definition->to_array()['conditions'];
+			$visible    = isset( $conditions['visible'] ) && is_array( $conditions['visible'] ) ? $conditions['visible'] : array();
+
+			if ( array() === $visible || ! self::is_client_answerable( $visible, $client ) ) {
+				continue;
+			}
+
+			$published[ $definition->id() ] = array(
+				'policy'  => (string) $definition->to_array()['hidden_value_policy'],
+				'visible' => $visible,
+			);
+		}
+
+		return $published;
+	}
+
+	/**
+	 * Whether every source a rule reads is one the page can answer for.
+	 *
+	 * Walked over the raw rule rather than over a parsed tree on purpose: this
+	 * decides what to *send*, and a rule that cannot be parsed is a rule that should
+	 * not be sent. The validator refuses one on every write, so this is about a
+	 * document that was damaged in storage, and the answer to damage is to leave the
+	 * decision with the server.
+	 *
+	 * @param array<string, mixed> $node   Raw rule node.
+	 * @param array<int, string>   $client Source keys the page owns.
+	 * @return bool
+	 */
+	private static function is_client_answerable( array $node, array $client ): bool {
+		$children = $node['all'] ?? $node['any'] ?? null;
+
+		if ( is_array( $children ) ) {
+			if ( array() === $children ) {
+				return false;
+			}
+
+			foreach ( $children as $child ) {
+				if ( ! is_array( $child ) || ! self::is_client_answerable( $child, $client ) ) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		$source = isset( $node['source'] ) && is_string( $node['source'] ) ? $node['source'] : '';
+
+		return '' !== $source && in_array( $source, $client, true );
 	}
 
 	/**

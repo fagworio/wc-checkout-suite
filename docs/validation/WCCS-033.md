@@ -86,3 +86,13 @@ O motor JavaScript **não** foi ligado ao checkout. Ele é a metade cliente da m
 ## 9. Próxima tarefa
 
 **WCCS-034 — "Implementar discard/preserve"** (aceite: *valor residual oculto é descartado por padrão; required segue estado no servidor*). É onde o motor deixa de ser opcional: decide-se quando `rules` passa a ser o padrão, liga-se a metade cliente ao checkout, e fecha-se a pergunta que o `§11` deixa em aberto sobre o que acontece ao valor que o cliente tinha escrito num campo que acabou de ficar oculto.
+
+---
+
+## 10. Correção posterior, encontrada na WCCS-034
+
+A §7 acima diz que o motor é registado **sem** passar a ser o padrão, e registou a razão: a mudança pertencia à tarefa que decidisse a política de valores. A WCCS-034 tomou essa decisão e `ConditionEvaluatorRegistry::DEFAULT_KEY` passou de `always` para `rules`.
+
+A decisão não foi uma preferência: com a metade cliente a avaliar a mesma árvore, o servidor e o browser têm de concordar sobre o mesmo documento. Se o browser ocultasse um campo e o servidor o considerasse visível, o cliente fecharia o formulário e o servidor recusaria o pedido por um campo obrigatório que ninguém vê — que é exatamente o risco que o gate da F06 nomeia. O avaliador permissivo continua registado e alcançável por nome, para um documento que fixe o motor com que foi escrito.
+
+A prova desta tarefa afirmava `active() === 'always'`. Passou a afirmar o que é verdade hoje — `rules` é o padrão e `always` continua alcançável — em vez de fixar um padrão que já foi substituído: uma prova que fixa um estado ultrapassado falha pela razão certa e é editada pela razão errada.

@@ -54,6 +54,17 @@ declare global {
 		message: string;
 	}
 
+	/**
+	 * A visibility rule the browser is allowed to decide.
+	 *
+	 * Only the rules whose every source the page owns are published. The policy
+	 * travels with the rule because the browser applies it too.
+	 */
+	interface WccsCheckoutCondition {
+		policy: string;
+		visible: Record< string, unknown >;
+	}
+
 	interface Window {
 		/**
 		 * What the checkout bundle needs before it can run.
@@ -65,6 +76,7 @@ declare global {
 		wccsCheckout?: {
 			masks?: Record< string, WccsCheckoutMask >;
 			rules?: Record< string, WccsCheckoutRule[] >;
+			conditions?: Record< string, WccsCheckoutCondition >;
 			validation?: {
 				url?: string;
 				nonce?: string;

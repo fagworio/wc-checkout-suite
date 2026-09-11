@@ -165,15 +165,23 @@ wccs_proof_check(
 		&& '1.0' === $wccs_engine->contract_version()
 );
 
+// WCCS-034 made the engine the default, which is what this line asserts today. The
+// assertion is deliberately about the current state and not about the state this
+// task left behind: a proof that pins a superseded default is a proof that fails
+// for the right reason and gets edited for the wrong one.
 wccs_proof_check(
-	'What answers by default is still the permissive evaluator',
-	'always' === $wccs_registry->active()->key(),
+	'The engine is what answers by default, and the permissive one is still reachable',
+	'rules' === $wccs_registry->active()->key()
+		&& 'always' === $wccs_registry->evaluator( 'always' )?->key(),
 	'active=' . $wccs_registry->active()->key()
 );
 
+$wccs_permissive = $wccs_registry->evaluator( 'always' );
+
 wccs_proof_check(
-	'The permissive evaluator still hides nothing',
-	true === $wccs_registry->active()->evaluate(
+	'The permissive evaluator still hides nothing, for a document that pins it',
+	$wccs_permissive instanceof \WCCheckoutSuite\Domain\Conditions\ConditionEvaluatorInterface
+		&& true === $wccs_permissive->evaluate(
 		array(
 			'source'   => 'country',
 			'operator' => 'equals',
@@ -458,9 +466,33 @@ $wccs_default = $wccs_processor->process(
 );
 
 wccs_proof_check(
-	'A document naming no engine is still answered by the permissive one',
-	true === $wccs_default->is_visible(),
-	'the store does not change behaviour by the engine being registered'
+	'A document naming no engine is answered by whichever one is active',
+	false === $wccs_default->is_visible(),
+	'active=' . \WCCheckoutSuite\Domain\Registries::instance()->conditions()->active()->key()
+);
+
+$wccs_pinned = $wccs_processor->process(
+	\WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array(
+		wccs_proof_field(
+			'wccs_document',
+			array(
+				'evaluator' => 'always',
+				'visible'   => array(
+					'source'   => 'country',
+					'operator' => 'equals',
+					'value'    => 'BR',
+				),
+			)
+		)
+	),
+	'123',
+	new \WCCheckoutSuite\Domain\Fields\FieldContext( array( 'country' => 'PT' ), 'classic' )
+);
+
+wccs_proof_check(
+	'And a document that pins an engine is answered by that engine',
+	true === $wccs_pinned->is_visible(),
+	'a store that pinned the permissive engine keeps working with it'
 );
 
 // ---------------------------------------------------------------------------
@@ -548,8 +580,8 @@ wccs_proof_note(
 );
 
 wccs_proof_note(
-	'The default did not change',
-	'The engine is registered under its own key. Nothing answers with it until a document names it, which is why the storefront behaves exactly as it did before this task and why the policy tasks that follow can decide when to switch.'
+	'When the default changed',
+	'WCCS-033 registered the engine under its own key and left it out of the default, so the storefront could not change behaviour as a side effect of an engine existing. WCCS-034 made it the default, because the browser half evaluates the same tree and the two have to agree on the same document: a field the browser hides must not be refused by the server as a missing required one.'
 );
 
 wccs_proof_note(

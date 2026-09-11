@@ -185,6 +185,137 @@ final class ValueProcessorTest extends TestCase {
 	}
 
 	/**
+	 * Discard is what happens when nothing says otherwise.
+	 *
+	 * Section 11 makes `discard` the default rather than one of two equal options,
+	 * so a definition that never mentions the policy has to behave as if it had:
+	 * a field the customer cannot see stores nothing and cannot refuse the order,
+	 * even when it is required and even when what was submitted looks valid.
+	 *
+	 * @return void
+	 */
+	public function test_the_default_hidden_policy_is_discard(): void {
+		$processed = $this->processor->process(
+			$this->definition(
+				array(
+					'conditions' => array(
+						'evaluator' => 'test.never',
+						'visible'   => array(
+							'source'   => 'country',
+							'operator' => 'equals',
+							'value'    => 'BR',
+						),
+					),
+				)
+			),
+			'12345678901',
+			new FieldContext()
+		);
+
+		self::assertFalse( $processed->is_visible() );
+		self::assertTrue( $processed->is_discarded() );
+		self::assertNull( $processed->value() );
+		self::assertTrue( $processed->result()->is_valid(), 'a hidden required field raises no required error' );
+		self::assertFalse( $processed->is_storable() );
+	}
+
+	/**
+	 * Preserve keeps what the store would accept.
+	 *
+	 * @return void
+	 */
+	public function test_preserve_keeps_a_value_the_store_accepts(): void {
+		$processed = $this->processor->process(
+			$this->definition(
+				array(
+					'hidden_value_policy' => 'preserve',
+					'conditions'          => array(
+						'evaluator' => 'test.never',
+						'visible'   => array(
+							'source'   => 'country',
+							'operator' => 'equals',
+							'value'    => 'BR',
+						),
+					),
+				)
+			),
+			'123.456.789-01',
+			new FieldContext()
+		);
+
+		self::assertFalse( $processed->is_visible() );
+		self::assertFalse( $processed->is_discarded(), 'the value reaches the store' );
+		self::assertSame( '12345678901', $processed->value() );
+		self::assertTrue( $processed->is_storable() );
+		self::assertTrue( $processed->result()->is_valid(), 'and nothing is reported about a field nobody can see' );
+	}
+
+	/**
+	 * Preserve does not keep what the store would refuse.
+	 *
+	 * A value that fails its own rules cannot be repaired by the customer, because
+	 * the field is not on the form; reporting the refusal would block the order
+	 * behind an error with no field to attach it to. It is dropped instead, and the
+	 * store does not keep something it would have refused.
+	 *
+	 * @return void
+	 */
+	public function test_preserve_drops_a_value_the_store_would_refuse(): void {
+		$validators = new ValidatorRegistry();
+		$types      = new FieldTypeRegistry();
+		CoreTypes::register_types( $types );
+
+		$normalizers = new NormalizerRegistry();
+		CoreProcessing::register_normalizers( $normalizers );
+
+		$conditions = new ConditionEvaluatorRegistry();
+		$conditions->register_evaluator( new PermissiveConditionEvaluator() );
+		$conditions->register_evaluator( new HidingEvaluator() );
+
+		// A length rule the value breaks, so the refusal comes from the pipeline
+		// rather than from a validator key that may not be registered here.
+		$processor = new ValueProcessor( $types, $validators, $normalizers, $conditions );
+
+		$processed = $processor->process(
+			$this->definition(
+				array(
+					'hidden_value_policy' => 'preserve',
+					'settings'            => array( 'maxLength' => 5 ),
+					'conditions'          => array(
+						'evaluator' => 'test.never',
+						'visible'   => array(
+							'source'   => 'country',
+							'operator' => 'equals',
+							'value'    => 'BR',
+						),
+					),
+				)
+			),
+			'12345678901',
+			new FieldContext()
+		);
+
+		self::assertTrue( $processed->is_discarded() );
+		self::assertNull( $processed->value() );
+		self::assertTrue( $processed->result()->is_valid(), 'no error for a field nobody can see' );
+
+		// The same value with the same settings, visible: the refusal is real, and
+		// it is the visibility that suppresses it rather than the value being fine.
+		$visible = $processor->process(
+			$this->definition(
+				array(
+					'settings' => array( 'maxLength' => 5 ),
+				)
+			),
+			'12345678901',
+			new FieldContext()
+		);
+
+		self::assertFalse( $visible->result()->is_valid() );
+		self::assertNotSame( array(), $visible->result()->error_codes() );
+	}
+
+	/**
 	 * An unregistered type fails closed.
 	 *
 	 * @return void
