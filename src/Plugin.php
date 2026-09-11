@@ -15,6 +15,7 @@ use WCCheckoutSuite\Domain\Registries;
 use WCCheckoutSuite\Domain\Schema\CoreFieldGuard;
 use WCCheckoutSuite\Domain\Schema\SchemaRepository;
 use WCCheckoutSuite\Checkout\Classic\ClassicCheckout;
+use WCCheckoutSuite\Checkout\Classic\ClassicValidation;
 use WCCheckoutSuite\Http\Admin\CatalogController;
 use WCCheckoutSuite\Http\Admin\SchemaController;
 use WCCheckoutSuite\Support\Requirements;
@@ -111,6 +112,14 @@ final class Plugin {
 		// adapter reads the published document only, so an unpublished edit cannot
 		// reach a customer.
 		ClassicCheckout::register();
+
+		// Storefront side: normalization and validation of what was submitted.
+		//
+		// The two halves are registered together because they are the same
+		// decision seen from two ends of one request: the value that is validated
+		// is the value that was normalized, and splitting the registration would
+		// invite a caller to install one without the other.
+		ClassicValidation::register();
 
 		// Administrative screen and its assets.
 		//
