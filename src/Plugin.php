@@ -18,6 +18,7 @@ use WCCheckoutSuite\Checkout\Blocks\BlocksCheckout;
 use WCCheckoutSuite\Checkout\Blocks\BlocksRenderer;
 use WCCheckoutSuite\Checkout\Blocks\BlocksValidation;
 use WCCheckoutSuite\Checkout\Blocks\StoreApiExtension;
+use WCCheckoutSuite\Domain\Uploads\UploadsRetention;
 use WCCheckoutSuite\Domain\Uploads\UploadsTable;
 use WCCheckoutSuite\Http\Checkout\DownloadController;
 use WCCheckoutSuite\Http\Checkout\UploadController;
@@ -207,6 +208,11 @@ final class Plugin {
 		// Storefront side: the uploads a checkout submitted, bound to the order it
 		// created. Registered with the other order writers because it is one.
 		ClassicOrderUploads::register();
+
+		// Retention: the uploads nobody claimed, and the ones whose order is gone.
+		// Registered with the storefront half because the job runs on a request of
+		// its own, not on a customer's.
+		UploadsRetention::register();
 
 		// Administrative screen and its assets.
 		//

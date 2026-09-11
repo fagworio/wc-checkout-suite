@@ -226,6 +226,58 @@ final class UploadRepository {
 	}
 
 	/**
+	 * The rows a cleanup has to look at.
+	 *
+	 * Two kinds are candidates, and asking for both in one query is what keeps the
+	 * job from needing two passes: the unbound ones whose time is up, and the ones
+	 * whose bound order may no longer exist. The second kind cannot be filtered here —
+	 * whether an order exists is a question for WooCommerce, not for this table — so
+	 * the row is returned and the decision is made by the caller.
+	 *
+	 * @param int $now   Current timestamp.
+	 * @param int $limit How many to return.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function candidates( int $now, int $limit = 50 ): array {
+		global $wpdb;
+
+		$moment = gmdate( 'Y-m-d H:i:s', $now );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- A read of this plugin's own table, batched; the name is built from the prefix and a constant.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT * FROM ' . UploadsTable::name() . ' WHERE ( order_id = 0 AND expires_at IS NOT NULL AND expires_at <= %s ) OR order_id > 0 ORDER BY id ASC LIMIT %d',
+				$moment,
+				$limit
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Forgets one upload by token, whoever owns it.
+	 *
+	 * The cleanup runs outside any session, so it cannot answer the ownership
+	 * question — and does not need to: it acts on rows a decision has already been
+	 * made about.
+	 *
+	 * @param string $token Token.
+	 * @return bool Whether a row was removed.
+	 */
+	public function forget( string $token ): bool {
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$deleted = $wpdb->delete( UploadsTable::name(), array( 'token' => $token ) );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		return is_int( $deleted ) && $deleted > 0;
+	}
+
+	/**
 	 * Forgets one upload, returning its row so its file can be removed.
 	 *
 	 * @param string $token Token.
