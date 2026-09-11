@@ -332,21 +332,36 @@ final class BrazilianDocumentsTest extends TestCase {
 	}
 
 	/**
-	 * No preset claims a validator.
+	 * A preset declares a validator only where one exists.
 	 *
-	 * Check digits are WCCS-028's contract. A preset naming a validator key that
-	 * does not exist would make every field built from it unsaveable, and one
-	 * naming a key that exists but does nothing would be a promise the code does
-	 * not keep.
+	 * This test said the opposite while the check digits were a promise: no preset
+	 * declared a validator, because a key that is not registered makes every field
+	 * built from the preset unsaveable. WCCS-028 registered them and the document
+	 * presets now name them, so the assertion had to change — and the part of it
+	 * that still matters is the other half, which is that nothing else claims one.
+	 * A preset naming a key that exists but does nothing would be a promise the
+	 * code does not keep.
 	 *
 	 * @return void
 	 */
-	public function test_no_preset_claims_a_validator_yet(): void {
+	public function test_only_a_document_preset_declares_a_validator(): void {
+		$documents = array( 'br.cpf', 'br.cnpj', 'br.cep', 'br.phone.landline', 'br.phone.mobile' );
+
 		foreach ( $this->presets->presets() as $key => $preset ) {
+			if ( in_array( (string) $key, $documents, true ) ) {
+				self::assertArrayHasKey(
+					'validators',
+					$preset->defaults(),
+					'the preset ' . (string) $key . ' declares the validator that checks it'
+				);
+
+				continue;
+			}
+
 			self::assertArrayNotHasKey(
 				'validators',
 				$preset->defaults(),
-				'the preset ' . (string) $key . ' declares no validator'
+				'the preset ' . (string) $key . ' declares no validator, because none exists for it'
 			);
 		}
 	}

@@ -124,7 +124,13 @@ final class ClassicAssets {
 	 * resolved is left out rather than sent as something the client would have to
 	 * guess at.
 	 *
-	 * @return array{masks: array<string, array{key: string, version: int, definition: string|array<mixed>}>}
+	 * The validation endpoint travels with it: its address, the nonce that keeps
+	 * it from being an oracle any page can call, and the revision this page was
+	 * rendered from. All three come from the server because the namespace can be
+	 * renamed and the revision changes, and a bundle that hardcoded either would
+	 * be wrong the first time one of them moved.
+	 *
+	 * @return array{masks: array<string, array{key: string, version: int, definition: string|array<mixed>}>, validation: array{url: string, nonce: string, revision: int}}
 	 */
 	public static function bootstrap_data(): array {
 		$masks      = \WCCheckoutSuite\Domain\Registries::instance()->masks();
@@ -159,7 +165,17 @@ final class ClassicAssets {
 			);
 		}
 
-		return array( 'masks' => $registered );
+		return array(
+			'masks'      => $registered,
+			'validation' => array(
+				'url'      => rest_url(
+					\WCCheckoutSuite\Http\Admin\SchemaController::rest_namespace()
+						. \WCCheckoutSuite\Http\Checkout\ValidationController::ROUTE_VALIDATE
+				),
+				'nonce'    => wp_create_nonce( 'wp_rest' ),
+				'revision' => PublishedDocument::read()->revision(),
+			),
+		);
 	}
 
 	/**

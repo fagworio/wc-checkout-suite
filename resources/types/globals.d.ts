@@ -55,6 +55,11 @@ declare global {
 		 */
 		wccsCheckout?: {
 			masks?: Record< string, WccsCheckoutMask >;
+			validation?: {
+				url?: string;
+				nonce?: string;
+				revision?: number;
+			};
 		};
 
 		/**

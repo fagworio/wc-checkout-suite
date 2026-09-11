@@ -20,6 +20,7 @@ use WCCheckoutSuite\Checkout\Classic\ClassicOrderFields;
 use WCCheckoutSuite\Checkout\Classic\ClassicValidation;
 use WCCheckoutSuite\Http\Admin\CatalogController;
 use WCCheckoutSuite\Http\Admin\SchemaController;
+use WCCheckoutSuite\Http\Checkout\ValidationController;
 use WCCheckoutSuite\Support\Requirements;
 
 /**
@@ -128,6 +129,18 @@ final class Plugin {
 		// Handed the instance that ran the validation, so what lands on the order
 		// is what was validated rather than a second reading of the request.
 		ClassicOrderFields::register( $validation );
+
+		// Checkout side: the remote validation endpoint.
+		//
+		// Registered inside `rest_api_init` for the same reason the administration
+		// controller is: it reads the published document, and the repository it
+		// reads through needs WooCommerce to have finished starting.
+		add_action(
+			'rest_api_init',
+			static function (): void {
+				( new ValidationController() )->register_routes();
+			}
+		);
 
 		// Storefront side: the checkout bundle and its component lifecycle.
 		//

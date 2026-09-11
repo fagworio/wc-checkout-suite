@@ -77,3 +77,35 @@ O normalizador genérico `digits` continua a ser um `preg_replace( '/\D/' )`, e 
 **WCCS-029 — "Implementar endpoint de validação"**. Aceite: *"Sessão, rate limit, timeout, abort e request ID impedem estado obsoleto."*
 
 O `§10` é explícito sobre o que este endpoint **não** pode ser: o response não funciona como autorização permanente, um "valid" antigo não autoriza um valor novo, e a versão do schema e o valor atual precisam ser revalidados antes do pagamento. Também não pode revelar se um CPF ou e-mail pertence a outro cliente, e não pode aceitar regex, callback, caminho de arquivo ou endpoint remoto vindos do comprador.
+
+---
+
+## Correção posterior — a afirmação de gates verdes estava errada
+
+Encerrada a WCCS-029, encontrei um teste unitário a falhar. Ele falhava **desde esta tarefa**, e a
+afirmação acima de que os sete gates estavam verdes **era falsa quando foi escrita**.
+
+O teste é o `BrazilianDocumentsTest::test_no_preset_claims_a_validator_yet`, que esta tarefa tornou falso ao
+registrar os validadores e ao fazer os presets nomeá-los. O que escondeu a falha não foi o código: foi a
+forma como li o gate.
+
+```
+composer check 2>&1 | grep -E "OK \(|No errors|ERROR|FOUND|WARNING" | head -5
+```
+
+Duas coisas erradas numa linha. O `|` substitui o código de saída do `composer` pelo do `grep`, portanto o
+gate nunca foi lido pelo seu resultado. E o padrão do `grep` não incluía `FAILURES!` nem `Tests:`, portanto
+a única linha que coincidia era o `[OK] No errors` do PHPStan — que se lê como um gate a passar.
+
+É a **terceira vez nesta sessão** que um gate falha sem se ver: as flags `-d error_reporting=0` esconderam
+um erro fatal do PHPUnit na WCCS-021, o mesmo padrão de supressão, e agora um filtro de leitura. A raiz é a
+mesma, e vale escrevê-la: **um gate cuja falha não é visível é pior do que um gate ausente, porque parece
+estar a funcionar.**
+
+A prática foi corrigida e é a que passou a valer: **cada gate é lido pelo seu código de saída**, e filtrar
+serve para ler, nunca para julgar. A varredura de integração passou também a verificar o código de saída de
+cada harness, não apenas a linha `RESULT`.
+
+O que teria apanhado isto: a CI. O `.github/workflows/ci.yml` corre `composer lint`, `composer analyse`,
+`composer test`, `npm run lint:js`, `npm run test:unit-js` e `npm run check-types` como passos separados,
+cada um com o seu código de saída. A falha era invisível para mim, não para o projeto.
