@@ -1,0 +1,515 @@
+<?php
+/**
+ * Condition vocabulary and tree tests.
+ *
+ * @package WCCheckoutSuite
+ */
+
+declare( strict_types = 1 );
+
+namespace WCCheckoutSuite\Tests\Unit\Domain\Conditions;
+
+use PHPUnit\Framework\TestCase;
+use WCCheckoutSuite\Domain\Conditions\ConditionTree;
+use WCCheckoutSuite\Domain\Conditions\ConditionValidator;
+use WCCheckoutSuite\Domain\Conditions\Operator;
+use WCCheckoutSuite\Domain\Conditions\Operators;
+use WCCheckoutSuite\Domain\Conditions\Sources;
+
+/**
+ * Covers the shapes a rule may have, and the two ways one is refused.
+ *
+ * The acceptance is "AND/OR and typed operators; cycles and invalid references
+ * rejected", and the two halves are checked in different places for a reason worth
+ * keeping: a rule on its own can be judged against the vocabularies, and a rule
+ * that names a field can only be judged with the rest of the document in hand.
+ */
+final class ConditionVocabularyTest extends TestCase {
+
+	/**
+	 * Builds a field definition with conditions.
+	 *
+	 * @param string               $id         Identifier.
+	 * @param array<string, mixed> $conditions Conditions.
+	 * @param string               $type       Field type.
+	 * @return array<string, mixed>
+	 */
+	private function field( string $id, array $conditions, string $type = 'text' ): array {
+		return array(
+			'id'         => $id,
+			'type'       => $type,
+			'label'      => $id,
+			'origin'     => 'custom',
+			'conditions' => $conditions,
+		);
+	}
+
+	/**
+	 * A leaf that reads another field.
+	 *
+	 * @param string $field    Field identifier.
+	 * @param string $operator Operator key.
+	 * @param mixed  $value    Comparison value.
+	 * @return array<string, mixed>
+	 */
+	private function reads( string $field, string $operator = 'equals', mixed $value = 'x' ): array {
+		return array(
+			'source'   => 'field',
+			'field'    => $field,
+			'operator' => $operator,
+			'value'    => $value,
+		);
+	}
+
+	/**
+	 * The five families of section 11 are all present, with their negations.
+	 *
+	 * @return void
+	 */
+	public function test_the_operator_vocabulary_covers_section_11(): void {
+		$expected = array(
+			'equals',
+			'not_equals',
+			'contains',
+			'not_contains',
+			'greater_than',
+			'less_than',
+			'is_empty',
+			'is_not_empty',
+			'in',
+			'not_in',
+		);
+
+		$keys = array_keys( Operators::all() );
+
+		sort( $expected );
+		sort( $keys );
+
+		self::assertSame( $expected, $keys );
+	}
+
+	/**
+	 * Every negation says which operator it negates.
+	 *
+	 * @return void
+	 */
+	public function test_negations_are_declared(): void {
+		foreach ( array( 'not_equals', 'not_contains', 'is_not_empty', 'not_in' ) as $key ) {
+			self::assertTrue( Operators::get( $key )->is_negated(), $key . ' is a negation' );
+		}
+
+		foreach ( array( 'equals', 'contains', 'is_empty', 'in' ) as $key ) {
+			self::assertFalse( Operators::get( $key )->is_negated(), $key . ' is not a negation' );
+		}
+	}
+
+	/**
+	 * An operator that asks a question takes no value.
+	 *
+	 * @return void
+	 */
+	public function test_emptiness_takes_no_value(): void {
+		self::assertFalse( Operators::get( 'is_empty' )->takes_value() );
+		self::assertFalse( Operators::get( 'is_not_empty' )->takes_value() );
+		self::assertTrue( Operators::get( 'equals' )->takes_value() );
+	}
+
+	/**
+	 * The sources of section 11 are all present.
+	 *
+	 * @return void
+	 */
+	public function test_the_source_vocabulary_covers_section_11(): void {
+		$expected = array(
+			'field',
+			'country',
+			'state',
+			'customer_logged_in',
+			'cart_items',
+			'cart_categories',
+			'cart_total',
+			'shipping_method',
+			'payment_method',
+		);
+
+		$keys = array_keys( Sources::all() );
+
+		sort( $expected );
+		sort( $keys );
+
+		self::assertSame( $expected, $keys );
+	}
+
+	/**
+	 * A source says whether the browser can answer for it.
+	 *
+	 * @return void
+	 */
+	public function test_the_scope_of_each_source_is_declared(): void {
+		self::assertTrue( Sources::get( 'cart_total' )->is_server_only() );
+		self::assertTrue( Sources::get( 'cart_items' )->is_server_only() );
+		self::assertTrue( Sources::get( 'customer_logged_in' )->is_server_only() );
+
+		self::assertFalse( Sources::get( 'field' )->is_server_only() );
+		self::assertFalse( Sources::get( 'country' )->is_server_only() );
+
+		self::assertSame( Operator::TYPE_NUMBER, Sources::get( 'cart_total' )->type() );
+		self::assertSame( Operator::TYPE_LIST, Sources::get( 'cart_items' )->type() );
+		self::assertSame( Operator::TYPE_BOOLEAN, Sources::get( 'customer_logged_in' )->type() );
+	}
+
+	/**
+	 * One place decides what a node is.
+	 *
+	 * @return void
+	 */
+	public function test_the_shape_of_a_node_is_decided_in_one_place(): void {
+		self::assertSame( ConditionTree::SHAPE_GROUP, ConditionTree::shape( array( 'all' => array() ) ) );
+		self::assertSame( ConditionTree::SHAPE_GROUP, ConditionTree::shape( array( 'any' => array() ) ) );
+		self::assertSame(
+			ConditionTree::SHAPE_LEAF,
+			ConditionTree::shape(
+				array(
+					'source'   => 'country',
+					'operator' => 'equals',
+				)
+			)
+		);
+		self::assertSame( ConditionTree::SHAPE_INVALID, ConditionTree::shape( 'a string' ) );
+		self::assertSame( ConditionTree::SHAPE_INVALID, ConditionTree::shape( array( 'source' => 'country' ) ) );
+		self::assertSame( ConditionTree::SHAPE_INVALID, ConditionTree::shape( array( 'nope' => array() ) ) );
+		self::assertSame( ConditionTree::SHAPE_INVALID, ConditionTree::shape( array( 'all' => 'not a list' ) ) );
+	}
+
+	/**
+	 * A tree parses, reports its references and knows its own size.
+	 *
+	 * @return void
+	 */
+	public function test_a_tree_parses_and_reports_what_it_reads(): void {
+		$tree = ConditionTree::parse(
+			array(
+				'all' => array(
+					$this->reads( 'person_type', 'equals', 'pj' ),
+					array(
+						'any' => array(
+							array(
+								'source'   => 'country',
+								'operator' => 'equals',
+								'value'    => 'BR',
+							),
+							array(
+								'source'   => 'cart_total',
+								'operator' => 'greater_than',
+								'value'    => 100,
+							),
+						),
+					),
+				),
+			)
+		);
+
+		self::assertNotNull( $tree );
+		self::assertTrue( $tree->is_group() );
+		self::assertSame( ConditionTree::GROUP_ALL, $tree->group() );
+		self::assertSame( array( 'person_type' ), $tree->references() );
+		self::assertSame( 5, $tree->size() );
+		self::assertSame( 3, $tree->depth() );
+	}
+
+	/**
+	 * A tree that cannot be parsed does not throw.
+	 *
+	 * It is read out of an option, and a store whose tree cannot be parsed should
+	 * evaluate as "no condition" rather than take the checkout down.
+	 *
+	 * @return void
+	 */
+	public function test_an_unparseable_tree_answers_null(): void {
+		self::assertNull( ConditionTree::parse( 'not a tree' ) );
+		self::assertNull( ConditionTree::parse( array( 'all' => array( 'not a node' ) ) ) );
+	}
+
+	/**
+	 * An unknown operator is refused.
+	 *
+	 * @return void
+	 */
+	public function test_an_unknown_operator_is_refused(): void {
+		$result = ConditionValidator::validate_rules(
+			'wccs_a',
+			array( 'visible' => $this->reads( 'wccs_b', 'is_approximately' ) )
+		);
+
+		self::assertContains( 'unknown_condition_operator', $result->error_codes() );
+	}
+
+	/**
+	 * An unknown source is refused.
+	 *
+	 * @return void
+	 */
+	public function test_an_unknown_source_is_refused(): void {
+		$result = ConditionValidator::validate_rules(
+			'wccs_a',
+			array(
+				'visible' => array(
+					'source'   => 'weather',
+					'operator' => 'equals',
+					'value'    => 'rain',
+				),
+			)
+		);
+
+		self::assertContains( 'unknown_condition_source', $result->error_codes() );
+	}
+
+	/**
+	 * An operator that cannot compare against the value is refused.
+	 *
+	 * "greater than" against text is not a rule that evaluates to false; it is a
+	 * rule that does not mean anything.
+	 *
+	 * @return void
+	 */
+	public function test_an_incompatible_value_is_refused(): void {
+		$result = ConditionValidator::validate_rules(
+			'wccs_a',
+			array(
+				'visible' => array(
+					'source'   => 'country',
+					'operator' => 'greater_than',
+					'value'    => 'BR',
+				),
+			)
+		);
+
+		self::assertContains( 'condition_value_incompatible', $result->error_codes() );
+	}
+
+	/**
+	 * A comparison with nothing to compare against is refused.
+	 *
+	 * @return void
+	 */
+	public function test_a_missing_value_is_refused(): void {
+		$result = ConditionValidator::validate_rules(
+			'wccs_a',
+			array(
+				'visible' => array(
+					'source'   => 'country',
+					'operator' => 'equals',
+				),
+			)
+		);
+
+		self::assertContains( 'condition_value_missing', $result->error_codes() );
+	}
+
+	/**
+	 * A value on a question that takes none is refused.
+	 *
+	 * @return void
+	 */
+	public function test_a_value_where_none_belongs_is_refused(): void {
+		$result = ConditionValidator::validate_rules(
+			'wccs_a',
+			array(
+				'visible' => array(
+					'source'   => 'country',
+					'operator' => 'is_empty',
+					'value'    => 'BR',
+				),
+			)
+		);
+
+		self::assertContains( 'condition_value_unexpected', $result->error_codes() );
+	}
+
+	/**
+	 * A group with nothing in it is refused.
+	 *
+	 * An empty `all` matches everything and an empty `any` matches nothing, and
+	 * either way the merchant wrote something that does not say what they meant.
+	 *
+	 * @return void
+	 */
+	public function test_an_empty_group_is_refused(): void {
+		$result = ConditionValidator::validate_rules( 'wccs_a', array( 'visible' => array( 'all' => array() ) ) );
+
+		self::assertContains( 'empty_condition_group', $result->error_codes() );
+	}
+
+	/**
+	 * A field that depends on itself is refused at the rule.
+	 *
+	 * @return void
+	 */
+	public function test_a_self_reference_is_refused(): void {
+		$result = ConditionValidator::validate_rules(
+			'wccs_a',
+			array( 'visible' => $this->reads( 'wccs_a' ) )
+		);
+
+		self::assertContains( 'condition_self_reference', $result->error_codes() );
+	}
+
+	/**
+	 * A rule reading a field that does not exist is refused.
+	 *
+	 * @return void
+	 */
+	public function test_a_reference_to_a_missing_field_is_refused(): void {
+		$result = ConditionValidator::validate_document(
+			array(
+				$this->field( 'wccs_a', array( 'visible' => $this->reads( 'wccs_gone' ) ) ),
+			)
+		);
+
+		self::assertContains( 'condition_field_unknown', $result->error_codes() );
+	}
+
+	/**
+	 * Two fields that depend on each other are refused.
+	 *
+	 * The pair has no answer — not a wrong one, none — and an engine that picked
+	 * one would show whichever field it happened to evaluate first.
+	 *
+	 * @return void
+	 */
+	public function test_a_two_field_cycle_is_refused(): void {
+		$result = ConditionValidator::validate_document(
+			array(
+				$this->field( 'wccs_a', array( 'visible' => $this->reads( 'wccs_b' ) ) ),
+				$this->field( 'wccs_b', array( 'visible' => $this->reads( 'wccs_a' ) ) ),
+			)
+		);
+
+		self::assertContains( 'condition_cycle', $result->error_codes() );
+	}
+
+	/**
+	 * A longer cycle is refused too, including across a group.
+	 *
+	 * @return void
+	 */
+	public function test_a_cycle_through_a_group_is_refused(): void {
+		$result = ConditionValidator::validate_document(
+			array(
+				$this->field(
+					'wccs_a',
+					array(
+						'visible' => array(
+							'all' => array(
+								$this->reads( 'wccs_b', 'equals', 'x' ),
+								array(
+									'source'   => 'country',
+									'operator' => 'equals',
+									'value'    => 'BR',
+								),
+							),
+						),
+					)
+				),
+				$this->field( 'wccs_b', array( 'visible' => $this->reads( 'wccs_c' ) ) ),
+				$this->field( 'wccs_c', array( 'visible' => $this->reads( 'wccs_a' ) ) ),
+			)
+		);
+
+		self::assertContains( 'condition_cycle', $result->error_codes() );
+	}
+
+	/**
+	 * A chain that does not close is accepted.
+	 *
+	 * The check has to refuse cycles without refusing ordinary dependencies, and a
+	 * cycle detector that refuses any dependency is a detector nobody can use.
+	 *
+	 * @return void
+	 */
+	public function test_a_dependency_chain_is_accepted(): void {
+		$result = ConditionValidator::validate_document(
+			array(
+				$this->field( 'wccs_a', array( 'visible' => $this->reads( 'wccs_b' ) ) ),
+				$this->field( 'wccs_b', array( 'visible' => $this->reads( 'wccs_c' ) ) ),
+				$this->field( 'wccs_c', array() ),
+			)
+		);
+
+		self::assertTrue( $result->is_valid(), implode( ', ', $result->error_codes() ) );
+	}
+
+	/**
+	 * A text operator reading a number field is accepted.
+	 *
+	 * Numbers are written as text by the customer and compared as numbers by the
+	 * arithmetic, so "equal to 100" on a cart total is a rule that means
+	 * something.
+	 *
+	 * @return void
+	 */
+	public function test_an_operator_reading_a_compatible_field_is_accepted(): void {
+		$result = ConditionValidator::validate_document(
+			array(
+				$this->field( 'wccs_qty', array(), 'number' ),
+				$this->field(
+					'wccs_a',
+					array(
+						'visible' => array(
+							'source'   => 'field',
+							'field'    => 'wccs_qty',
+							'operator' => 'greater_than',
+							'value'    => 3,
+						),
+					)
+				),
+			)
+		);
+
+		self::assertTrue( $result->is_valid(), implode( ', ', $result->error_codes() ) );
+	}
+
+	/**
+	 * A comparison operator reading a checkbox is refused.
+	 *
+	 * This is the half of "typed operators" only the document can check, and the
+	 * reason the reference and the rule travel together.
+	 *
+	 * @return void
+	 */
+	public function test_an_operator_reading_an_incompatible_field_is_refused(): void {
+		$result = ConditionValidator::validate_document(
+			array(
+				$this->field( 'wccs_consent', array(), 'checkbox' ),
+				$this->field(
+					'wccs_a',
+					array(
+						'visible' => array(
+							'source'   => 'field',
+							'field'    => 'wccs_consent',
+							'operator' => 'greater_than',
+							'value'    => 3,
+						),
+					)
+				),
+			)
+		);
+
+		self::assertContains( 'condition_source_incompatible', $result->error_codes() );
+	}
+
+	/**
+	 * A field with no conditions is the ordinary case.
+	 *
+	 * @return void
+	 */
+	public function test_a_field_without_conditions_is_accepted(): void {
+		self::assertTrue( ConditionValidator::validate_rules( 'wccs_a', array() )->is_valid() );
+		self::assertTrue(
+			ConditionValidator::validate_rules( 'wccs_a', array( 'visible' => array() ) )->is_valid()
+		);
+		self::assertTrue(
+			ConditionValidator::validate_document( array( $this->field( 'wccs_a', array() ) ) )->is_valid()
+		);
+	}
+}

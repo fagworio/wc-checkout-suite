@@ -13,6 +13,7 @@ use InvalidArgumentException;
 use WCCheckoutSuite\Domain\Fields\DefinitionValidator;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Fields\ValidationResult;
+use WCCheckoutSuite\Domain\Conditions\ConditionValidator;
 use WCCheckoutSuite\Domain\Sections\SectionValidator;
 
 /**
@@ -345,6 +346,12 @@ final class SchemaRepository {
 
 		$result = $result->merge( SectionValidator::validate_sections( $document->sections() ) );
 		$result = $result->merge( SectionValidator::validate_references( $document->sections(), $document->fields() ) );
+
+		// Conditions are the one thing a field declares about another field, and
+		// the questions that raises — does the field exist, can this operator read
+		// what it holds, do two fields depend on each other — can only be answered
+		// with the whole document in hand.
+		$result = $result->merge( ConditionValidator::validate_document( $document->fields() ) );
 
 		foreach ( $document->fields() as $index => $raw_field ) {
 			if ( ! is_array( $raw_field ) ) {

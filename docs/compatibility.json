@@ -934,6 +934,39 @@
         "the_wording_has_one_source": "WCCS-030: the message the checkout shows is asserted to be the exact message the PHP validator would produce",
         "not_observed": "No invalid document is refused yet: validation is WCCS-028, no preset names a validator, and a rendered checkout to observe the refusal on does not exist on this store (CLASSIC-TEST-SURFACE)"
       }
+    },
+    "F06": {
+      "title": "Conditional Logic e política de valores",
+      "gate": "Fluxo PF/PJ funciona após múltiplas trocas; adulteração do browser não burla regra.",
+      "gate_met": false,
+      "tasks": {
+        "WCCS-031": "completed",
+        "WCCS-032": "pending",
+        "WCCS-033": "pending",
+        "WCCS-034": "pending",
+        "WCCS-035": "pending"
+      },
+      "why_gate_is_open": "One of five tasks is done. The gate describes a checkout behaviour — a PF/PJ flow surviving repeated switches, and a forged browser not bypassing a rule — and neither can be observed before there is an engine to evaluate a rule (WCCS-033), a policy for the residual value of a hidden field (WCCS-034) and a page to do it on (CLASSIC-TEST-SURFACE, which has blocked the observation of every gate since F04). What WCCS-031 settles is the vocabulary those tasks will speak: the ten operators with the types they accept, the nine sources with where each value comes from, and the refusals that stop a rule nobody can answer from being stored at all.",
+      "way_forward": "WCCS-032 builds the editor over this vocabulary, WCCS-033 the evaluators in PHP and JavaScript against shared fixtures, WCCS-034 the discard and preserve policies, and WCCS-035 the compiler for the conditions the Blocks checkout can express natively. The two observations the gate asks for belong with WCCS-063 and F12, where a browser is opened, and with the CLASSIC-TEST-SURFACE decision.",
+      "detail": " WCCS-031 delivered the vocabulary and the tree. Ten operators in five families — equality, containment, comparison, emptiness and set membership — each declaring what it can read and what it can be compared against, because section 11 requires an incompatible type and operator combination to be refused at configuration time and the only way to refuse one is for the operator to say what it accepts. Negation is not a node: it is the negated operators, so a rule that hides a field when two things differ says that rather than saying 'not (they are equal)'. Nine sources, each declaring whether the browser can answer for it or only the server can — and that declaration is where section 11's 'as long as the adapter exposes that context' becomes a rule rather than a hope. No adapter matrix was invented: the split declared is the one the evidence supports, which is who owns the value, and a server-only source is not a gap to paper over because section 11 requires the server to recompute with trusted context anyway. ConditionTree owns the shape and nothing else, on purpose, because a shape decided in two places disagrees the first time one of them is edited; what a node means belongs to the evaluator and whether it is allowed belongs to the validator. Validation runs in two layers that know different things: a rule on its own is judged against the vocabularies on every write, and rules together — a reference to a field that does not exist, an operator that cannot read what that field holds, and two fields that depend on each other — are judged where the document is validated, so a cycle is reported in the publish panel and refuses publication. A cycle is refused rather than tolerated: two fields whose visibility depends on each other have no answer, not a wrong one, and an engine that picked one would show whichever it happened to evaluate first. The proof found a real defect in the operator type check: 'mixed' — the type a field reference declares before it is resolved — had been treated as a wildcard, so every operator accepted every field, which is the exact opposite of a typed operator. It surfaced because a test asserted a refusal and the refusal did not come.",
+      "quality_state": {
+        "phpcs_wordpress": "clean (exit 0)",
+        "phpstan_level_5": "no errors",
+        "php_unit": "237 tests, 1034 assertions",
+        "javascript": "413 tests across 27 suites",
+        "integration_assertions": "766 across 27 proof harnesses, 0 failures",
+        "defects_found_and_fixed": [
+          "Operator::accepts_source() treated 'mixed' in its source list as a wildcard, so every operator accepted every field — the opposite of a typed operator. 'mixed' is the type a field reference declares before it is resolved, and a value of the source catalogue rather than a wildcard for the operator. Found by a test asserting that greater_than on a checkbox is refused; the refusal did not come.",
+          "The proof built a SchemaDocument with positional constructor arguments of the wrong kind, which killed the harness silently after its first section — no output, no exit marker, and the sweep would have counted it as a harness with no RESULT. Fixed by building the document through its factory. Recorded because it is the second time this session that a harness died quietly, and the sweep now checks each harness's exit code as well as its RESULT line."
+        ]
+      },
+      "gate_evidence": {
+        "and_or_is_expressed_and_validated": "WCCS-031: groups of all and any, nested, with leaves reading a field and two server sources; an empty group is refused",
+        "operators_are_typed": "WCCS-031: greater_than against text is refused, and greater_than reading a checkbox field is refused at the document level, where the referenced field is known",
+        "cycles_are_refused": "WCCS-031: a two-field cycle and a cycle through a group are both refused, while a dependency chain that does not close is accepted",
+        "invalid_references_are_refused": "WCCS-031: a rule naming a field that is not in the schema is refused, and a field that depends on itself is refused at the rule",
+        "not_observed": "Nothing evaluates a rule yet: the engine is WCCS-033 and the evaluator the pipeline asks is still the permissive one"
+      }
     }
   },
   "compatibility_targets": {

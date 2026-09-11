@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Domain\Fields;
 
+use WCCheckoutSuite\Domain\Conditions\ConditionValidator;
 use WCCheckoutSuite\Domain\Validation\MaskRegistry;
 use WCCheckoutSuite\Domain\Validation\NormalizerRegistry;
 
@@ -51,6 +52,25 @@ final class DefinitionValidator {
 	 */
 	public function validate_array( array $data ): ValidationResult {
 		return $this->validate( FieldDefinition::from_array( $data ) );
+	}
+
+	/**
+	 * Validates the conditions a definition declares.
+	 *
+	 * The shape, the operator, the source and the type of the comparison value are
+	 * all decidable from the rule alone, so they are checked here, on every write
+	 * and not only at publication. Whether a rule names a field that exists, and
+	 * whether two fields depend on each other, needs the rest of the document and
+	 * is checked where the document is.
+	 *
+	 * @param FieldDefinition $definition Definition.
+	 * @return ValidationResult
+	 */
+	private function validate_conditions( FieldDefinition $definition ): ValidationResult {
+		return ConditionValidator::validate_rules(
+			$definition->id(),
+			$definition->to_array()['conditions']
+		);
 	}
 
 	/**
@@ -510,6 +530,8 @@ final class DefinitionValidator {
 				);
 			}
 		}
+
+		$result = $result->merge( $this->validate_conditions( $definition ) );
 
 		return $result;
 	}
