@@ -31,5 +31,8 @@
 		"@wordpress/element": "^8.7.0",
 		"@wordpress/i18n": "^6.28.0",
 		"@wordpress/scripts": "^35.0.0"
+	},
+	"dependencies": {
+		"imask": "7.6.1"
 	}
 }

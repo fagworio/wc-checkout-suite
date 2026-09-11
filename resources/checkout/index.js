@@ -1,19 +1,21 @@
 /**
  * Classic checkout entry point.
  *
- * Wires the lifecycle and the value keeper to the two events WooCommerce fires
- * around its AJAX refresh, and to the first page load.
+ * Wires the component lifecycle to the two events WooCommerce fires around its
+ * AJAX refresh, and to the first page load.
  *
  * jQuery is not a preference here: the classic checkout fires `update_checkout`
  * and `updated_checkout` as jQuery events on `document.body`, and a jQuery event
  * does not reach a native DOM listener. Listening for them any other way would
  * mean never hearing them.
  *
- * Nothing is registered as a component here yet. The lifecycle is this phase's
- * deliverable and F05 registers the first component against it — a mask applied
- * once per input, which is the case the per-element rule exists for. Until then
- * the bundle's whole job is the value keeper, which is a component like any
- * other.
+ * The order the two components are registered in is load-bearing, and it is the
+ * reason they are registered next to each other rather than in their own modules.
+ * A mask created over an element that already holds a value formats it; a mask
+ * created over an empty element does not reformat a value assigned afterwards. So
+ * the keeper restores first and the mask is built over the restored value — with
+ * the order reversed, a field replaced by a refresh comes back unformatted inside
+ * a masked input, which is the failure the acceptance is about.
  */
 
 // jQuery is not a package this project depends on: it is a WordPress runtime
@@ -25,14 +27,26 @@
 import $ from 'jquery';
 
 import { createLifecycle } from './lifecycle';
+import { createMaskedFields } from './masks';
 import { createValueKeeper } from './values';
+
+const bootstrap = window.wccsCheckout || {};
 
 const lifecycle = createLifecycle();
 const keeper = createValueKeeper();
+const masked = createMaskedFields( bootstrap.masks || {}, keeper.attribute );
 
+const selector = `[${ keeper.attribute }]`;
+
+// First the value, then the mask over it. See the note above.
 lifecycle.register( 'suite-values', {
-	selector: `[${ keeper.attribute }]`,
+	selector,
 	start: ( element ) => keeper.restore( element ),
+} );
+
+lifecycle.register( 'suite-masks', {
+	selector,
+	start: ( element ) => masked.apply( element ),
 } );
 
 // The first pass marks every field already on the page, so a later refresh is

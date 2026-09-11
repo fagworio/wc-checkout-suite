@@ -36,7 +36,27 @@ declare global {
 		rest?: WccsAdminRest;
 	}
 
+	/**
+	 * A declarative mask the checkout bundle applies to one field.
+	 */
+	interface WccsCheckoutMask {
+		key: string;
+		version: number;
+		definition: string | Record< string, unknown >;
+	}
+
 	interface Window {
+		/**
+		 * What the checkout bundle needs before it can run.
+		 *
+		 * Printed by the server from the published schema, so the masks the
+		 * browser applies are the masks the store actually published rather than
+		 * a list the bundle carries.
+		 */
+		wccsCheckout?: {
+			masks?: Record< string, WccsCheckoutMask >;
+		};
+
 		/**
 		 * Bootstrap payload of the administration application.
 		 */

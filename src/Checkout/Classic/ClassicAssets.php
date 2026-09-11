@@ -103,6 +103,63 @@ final class ClassicAssets {
 			WCCS_TEXT_DOMAIN,
 			WCCS_PLUGIN_DIR . 'languages'
 		);
+
+		wp_add_inline_script(
+			self::SCRIPT_HANDLE,
+			'window.wccsCheckout = ' . wp_json_encode( self::bootstrap_data() ) . ';',
+			'before'
+		);
+	}
+
+	/**
+	 * The masks the bundle has to apply, keyed by field identifier.
+	 *
+	 * Built from the published document rather than from the registry, so what the
+	 * browser applies is what the store actually published: a mask on a disabled
+	 * field is not sent, and a field the classic checkout cannot render does not
+	 * appear at all.
+	 *
+	 * Only the definition travels, not the mask's whole record. The bundle needs to
+	 * build the mask and needs nothing else, and a definition that cannot be
+	 * resolved is left out rather than sent as something the client would have to
+	 * guess at.
+	 *
+	 * @return array{masks: array<string, array{key: string, version: int, definition: string|array<mixed>}>}
+	 */
+	public static function bootstrap_data(): array {
+		$masks      = \WCCheckoutSuite\Domain\Registries::instance()->masks();
+		$registered = array();
+
+		foreach ( PublishedDocument::read()->fields() as $raw ) {
+			if ( ! is_array( $raw ) ) {
+				continue;
+			}
+
+			$definition = \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array( $raw );
+			$reference  = $definition->to_array()['mask'];
+
+			if ( ! $definition->is_enabled() || ! ClassicAdapter::can_render( $definition->type() ) ) {
+				continue;
+			}
+
+			if ( ! is_array( $reference ) || ! isset( $reference['key'] ) ) {
+				continue;
+			}
+
+			$mask = $masks->mask( (string) $reference['key'] );
+
+			if ( null === $mask ) {
+				continue;
+			}
+
+			$registered[ $definition->id() ] = array(
+				'key'        => $mask->key(),
+				'version'    => $mask->version(),
+				'definition' => $mask->definition(),
+			);
+		}
+
+		return array( 'masks' => $registered );
 	}
 
 	/**
