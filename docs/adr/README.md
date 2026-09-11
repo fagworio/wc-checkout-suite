@@ -14,6 +14,7 @@ WC CheckoutSuite · Planejamento 1.0 · artefatos da tarefa **WCCS-005** (F00)
 | [ADR-0006](ADR-0006-core-field-protection.md) | Proteção dos campos centrais no ponto único de persistência | **Aceito** | F03, F04, F07, F09 | WCCS-016 (campos core protegidos) |
 | [ADR-0007](ADR-0007-closed-vocabularies.md) | Vocabulários fechados: o publicado e o exigido são o mesmo | **Aceito** | F03, F05, F06, F07, F09 | WCCS-017 (inspector por tipo) |
 | [ADR-0008](ADR-0008-incompatibility-is-not-validation.md) | Incompatibilidade não é validação | **Aceito** | F03, F04, F07, F09 | WCCS-019 (draft e PublishDiff) |
+| [ADR-0009](ADR-0009-version-control.md) | O plugin é versionado num repositório próprio, dentro do Devilbox | **Aceito** | Todas | Instrução do responsável do produto |
 
 Documento correlato: [Modelo de ameaças](../operations/threat-model.md).
 
@@ -23,16 +24,22 @@ Os ADRs **0001 a 0004** não introduzem decisão nova: registram, de forma verif
 coletada em WCCS-001 a WCCS-004, decisões que o **`ROADMAP.md` já fixa** (`§13`, `§12`, `§2`/`§5`/`§9` e
 `§1`). O responsável do produto determinou seguir o planejamento; é essa a base da aceitação.
 
-Os **ADRs 0005 a 0008 têm origem diferente** e isso está declarado neles: são registros de **decisões de
-implementação tomadas durante a execução**, não de diretrizes do planejamento. O ADR-0005 é o primeiro desse
-tipo; o ADR-0006 fecha uma lacuna que o `§7` deixa aberta — ele exige que campos estruturais sejam protegidos,
-mas não diz onde nem como; o ADR-0007 sustenta o `§428` fora do painel, determinando que os conjuntos fechados
-de uma definição sejam publicados pela mesma classe que os exige; o ADR-0008 impede que uma limitação de
-plataforma seja tratada como erro do lojista. O `§17` fixa os pontos de
-quebra do produto, mas não diz como a prévia deve reproduzi-los dentro de uma moldura mais estreita que a
-janela — a lacuna foi encontrada ao executar a WCCS-015. O ADR-0005 **não contraria** o `ROADMAP.md`: apenas
-determina o mecanismo. Por ter origem distinta, ele é o candidato natural à ratificação explícita do
-responsável do produto.
+Os **ADRs 0005 a 0009 têm origem diferente** e isso está declarado em cada um: são registos de **decisões
+tomadas durante a execução**, não de diretrizes do planejamento.
+
+- **ADR-0005** — o `§17` fixa os pontos de quebra do produto, mas não diz como a prévia deve reproduzi-los
+  dentro de uma moldura mais estreita que a janela. A lacuna foi encontrada ao executar a WCCS-015. **Não
+  contraria** o `ROADMAP.md`: apenas determina o mecanismo.
+- **ADR-0006** — o `§7` exige que campos estruturais sejam protegidos, mas não diz onde nem como. O ADR
+  determina ambos.
+- **ADR-0007** — sustenta o `§428` fora do painel, determinando que os conjuntos fechados de uma definição
+  sejam publicados pela mesma classe que os exige.
+- **ADR-0008** — impede que uma limitação de plataforma seja tratada como erro do lojista.
+- **ADR-0009** — de natureza diferente das anteriores: não é uma decisão de implementação, é a decisão do
+  responsável do produto sobre onde o código vive, e encerra a decisão aberta `GIT-REPOSITORY`.
+
+Por terem origem distinta do planejamento, os cinco são candidatos à ratificação explícita do responsável do
+produto.
 
 Três consequências práticas:
 
@@ -53,7 +60,9 @@ o registro correto é "aberta", não "decidida":
 | `PHP-BASELINE` | Manter o baseline 8.3 proposto pelo `§18` ou rebaixar o piso para 8.2, único runtime disponível no Devilbox? | F01 / WCCS-006, WCCS-010 |
 | `CLASSIC-TEST-SURFACE` | Como exercitar F04 se a loja não tem página de Checkout Classic? Criar página ou trocar a 2755 é mudança fora da raiz do plugin. | F04 |
 | `NODE-RUNTIME` | Build no container (Node 18, sem `pnpm`) ou no host (Node 22, com `pnpm` 10.15.1)? | F01 / WCCS-006 |
-| `GIT-REPOSITORY` | Onde o código vive sob versionamento, dado que `/data/www/*` é ignorado pelo repositório do Devilbox? | WCCS-010 e WCCS-066 |
+
+`GIT-REPOSITORY` saiu desta tabela: foi encerrada por decisão do responsável do produto e está registada no
+[ADR-0009](ADR-0009-version-control.md).
 
 ## Convenção
 

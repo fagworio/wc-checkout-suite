@@ -673,6 +673,16 @@
           "F07",
           "F09"
         ]
+      },
+      {
+        "id": "ADR-0009",
+        "file": "docs/adr/ADR-0009-version-control.md",
+        "subject": "the plugin is versioned in its own repository at the plugin root, with the planning versioned too",
+        "status": "accepted",
+        "provenance": "product owner instruction, closing the GIT-REPOSITORY open decision that had been carried since WCCS-001",
+        "impact_phases": [
+          "all"
+        ]
       }
     ],
     "acceptance_basis": "ADR-0001 to ADR-0004 introduce no new direction; they record decisions already fixed by ROADMAP.md sections 13, 12, 2/5/9 and 1, using the evidence gathered in WCCS-001 to WCCS-004. ADR-0005 to ADR-0008 are different and say so: each records a decision taken while executing a task. ADR-0005 determined how the preview reproduces the section 17 breakpoints inside a frame narrower than the window; ADR-0006 determined where and how section 7's protection of structurally required fields is enforced; ADR-0007 sustained section 428 outside the inspector by making the published and the enforced vocabularies one class; ADR-0008 kept section 8's capability limits from becoming validation errors that block the merchant. None contradicts the planning. Because their origin differs, all four are candidates for explicit ratification by the product owner.",
@@ -707,7 +717,7 @@
       },
       "quality_gates": "composer check runs phpcs, phpstan and phpunit; all green. npm run build, lint:js and check-types are green. The gates were proven non-decorative by inserting a deliberate violation, which both PHPCS and PHPStan caught.",
       "ci_workflow_executed": false,
-      "ci_note": "The GitHub Actions workflow is syntactically valid and every command it runs passed locally, but it has never run: the plugin has no Git repository yet (GIT-REPOSITORY is open).",
+      "ci_note": "The GitHub Actions workflow is syntactically valid, every command it runs passed locally, and it is now versioned in the plugin's own repository. It still has not run: the repository has no remote and no runner has picked it up.",
       "tasks": {
         "WCCS-006": "completed",
         "WCCS-007": "completed",
@@ -866,12 +876,6 @@
       "provisional_choice": "Build on the host (Node 22.21.1 / npm 10.9.4). WCCS-006 built successfully there.",
       "to_close": "Either accept host-only builds and pin the runtime in the repository, or upgrade the container Node version (a change outside the plugin root that needs authorization).",
       "recommendation": "Pin the runtime in the repository so local and CI builds agree, and record the container as unable to build until its Node is upgraded."
-    },
-    {
-      "id": "GIT-REPOSITORY",
-      "question": "Where does the plugin source live under version control, given that the Devilbox repository ignores /data/www/* ?",
-      "blocking": "WCCS-010 (CI) and WCCS-066 (release package)",
-      "recommendation": "Initialize or attach a dedicated repository for the plugin before CI is configured. No repository was initialized in this task."
     }
   ],
   "not_verified": [
@@ -907,5 +911,17 @@
     "docker exec devilbox-httpd-1 nginx -v",
     "curl -sS -o /dev/null -w '%{http_code}' http://wpagf.dvl.to:8080/finalizar-compra/"
   ],
-  "secrets_policy": "No password, key, token, salt or database credential was read, stored or reproduced in this artifact."
+  "secrets_policy": "No password, key, token, salt or database credential was read, stored or reproduced in this artifact.",
+  "closed_decisions": [
+    {
+      "id": "GIT-REPOSITORY",
+      "question": "Where does the plugin source live under version control, given that the Devilbox repository ignores /data/www/* ?",
+      "resolved_by": "explicit instruction from the product owner",
+      "decision": "The plugin is its own Git repository at the plugin root, branch main. Nested inside an ignored path of the Devilbox checkout, which is harmless: that repository sees nothing under /data/www/*.",
+      "record": "docs/adr/ADR-0009-version-control.md",
+      "correction": "The belief that a roadmap entry had to be removed from .gitignore was wrong: no such rule existed anywhere. What made both the plugin and roadmap invisible was the Devilbox rule /data/www/*. The .gitignore now carries a note explaining why the planning is deliberately versioned, so the exclusion is not reintroduced by mistake.",
+      "known_limitation": "The repository is local and has no remote. Publishing requires a destination that has not been provided; CI is therefore versioned but still has not run.",
+      "clean_checkout_needs_a_build": "/build/ is not versioned, so a fresh clone needs npm install && npm run build before the admin screen works. That is the direct cost of not versioning generated output."
+    }
+  ]
 }
