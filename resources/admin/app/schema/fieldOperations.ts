@@ -200,6 +200,37 @@ function withFields(
 }
 
 /**
+ * Definition keys a preset is allowed to seed.
+ *
+ * A preset arrives from the server, where any plugin can register one through the
+ * public `wccs_register_presets` hook, so it is data from outside this
+ * application. It may describe how a value is typed and stored — a mask and a
+ * normalizer — and it may not choose the identity of the field, the section it
+ * lands in, or who is allowed to see it. Listing the keys here, and checking
+ * against the list rather than trusting the caller to name them correctly, is what
+ * keeps the boundary real instead of documented.
+ */
+const PRESET_SEEDED_KEYS = [ 'mask', 'normalizer' ];
+
+/**
+ * Reads one definition key a preset is allowed to seed.
+ *
+ * @param defaults Preset defaults, from the server.
+ * @param key      Definition key.
+ * @return The seeded value, or undefined.
+ */
+function presetSeed(
+	defaults: Record< string, any > | undefined,
+	key: string
+): any {
+	if ( ! defaults || ! PRESET_SEEDED_KEYS.includes( key ) ) {
+		return undefined;
+	}
+
+	return defaults[ key ];
+}
+
+/**
  * Builds a field definition from a picker choice.
  *
  * @param document Document the field will join.
@@ -230,8 +261,8 @@ export function buildField(
 		position: nextPosition( document, section ),
 		layout: { ...DEFAULT_LAYOUT, ...( choice.layout ?? {} ) },
 		settings: choice.settings ?? {},
-		mask: choice.mask ?? null,
-		normalizer: null,
+		mask: choice.mask ?? presetSeed( choice.defaults, 'mask' ) ?? null,
+		normalizer: presetSeed( choice.defaults, 'normalizer' ) ?? null,
 		conditions: {},
 		hidden_value_policy: 'discard',
 		...surfaces,

@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace WCCheckoutSuite\Tests\Unit\Domain\Fields;
 
 use PHPUnit\Framework\TestCase;
+use WCCheckoutSuite\Domain\Fields\BrazilianPresets;
 use WCCheckoutSuite\Domain\Fields\CoreTypes;
 use WCCheckoutSuite\Domain\Fields\DefinitionValidator;
 use WCCheckoutSuite\Domain\Fields\FieldTypeRegistry;
@@ -45,7 +46,7 @@ final class DefinitionValidatorTest extends TestCase {
 		$masks = new MaskRegistry();
 
 		CoreTypes::register_types( $types );
-		CoreTypes::register_presets( $presets );
+		BrazilianPresets::register_presets( $presets );
 		CoreProcessing::register_normalizers( $normalizers );
 		CoreProcessing::register_masks( $masks );
 

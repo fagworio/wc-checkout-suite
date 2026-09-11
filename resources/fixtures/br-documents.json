@@ -1,0 +1,127 @@
+{
+	"scope": "Normalisation only, shared between the PHP and JavaScript suites. Each case is a value as a customer might type it and the value the store must keep. Whether a document is *valid* is not decided here and must not be inferred from these vectors: check digits are WCCS-028's contract, fixed against the official sources, and several documents below have deliberately arbitrary digits.",
+	"why": "The vectors that matter are the ones where the obvious implementation is wrong. A normaliser written as preg_replace( '/\\D/', '', $value ) passes the first case of every document and fails the rest: it truncates an alphanumeric CNPJ into a different number, turns a CPF typed with a letter into a valid CPF nobody typed, and destroys the leading zeros of a postcode. ADR-0003 forbids that expression on this path.",
+	"normalization": {
+		"br.cpf": [
+			{
+				"input": "123.456.789-09",
+				"canonical": "12345678909",
+				"why": "the punctuation the CPF is written with is removed"
+			},
+			{
+				"input": "12345678909",
+				"canonical": "12345678909",
+				"why": "already unformatted values are unchanged"
+			},
+			{
+				"input": "012.345.678-90",
+				"canonical": "01234567890",
+				"why": "a leading zero is part of the document and is never truncated"
+			},
+			{
+				"input": " 123.456.789-09 ",
+				"canonical": "12345678909",
+				"why": "surrounding whitespace is spacing, not data"
+			},
+			{
+				"input": "123.456.789-0A",
+				"canonical": "1234567890A",
+				"why": "an illegal character is kept so the validator can refuse it; discarding it would turn a wrong document into a valid one"
+			}
+		],
+		"br.cnpj": [
+			{
+				"input": "11.222.333/0001-81",
+				"canonical": "11222333000181",
+				"why": "the legacy numeric format"
+			},
+			{
+				"input": "12.ABC.345/01DE-35",
+				"canonical": "12ABC34501DE35",
+				"why": "the alphanumeric format: twelve alphanumeric positions and two check digits, letters preserved"
+			},
+			{
+				"input": "12.abc.345/01de-35",
+				"canonical": "12ABC34501DE35",
+				"why": "lowercase and uppercase are the same document; ADR-0003 fixes the stored form as uppercase"
+			},
+			{
+				"input": "12ABC34501DE35",
+				"canonical": "12ABC34501DE35",
+				"why": "already unformatted alphanumeric values are unchanged"
+			},
+			{
+				"input": "00.111.222/3333-44",
+				"canonical": "00111222333344",
+				"why": "two leading zeros survive: a CNPJ is never a number"
+			},
+			{
+				"input": "12.ABC.345/01DE-3!",
+				"canonical": "12ABC34501DE3!",
+				"why": "an unrecognised character is kept, not cleaned away until the value looks valid"
+			}
+		],
+		"br.cep": [
+			{
+				"input": "01310-100",
+				"canonical": "01310100",
+				"why": "the postcode is eight digits and the first is often a zero"
+			},
+			{
+				"input": "01310100",
+				"canonical": "01310100",
+				"why": "already unformatted values are unchanged"
+			},
+			{
+				"input": "01.310-100",
+				"canonical": "01310100",
+				"why": "a dot is not part of the postcode format but is recognised punctuation"
+			}
+		],
+		"br.phone": [
+			{
+				"input": "(11) 3333-4444",
+				"canonical": "1133334444",
+				"why": "a Brazilian landline: ten digits"
+			},
+			{
+				"input": "(11) 99999-8888",
+				"canonical": "11999998888",
+				"why": "a Brazilian mobile: eleven digits"
+			},
+			{
+				"input": "11 99999 8888",
+				"canonical": "11999998888",
+				"why": "spacing is not data"
+			},
+			{
+				"input": "+55 (11) 99999-8888",
+				"canonical": "5511999998888",
+				"why": "the country code survives as digits and is never truncated; a field that must accept numbers from outside Brazil is a plain telephone field, because the Brazilian presets declare a Brazilian mask and a Brazilian length, and section 9 forbids imposing one on the other"
+			},
+			{
+				"input": "(11) 99999-888A",
+				"canonical": "1199999888A",
+				"why": "an illegal character is kept so the validator can refuse it"
+			}
+		]
+	},
+	"masks": {
+		"br.cpf": {
+			"canonicalLength": 11
+		},
+		"br.cnpj": {
+			"canonicalLength": 14,
+			"why": "one mask serves both accepted formats: the wildcard positions hold a digit or a letter"
+		},
+		"br.cep": {
+			"canonicalLength": 8
+		},
+		"br.phone.landline": {
+			"canonicalLength": 10
+		},
+		"br.phone.mobile": {
+			"canonicalLength": 11
+		}
+	}
+}

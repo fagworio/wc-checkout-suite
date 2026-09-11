@@ -49,6 +49,22 @@ final class MaskTest extends TestCase {
 	}
 
 	/**
+	 * A format written with parentheses is declarative.
+	 *
+	 * Parentheses are literal characters in a written format — the Brazilian
+	 * telephone mask is `(00) 00000-0000` — and a guard that reads them as
+	 * code-shaped makes a correct definition impossible to register. The two
+	 * definitions below that *are* code still fail, which is what the guard is
+	 * for.
+	 *
+	 * @return void
+	 */
+	public function test_a_format_with_parentheses_is_declarative(): void {
+		self::assertTrue( ( new Mask( 'br.phone.mobile', '(00) 00000-0000' ) )->is_declarative() );
+		self::assertTrue( ( new Mask( 'br.phone.landline', '(00) 0000-0000' ) )->is_declarative() );
+	}
+
+	/**
 	 * A definition that looks like code is not declarative.
 	 *
 	 * @return void

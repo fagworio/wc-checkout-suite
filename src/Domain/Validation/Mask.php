@@ -48,9 +48,20 @@ final class Mask {
 	/**
 	 * Characters that never appear in a mask pattern.
 	 *
+	 * A coarse guard against a definition that looks like code, kept because it
+	 * catches the shapes that matter — `alert(1);`, `() => 1`, `function(){}`,
+	 * `<script>` — without needing to understand any language.
+	 *
+	 * Parentheses are **not** in the list. They are literal characters in a
+	 * written format, which is what a mask pattern is: the Brazilian telephone
+	 * mask is `(00) 00000-0000`, and rejecting it as code-shaped would make a
+	 * correct definition impossible to register. The definitions are data consumed
+	 * by the mask library and are never evaluated, so the parentheses carry no
+	 * meaning beyond the ones a person sees.
+	 *
 	 * @var array<int, string>
 	 */
-	private const FORBIDDEN_PATTERN_CHARS = array( ';', '(', ')', '{', '}', '<', '>', '\\', '`', '$', '=' );
+	private const FORBIDDEN_PATTERN_CHARS = array( ';', '{', '}', '<', '>', '\\', '`', '$', '=' );
 
 	/**
 	 * Constructor.

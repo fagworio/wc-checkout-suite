@@ -229,6 +229,87 @@ describe( 'creating', () => {
 		} );
 	} );
 
+	it( 'seeds the mask and the normalizer the preset declares', () => {
+		// The picker hands the preset's defaults through, and until this was
+		// wired the contract the server published stopped here: a merchant
+		// picked CPF and got a plain text field with a placeholder.
+		const result = createField( doc(), {
+			type: 'text',
+			label: 'CPF',
+			preset: 'br.cpf',
+			defaults: {
+				label: 'CPF',
+				normalizer: 'br.cpf',
+				mask: { key: 'br.cpf', version: 1 },
+			},
+		} );
+
+		expect( fieldOf( result ).normalizer ).toBe( 'br.cpf' );
+		expect( fieldOf( result ).mask ).toEqual( {
+			key: 'br.cpf',
+			version: 1,
+		} );
+	} );
+
+	it( 'lets an explicit choice win over the preset default', () => {
+		const result = createField( doc(), {
+			type: 'text',
+			label: 'Postcode',
+			preset: 'br.cep',
+			mask: { key: 'br.cep', version: 1 },
+			defaults: { mask: { key: 'br.cpf', version: 1 } },
+		} );
+
+		expect( fieldOf( result ).mask ).toEqual( {
+			key: 'br.cep',
+			version: 1,
+		} );
+	} );
+
+	it( 'leaves a type with no preset unmasked and unnormalized', () => {
+		const result = createField( doc(), { type: 'text', label: 'Notes' } );
+
+		expect( fieldOf( result ).mask ).toBeNull();
+		expect( fieldOf( result ).normalizer ).toBeNull();
+	} );
+
+	it( 'refuses to let a preset choose anything but how the value is typed', () => {
+		// A preset comes from the server, where any plugin can register one
+		// through a public hook. It may describe the value; it may not choose
+		// the identity of the field, where it lives, or who may see it.
+		const result = createField( doc(), {
+			type: 'text',
+			label: 'CPF',
+			preset: 'br.cpf',
+			section: 'billing',
+			defaults: {
+				id: 'billing_email',
+				integration_id: 'wc-checkoutsuite/hijacked',
+				origin: 'core',
+				section: 'shipping',
+				enabled: false,
+				storage: { scope: 'none', sensitivity: 'personal' },
+				visibility: { admin_order: false, customer_order: true },
+				hidden_value_policy: 'preserve',
+				type: 'number',
+			},
+		} );
+
+		const field = fieldOf( result );
+
+		expect( field.id ).toBe( 'cpf' );
+		expect( field.integration_id ).toBe( 'wc-checkoutsuite/cpf' );
+		expect( field.origin ).toBe( 'custom' );
+		expect( field.section ).toBe( 'billing' );
+		expect( field.enabled ).toBe( true );
+		expect( field.type ).toBe( 'text' );
+		expect( field.storage.scope ).toBe( 'order' );
+		expect( field.visibility.admin_order ).toBe( true );
+		expect( field.visibility.customer_order ).toBe( false );
+		expect( field.visibility.public_api ).toBe( false );
+		expect( field.hidden_value_policy ).toBe( 'discard' );
+	} );
+
 	it( 'never reuses an identifier', () => {
 		const first = createField( doc(), { type: 'text', label: 'CPF' } );
 		const second = createField( first.document, {

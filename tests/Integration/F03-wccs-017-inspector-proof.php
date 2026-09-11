@@ -374,8 +374,11 @@ $wccs_mask_unknown = wccs_proof_validate(
 	wccs_proof_def(
 		array(
 			'type' => $wccs_maskable[0] ?? 'text',
+			// Not `br.cpf`: WCCS-026 registered the Brazilian masks, so a probe
+			// using one of them would be asserting that a *registered* mask is
+			// refused. The key stays absent by construction.
 			'mask' => array(
-				'key'     => 'br.cpf',
+				'key'     => 'not.registered',
 				'version' => 1,
 			),
 		)

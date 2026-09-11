@@ -1,6 +1,6 @@
 <?php
 /**
- * Core type and preset registration.
+ * Core field type registration.
  *
  * @package WCCheckoutSuite
  */
@@ -19,7 +19,11 @@ use WCCheckoutSuite\Domain\Fields\Types\TemporalFieldType;
 use WCCheckoutSuite\Domain\Fields\Types\TextFieldType;
 
 /**
- * Registers the field types and Brazilian presets shipped with the plugin.
+ * Registers the field types shipped with the plugin.
+ *
+ * The Brazilian presets used to live here. They moved to {@see BrazilianPresets}
+ * when they gained contracts of their own — a mask and a normalizer each — because
+ * a type registry and a document catalogue are two different things to read.
  *
  * Everything here goes through the public registry API, exactly like an external
  * plugin would. The core has no privileged path, which is what proves that a
@@ -73,74 +77,5 @@ final class CoreTypes {
 		// Address group. Allowed lists come from the adapter through the context.
 		$types->register_type( new AddressFieldType( 'country', __( 'Country', 'wc-checkoutsuite' ), 'countries' ), 'core', 'address' );
 		$types->register_type( new AddressFieldType( 'state', __( 'State', 'wc-checkoutsuite' ), 'states' ), 'core', 'address' );
-	}
-
-	/**
-	 * Registers the Brazilian presets.
-	 *
-	 * Presets are data only: they name a type and pre-fill settings. A merchant
-	 * created preset may never contain executable PHP or JavaScript.
-	 *
-	 * Masks and mathematical validators are intentionally absent here: they are
-	 * delivered by WCCS-026 (presets), WCCS-027 (masks) and WCCS-028 (validators),
-	 * so a preset must not reference a validator that does not exist yet.
-	 *
-	 * @param PresetRegistry $presets Preset registry.
-	 * @return void
-	 */
-	public static function register_presets( PresetRegistry $presets ): void {
-		$presets->register_preset(
-			new Preset(
-				'br.cpf',
-				__( 'CPF', 'wc-checkoutsuite' ),
-				'text',
-				array( 'label' => __( 'CPF', 'wc-checkoutsuite' ) ),
-				array(
-					'placeholder' => '000.000.000-00',
-					'maxLength'   => 14,
-				),
-				'br'
-			)
-		);
-		$presets->register_preset(
-			new Preset(
-				'br.cnpj',
-				__( 'CNPJ', 'wc-checkoutsuite' ),
-				'text',
-				array( 'label' => __( 'CNPJ', 'wc-checkoutsuite' ) ),
-				array(
-					'placeholder' => '00.000.000/AAAA-00',
-					'maxLength'   => 18,
-				),
-				'br'
-			)
-		);
-		$presets->register_preset( new Preset( 'br.rg', __( 'RG', 'wc-checkoutsuite' ), 'text', array( 'label' => __( 'RG', 'wc-checkoutsuite' ) ), array( 'maxLength' => 20 ), 'br' ) );
-		$presets->register_preset(
-			new Preset(
-				'br.cep',
-				__( 'CEP', 'wc-checkoutsuite' ),
-				'text',
-				array( 'label' => __( 'CEP', 'wc-checkoutsuite' ) ),
-				array(
-					'placeholder' => '00000-000',
-					'maxLength'   => 9,
-				),
-				'br'
-			)
-		);
-		$presets->register_preset( new Preset( 'br.phone.landline', __( 'Landline phone', 'wc-checkoutsuite' ), 'tel', array( 'label' => __( 'Phone', 'wc-checkoutsuite' ) ), array( 'placeholder' => '(00) 0000-0000' ), 'br' ) );
-		$presets->register_preset( new Preset( 'br.phone.mobile', __( 'Mobile phone', 'wc-checkoutsuite' ), 'tel', array( 'label' => __( 'Mobile phone', 'wc-checkoutsuite' ) ), array( 'placeholder' => '(00) 00000-0000' ), 'br' ) );
-		$presets->register_preset( new Preset( 'br.person-type', __( 'Person type (PF/PJ)', 'wc-checkoutsuite' ), 'radio', array( 'label' => __( 'Person type', 'wc-checkoutsuite' ) ), array(), 'br' ) );
-		$presets->register_preset( new Preset( 'br.company-name', __( 'Legal name', 'wc-checkoutsuite' ), 'text', array( 'label' => __( 'Legal name', 'wc-checkoutsuite' ) ), array( 'maxLength' => 200 ), 'br' ) );
-		$presets->register_preset( new Preset( 'br.trade-name', __( 'Trade name', 'wc-checkoutsuite' ), 'text', array( 'label' => __( 'Trade name', 'wc-checkoutsuite' ) ), array( 'maxLength' => 200 ), 'br' ) );
-		$presets->register_preset( new Preset( 'br.address.number', __( 'Address number', 'wc-checkoutsuite' ), 'text', array( 'label' => __( 'Number', 'wc-checkoutsuite' ) ), array( 'maxLength' => 20 ), 'br' ) );
-		$presets->register_preset( new Preset( 'br.address.neighborhood', __( 'Neighborhood', 'wc-checkoutsuite' ), 'text', array( 'label' => __( 'Neighborhood', 'wc-checkoutsuite' ) ), array( 'maxLength' => 120 ), 'br' ) );
-		$presets->register_preset( new Preset( 'br.address.complement', __( 'Address complement', 'wc-checkoutsuite' ), 'text', array( 'label' => __( 'Complement', 'wc-checkoutsuite' ) ), array( 'maxLength' => 120 ), 'br' ) );
-
-		// Declared optional in the planning: they ship disabled and are enabled deliberately.
-		$presets->register_preset( new Preset( 'br.state-registration', __( 'State registration', 'wc-checkoutsuite' ), 'text', array( 'label' => __( 'State registration', 'wc-checkoutsuite' ) ), array( 'maxLength' => 20 ), 'br', false ) );
-		$presets->register_preset( new Preset( 'br.municipal-registration', __( 'Municipal registration', 'wc-checkoutsuite' ), 'text', array( 'label' => __( 'Municipal registration', 'wc-checkoutsuite' ) ), array( 'maxLength' => 20 ), 'br', false ) );
-		$presets->register_preset( new Preset( 'br.birthdate', __( 'Date of birth', 'wc-checkoutsuite' ), 'date', array( 'label' => __( 'Date of birth', 'wc-checkoutsuite' ) ), array(), 'br', false ) );
 	}
 }

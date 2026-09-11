@@ -452,7 +452,11 @@ wccs_proof_check(
 	'A definition naming an unregistered normalizer is rejected',
 	in_array(
 		'unknown_normalizer',
-		$wccs_validator->validate_array( array( 'id' => 'doc', 'type' => 'text', 'label' => 'Doc', 'normalizer' => 'br.cnpj' ) )->error_codes(),
+		// The key was `br.cnpj` while the Brazilian normalizers were still a
+		// promise. WCCS-026 delivered them, so the probe moved to a key that is
+		// absent by construction: an assertion that a *registered* key is refused
+		// would have been asserting the opposite of the truth.
+		$wccs_validator->validate_array( array( 'id' => 'doc', 'type' => 'text', 'label' => 'Doc', 'normalizer' => 'not.registered' ) )->error_codes(),
 		true
 	),
 	'br.cnpj arrives in WCCS-026'

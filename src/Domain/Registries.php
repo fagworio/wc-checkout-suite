@@ -12,11 +12,13 @@ namespace WCCheckoutSuite\Domain;
 use WCCheckoutSuite\Domain\Checkout\CoreFields;
 use WCCheckoutSuite\Domain\Conditions\ConditionEvaluatorRegistry;
 use WCCheckoutSuite\Domain\Conditions\PermissiveConditionEvaluator;
+use WCCheckoutSuite\Domain\Fields\BrazilianPresets;
 use WCCheckoutSuite\Domain\Fields\CoreTypes;
 use WCCheckoutSuite\Domain\Fields\DefinitionValidator;
 use WCCheckoutSuite\Domain\Fields\FieldTypeRegistry;
 use WCCheckoutSuite\Domain\Fields\PresetRegistry;
 use WCCheckoutSuite\Domain\Fields\ValidatorRegistry;
+use WCCheckoutSuite\Domain\Validation\BrazilianDocuments;
 use WCCheckoutSuite\Domain\Validation\CoreProcessing;
 use WCCheckoutSuite\Domain\Validation\MaskRegistry;
 use WCCheckoutSuite\Domain\Validation\NormalizerRegistry;
@@ -132,9 +134,11 @@ final class Registries {
 		}
 
 		CoreTypes::register_types( $instance->types );
-		CoreTypes::register_presets( $instance->presets );
+		BrazilianPresets::register_presets( $instance->presets );
 		CoreProcessing::register_normalizers( $instance->normalizers );
 		CoreProcessing::register_masks( $instance->masks );
+		BrazilianDocuments::register_normalizers( $instance->normalizers );
+		BrazilianDocuments::register_masks( $instance->masks );
 		$instance->conditions->register_evaluator( new PermissiveConditionEvaluator() );
 
 		$instance->registered = true;

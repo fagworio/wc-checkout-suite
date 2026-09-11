@@ -879,6 +879,41 @@
         "the_bundle_is_delivered_only_where_it_is_needed": "WCCS-025: the screen and content gates are asserted as a truth table, the bundle is enqueued with jquery as a build dependency when both pass, and a request that is not the checkout is given nothing",
         "not_observed": "No Classic checkout page exists on this store, so no order was created by a checkout; the orders in this proof were created with wc_create_order() and the creation hook was fired directly"
       }
+    },
+    "F05": {
+      "title": "Presets Brasil, IMask e validação remota",
+      "gate": "Documento inválido não finaliza; CNPJ alfanumérico válido não é truncado nem convertido em número.",
+      "gate_met": false,
+      "tasks": {
+        "WCCS-026": "completed",
+        "WCCS-027": "pending",
+        "WCCS-028": "pending",
+        "WCCS-029": "pending",
+        "WCCS-030": "pending"
+      },
+      "why_gate_is_open": "Only the first of the gate's two clauses can be proven yet, and only half of it. The second clause — an alphanumeric CNPJ is not truncated nor turned into a number — is met and asserted: the normalizer removes only recognised punctuation, keeps the letters, uppercases them and returns a string, and the fixture set contains the four documents that a `preg_replace( '/\\D/' )` normalizer would silently corrupt. The first clause — an invalid document does not finish the checkout — needs validation that does not exist: check digits are WCCS-028's contract, and no preset names a validator, so a wrong CPF is normalized correctly and accepted. The phase gate closes with WCCS-028, which is also where ADR-0003's open question about alphanumeric check digits is to be settled against the official sources.",
+      "way_forward": "WCCS-027 applies the registered masks in the browser through the lifecycle WCCS-025 delivered; WCCS-028 implements the validators and settles ADR-0003's open question; WCCS-029 and WCCS-030 add the remote endpoint and the error interface. Nothing in the phase is blocked by CLASSIC-TEST-SURFACE for its implementation, but the gate's first clause is about a checkout refusing to finish, and observing that needs a rendered checkout — so the same decision that blocks F04 blocks the observation here too.",
+      "detail": "WCCS-026 delivered the Brazilian presets with contracts of their own. Each one now declares what the field is: the type it is built on, the mask it is typed with, the normalizer that turns what the customer typed into what the store keeps, and the settings the two need. The normalizer is the heart of it, and it is written against the line anybody would write — preg_replace( '/\\D/', '', $value ) — which ADR-0003 forbids on this path and which passes the first case of every document while corrupting the rest: it turns an alphanumeric CNPJ into a different number, turns a CPF typed with a letter into a valid CPF nobody typed, and destroys the leading zeros of a postcode. The delivered normalizer removes only the punctuation these formats are written with, as a declared list rather than a character class, and leaves every other character intact for the validator to refuse. The fixtures exist to fail if that line is ever rewritten, and the shared file is read by both suites so the two sides cannot diverge. Three things are deliberately absent and each is asserted: no preset names a validator, because a key that is not registered would make every field built from the preset unsaveable and a key that exists but does nothing is a promise the code does not keep; RG declares no mask, because its format depends on the issuing state and inventing a national one was rejected; and no document preset uses a numeric type. Two defects were found. The mask guard rejected parentheses as code-shaped, which made the Brazilian telephone mask — written (00) 00000-0000 — impossible to register: parentheses are literal characters of a written format, and a mask definition is data consumed by the library and never evaluated, so the four genuinely code-shaped probes still fail while the telephone masks register. And the preset contract was being discarded before it reached the field: the picker passed defaults through, the type declared them and the catalogue published them, but buildField never read them and hardcoded a null normalizer, so the whole deliverable would have been inert and a merchant choosing CPF would have received a plain text field. Fixed with an allow-list, because a preset arrives from the server where any plugin can register one through a public hook: it may seed a mask and a normalizer and may not choose the field's identity, section, storage or visibility, which a test asserts by passing all of them and checking that none is obeyed. Two assertions belonging to earlier phases stopped testing what they claimed: WCCS-009 and WCCS-017 used br.cnpj and br.cpf as examples of unregistered keys, which was true while the Brazilian layer was a promise and became the opposite of the truth when this task registered them. Rewritten against a key that is absent by construction — the fourth task running in which an assertion pinning an exact value caught a deliberate change, and the first where what changed was a negative example.",
+      "quality_state": {
+        "phpcs_wordpress": "clean (exit 0)",
+        "phpstan_level_5": "no errors",
+        "php_unit": "200 tests, 785 assertions",
+        "javascript": "350 tests across 23 suites",
+        "integration_assertions": "655 across 22 proof harnesses, 0 failures",
+        "defects_found_and_fixed": [
+          "Mask::is_declarative() rejected parentheses as code-shaped, which made the Brazilian telephone masks — written (00) 00000-0000 and (00) 0000-0000 — impossible to register. Parentheses are literal characters of a written format, and a mask definition is data consumed by the mask library and never evaluated. Removed from the forbidden set with a regression asserting both telephone masks are declarative; the two genuinely code-shaped probes still fail.",
+          "The preset contract never reached the field it was meant to configure: FieldPicker passed `defaults` through, PickerChoice declared them, CatalogController published them, and buildField never read them — it hardcoded `normalizer: null` and took the mask only from the choice. Every Brazilian preset would have created a plain text field with a placeholder, and nothing in the preset's own unit tests could see it, because the defect was in the seam between what the server publishes and what the client applies. Fixed with an allow-list of the two keys a preset may seed.",
+          "Two assertions in earlier phases stopped testing what they claimed: WCCS-009 and WCCS-017 used br.cnpj and br.cpf as examples of unregistered keys, which was true while the Brazilian document layer was a promise and became the opposite of the truth once this task registered them. Rewritten against a key that is absent by construction, with the reason in the code."
+        ]
+      },
+      "gate_evidence": {
+        "alphanumeric_cnpj_survives": "WCCS-026: 12.ABC.345/01DE-35 becomes 12ABC34501DE35 — letters kept, uppercased, fourteen characters, a string, and not numeric",
+        "leading_zeros_survive": "WCCS-026: a CPF, a CNPJ and a postcode written with leading zeros keep every one of them through the real pipeline",
+        "only_recognised_punctuation_is_removed": "WCCS-026: an illegal character stays in the value so the validator can refuse it, rather than being discarded until the value looks valid",
+        "the_contract_reaches_the_field": "WCCS-026: a definition built the way the picker builds one passes the real validator for all five document presets, and the client applies the preset mask and normalizer instead of discarding them",
+        "mask_and_stored_length_agree": "WCCS-026: every mask offers exactly one position per character of the stored value, asserted from the fixtures and from the registered patterns",
+        "not_observed": "No invalid document is refused yet: validation is WCCS-028, no preset names a validator, and a rendered checkout to observe the refusal on does not exist on this store (CLASSIC-TEST-SURFACE)"
+      }
     }
   },
   "compatibility_targets": {
@@ -948,6 +983,18 @@
       "provisional_choice": "Build on the host (Node 22.21.1 / npm 10.9.4). WCCS-006 built successfully there.",
       "to_close": "Either accept host-only builds and pin the runtime in the repository, or upgrade the container Node version (a change outside the plugin root that needs authorization).",
       "recommendation": "Pin the runtime in the repository so local and CI builds agree, and record the container as unable to build until its Node is upgraded."
+    },
+    {
+      "id": "CNPJ-CHECK-DIGITS",
+      "question": "Can the two check digits of an alphanumeric CNPJ also be alphanumeric, or must they be digits?",
+      "blocking": "WCCS-028 (validators) and the F05 gate",
+      "options": [
+        "both check digits numeric, twelve alphanumeric positions — the reading of ROADMAP.md section 9",
+        "all fourteen positions alphanumeric — the reading of the \"letters preserved\" rule in section 5 taken to its end"
+      ],
+      "recommendation": "Resolve in WCCS-028 against the official sources (S9, S11), as ADR-0003 directs, and record the answer here. Until then no implementation may assert which is correct and no fixture may be treated as definitive.",
+      "recorded_in": "docs/adr/ADR-0003-cnpj-alphanumeric.md, section \"Questão aberta registrada\"",
+      "registered_by": "WCCS-026, which found it documented only inside the ADR and not in this registry"
     }
   ],
   "not_verified": [
