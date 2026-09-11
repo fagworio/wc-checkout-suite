@@ -100,6 +100,30 @@ final class UploadRepository {
 	}
 
 	/**
+	 * One upload by token, whoever owns it.
+	 *
+	 * Used by the download policy, which has to decide about a file it does not yet
+	 * know the owner of — and which then applies the ownership itself. Every other
+	 * reader in this class takes the owner, because every other reader is asked a
+	 * question *by* an owner.
+	 *
+	 * @param string $token Token.
+	 * @return array<string, mixed>|null
+	 */
+	public function find_any( string $token ): ?array {
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- A read of this plugin's own table; the name is built from the prefix and a constant, and the token is a placeholder.
+		$row = $wpdb->get_row(
+			$wpdb->prepare( 'SELECT * FROM ' . UploadsTable::name() . ' WHERE token = %s LIMIT 1', $token ),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+
+		return is_array( $row ) ? $row : null;
+	}
+
+	/**
 	 * Whether a token exists at all, whatever its owner.
 	 *
 	 * Used to tell "not yours" from "not on file": the two are different answers for
@@ -141,6 +165,64 @@ final class UploadRepository {
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
 		return (int) $total;
+	}
+
+	/**
+	 * Binds the uploads a checkout submitted to the order it created.
+	 *
+	 * One statement, and every guarantee comes from it rather than from the code
+	 * around it:
+	 *
+	 * - **Atomic.** A single `UPDATE`, so there is no window in which a token is
+	 *   half-bound, and no read-then-write for two requests to interleave in.
+	 * - **Idempotent.** `order_id = 0` is part of the condition, so running it again
+	 *   after a retry matches nothing and changes nothing. That is what makes a
+	 *   client that submits twice safe, and it is why the reply is a count: the first
+	 *   call answers with the number bound, the second with zero, and neither is an
+	 *   error.
+	 * - **Owned.** `owner = %s` is part of the same condition, so a token that belongs
+	 *   to another session cannot be bound by this one, however it was obtained. A
+	 *   check in PHP would have to be remembered at every call site; this cannot be
+	 *   forgotten because it is in the query.
+	 *
+	 * Only temporary rows are touched: an upload already bound to another order stays
+	 * where it is, which is what a customer reusing a token across two checkouts
+	 * would otherwise move.
+	 *
+	 * @param array<int, string> $tokens   Tokens the checkout submitted.
+	 * @param string             $owner    Owner identifier of the session.
+	 * @param int                $order_id Order.
+	 * @return int Number of uploads bound by this call.
+	 */
+	public function bind( array $tokens, string $owner, int $order_id ): int {
+		global $wpdb;
+
+		$tokens = array_values(
+			array_filter(
+				array_unique( array_map( 'strval', $tokens ) ),
+				static function ( string $token ): bool {
+					return 1 === preg_match( '/^[a-f0-9]{64}$/', $token );
+				}
+			)
+		);
+
+		if ( array() === $tokens || $order_id <= 0 || '' === $owner ) {
+			return 0;
+		}
+
+		$placeholders = implode( ', ', array_fill( 0, count( $tokens ), '%s' ) );
+		$arguments    = array_merge( $tokens, array( $owner, $order_id ) );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- The table name is built from the prefix and a constant, the placeholder list is built from the token count, and every value travels as a placeholder.
+		$bound = $wpdb->query(
+			$wpdb->prepare(
+				'UPDATE ' . UploadsTable::name() . " SET order_id = %d, status = %s WHERE token IN ( {$placeholders} ) AND owner = %s AND order_id = 0",
+				array_merge( array( $order_id, self::STATUS_ORDERED ), $arguments )
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+
+		return is_int( $bound ) ? $bound : 0;
 	}
 
 	/**

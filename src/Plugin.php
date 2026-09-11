@@ -19,11 +19,13 @@ use WCCheckoutSuite\Checkout\Blocks\BlocksRenderer;
 use WCCheckoutSuite\Checkout\Blocks\BlocksValidation;
 use WCCheckoutSuite\Checkout\Blocks\StoreApiExtension;
 use WCCheckoutSuite\Domain\Uploads\UploadsTable;
+use WCCheckoutSuite\Http\Checkout\DownloadController;
 use WCCheckoutSuite\Http\Checkout\UploadController;
 use WCCheckoutSuite\Checkout\Classic\ClassicAssets;
 use WCCheckoutSuite\Checkout\Classic\ClassicCheckout;
 use WCCheckoutSuite\Checkout\Classic\ClassicUploads;
 use WCCheckoutSuite\Checkout\Classic\ClassicOrderFields;
+use WCCheckoutSuite\Checkout\Classic\ClassicOrderUploads;
 use WCCheckoutSuite\Checkout\Classic\ClassicValidation;
 use WCCheckoutSuite\Http\Admin\CatalogController;
 use WCCheckoutSuite\Http\Admin\SchemaController;
@@ -186,6 +188,7 @@ final class Plugin {
 			'rest_api_init',
 			static function (): void {
 				( new UploadController() )->register_routes();
+				( new DownloadController() )->register_routes();
 			}
 		);
 
@@ -200,6 +203,10 @@ final class Plugin {
 		// for. Registered next to the adapter because it is the adapter's rendering
 		// half for that one type.
 		ClassicUploads::register();
+
+		// Storefront side: the uploads a checkout submitted, bound to the order it
+		// created. Registered with the other order writers because it is one.
+		ClassicOrderUploads::register();
 
 		// Administrative screen and its assets.
 		//

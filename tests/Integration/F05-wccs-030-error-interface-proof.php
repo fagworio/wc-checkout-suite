@@ -17,6 +17,8 @@
  * @package WCCheckoutSuite
  */
 
+require_once __DIR__ . '/support/storefront-hooks.php';
+
 if ( ! defined( 'ABSPATH' ) ) {
 	fwrite( STDERR, "This harness must run inside WordPress (wp eval-file).\n" );
 	exit( 1 );
@@ -299,16 +301,7 @@ $wccs_hooks = wccs_proof_plugin_hooks();
 
 wccs_proof_check(
 	'The storefront half is still exactly these hooks',
-	array(
-		'woocommerce_after_checkout_validation@20:collect_errors',
-		'woocommerce_checkout_create_order@20:persist',
-		'woocommerce_checkout_fields@20:filter_fields',
-		'woocommerce_checkout_posted_data@20:normalize_posted_data',
-		// Added by WCCS-043: the classic checkout has no file type, and this is the
-		// documented filter an unknown type reaches.
-		'woocommerce_form_field_file@10:render',
-		'wp_enqueue_scripts@10:enqueue',
-	) === $wccs_hooks,
+	wccs_proof_expected_hooks() === $wccs_hooks,
 	'found ' . wp_json_encode( $wccs_hooks )
 );
 
