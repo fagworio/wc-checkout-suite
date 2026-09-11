@@ -337,12 +337,13 @@ wccs_proof_check(
 $wccs_hooks = wccs_proof_plugin_hooks();
 
 wccs_proof_check(
-	'The storefront half grew by exactly one hook in this task',
+	'The storefront half is exactly these hooks and nothing else',
 	array(
 		'woocommerce_after_checkout_validation@20:collect_errors',
 		'woocommerce_checkout_create_order@20:persist',
 		'woocommerce_checkout_fields@20:filter_fields',
 		'woocommerce_checkout_posted_data@20:normalize_posted_data',
+		'wp_enqueue_scripts@10:enqueue',
 	) === $wccs_hooks,
 	'found ' . wp_json_encode( $wccs_hooks )
 );

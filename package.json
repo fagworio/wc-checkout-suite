@@ -9,8 +9,12 @@
 		"npm": ">=8.19.2"
 	},
 	"scripts": {
-		"build": "wp-scripts build --webpack-src-dir=resources/admin --output-path=build/admin",
-		"start": "wp-scripts start --webpack-src-dir=resources/admin --output-path=build/admin",
+		"build": "npm run build:admin && npm run build:checkout",
+		"build:admin": "wp-scripts build --webpack-src-dir=resources/admin --output-path=build/admin",
+		"build:checkout": "wp-scripts build --webpack-src-dir=resources/checkout --output-path=build/checkout",
+		"start": "npm run start:admin",
+		"start:admin": "wp-scripts start --webpack-src-dir=resources/admin --output-path=build/admin",
+		"start:checkout": "wp-scripts start --webpack-src-dir=resources/checkout --output-path=build/checkout",
 		"lint:js": "wp-scripts lint-js resources tests/js",
 		"lint:js:fix": "wp-scripts lint-js resources tests/js --fix",
 		"test:unit-js": "jest",

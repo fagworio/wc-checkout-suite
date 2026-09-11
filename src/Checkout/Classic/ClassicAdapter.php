@@ -429,8 +429,19 @@ final class ClassicAdapter {
 
 		$max_length = $this->setting( $definition, 'maxLength' );
 
+		// The client half has to be able to tell the Suite's fields apart from
+		// every other field on the form, and the identifier the merchant chose is
+		// not a pattern anything could match on. A data attribute is how the
+		// server says which fields are its own, and it travels with the fragment
+		// if WooCommerce ever replaces it.
+		//
+		// Only a custom field is marked. A field WooCommerce owns is WooCommerce's
+		// to re-render and to repopulate, and marking it would invite the client
+		// half to restore a value that the platform is already responsible for.
+		$field['custom_attributes'] = array( 'data-wccs-field' => $definition->id() );
+
 		if ( is_int( $max_length ) && $max_length > 0 ) {
-			$field['custom_attributes'] = array( 'maxlength' => $max_length );
+			$field['custom_attributes']['maxlength'] = $max_length;
 		}
 
 		$default = $this->setting( $definition, 'default' );

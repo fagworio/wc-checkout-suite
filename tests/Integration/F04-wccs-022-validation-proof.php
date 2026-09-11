@@ -342,6 +342,7 @@ $wccs_hook_expected = array(
 	'woocommerce_checkout_create_order@20:persist',
 	'woocommerce_checkout_fields@20:filter_fields',
 	'woocommerce_checkout_posted_data@20:normalize_posted_data',
+	'wp_enqueue_scripts@10:enqueue',
 );
 
 sort( $wccs_hook_expected );

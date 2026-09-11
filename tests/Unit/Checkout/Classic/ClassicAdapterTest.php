@@ -148,7 +148,101 @@ final class ClassicAdapterTest extends TestCase {
 		$field = $fields['billing']['billing_document'];
 
 		self::assertSame( '000.000.000-00', $field['placeholder'] );
-		self::assertSame( array( 'maxlength' => 14 ), $field['custom_attributes'] );
+		self::assertSame( 14, $field['custom_attributes']['maxlength'] );
+	}
+
+	/**
+	 * A field the Suite owns is marked as its own.
+	 *
+	 * The client half has to tell the Suite's fields apart from every other field
+	 * on the form, and the identifier a merchant chose is not a pattern anything
+	 * could match on. The marker is how the server says which fields are its own.
+	 *
+	 * @return void
+	 */
+	public function test_a_custom_field_is_marked_as_the_suites_own(): void {
+		$fields = $this->adapter->apply(
+			$this->woo_fields(),
+			array(
+				array(
+					'id'      => 'wccs_cpf',
+					'type'    => 'text',
+					'section' => 'billing',
+				),
+			)
+		);
+
+		self::assertSame( 'wccs_cpf', $fields['billing']['wccs_cpf']['custom_attributes']['data-wccs-field'] );
+	}
+
+	/**
+	 * The marker and the declared attributes live side by side.
+	 *
+	 * @return void
+	 */
+	public function test_the_marker_does_not_displace_a_declared_attribute(): void {
+		$fields = $this->adapter->apply(
+			$this->woo_fields(),
+			array(
+				array(
+					'id'       => 'wccs_cpf',
+					'type'     => 'text',
+					'section'  => 'billing',
+					'settings' => array( 'maxLength' => 11 ),
+				),
+			)
+		);
+
+		self::assertSame(
+			array(
+				'data-wccs-field' => 'wccs_cpf',
+				'maxlength'       => 11,
+			),
+			$fields['billing']['wccs_cpf']['custom_attributes']
+		);
+	}
+
+	/**
+	 * A field WooCommerce owns is not marked.
+	 *
+	 * WooCommerce re-renders and repopulates its own fields from the session.
+	 * Marking one would invite the client half to restore a value the platform is
+	 * already responsible for, and would put a key on a core field that the
+	 * adapter's own rule says it does not touch.
+	 *
+	 * @return void
+	 */
+	public function test_a_field_woocommerce_owns_is_not_marked(): void {
+		$woo = array(
+			'billing' => array(
+				'billing_first_name' => array(
+					'type'              => 'text',
+					'label'             => 'First name',
+					'required'          => true,
+					'custom_attributes' => array( 'autocomplete' => 'given-name' ),
+				),
+			),
+		);
+
+		$fields = $this->adapter->apply(
+			$woo,
+			array(
+				array(
+					'id'      => 'billing_first_name',
+					'type'    => 'text',
+					'origin'  => 'core',
+					'label'   => 'Primeiro nome',
+					'section' => 'billing',
+				),
+			)
+		);
+
+		self::assertSame( 'Primeiro nome', $fields['billing']['billing_first_name']['label'] );
+		self::assertSame(
+			array( 'autocomplete' => 'given-name' ),
+			$fields['billing']['billing_first_name']['custom_attributes'],
+			'the attributes WooCommerce set are untouched'
+		);
 	}
 
 	/**

@@ -14,6 +14,7 @@ use WCCheckoutSuite\Admin\Assets;
 use WCCheckoutSuite\Domain\Registries;
 use WCCheckoutSuite\Domain\Schema\CoreFieldGuard;
 use WCCheckoutSuite\Domain\Schema\SchemaRepository;
+use WCCheckoutSuite\Checkout\Classic\ClassicAssets;
 use WCCheckoutSuite\Checkout\Classic\ClassicCheckout;
 use WCCheckoutSuite\Checkout\Classic\ClassicOrderFields;
 use WCCheckoutSuite\Checkout\Classic\ClassicValidation;
@@ -127,6 +128,13 @@ final class Plugin {
 		// Handed the instance that ran the validation, so what lands on the order
 		// is what was validated rather than a second reading of the request.
 		ClassicOrderFields::register( $validation );
+
+		// Storefront side: the checkout bundle and its component lifecycle.
+		//
+		// The gate is in the class, not here: it checks the screen and whether the
+		// published schema has anything the classic checkout can render, so a
+		// storefront request for any other page pays nothing.
+		ClassicAssets::register();
 
 		// Administrative screen and its assets.
 		//

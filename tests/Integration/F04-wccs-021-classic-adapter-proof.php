@@ -279,8 +279,24 @@ wccs_proof_check(
 wccs_proof_check(
 	'The declared settings reach the checkout',
 	'000.000.000-00' === ( $wccs_filtered['billing']['billing_document']['placeholder'] ?? '' )
-		&& array( 'maxlength' => 14 ) === ( $wccs_filtered['billing']['billing_document']['custom_attributes'] ?? array() ),
+		&& 14 === ( $wccs_filtered['billing']['billing_document']['custom_attributes']['maxlength'] ?? null ),
 	(string) wp_json_encode( $wccs_filtered['billing']['billing_document']['custom_attributes'] ?? array() )
+);
+
+// The client half needs to tell the Suite's fields apart from every other field
+// on the form, and the identifier a merchant chose is not a pattern anything
+// could match on. WCCS-025 added the marker; the assertion is here because this
+// is the harness that reads the real field array WooCommerce builds.
+wccs_proof_check(
+	'A custom field is marked as the Suite\'s own',
+	'billing_document' === ( $wccs_filtered['billing']['billing_document']['custom_attributes']['data-wccs-field'] ?? null ),
+	(string) wp_json_encode( $wccs_filtered['billing']['billing_document']['custom_attributes'] ?? array() )
+);
+
+wccs_proof_check(
+	'A field WooCommerce owns is not marked',
+	! isset( $wccs_filtered['billing']['billing_first_name']['custom_attributes']['data-wccs-field'] ),
+	'WooCommerce repopulates its own fields from the session'
 );
 
 wccs_proof_check(
