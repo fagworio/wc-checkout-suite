@@ -992,6 +992,36 @@
         "what_cannot_be_compiled_is_named": "WCCS-035: payment_method, cart_categories, a field reference and two operator/shape mismatches come back with a note naming what stopped them, and a rule that is only partly translatable is not translated at all",
         "the_native_mechanism_decides_what_the_engine_decides": "WCCS-035: twelve cases evaluated through WooCommerce's document validator and through this plugin's engine on the same checkout document, with no disagreement — including the currency conversion for the cart total, product identifiers as integers and the customer id standing for the logged-in question"
       }
+    },
+    "F07": {
+      "title": "Checkout Blocks nativo e tipos próprios",
+      "gate": "Todos os tipos não-file da V1 possuem renderer homologado ou restrição explícita coerente; nenhum modo é anunciado além do testado.",
+      "gate_met": false,
+      "tasks": {
+        "WCCS-036": "completed",
+        "WCCS-037": "pending",
+        "WCCS-038": "pending",
+        "WCCS-039": "pending",
+        "WCCS-040": "pending"
+      },
+      "why_gate_is_open": "One of five tasks is done. WCCS-036 registered the fields the Blocks checkout can render natively and refused, with a reason each, every one it cannot — so the second half of the gate ('nenhum modo é anunciado além do testado') is now a property of the code rather than an intention: the list of native types is compared with the list the platform itself reports. The first half is what remains: textarea, radio, multiselect, time and datetime have no renderer at all yet (WCCS-037), values are not validated through the Store API (WCCS-038), the admin does not show the limits before publishing (WCCS-039) and the Blocks lifecycle has not been exercised (WCCS-040).",
+      "way_forward": "WCCS-037 delivers the controlled components for everything WCCS-036 refused, WCCS-038 integrates the Store API and the validation, WCCS-039 publishes the capability matrix in the admin and WCCS-040 tests the editing lifecycle. The gate closes when every non-file type of v1 has either a homologated renderer or an explicit restriction, which is a statement about the whole list and therefore belongs to the end of the phase.",
+      "detail": " WCCS-036 delivered the Blocks adapter. The additional-fields API of the installed WooCommerce accepts exactly text, select and checkbox — a private, unfiltered array — and the adapter's declared list is compared in the proof against the list the platform itself answers when it is asked to register a type it does not have, because there is no API to ask and a comment is not evidence. date is named by section 8 and by the task's own acceptance, and is not there: it is refused with the code needs_controlled_component naming WCCS-037, instead of being registered as text and discovered by a customer. Three policies follow from the same discipline. Locations are resolved and never guessed: billing and shipping are one address location, contact and account are contact, order is order, and a field whose section is not published is refused rather than defaulted to order, which is the family of mistake WCCS-018 had to fix. Storage the platform does not perform is refused: a native field is persisted on the order, so a definition declaring scope none or scope customer is refused with storage_not_native, which is ADR-0001's one-authority rule applied before the field exists. And a select with no options is refused, because a select with no options has nothing to choose from. The third piece is the one that makes WCCS-035 stop being a library: a representable visibility rule is registered as the native required *and* the native hidden — the negation of the same schema — which together mean 'required exactly when it is shown', and which WooCommerce honours, since is_required_field returns false for a hidden field. The proof reads both rules back out of WooCommerce's own registry and validates them with WooCommerce's own meta-schema. A rule that cannot be expressed natively does not stop the registration: the field is registered without it and the reason is reported, which is ADR-0008 pointing the other way, and the difference between 'the platform cannot express this' and 'the merchant cannot use this field'.",
+      "quality_state": {
+        "phpcs_wordpress": "clean (exit 0)",
+        "phpstan_level_5": "no errors",
+        "php_unit": "321 tests, 1169 assertions",
+        "javascript": "541 tests across 31 suites",
+        "integration_assertions": "862 across 32 proof harnesses, 0 failures",
+        "defects_found_and_fixed": []
+      },
+      "gate_evidence": {
+        "native_types_are_the_platforms": "WCCS-036: the adapter's list is compared with the list WooCommerce reports when asked to register a type it does not support; date is absent from both",
+        "native_fields_register_where_they_belong": "WCCS-036: text, select (with its options) and checkbox register and are read back from CheckoutFields::get_additional_fields() in the contact, address and order locations",
+        "what_cannot_be_native_is_refused_with_a_reason": "WCCS-036: date, a select without options, scope none, scope customer and an unpublished section are each refused with a stable code, and none of them prevents the other fields from registering",
+        "the_compiled_condition_is_what_registers": "WCCS-036: a compilable rule arrives as the native required and hidden, read back from WooCommerce's registry and validated by WooCommerce's meta-schema",
+        "not_observed": "No Blocks checkout has been rendered or submitted: the registrations were proven inside the platform's registry in a WP-CLI request, and the Store API validation, the admin capability matrix and the editing lifecycle belong to WCCS-038 to WCCS-040"
+      }
     }
   },
   "compatibility_targets": {

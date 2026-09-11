@@ -14,6 +14,7 @@ use WCCheckoutSuite\Admin\Assets;
 use WCCheckoutSuite\Domain\Registries;
 use WCCheckoutSuite\Domain\Schema\CoreFieldGuard;
 use WCCheckoutSuite\Domain\Schema\SchemaRepository;
+use WCCheckoutSuite\Checkout\Blocks\BlocksCheckout;
 use WCCheckoutSuite\Checkout\Classic\ClassicAssets;
 use WCCheckoutSuite\Checkout\Classic\ClassicCheckout;
 use WCCheckoutSuite\Checkout\Classic\ClassicOrderFields;
@@ -141,6 +142,14 @@ final class Plugin {
 				( new ValidationController() )->register_routes();
 			}
 		);
+
+		// Storefront side: the published schema applied to the Blocks checkout.
+		//
+		// Registered unconditionally, and hooked on `woocommerce_blocks_loaded` so
+		// the registration happens after WooCommerce has built its checkout fields.
+		// The adapter reads the published document only, like the classic one, so an
+		// unpublished edit cannot reach a customer.
+		BlocksCheckout::register();
 
 		// Storefront side: the checkout bundle and its component lifecycle.
 		//
