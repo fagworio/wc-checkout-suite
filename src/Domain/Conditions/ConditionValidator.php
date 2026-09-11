@@ -219,6 +219,30 @@ final class ConditionValidator {
 					)
 				);
 			}
+		} elseif ( ! $operator->accepts_source( $source->type() ) ) {
+			// The other half of the same rule, and the one a catalogue source can be
+			// judged on where it stands: "Country is greater than 5" is a comparison
+			// with no meaning, and the operator says so itself by not listing the
+			// type of what it is asked to read.
+			//
+			// This belongs here and not only in the editor's offer list. A closed
+			// vocabulary is closed on both sides — the set the editor offers and the
+			// set the validator accepts have to be the same set, which is what
+			// ADR-0007 asks for — and until this check existed the validator accepted
+			// rules the editor could not produce.
+			$result = $result->merge(
+				ValidationResult::invalid(
+					'condition_source_incompatible',
+					sprintf(
+						/* translators: 1: operator label, 2: source label, 3: value type */
+						__( 'The operator "%1$s" cannot read %2$s, which holds a value of type %3$s.', 'wc-checkoutsuite' ),
+						$operator->label(),
+						$source->label(),
+						$source->type()
+					),
+					array_merge( $context, array( 'sourceType' => $source->type() ) )
+				)
+			);
 		}
 
 		if ( ! $operator->takes_value() ) {

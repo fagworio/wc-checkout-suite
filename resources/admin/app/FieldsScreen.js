@@ -1227,6 +1227,15 @@ export default function FieldsScreen( { client } ) {
 					<FieldInspector
 						field={ editingField }
 						catalog={ catalog }
+						hasConditions={ Boolean( catalog?.conditions ) }
+						fields={ ( document?.fields ?? [] ).map(
+							(
+								/** @type {import('./schema/types').FieldDefinition} */ entry
+							) => ( {
+								id: entry.id,
+								label: entry.label,
+							} )
+						) }
 						onChange={ (
 							/** @type {Partial<import('./schema/types').FieldDefinition>} */ changes
 						) =>

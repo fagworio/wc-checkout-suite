@@ -288,6 +288,101 @@ final class ConditionVocabularyTest extends TestCase {
 	}
 
 	/**
+	 * An operator that cannot read the source it is pointed at is refused.
+	 *
+	 * The value type alone does not settle this: a number is a value "greater
+	 * than" accepts, so "Country is greater than 5" passed every other check while
+	 * comparing a country with a number. The source's own type is what decides, and
+	 * the operator declares which ones it can read.
+	 *
+	 * @return void
+	 */
+	public function test_an_operator_reading_an_incompatible_source_is_refused(): void {
+		$cases = array(
+			'string source and a numeric comparison' => array( 'country', 'greater_than', 5 ),
+			'list source and a numeric comparison'   => array( 'cart_items', 'greater_than', 5 ),
+			'boolean source and containment'         => array( 'customer_logged_in', 'contains', 'x' ),
+			'number source and containment'          => array( 'cart_total', 'contains', 'x' ),
+		);
+
+		foreach ( $cases as $label => $case ) {
+			[ $source, $operator, $value ] = $case;
+
+			$result = ConditionValidator::validate_rules(
+				'wccs_a',
+				array(
+					'visible' => array(
+						'source'   => $source,
+						'operator' => $operator,
+						'value'    => $value,
+					),
+				)
+			);
+
+			self::assertContains(
+				'condition_source_incompatible',
+				$result->error_codes(),
+				$label
+			);
+		}
+	}
+
+	/**
+	 * The operator set the editor offers and the one the validator accepts agree.
+	 *
+	 * This is the property ADR-0007 asks a closed vocabulary to have, and the one
+	 * that makes the rule pass through both sides: the editor offers what the
+	 * operator lists for the source's type, and the validator accepts exactly that.
+	 * A pair judged acceptable by one and refused by the other is the disagreement
+	 * this test exists to catch, so it walks every source and every operator rather
+	 * than a sample of them.
+	 *
+	 * @return void
+	 */
+	public function test_the_editor_offer_and_the_validator_agree_on_every_pair(): void {
+		$values = array(
+			'in'           => array( 'BR', 'PT' ),
+			'not_in'       => array( 'BR', 'PT' ),
+			'greater_than' => 5,
+			'less_than'    => 5,
+		);
+
+		$disagreements = array();
+
+		foreach ( Sources::all() as $source_key => $source ) {
+			if ( $source->is_reference() ) {
+				continue;
+			}
+
+			foreach ( Operators::all() as $operator_key => $operator ) {
+				$leaf = array(
+					'source'   => $source_key,
+					'operator' => $operator_key,
+				);
+
+				if ( $operator->takes_value() ) {
+					$leaf['value'] = $values[ $operator_key ] ?? 'BR';
+				}
+
+				$accepted = ConditionValidator::validate_rules(
+					'wccs_a',
+					array( 'visible' => $leaf )
+				)->is_valid();
+
+				// What the editor offers is decided by the operator's own list of
+				// readable types, which is the same list the validator reads.
+				$offered = $operator->accepts_source( $source->type() );
+
+				if ( $accepted !== $offered ) {
+					$disagreements[] = $source_key . ' + ' . $operator_key;
+				}
+			}
+		}
+
+		self::assertSame( array(), $disagreements );
+	}
+
+	/**
 	 * A comparison with nothing to compare against is refused.
 	 *
 	 * @return void

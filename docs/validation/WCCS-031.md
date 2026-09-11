@@ -72,3 +72,24 @@ Uma regra que lê uma fonte de servidor não pode ser respondida ao vivo no brow
 ## 8. Próxima tarefa
 
 **WCCS-032 — "Criar editor de regras"** (aceite: *regras legíveis, preview de resultado e mensagens de contradição*). É a primeira tarefa da fase com uma metade visível no painel, e o vocabulário desta tarefa é o que o editor oferece: os operadores e as fontes que ele mostra são os mesmos que o validador aceita, lidos do mesmo lugar.
+
+---
+
+## 9. Correção posterior, encontrada na WCCS-032
+
+O aceite desta tarefa diz **"operadores tipados"**, e a §3 acima descreve a verificação de tipo como estando feita em duas camadas. Estava feita **para referências a campos** — `greater_than` sobre um checkbox era recusado no nível do documento, e é isso que a prova desta tarefa exercitou. Para uma **fonte do catálogo**, nada verificava o par operador↔fonte.
+
+A consequência era uma regra sem sentido ser gravável, desde que o valor fosse do tipo que o operador aceita:
+
+```
+country            + greater_than + 5    → aceite
+cart_items         + greater_than + 5    → aceite
+customer_logged_in + contains     + "x"  → aceite
+cart_total         + contains     + "x"  → aceite
+```
+
+"O país é maior que 5" passava em todas as verificações que existiam, porque `5` é um número, e `greater_than` compara números.
+
+Foi encontrado na WCCS-032, cuja prova afirma a igualdade entre **o que o editor oferece e o que o validador aceita** — uma igualdade afirmada falha quando um dos lados está errado, e era o validador que estava. A correção é o mesmo `condition_source_incompatible`, com a mesma forma de mensagem, aplicado onde a fonte do catálogo está: em `walk_leaf`, antes do valor. A prova desta tarefa passou a percorrer **todos** os pares (8 fontes diretas × 10 operadores) em vez de uma amostra, e a prova da WCCS-032 percorre os mesmos pares através do validador real.
+
+Vale registar a forma do erro, porque é a terceira desta família no projeto: a asserção existia para metade do espaço, e a metade que faltava era exatamente aquela onde a verificação não tinha sido escrita. Uma verificação de tipo que só corre num dos dois caminhos lê-se como uma verificação de tipo.

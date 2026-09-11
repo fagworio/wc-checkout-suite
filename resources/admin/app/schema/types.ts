@@ -144,6 +144,33 @@ export interface FieldCatalog {
 	masks: FieldMask[];
 	vocabulary: DefinitionVocabulary;
 	sectionLocations: SectionLocation[];
+	conditions?: ConditionVocabularyShape;
+}
+
+/**
+ * The condition vocabulary, published by the server.
+ *
+ * Declared here rather than imported from `conditions` so the type module keeps
+ * depending on nothing: a type-only import would be erased anyway, and a reader
+ * looking for the catalogue's shape should find it with the catalogue.
+ */
+export interface ConditionVocabularyShape {
+	operators?: Array< {
+		key: string;
+		label: string;
+		takesValue: boolean;
+		valueTypes: string[];
+		sourceTypes: string[];
+		negated: boolean;
+	} >;
+	sources?: Array< {
+		key: string;
+		label: string;
+		type: string;
+		scope: string;
+		isReference: boolean;
+	} >;
+	limits?: { maxDepth?: number; maxNodes?: number };
 }
 
 /**

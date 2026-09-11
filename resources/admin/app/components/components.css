@@ -1103,6 +1103,125 @@
 	margin: 0;
 }
 
+/* -------------------------------------------------------------- Conditions */
+
+.wccs-admin .wccs-conditions {
+	display: grid;
+	gap: var(--wccs-space-12);
+}
+
+.wccs-admin .wccs-conditions__intro,
+.wccs-admin .wccs-conditions__empty {
+	margin: 0;
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+}
+
+/* The rule read back as one sentence is the answer to "what did I just build",
+   so it is set apart rather than styled as another line of help text. */
+.wccs-admin .wccs-conditions__sentence {
+	margin: 0;
+	padding: var(--wccs-space-12) var(--wccs-space-16);
+	border-inline-start: 3px solid var(--wccs-brand);
+	border-radius: var(--wccs-radius-control);
+	background: var(--wccs-brand-subtle);
+	font-weight: var(--wccs-weight-medium);
+}
+
+.wccs-admin .wccs-conditions__empty-state {
+	display: grid;
+	justify-items: start;
+	gap: var(--wccs-space-8);
+}
+
+.wccs-admin .wccs-conditions__empty-state p {
+	margin: 0;
+}
+
+.wccs-admin .wccs-conditions__group {
+	display: grid;
+	gap: var(--wccs-space-12);
+	padding: var(--wccs-space-12);
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-panel);
+}
+
+/* Nesting is shown by the rule on the leading edge, so a group inside a group
+   is legible without counting borders. */
+.wccs-admin .wccs-conditions__group .wccs-conditions__group,
+.wccs-admin .wccs-conditions__group .wccs-conditions__leaf {
+	border-inline-start: 3px solid var(--wccs-border-control);
+}
+
+.wccs-admin .wccs-conditions__group-head,
+.wccs-admin .wccs-conditions__leaf-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--wccs-space-8);
+}
+
+.wccs-admin .wccs-conditions__leaf {
+	display: grid;
+	gap: var(--wccs-space-8);
+	padding: var(--wccs-space-12);
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-control);
+	background: var(--wccs-surface);
+}
+
+.wccs-admin .wccs-conditions__leaf-reading {
+	margin: 0;
+	font-size: var(--wccs-text-help);
+	color: var(--wccs-ink-muted);
+}
+
+.wccs-admin .wccs-conditions__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--wccs-space-8);
+}
+
+.wccs-admin .wccs-conditions__preview {
+	display: grid;
+	gap: var(--wccs-space-8);
+	padding: var(--wccs-space-12);
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-panel);
+	background: var(--wccs-app-background);
+}
+
+.wccs-admin .wccs-conditions__preview-title {
+	margin: 0;
+	font-size: var(--wccs-text-heading-small);
+}
+
+.wccs-admin .wccs-conditions__preview-help {
+	margin: 0;
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+}
+
+.wccs-admin .wccs-conditions__preview-result {
+	display: grid;
+	gap: var(--wccs-space-4);
+	padding: var(--wccs-space-8) var(--wccs-space-12);
+	border-radius: var(--wccs-radius-control);
+	background: var(--wccs-surface);
+}
+
+.wccs-admin .wccs-conditions__preview-result p {
+	margin: 0;
+	font-weight: var(--wccs-weight-semibold);
+}
+
+.wccs-admin .wccs-conditions__preview-result ul {
+	margin: 0;
+	padding-inline-start: var(--wccs-space-16);
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+}
+
 /* ------------------------------------------------------------------- Motion */
 
 @media (prefers-reduced-motion: reduce) {

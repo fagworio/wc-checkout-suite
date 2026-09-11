@@ -10,6 +10,9 @@ declare( strict_types = 1 );
 namespace WCCheckoutSuite\Http\Admin;
 
 use WCCheckoutSuite\Domain\Checkout\CoreFields;
+use WCCheckoutSuite\Domain\Conditions\ConditionValidator;
+use WCCheckoutSuite\Domain\Conditions\Operators;
+use WCCheckoutSuite\Domain\Conditions\Sources;
 use WCCheckoutSuite\Domain\Fields\DefinitionVocabulary;
 use WCCheckoutSuite\Domain\Registries;
 use WCCheckoutSuite\Domain\Sections\SectionLocations;
@@ -153,6 +156,21 @@ final class CatalogController {
 		// the validator reads, so the inspector cannot offer a location the server
 		// would refuse.
 		$catalogue['sectionLocations'] = SectionLocations::all();
+
+		// The condition vocabulary. The rule editor offers exactly these operators
+		// and these sources because the validator accepts exactly these, and both
+		// read them from the same two classes — which is the only way the editor
+		// cannot propose a rule the server would refuse. A source also says whether
+		// the browser can answer for it, so an editor can tell the merchant that a
+		// rule reading the cart is decided on the server.
+		$catalogue['conditions'] = array(
+			'operators' => Operators::to_array(),
+			'sources'   => Sources::to_array(),
+			'limits'    => array(
+				'maxDepth' => ConditionValidator::MAX_DEPTH,
+				'maxNodes' => ConditionValidator::MAX_NODES,
+			),
+		);
 
 		return new WP_REST_Response( $catalogue, 200 );
 	}

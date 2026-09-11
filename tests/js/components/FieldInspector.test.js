@@ -173,6 +173,38 @@ function catalog( overrides = {} ) {
 				},
 			],
 		},
+		// The condition vocabulary travels with the catalogue, and its presence is
+		// what the screen turns into `hasConditions`.
+		conditions: {
+			operators: [
+				{
+					key: 'equals',
+					label: 'is equal to',
+					takesValue: true,
+					valueTypes: [ 'string' ],
+					sourceTypes: [ 'string' ],
+					negated: false,
+				},
+				{
+					key: 'is_empty',
+					label: 'is empty',
+					takesValue: false,
+					valueTypes: [],
+					sourceTypes: [ 'string' ],
+					negated: false,
+				},
+			],
+			sources: [
+				{
+					key: 'country',
+					label: 'Country',
+					type: 'string',
+					scope: 'client',
+					isReference: false,
+				},
+			],
+			limits: { maxDepth: 8, maxNodes: 100 },
+		},
 		...overrides,
 	};
 }
@@ -259,6 +291,24 @@ describe( 'tabs', () => {
 
 		expect(
 			screen.getByRole( 'tab', { name: 'Conditions' } )
+		).toBeInTheDocument();
+	} );
+
+	it( 'opens the conditions tab onto the rule editor, not onto nothing', async () => {
+		// The tab is offered because the catalogue published the vocabulary, so a
+		// tab that opened onto an empty panel would be a broken promise made twice.
+		const user = userEvent.setup();
+
+		renderInspector( { hasConditions: true } );
+		await openTab( user, 'Conditions' );
+
+		expect(
+			screen.getByRole( 'button', { name: 'Add a condition' } )
+		).toBeEnabled();
+		expect(
+			screen.getByText(
+				'Choose the values that make this field appear on the checkout.'
+			)
 		).toBeInTheDocument();
 	} );
 } );

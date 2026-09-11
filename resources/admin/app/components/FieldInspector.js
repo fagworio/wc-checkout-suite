@@ -28,6 +28,7 @@ import { useMemo, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 
 import Button from './Button';
+import ConditionBuilder from './ConditionBuilder';
 import IconButton from './IconButton';
 import Notice from './Notice';
 import Tabs from './Tabs';
@@ -487,6 +488,7 @@ function SettingsControls( { schema, value, onChange } ) {
  * @param {import('../schema/types').FieldCatalog|null} props.catalog         Field catalogue.
  * @param {Function}                                    props.onChange        Called with a partial definition.
  * @param {boolean}                                     [props.hasConditions] Whether the conditions engine exists yet.
+ * @param {Array<{id: string, label: string}>}          [props.fields]        Fields a rule may read.
  * @return {*} Rendered element tree.
  */
 export default function FieldInspector( {
@@ -494,6 +496,7 @@ export default function FieldInspector( {
 	catalog,
 	onChange,
 	hasConditions = false,
+	fields = [],
 } ) {
 	const [ tab, setTab ] = useState( 'general' );
 
@@ -521,9 +524,9 @@ export default function FieldInspector( {
 			{ id: 'advanced', label: __( 'Advanced', 'wc-checkoutsuite' ) },
 		];
 
-		// Section 428 fixes six inspector groups. Conditions are the sixth and
-		// belong to F06, so the tab appears only once there is an engine behind it
-		// rather than as a panel that would open onto nothing.
+		// Section 428 fixes six inspector groups. Conditions are the sixth, and the
+		// tab appears only when the catalogue publishes the vocabulary behind it,
+		// so it is never a panel that opens onto nothing.
 		if ( hasConditions ) {
 			entries.splice( 3, 0, {
 				id: 'conditions',
@@ -735,6 +738,18 @@ export default function FieldInspector( {
 									</Notice>
 								) : null }
 							</>
+						) : null }
+
+						{ 'conditions' === active ? (
+							<ConditionBuilder
+								value={ field?.conditions ?? {} }
+								vocabulary={ catalog?.conditions ?? {} }
+								fieldId={ field?.id ?? '' }
+								fields={ fields }
+								onChange={ ( conditions ) =>
+									onChange( { conditions } )
+								}
+							/>
 						) : null }
 
 						{ 'storage' === active ? (
