@@ -14,6 +14,7 @@ use WCCheckoutSuite\Admin\Assets;
 use WCCheckoutSuite\Domain\Registries;
 use WCCheckoutSuite\Domain\Schema\CoreFieldGuard;
 use WCCheckoutSuite\Domain\Schema\SchemaRepository;
+use WCCheckoutSuite\Checkout\Classic\ClassicCheckout;
 use WCCheckoutSuite\Http\Admin\CatalogController;
 use WCCheckoutSuite\Http\Admin\SchemaController;
 use WCCheckoutSuite\Support\Requirements;
@@ -102,6 +103,14 @@ final class Plugin {
 		$catalog_controller = new CatalogController();
 
 		add_action( 'rest_api_init', array( $catalog_controller, 'register_routes' ) );
+
+		// Storefront side: the published schema applied to the classic checkout.
+		//
+		// Registered unconditionally for the same reason as the admin hooks: the
+		// WooCommerce filter it listens to only fires on a checkout request. The
+		// adapter reads the published document only, so an unpublished edit cannot
+		// reach a customer.
+		ClassicCheckout::register();
 
 		// Administrative screen and its assets.
 		//

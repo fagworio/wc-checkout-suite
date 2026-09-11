@@ -808,6 +808,39 @@
         "keep_work_through_conflict": "WCCS-020: a 409 names the winning revision, writes nothing at all, and the merchant can save again by acknowledging it",
         "not_observed": "No browser was opened, so no one has assembled and published a form through the interface"
       }
+    },
+    "F04": {
+      "title": "Classic Checkout e persistência canônica",
+      "gate": "Pedidos Classic válidos e inválidos testados em HPOS on/off, visitante/logado e carrinho físico/virtual.",
+      "gate_met": false,
+      "tasks": {
+        "WCCS-021": "completed",
+        "WCCS-022": "pending",
+        "WCCS-023": "pending",
+        "WCCS-024": "pending",
+        "WCCS-025": "pending"
+      },
+      "why_gate_is_open": "The gate asks for orders — valid and invalid ones, tested across HPOS on and off, guest and logged-in, physical and virtual carts. No order has been created by this phase, and none can be until the values are persisted (WCCS-023) and validated (WCCS-022). There is a second, independent reason: this store has no page carrying the [woocommerce_checkout] shortcode, so there is no Classic checkout to submit an order through. That is the open decision CLASSIC-TEST-SURFACE, which until this task was theoretical and is now blocking. WCCS-021 proves the field array the checkout is built from, which is the input the template receives; it does not prove the template, the request or the order.",
+      "way_forward": "Three things. (1) Decide CLASSIC-TEST-SURFACE: either a test page with the checkout shortcode is created, or a decision is recorded that the Classic surface is proven at the filter and order-creation layer instead of through a rendered page. Creating or repointing a page is outside the plugin root and needs authorisation. (2) WCCS-022 to WCCS-025, which are provable without it. (3) The rendered-page and end-to-end portion belongs with WCCS-063 (F10) and F12, where a browser is opened. F05 may proceed meanwhile: it depends on the value pipeline, which WCCS-009 proved adapter-agnostic.",
+      "detail": "WCCS-021 delivered the Classic adapter: the translation from the published schema to the array WooCommerce builds the checkout from. It is a pure function over the schema — apply(fields, definitions, sections) returns the filtered array plus a report — and a thin registration half that hooks woocommerce_checkout_fields at priority 20 and reads the published document only. The design decision that gives the task its value is what it does with a type it cannot render. Four of the twenty-one registered types (file, heading, paragraph, html) and two others (multiselect, checkbox-group) have no classic counterpart; rendering them as text would produce a field that collects something the store does not save, so they are skipped and reported, and the report is fired on wccs_classic_adapter_report for the diagnostic surface to read. Five more (number, url, date, time, datetime) render as text and are reported as degraded rather than as honoured. The distinction is asserted in both directions: a type that cannot render is absent from the output, and the report says why. Sections map to their homonyms except contact, which maps to billing because the classic checkout has no contact step — section 4 warns that the five concepts are not identical slots in every checkout, and a declared section uses its location rather than its id. Widths are honest about the grid WooCommerce actually has: 12 becomes form-row-wide, 6 becomes form-row-first and form-row-last alternating within each section, and 3 and 4 become form-row-wide plus a wccs-col-<n> class, because section 8 places widths in scoped CSS instead of promising grid control; the stylesheet that interprets those classes belongs to WCCS-046 and the classes are emitted without it. The core-field claim is proven against the live array this store builds rather than against a fixture: label, priority, class, required and autocomplete are compared before and after, and the strongest form of the claim is that the adapter preserves a contract it never writes — it cannot break a key it does not assign, and the proof asserts that no contract key appeared from nowhere. The assertion that ties F03 to F04 is that a draft is invisible here: a draft that adds a field and renames a core field leaves the checkout byte for byte as it was, so the draft/published separation would not be decorative at the one place it matters. Two defects were mine: fourteen instances of '} );' where '}' belonged were a parse error, and the way I had been invoking PHPUnit — with error_reporting=0 and display_errors=0, flags I had adopted to silence WP-CLI's deprecations and then carried into every PHP command — made it exit 255 having printed zero bytes, so the gate failed with an invisible cause. The flags are now confined to WP-CLI; the quality tools run without them. A gate that fails silently is worse than no gate, because it looks like it is working.",
+      "quality_state": {
+        "phpcs_wordpress": "clean (exit 0)",
+        "phpstan_level_5": "no errors",
+        "php_unit": "138 tests, 485 assertions",
+        "javascript": "325 tests across 21 suites",
+        "integration_assertions": "474 across 17 proof harnesses, 0 failures",
+        "defects_found_and_fixed": [
+          "Fourteen occurrences of '} );' instead of '}' in the WCCS-021 unit test file were a PHP parse error.",
+          "PHPUnit had been invoked with -d error_reporting=0 -d display_errors=0 since the WP-CLI deprecation work, which made it exit 255 while printing nothing at all. The cause of that failure was invisible until the suppression was removed. The flags are now used only for WP-CLI commands; phpunit, phpcs and phpstan run without them.",
+          "The WCCS-021 integration proof established its state explicitly instead of inheriting it, after the same family of mistake in three consecutive tasks (WCCS-018, WCCS-019, WCCS-020); it is verified idempotent across consecutive runs."
+        ]
+      },
+      "gate_evidence": {
+        "adapter_translates": "WCCS-021: 10 types pass through unchanged, 5 render degraded and are reported, 6 are skipped and reported",
+        "core_contracts_preserved": "WCCS-021: compared against the live array this store builds, not a fixture; no contract key is written",
+        "draft_is_invisible_on_the_storefront": "WCCS-021: the checkout array is byte for byte identical while a draft adds and renames fields",
+        "not_observed": "No Classic checkout page exists on this store, so no order was placed and no rendered form was seen"
+      }
     }
   },
   "compatibility_targets": {
