@@ -437,6 +437,9 @@ $wccs_leftovers = $wpdb->get_col(
 // keeps on purpose, and none of them was written by a preview.
 $wccs_intentional = array(
 	\WCCheckoutSuite\Domain\Uploads\UploadsTable::VERSION_OPTION,
+	// The cached observation of whether this store can keep an upload private. The
+	// plugin writes it the first time it is asked, which any request may be.
+	\WCCheckoutSuite\Domain\Uploads\UploadsEnvironment::STATE_OPTION,
 );
 
 $wccs_unexpected = array_values( array_diff( $wccs_leftovers, $wccs_intentional ) );

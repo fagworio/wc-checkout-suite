@@ -287,15 +287,19 @@ final class ClassicAdapterTest extends TestCase {
 	/**
 	 * A type the classic checkout cannot render is skipped, and said so.
 	 *
-	 * Rendering a file upload as a text input would accept something the store
-	 * cannot keep. The report is the honest alternative.
+	 * Rendering a heading as a text input would collect an answer nobody asked for.
+	 * The report is the honest alternative.
+	 *
+	 * The example was `file` until WCCS-043 gave that type a renderer of its own,
+	 * through the form-field filter; the assertion is about a type with no rendering
+	 * at all, and it now names one that has none.
 	 *
 	 * @return void
 	 */
 	public function test_an_unrenderable_type_is_skipped_and_reported(): void {
 		$fields = $this->adapter->apply(
 			$this->woo_fields(),
-			array( $this->definition( 'billing_avatar', array( 'type' => 'file' ) ) )
+			array( $this->definition( 'billing_avatar', array( 'type' => 'heading' ) ) )
 		);
 
 		self::assertArrayNotHasKey( 'billing_avatar', $fields['billing'] );
@@ -336,7 +340,9 @@ final class ClassicAdapterTest extends TestCase {
 		self::assertTrue( ClassicAdapter::can_render( 'text' ) );
 		self::assertTrue( ClassicAdapter::can_render( 'select' ) );
 		self::assertTrue( ClassicAdapter::can_render( 'date' ) );
-		self::assertFalse( ClassicAdapter::can_render( 'file' ) );
+		// `file` is renderable since WCCS-043, through the same documented filter an
+		// unknown type reaches; the structural types are the ones with no rendering.
+		self::assertTrue( ClassicAdapter::can_render( 'file' ) );
 		self::assertFalse( ClassicAdapter::can_render( 'heading' ) );
 		self::assertFalse( ClassicAdapter::can_render( 'html' ) );
 	}
@@ -555,7 +561,7 @@ final class ClassicAdapterTest extends TestCase {
 	public function test_the_report_does_not_accumulate(): void {
 		$this->adapter->apply(
 			$this->woo_fields(),
-			array( $this->definition( 'a', array( 'type' => 'file' ) ) )
+			array( $this->definition( 'a', array( 'type' => 'heading' ) ) )
 		);
 
 		self::assertCount( 1, $this->adapter->report() );

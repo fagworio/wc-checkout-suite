@@ -342,6 +342,9 @@ $wccs_hook_expected = array(
 	'woocommerce_checkout_create_order@20:persist',
 	'woocommerce_checkout_fields@20:filter_fields',
 	'woocommerce_checkout_posted_data@20:normalize_posted_data',
+		// Added by WCCS-043: the classic checkout has no file type, and this is the
+		// documented filter an unknown type reaches.
+		'woocommerce_form_field_file@10:render',
 	'wp_enqueue_scripts@10:enqueue',
 );
 
@@ -408,7 +411,7 @@ wccs_proof_store(
 		wccs_proof_def(
 			'wccs_attachment',
 			array(
-				'type'     => 'file',
+				'type'     => 'heading',
 				'required' => true,
 			)
 		),

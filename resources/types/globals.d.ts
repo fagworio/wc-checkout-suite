@@ -77,6 +77,13 @@ declare global {
 			masks?: Record< string, WccsCheckoutMask >;
 			rules?: Record< string, WccsCheckoutRule[] >;
 			conditions?: Record< string, WccsCheckoutCondition >;
+			uploads?: {
+				url?: string;
+				nonce?: string;
+				available?: boolean;
+				reason?: string;
+				maxBytes?: number;
+			};
 			validation?: {
 				url?: string;
 				nonce?: string;

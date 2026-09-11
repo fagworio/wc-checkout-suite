@@ -169,6 +169,7 @@ final class ClassicAssets {
 			'masks'      => $registered,
 			'rules'      => self::rules(),
 			'conditions' => self::conditions(),
+			'uploads'    => self::uploads(),
 			'validation' => array(
 				'url'      => rest_url(
 					\WCCheckoutSuite\Http\Admin\SchemaController::rest_namespace()
@@ -292,6 +293,30 @@ final class ClassicAssets {
 		}
 
 		return $rules;
+	}
+
+	/**
+	 * What the upload component needs to talk to the endpoint.
+	 *
+	 * The address and the nonce come from the server for the same reason the
+	 * validation endpoint's do: the namespace can be renamed and the nonce changes
+	 * with the session, and a bundle that hardcoded either would be wrong the first
+	 * time one of them moved. `available` travels too, so the component can say that
+	 * uploads are off on this store instead of failing at the first attempt.
+	 *
+	 * @return array{url: string, nonce: string, available: bool, reason: string, maxBytes: int}
+	 */
+	private static function uploads(): array {
+		return array(
+			'url'       => rest_url(
+				\WCCheckoutSuite\Http\Admin\SchemaController::rest_namespace()
+					. \WCCheckoutSuite\Http\Checkout\UploadController::ROUTE_UPLOADS
+			),
+			'nonce'     => wp_create_nonce( 'wp_rest' ),
+			'available' => \WCCheckoutSuite\Domain\Uploads\UploadsEnvironment::enabled(),
+			'reason'    => \WCCheckoutSuite\Domain\Uploads\UploadsEnvironment::reason(),
+			'maxBytes'  => \WCCheckoutSuite\Domain\Uploads\UploadRules::DEFAULT_MAX_BYTES,
+		);
 	}
 
 	/**

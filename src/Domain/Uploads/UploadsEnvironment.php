@@ -44,10 +44,21 @@ final class UploadsEnvironment {
 	/**
 	 * Whether the feature may run.
 	 *
+	 * This **reads** the observation and never makes one. Probing means an outbound
+	 * HTTP request to the store's own address, and doing that from a storefront
+	 * request would put a network round trip in front of the checkout and let a slow
+	 * or unreachable server decide whether a customer can upload a document. It would
+	 * also make building the checkout's data a write, which is how a read path ends
+	 * up with a side effect nobody expects.
+	 *
+	 * So an environment that has not been observed yet is simply not available yet,
+	 * and says so. The observation happens when someone asks for it: the diagnostic
+	 * surface, the administration, or a scheduled check.
+	 *
 	 * @return bool
 	 */
 	public static function enabled(): bool {
-		return self::state()['protected'] && UploadsTable::exists() && '' !== PrivateStorage::directory();
+		return self::observed()['protected'] && UploadsTable::exists() && '' !== PrivateStorage::directory();
 	}
 
 	/**
@@ -64,7 +75,42 @@ final class UploadsEnvironment {
 			return __( 'The private upload directory could not be resolved on this installation.', 'wc-checkoutsuite' );
 		}
 
-		return self::state()['reason'];
+		$observed = self::observed();
+
+		if ( ! $observed['observed'] ) {
+			return __( 'Uploads have not been checked on this store yet, so they are not offered.', 'wc-checkoutsuite' );
+		}
+
+		return $observed['reason'];
+	}
+
+	/**
+	 * The observation, when there is a fresh one.
+	 *
+	 * @return array{protected: bool, status: int, reason: string, observed: bool}
+	 */
+	public static function observed(): array {
+		$stored = get_option( self::STATE_OPTION );
+		$state  = is_array( $stored ) ? $stored : array();
+
+		$checked = isset( $state['checked_at'] ) ? (int) $state['checked_at'] : 0;
+		$fresh   = $checked > 0 && ( time() - $checked ) < self::TTL;
+
+		if ( ! $fresh ) {
+			return array(
+				'protected' => false,
+				'status'    => 0,
+				'reason'    => '',
+				'observed'  => false,
+			);
+		}
+
+		return array(
+			'protected' => ! empty( $state['protected'] ),
+			'status'    => isset( $state['status'] ) ? (int) $state['status'] : 0,
+			'reason'    => isset( $state['reason'] ) ? (string) $state['reason'] : '',
+			'observed'  => true,
+		);
 	}
 
 	/**

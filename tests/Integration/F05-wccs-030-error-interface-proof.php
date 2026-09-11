@@ -208,7 +208,7 @@ wccs_proof_publish(
 		wccs_proof_from_preset( 'wccs_rg', 'br.rg' ),
 		wccs_proof_from_preset( 'wccs_notes', 'br.address.complement' ),
 		wccs_proof_from_preset( 'wccs_hidden', 'br.cep', array( 'enabled' => false ) ),
-		wccs_proof_from_preset( 'wccs_upload', 'br.cnpj', array( 'type' => 'file' ) ),
+		wccs_proof_from_preset( 'wccs_upload', 'br.cnpj', array( 'type' => 'heading' ) ),
 	)
 );
 
@@ -304,6 +304,9 @@ wccs_proof_check(
 		'woocommerce_checkout_create_order@20:persist',
 		'woocommerce_checkout_fields@20:filter_fields',
 		'woocommerce_checkout_posted_data@20:normalize_posted_data',
+		// Added by WCCS-043: the classic checkout has no file type, and this is the
+		// documented filter an unknown type reaches.
+		'woocommerce_form_field_file@10:render',
 		'wp_enqueue_scripts@10:enqueue',
 	) === $wccs_hooks,
 	'found ' . wp_json_encode( $wccs_hooks )

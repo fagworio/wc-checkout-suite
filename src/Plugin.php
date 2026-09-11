@@ -22,6 +22,7 @@ use WCCheckoutSuite\Domain\Uploads\UploadsTable;
 use WCCheckoutSuite\Http\Checkout\UploadController;
 use WCCheckoutSuite\Checkout\Classic\ClassicAssets;
 use WCCheckoutSuite\Checkout\Classic\ClassicCheckout;
+use WCCheckoutSuite\Checkout\Classic\ClassicUploads;
 use WCCheckoutSuite\Checkout\Classic\ClassicOrderFields;
 use WCCheckoutSuite\Checkout\Classic\ClassicValidation;
 use WCCheckoutSuite\Http\Admin\CatalogController;
@@ -194,6 +195,11 @@ final class Plugin {
 		// published schema has anything the classic checkout can render, so a
 		// storefront request for any other page pays nothing.
 		ClassicAssets::register();
+
+		// Storefront side: the file field, which the classic checkout has no type
+		// for. Registered next to the adapter because it is the adapter's rendering
+		// half for that one type.
+		ClassicUploads::register();
 
 		// Administrative screen and its assets.
 		//

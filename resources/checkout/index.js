@@ -27,6 +27,7 @@
 import $ from 'jquery';
 
 import { createConditionalFields } from './conditional';
+import { createUploadField } from '../upload/classic';
 import { createFieldErrors } from './errors';
 import { createFormValidation } from './form';
 import { createLifecycle } from './lifecycle';
@@ -72,6 +73,24 @@ const selector = `[${ keeper.attribute }]`;
 lifecycle.register( 'suite-conditions', {
 	selector,
 	start: () => conditional.run(),
+} );
+
+// The upload fields, one component per field the server marked as one. Registered
+// after the conditions, so a field a rule hides is already hidden when its component
+// is built and the customer is not offered a control that is about to disappear.
+const uploads = bootstrap.uploads || {};
+
+lifecycle.register( 'suite-uploads', {
+	selector: '[data-wccs-upload]',
+	start: ( element ) =>
+		createUploadField( {
+			input: element,
+			config: {
+				url: uploads.url,
+				nonce: uploads.nonce,
+				multiple: 'true' === element.getAttribute( 'data-wccs-upload' ),
+			},
+		} ).start(),
 } );
 
 // First the value, then the mask over it. See the note above.

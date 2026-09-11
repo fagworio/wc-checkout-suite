@@ -100,7 +100,19 @@ final class CapabilityResolverTest extends TestCase {
 
 		self::assertSame( CapabilityResolver::UNAVAILABLE, $limits['type:blocks']['level'] );
 		self::assertNotSame( '', $limits['type:blocks']['reason'] );
-		self::assertSame( CapabilityResolver::UNAVAILABLE, $limits['type:classic']['level'] );
+
+		// The classic checkout renders a file field since WCCS-043, through the
+		// documented form-field filter, so the classic column says so. The example of
+		// a type with no rendering anywhere is a structural one.
+		self::assertSame( CapabilityResolver::PROVIDED, $limits['type:classic']['level'] );
+
+		$structural = $this->limits(
+			array( $this->definition( array( 'type' => 'heading' ) ) ),
+			array( $this->section( 'billing', 'billing' ) )
+		);
+
+		self::assertSame( CapabilityResolver::UNAVAILABLE, $structural['type:classic']['level'] );
+		self::assertSame( CapabilityResolver::UNAVAILABLE, $structural['type:blocks']['level'] );
 	}
 
 	/**

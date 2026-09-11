@@ -79,6 +79,10 @@ final class ClassicAdapter {
 		'country'  => 'country',
 		'state'    => 'state',
 		'hidden'   => 'hidden',
+		// The field API has no file type; ClassicUploads renders this one through the
+		// `woocommerce_form_field_file` filter, which is the documented seam for a type
+		// WooCommerce does not know.
+		'file'     => 'file',
 	);
 
 	/**

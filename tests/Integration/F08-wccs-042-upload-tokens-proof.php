@@ -128,7 +128,11 @@ if ( function_exists( 'wc_load_cart' ) && ( ! WC()->cart || ! WC()->session ) ) 
 wccs_proof_out( '' );
 wccs_proof_out( '1. What this store does today' );
 
-\WCCheckoutSuite\Domain\Uploads\UploadsEnvironment::forget();
+// The observation is made explicitly here, because nothing on a storefront request
+// makes one: probing means an outbound HTTP request to the store's own address, and
+// putting that in front of the checkout would let a slow server decide whether a
+// customer can upload a document.
+\WCCheckoutSuite\Domain\Uploads\UploadsEnvironment::state( true );
 
 $wccs_file   = wccs_proof_file( 'a private document', 'document.txt' );
 $wccs_result = ( new \WCCheckoutSuite\Domain\Uploads\UploadService() )->accept( $wccs_file, 'wccs_document' );

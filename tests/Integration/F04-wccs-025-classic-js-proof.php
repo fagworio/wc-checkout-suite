@@ -263,6 +263,9 @@ wccs_proof_check(
 		'woocommerce_checkout_create_order@20:persist',
 		'woocommerce_checkout_fields@20:filter_fields',
 		'woocommerce_checkout_posted_data@20:normalize_posted_data',
+		// Added by WCCS-043: the classic checkout has no file type, and this is the
+		// documented filter an unknown type reaches.
+		'woocommerce_form_field_file@10:render',
 		'wp_enqueue_scripts@10:enqueue',
 	) === $wccs_hooks,
 	'found ' . wp_json_encode( $wccs_hooks )
@@ -278,7 +281,7 @@ wccs_proof_store(
 	$wccs_published_slot,
 	array(
 		wccs_proof_def( 'wccs_cpf', array( 'settings' => array( 'maxLength' => 14 ) ) ),
-		wccs_proof_def( 'wccs_untouched', array( 'type' => 'file' ) ),
+		wccs_proof_def( 'wccs_untouched', array( 'type' => 'heading' ) ),
 		wccs_proof_def(
 			'billing_first_name',
 			array(
@@ -423,7 +426,7 @@ wccs_proof_check(
 	false === \WCCheckoutSuite\Checkout\Classic\ClassicAssets::has_renderable_fields()
 );
 
-wccs_proof_store( $wccs_published_slot, array( wccs_proof_def( 'wccs_untouched', array( 'type' => 'file' ) ) ) );
+wccs_proof_store( $wccs_published_slot, array( wccs_proof_def( 'wccs_untouched', array( 'type' => 'heading' ) ) ) );
 
 wccs_proof_check(
 	'And neither has a schema whose only fields the classic checkout cannot render',

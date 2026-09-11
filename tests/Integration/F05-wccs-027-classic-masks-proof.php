@@ -180,7 +180,7 @@ wccs_proof_publish(
 		wccs_proof_def(
 			'wccs_upload',
 			array(
-				'type' => 'file',
+				'type' => 'heading',
 				'mask' => array(
 					'key'     => 'br.cep',
 					'version' => 1,

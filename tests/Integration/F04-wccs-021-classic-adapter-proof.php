@@ -442,7 +442,7 @@ wccs_proof_out( '5. What cannot be rendered is reported' );
 wccs_proof_store(
 	$wccs_published_slot,
 	array(
-		wccs_proof_def( 'billing_avatar', array( 'type' => 'file' ) ),
+		wccs_proof_def( 'billing_avatar', array( 'type' => 'heading' ) ),
 		wccs_proof_def( 'billing_birth', array( 'type' => 'date' ) ),
 	)
 );
@@ -461,7 +461,7 @@ $wccs_rendered = wccs_proof_filtered();
 wccs_proof_check(
 	'A type the classic checkout cannot render is not added at all',
 	! isset( $wccs_rendered['billing']['billing_avatar'] ),
-	'file field absent rather than shown as something else'
+	'a structural field absent rather than shown as something else'
 );
 
 wccs_proof_check(
