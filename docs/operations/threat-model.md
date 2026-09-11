@@ -70,6 +70,16 @@
 5. **Conformidade legal não é alegada.** A loja define base e finalidade; o produto não anuncia
    conformidade automática (`§20`).
 
+## 4.1. Descoberta na WCCS-041: o diretório privado deste ambiente é servido
+
+O armazenamento privado da WCCS-041 fica em `wp-content/wc-checkoutsuite-private`, ao lado de `uploads` e não dentro dele, com `index.php`, `.htaccess` e `web.config` escritos para os três servidores comuns. A prova escreve um ficheiro e **pede-o pelo endereço do próprio site**: neste ambiente o nginx responde **200 com o conteúdo**.
+
+O `.htaccess` é um ficheiro do Apache e o nginx não o lê; `index.php` só é consultado quando o pedido chega ao PHP, e um ficheiro existente é servido antes disso. A consequência é a que interessa a este modelo: **a localização sozinha não protege, e nenhuma extensão consegue proteger um diretório dentro do document root sem a colaboração do servidor**.
+
+O que o produto faz com isso é a resposta certa: o recurso de upload **desliga-se** e diz porquê, porque um upload privado que não é privado é pior do que nenhum. Para o ligar neste ambiente, o operador tem de negar o caminho na configuração do nginx (ou mover o diretório para fora da raiz servida) e pedir a nova verificação; a extensão observa de novo e liga-se sozinha.
+
+Isto é um requisito operacional registado como bloqueador `UPLOAD-PRIVACY-ENV`, e não um defeito do código: o código é o que deteta o problema.
+
 ## 5. Como este modelo será verificado
 
 | Camada | Onde |

@@ -428,10 +428,25 @@ $wccs_leftovers = $wpdb->get_col(
 	"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE 'wccs\_%'"
 );
 
+// What this asserts is that the *preview* stored nothing, not that the plugin
+// stores nothing at all. The original form — no `wccs_` option may exist anywhere —
+// was true when it was written and stopped being true when F08 gave the plugin state
+// of its own to keep (`wccs_uploads_db_version`, installed on boot). An assertion
+// pinned to a world state fails for the right reason and gets edited for the wrong
+// one, so it now names the state it expects: every option present is one the plugin
+// keeps on purpose, and none of them was written by a preview.
+$wccs_intentional = array(
+	\WCCheckoutSuite\Domain\Uploads\UploadsTable::VERSION_OPTION,
+);
+
+$wccs_unexpected = array_values( array_diff( $wccs_leftovers, $wccs_intentional ) );
+
 wccs_proof_check(
-	'The preview created no stored option',
-	array() === $wccs_leftovers,
-	$wccs_leftovers ? 'found: ' . implode( ', ', $wccs_leftovers ) : 'no wccs_* options'
+	'The preview created no stored option of its own',
+	array() === $wccs_unexpected,
+	$wccs_unexpected
+		? 'unexpected: ' . implode( ', ', $wccs_unexpected )
+		: 'only the plugin\'s own state: ' . implode( ', ', $wccs_leftovers )
 );
 
 wccs_proof_note(

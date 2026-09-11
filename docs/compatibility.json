@@ -539,6 +539,15 @@
       "runtime_evidence": "WC()->payment_gateways->get_available_payment_gateways() returned 0 gateways; 0 gateways declare express support; all 7 installed gateways report enabled=no.",
       "requires": "External configuration: enable at least one gateway in sandbox mode with valid credentials. Enabling a gateway is a store settings change outside the plugin root and was NOT performed.",
       "impact": "WCCS-004 is partially complete. WCCS-049 (gateway and express homologation) and WCCS-062 (functional matrix by gateway version) depend on the same external configuration."
+    },
+    {
+      "id": "UPLOAD-PRIVACY-ENV",
+      "task": "WCCS-041",
+      "first_seen": "2026-09-11",
+      "condition": "The private upload directory of this environment is reachable over HTTP, so the upload feature cannot be enabled here and no byte may be accepted.",
+      "runtime_evidence": "A file written to wp-content/wc-checkoutsuite-private was requested over the site's own address and nginx answered 200 with its contents (18 bytes); the same request against the uploads directory returned the control file's 17 bytes, so the probe is not the thing failing. The directory carries index.php, .htaccess and web.config, none of which nginx honours.",
+      "requires": "External configuration: a location rule denying the path in nginx, or moving the directory outside the served document root. Changing server configuration is outside the plugin root and was NOT performed.",
+      "impact": "WCCS-041 is complete and proves the mechanism, including that a protected store gets the feature; WCCS-042 onwards cannot accept an upload on this store until the configuration is fixed, and the feature turns itself off with that reason in the meantime."
     }
   ],
   "build_toolchain": {
@@ -1039,6 +1048,39 @@
       },
       "why_gate_is_open": "All five tasks are complete and the gate is met at every seam, which is why it is still marked open: the gate asks for every non-file type of v1 to have a *homologated* renderer or an explicit restriction, and the first half of that word is an observation. The classification half is exhaustive and machine-checked (3 native, 7 controlled, 11 restricted, each with a reason, and no type left undecided), and 'no mode is announced beyond what was tested' is now enforced in three places at once. What is missing is what every other open gate in this file is missing: nobody has seen the checkout. The controlled components have been rendered and operated in jsdom but are not placed in a live checkout, and the full POST /wc/store/v1/checkout round trip has not run because this store has no product.",
       "way_forward": "Two things close it and neither is implementation: placing the controlled components in a live checkout — which depends on where the Blocks checkout lets a third-party field be inserted, and belongs with the integration work of WCCS-042 and F10 — and the browser review in WCCS-063, which is where the visual and accessibility approval of every earlier phase also lands. The end-to-end proof in F12 places a real order through the same path. F08 may proceed meanwhile: it depends on the upload subsystem, not on this observation."
+    },
+    "F08": {
+      "title": "Upload privado nos dois checkouts",
+      "gate": "Upload privado permanece privado, cota e retenção aplicadas, download só com autorização.",
+      "gate_met": false,
+      "tasks": {
+        "WCCS-041": "completed",
+        "WCCS-042": "pending",
+        "WCCS-043": "pending",
+        "WCCS-044": "pending",
+        "WCCS-045": "pending"
+      },
+      "why_gate_is_open": "One of five tasks is done, and this phase's first task found something the gate is about: the private directory of this environment is served over HTTP. The proof wrote a file into it and asked the site for it, and nginx answered 200 with the contents — `.htaccess` is an Apache file nginx does not read, and index.php is only consulted if the request reaches PHP. The plugin's answer is the one section 12 implies: the upload feature turns itself off and says why, so an upload that is not private is never offered. What remains for the gate is everything that comes after accepting a byte: the session tokens (WCCS-042), the component (WCCS-043), the order binding and the download policy (WCCS-044) and retention (WCCS-045).",
+      "way_forward": "The upload endpoint and its tokens (WCCS-042) are where the storage created here starts accepting files, and they are gated by the same observation: a store whose directory is protected gets the feature, and this one does not until an operator denies the path in nginx or moves it outside the served root. That is recorded as the blocker UPLOAD-PRIVACY-ENV, and the plugin notices when it is fixed rather than needing a reinstall. F09 may proceed meanwhile.",
+      "detail": " WCCS-041 delivered the storage and the operational table, and the environment answered a question the task was built to ask. The private directory is a sibling of `uploads` rather than a child of it — the uploads path is published by design, and every protection for a file inside it is either obscurity or a rule the server may not be reading — and it carries the denial files for the three common servers. The proof then did the only thing that settles the question: it wrote a file and asked the site for it over HTTP through the site's own address. This store's nginx served it, 200 with the contents, because .htaccess is an Apache file and index.php is only consulted when a request reaches PHP. The finding is recorded in section 4.1 of the threat model and as the blocker UPLOAD-PRIVACY-ENV, and the product's conduct is the acceptance's second clause proven on a real unprotecting environment: the feature is off and it says why an operator can act on it. The observation is cached so a storefront request does not probe, and a stored refusal is never turned into an approval by the cache expiring — only a fresh probe can re-enable the feature, which is why the diagnostic surface can forget the record on demand. The operational table exists because the questions the subsystem asks are about rows: which file belongs to which session, how many bytes an owner has spent, when a temporary expires. An option would load one serialised array to answer about one upload, and a quota cannot be counted from an option at all. It is installed on activation and on every boot, because an update over the files never runs the activation hook, and its existence is asked of the database rather than assumed from the version option — a table can be dropped after the option is written, and a subsystem that trusted the option would fail on its first insert instead of reporting itself unavailable. Paths are the security-relevant half and are asserted: the stored name is generated rather than taken from the browser, a name that tries to leave the directory gets no address, and a stored path is validated against the directory before it is read, so a row cannot make a download read /etc/passwd. The task also caught a stale assertion in another phase: the preview proof asserted that no wccs_ option existed anywhere, which was true when it was written and stopped being true when this task gave the plugin state of its own to keep — rewritten to say what it means, that the preview stored nothing of its own.",
+      "quality_state": {
+        "phpcs_wordpress": "clean (exit 0)",
+        "phpstan_level_5": "no errors",
+        "php_unit": "339 tests, 1248 assertions",
+        "javascript": "568 tests across 33 suites",
+        "integration_assertions": "933 across 37 proof harnesses, 0 failures",
+        "defects_found_and_fixed": [
+          "This environment serves the private upload directory over HTTP: nginx returned 200 with the contents of a file the proof had just written there. Found by the proof asking the site for the file instead of reading the configuration. The guards are written for three servers and none of them applies here, which is why the probe and not the guard list is what decides. Recorded as the blocker UPLOAD-PRIVACY-ENV and in the threat model; the feature stays off on this store until the server is configured to deny the path.",
+          "The WCCS-015 preview proof asserted that no wccs_ option existed anywhere after its run — true when it was written, false once this task gave the plugin state of its own to keep. Fifth stale assertion of this family in the project, and the same correction: it now names the state it expects instead of pinning a world without it."
+        ]
+      },
+      "gate_evidence": {
+        "privacy_is_observed_not_claimed": "WCCS-041: a file is written into the private directory and asked for over the site's own address; the same probe against the uploads directory returns the file, so the check is not vacuous",
+        "an_unprotected_environment_disables_the_feature": "WCCS-041: this store's directory is served, the observation records that, the feature is off and the reason names what an operator has to change; a recorded approval enables it and a recorded refusal survives the cache",
+        "paths_cannot_leave_the_directory": "WCCS-041: a name that tries to leave gets no address, and a stored path outside the directory resolves to nothing",
+        "the_table_is_installed_and_versioned": "WCCS-041: the table exists with the columns the subsystem needs, has a unique token, and its version is recorded so the next boot does not reinstall it",
+        "not_observed": "Private privacy has not been observed working, because no protected environment exists here and configuring nginx is outside the plugin root; no file has been accepted through an endpoint (WCCS-042), bound to an order (WCCS-044) or expired (WCCS-045)"
+      }
     }
   },
   "compatibility_targets": {
@@ -1128,7 +1170,7 @@
     "A real Blocks checkout submission through the Store API checkout route with a cart and a payment method (registration, validation, the extensions namespace and order persistence were each proven independently in WCCS-003, but the full POST /wc/store/v1/checkout round trip was not executed)",
     "End-to-end Classic checkout submission from a real Classic checkout page (WCCS-002 proved field registration and server-side validation through the real Classic code path, but no Classic checkout page exists and no order was placed through process_checkout())",
     "HPOS behaviour with the legacy post-based store active (only the authoritative HPOS store with sync off was exercised)",
-    "Upload, private storage and download authorization",
+    "Upload, private storage and download authorization beyond what WCCS-041 proves: the storage and the gate are verified (including that this environment is not protected), but no file has been accepted through an endpoint or downloaded under a policy yet (WCCS-042 to WCCS-045).",
     "CPF/CNPJ validation vectors and CNPJ alphanumeric handling",
     "IMask behaviour in a real checkout",
     "Conditional logic parity in a live checkout. The two engines are held to one file of shared cases (WCCS-033), so their answers on those inputs are proven identical; what is not verified is a rule deciding on a rendered checkout, because the engine is not the default yet and no browser has been opened.",

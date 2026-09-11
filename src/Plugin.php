@@ -18,6 +18,7 @@ use WCCheckoutSuite\Checkout\Blocks\BlocksCheckout;
 use WCCheckoutSuite\Checkout\Blocks\BlocksRenderer;
 use WCCheckoutSuite\Checkout\Blocks\BlocksValidation;
 use WCCheckoutSuite\Checkout\Blocks\StoreApiExtension;
+use WCCheckoutSuite\Domain\Uploads\UploadsTable;
 use WCCheckoutSuite\Checkout\Classic\ClassicAssets;
 use WCCheckoutSuite\Checkout\Classic\ClassicCheckout;
 use WCCheckoutSuite\Checkout\Classic\ClassicOrderFields;
@@ -81,6 +82,12 @@ final class Plugin {
 		// Populate the domain registries and let extensions contribute to them.
 		// Core types go through the same public API an external plugin uses.
 		Registries::boot();
+
+		// The uploads table is ensured on every boot, not only on activation: a
+		// plugin updated over the files never runs the activation hook, and a new
+		// build with an old table would otherwise be discovered one failed upload at
+		// a time.
+		UploadsTable::maybe_install();
 
 		// Administrative schema endpoints. The repository reports outcomes; the
 		// controller is the only layer that turns them into HTTP statuses.
@@ -215,6 +222,12 @@ final class Plugin {
 		}
 
 		delete_option( WCCS_OPTION_REQUIREMENTS );
+
+		// The uploads table is created here so a fresh activation has it before
+		// anything can try to write to it. It is also ensured on every boot, because
+		// a plugin update does not run this hook and a new build with an old table
+		// would be discovered one failed upload at a time.
+		UploadsTable::maybe_install();
 	}
 
 	/**
