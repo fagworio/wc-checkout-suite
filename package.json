@@ -9,7 +9,7 @@
 		"npm": ">=8.19.2"
 	},
 	"scripts": {
-		"build": "npm run build:admin && npm run build:checkout",
+		"build": "npm run build:admin && npm run build:checkout && npm run build:blocks",
 		"build:admin": "wp-scripts build --webpack-src-dir=resources/admin --output-path=build/admin",
 		"build:checkout": "wp-scripts build --webpack-src-dir=resources/checkout --output-path=build/checkout",
 		"start": "npm run start:admin",
@@ -19,7 +19,8 @@
 		"lint:js:fix": "wp-scripts lint-js resources tests/js --fix",
 		"test:unit-js": "jest",
 		"check-types": "tsc --noEmit",
-		"format": "wp-scripts format resources tests/js"
+		"format": "wp-scripts format resources tests/js",
+		"build:blocks": "wp-scripts build --webpack-src-dir=resources/blocks --output-path=build/blocks"
 	},
 	"devDependencies": {
 		"@testing-library/dom": "^10.4.1",

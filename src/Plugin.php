@@ -15,6 +15,7 @@ use WCCheckoutSuite\Domain\Registries;
 use WCCheckoutSuite\Domain\Schema\CoreFieldGuard;
 use WCCheckoutSuite\Domain\Schema\SchemaRepository;
 use WCCheckoutSuite\Checkout\Blocks\BlocksCheckout;
+use WCCheckoutSuite\Checkout\Blocks\BlocksRenderer;
 use WCCheckoutSuite\Checkout\Classic\ClassicAssets;
 use WCCheckoutSuite\Checkout\Classic\ClassicCheckout;
 use WCCheckoutSuite\Checkout\Classic\ClassicOrderFields;
@@ -150,6 +151,12 @@ final class Plugin {
 		// The adapter reads the published document only, like the classic one, so an
 		// unpublished edit cannot reach a customer.
 		BlocksCheckout::register();
+
+		// Storefront side: the fields the Blocks checkout cannot render natively,
+		// rendered by this plugin's own components. Registered next to the native
+		// adapter because they are the two halves of one decision, and the gate that
+		// decides whether the bundle belongs on the request lives in the class.
+		BlocksRenderer::register();
 
 		// Storefront side: the checkout bundle and its component lifecycle.
 		//

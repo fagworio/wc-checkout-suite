@@ -133,6 +133,90 @@ final class BlocksAdapter {
 	}
 
 	/**
+	 * How a field type is rendered in the Blocks checkout.
+	 *
+	 * Three modes and no fourth, because "we will work it out later" is how a type
+	 * ends up with no renderer and nobody noticing:
+	 *
+	 * - `native` — the platform's own additional-field API renders it;
+	 * - `controlled` — this plugin renders it with its own component (WCCS-037);
+	 * - `restricted` — it has no renderer, and the merchant is told why.
+	 *
+	 * The phase gate asks for exactly this classification over every non-file type
+	 * of v1, and the integration proof walks the registry and refuses to let any
+	 * registered type stay unclassified: a type nobody classified is a type nobody
+	 * decided about.
+	 *
+	 * @param string $type Suite field type.
+	 * @return string One of `native`, `controlled` or `restricted`.
+	 */
+	public static function mode( string $type ): string {
+		if ( '' !== self::native_type( $type ) ) {
+			return 'native';
+		}
+
+		if ( isset( self::CONTROLLED[ $type ] ) ) {
+			return 'controlled';
+		}
+
+		return 'restricted';
+	}
+
+	/**
+	 * How one definition is rendered, which is not always how its type is.
+	 *
+	 * The exception is the mask. A mask is part of what the merchant configured, and
+	 * the native text field cannot carry one: a document typed into it would be
+	 * stored unformatted and refused by the server, which is a field that looks
+	 * right and cannot be completed correctly. So a masked text is rendered by this
+	 * plugin even though its type is native — the one case where the type does not
+	 * decide, and the reason this is a function of the definition rather than of the
+	 * type.
+	 *
+	 * @param array<string, mixed> $definition Stored definition.
+	 * @return string One of `native`, `controlled` or `restricted`.
+	 */
+	public static function mode_for( array $definition ): string {
+		$type = isset( $definition['type'] ) ? (string) $definition['type'] : '';
+		$mode = self::mode( $type );
+
+		if ( 'native' !== $mode || 'text' !== $type ) {
+			return $mode;
+		}
+
+		$mask = isset( $definition['mask'] ) && is_array( $definition['mask'] ) ? $definition['mask'] : array();
+
+		return isset( $mask['key'] ) && '' !== (string) $mask['key'] ? 'controlled' : 'native';
+	}
+
+	/**
+	 * Why a type is rendered the way it is.
+	 *
+	 * @param string $type Suite field type.
+	 * @return string
+	 */
+	public static function reason( string $type ): string {
+		if ( 'native' === self::mode( $type ) ) {
+			return sprintf( 'Rendered by the Blocks additional-fields API as a %s field.', self::native_type( $type ) );
+		}
+
+		if ( 'controlled' === self::mode( $type ) ) {
+			return sprintf( 'The Blocks checkout has no native %s field, so this plugin renders it (WCCS-037).', $type );
+		}
+
+		return sprintf( 'The Blocks checkout has no %s field and this plugin does not render one yet.', $type );
+	}
+
+	/**
+	 * Every type this adapter renders with its own component.
+	 *
+	 * @return array<int, string>
+	 */
+	public static function controlled_types(): array {
+		return array_keys( self::CONTROLLED );
+	}
+
+	/**
 	 * The Blocks location a section location occupies, or an empty string.
 	 *
 	 * @param string $location Section location.
@@ -219,19 +303,15 @@ final class BlocksAdapter {
 		$native_type = self::native_type( $type );
 
 		if ( '' === $native_type ) {
+			$code = 'no_native_type';
+
+			if ( 'controlled' === self::mode( $type ) ) {
+				$code = 'needs_controlled_component';
+			}
+
 			return array(
 				'report' => array(
-					$this->entry(
-						$id,
-						isset( self::CONTROLLED[ $type ] ) ? 'needs_controlled_component' : 'no_native_type',
-						isset( self::CONTROLLED[ $type ] )
-							? sprintf(
-								'The Blocks checkout has no native "%s" field; it is delivered by the controlled components of %s.',
-								$type,
-								self::CONTROLLED[ $type ]
-							)
-							: sprintf( 'The Blocks checkout has no native "%s" field.', $type )
-					),
+					$this->entry( $id, $code, self::reason( $type ) ),
 				),
 			);
 		}

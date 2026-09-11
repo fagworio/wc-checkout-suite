@@ -46,7 +46,7 @@ import IMask from 'imask';
  * @param {any} definition Declarative definition.
  * @return {any|null} IMask options, or null when the shape is not understood.
  */
-function optionsFor( definition ) {
+export function optionsFor( definition ) {
 	if ( typeof definition === 'string' ) {
 		return { mask: definition };
 	}
@@ -80,7 +80,7 @@ function optionsFor( definition ) {
  * @param {any} options IMask options.
  * @return {string} An `inputmode` value, or an empty string for none.
  */
-function keyboardFor( options ) {
+export function keyboardFor( options ) {
 	const pattern = options && options.mask;
 
 	if ( 'string' !== typeof pattern ) {
