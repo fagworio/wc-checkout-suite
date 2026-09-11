@@ -9,7 +9,6 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Checkout\Classic;
 
-use WCCheckoutSuite\Domain\Fields\FieldContext;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Validation\ProcessedValue;
 use WCCheckoutSuite\Domain\Validation\ValueProcessor;
@@ -57,11 +56,20 @@ use WCCheckoutSuite\Domain\Validation\ValueProcessor;
 final class ClassicSubmission {
 
 	/**
+	 * Trusted context builder for the visibility rules.
+	 *
+	 * @var ClassicConditionContext
+	 */
+	private ClassicConditionContext $conditions;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ValueProcessor $processor Adapter-agnostic value pipeline.
+	 * @param ValueProcessor               $processor  Adapter-agnostic value pipeline.
+	 * @param ClassicConditionContext|null $conditions Trusted context builder.
 	 */
-	public function __construct( private ValueProcessor $processor ) {
+	public function __construct( private ValueProcessor $processor, ?ClassicConditionContext $conditions = null ) {
+		$this->conditions = $conditions ?? new ClassicConditionContext();
 	}
 
 	/**
@@ -72,16 +80,27 @@ final class ClassicSubmission {
 	 * @return array{values: array<string, mixed>, results: array<string, ProcessedValue>}
 	 */
 	public function normalize( array $data, array $definitions ): array {
-		$values  = $data;
-		$results = array();
+		$values    = $data;
+		$results   = array();
+		$canonical = array();
 
 		foreach ( $this->definitions( $data, $definitions ) as $definition ) {
 			$id = $definition->id();
 
-			$processed = $this->processor->process( $definition, $data[ $id ], $this->context() );
+			$processed = $this->processor->process( $definition, $data[ $id ], $this->conditions->context( $canonical ) );
 
 			$results[ $id ] = $processed;
 			$values[ $id ]  = $this->carried( $data[ $id ], $processed );
+
+			// Only what the store accepted becomes context for the next field. A
+			// rule that reads another field has to read the value that was accepted
+			// for it: reading the posted one would let a forged value that fails
+			// validation decide whether a later field was required. A rejected
+			// value therefore contributes nothing, and the rule sees the field as
+			// absent — which is what it is, as far as the store is concerned.
+			if ( $processed->result()->is_valid() ) {
+				$canonical[ $id ] = $processed->value();
+			}
 		}
 
 		return array(
@@ -179,21 +198,5 @@ final class ClassicSubmission {
 		$canonical = $processed->value();
 
 		return is_string( $canonical ) ? $canonical : $posted;
-	}
-
-	/**
-	 * Trusted context handed to the types and validators.
-	 *
-	 * Deliberately empty apart from the adapter name. Section 11 requires the
-	 * server to recompute conditions from trusted context, and nothing about the
-	 * request body is trusted context — a rule that reads the submitted form to
-	 * decide whether a field was required is a rule an attacker can turn off.
-	 * Which entries a conditions engine will need is F06's decision; adding them
-	 * here would be a promise nothing reads.
-	 *
-	 * @return FieldContext
-	 */
-	private function context(): FieldContext {
-		return new FieldContext( array(), 'classic' );
 	}
 }

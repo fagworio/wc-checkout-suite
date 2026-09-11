@@ -12,6 +12,7 @@ namespace WCCheckoutSuite\Domain;
 use WCCheckoutSuite\Domain\Checkout\CoreFields;
 use WCCheckoutSuite\Domain\Conditions\ConditionEvaluatorRegistry;
 use WCCheckoutSuite\Domain\Conditions\PermissiveConditionEvaluator;
+use WCCheckoutSuite\Domain\Conditions\TreeConditionEvaluator;
 use WCCheckoutSuite\Domain\Fields\BrazilianPresets;
 use WCCheckoutSuite\Domain\Fields\CoreTypes;
 use WCCheckoutSuite\Domain\Fields\DefinitionValidator;
@@ -141,6 +142,7 @@ final class Registries {
 		BrazilianDocuments::register_masks( $instance->masks );
 		BrazilianDocuments::register_validators( $instance->validators );
 		$instance->conditions->register_evaluator( new PermissiveConditionEvaluator() );
+		$instance->conditions->register_evaluator( new TreeConditionEvaluator() );
 
 		$instance->registered = true;
 
