@@ -153,6 +153,7 @@ export default function PublishPanel( {
 	const diff = report?.diff ?? null;
 	const validation = report?.validation ?? null;
 	const incompatibilities = report?.incompatibilities ?? null;
+	const capabilities = report?.capabilities ?? [];
 
 	const invalid = validation ? ! validation.valid : false;
 	const blocked = invalid || dirty || publishing;
@@ -304,6 +305,52 @@ export default function PublishPanel( {
 						) }
 					/>
 				</div>
+			) : null }
+
+			{ capabilities.length > 0 ? (
+				// The limits come before the warnings on purpose: what a checkout
+				// does with a field is a fact to decide with, and what needs work is
+				// a problem to fix. Showing the second without the first turns the
+				// panel into a list of complaints.
+				<details className="wccs-publish__capabilities">
+					<summary>
+						{ __(
+							'What each checkout does with these fields',
+							'wc-checkoutsuite'
+						) }
+					</summary>
+
+					{ capabilities.map( ( /** @type {any} */ entry ) => (
+						<div
+							key={ entry.field }
+							className="wccs-publish__capability"
+						>
+							<h4 className="wccs-publish__group-title">
+								{ entry.label }
+							</h4>
+							<ul className="wccs-publish__list">
+								{ ( entry.limits ?? [] ).map(
+									(
+										/** @type {any} */ limit,
+										/** @type {number} */ index
+									) => (
+										<li
+											key={ `${ limit.family }-${ limit.adapter }-${ index }` }
+										>
+											<span className="wccs-publish__capability-family">
+												{ limit.family }
+												{ 'all' === limit.adapter
+													? ''
+													: ` · ${ limit.adapter }` }
+											</span>{ ' ' }
+											{ limit.reason }
+										</li>
+									)
+								) }
+							</ul>
+						</div>
+					) ) }
+				</details>
 			) : null }
 
 			{ incompatibilities && incompatibilityTotal > 0 ? (

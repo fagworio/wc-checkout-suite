@@ -207,6 +207,84 @@ describe( 'validations block publication', () => {
 	} );
 } );
 
+describe( 'the capability matrix', () => {
+	it( 'is absent when the report does not carry one', () => {
+		render( <PublishPanel report={ report() } onPublish={ () => {} } /> );
+
+		expect(
+			screen.queryByText( 'What each checkout does with these fields' )
+		).not.toBeInTheDocument();
+	} );
+
+	it( 'shows what each checkout does with each field, before publishing', () => {
+		render(
+			<PublishPanel
+				report={ {
+					...report(),
+					capabilities: [
+						{
+							field: 'wccs_birth_date',
+							label: 'Birth date',
+							limits: [
+								{
+									family: 'type',
+									adapter: 'blocks',
+									level: 'limited',
+									reason: 'The Blocks checkout has no native date field, so this plugin renders it (WCCS-037).',
+								},
+								{
+									family: 'width',
+									adapter: 'blocks',
+									level: 'limited',
+									reason: 'The Block checkout lays out its own fields, so the requested width is not applied there.',
+								},
+							],
+						},
+					],
+				} }
+				onPublish={ () => {} }
+			/>
+		);
+
+		expect(
+			screen.getByText( 'What each checkout does with these fields' )
+		).toBeInTheDocument();
+		expect( screen.getByText( 'Birth date' ) ).toBeInTheDocument();
+		expect(
+			screen.getByText( /The Blocks checkout has no native date field/ )
+		).toBeInTheDocument();
+		expect( screen.getByText( 'type · blocks' ) ).toBeInTheDocument();
+		expect( screen.getByText( 'width · blocks' ) ).toBeInTheDocument();
+	} );
+
+	it( 'names the family without an adapter when the limit applies to both', () => {
+		render(
+			<PublishPanel
+				report={ {
+					...report(),
+					capabilities: [
+						{
+							field: 'wccs_a',
+							label: 'A',
+							limits: [
+								{
+									family: 'core',
+									adapter: 'all',
+									level: 'limited',
+									reason: 'WooCommerce owns this field.',
+								},
+							],
+						},
+					],
+				} }
+				onPublish={ () => {} }
+			/>
+		);
+
+		expect( screen.getByText( 'core' ) ).toBeInTheDocument();
+	} );
+} );
+
 describe( 'incompatibilities are warnings, not blocks', () => {
 	const warned = report( {
 		incompatibilities: {

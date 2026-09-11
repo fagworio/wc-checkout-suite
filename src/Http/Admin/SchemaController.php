@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace WCCheckoutSuite\Http\Admin;
 
 use WCCheckoutSuite\Domain\Checkout\AdapterCapabilities;
+use WCCheckoutSuite\Domain\Checkout\CapabilityResolver;
 use WCCheckoutSuite\Domain\Checkout\CoreFields;
 use WCCheckoutSuite\Domain\Schema\PublishIncompatibilities;
 use WCCheckoutSuite\Domain\Schema\SchemaDiff;
@@ -206,6 +207,10 @@ final class SchemaController {
 					'errors' => $validation->errors(),
 				),
 				'incompatibilities' => PublishIncompatibilities::check( $draft->fields(), new CoreFields() ),
+				// What each checkout does with each field, rather than what is
+				// wrong with it. A limit the merchant can see before publishing is a
+				// decision; the same limit met at publication is an obstacle.
+				'capabilities'      => CapabilityResolver::resolve( $draft->fields(), $draft->sections(), new CoreFields() ),
 				'adapters'          => AdapterCapabilities::adapters(),
 				// Whether each slot could actually be read. Without this an
 				// unreadable document is indistinguishable from an empty one.
