@@ -85,6 +85,21 @@ declare global {
 				maxBytes?: number;
 			};
 			/**
+			 * What the homologation matrix allows for each gateway the store offers.
+			 *
+			 * `undecided` is a published answer and not a gap: it is the difference
+			 * between a gateway that was observed and one that was not.
+			 */
+			payments?: {
+				decisions?: Record<
+					string,
+					{ mode?: string; withheld?: string[] }
+				>;
+				undecided?: number;
+				reason?: string;
+			};
+
+			/**
 			 * The wording of the order summary control, published by the server
 			 * so the bundle hardcodes no string a translator has to find.
 			 */

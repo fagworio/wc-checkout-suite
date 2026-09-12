@@ -1,0 +1,36 @@
+{
+  "$schema_version": 1,
+  "artifact": "Payment homologation matrix",
+  "task": "WCCS-049",
+  "phase": "F09",
+  "planning_version": "roadmap/BACKLOG.json",
+  "note": [
+    "This file is the record the roadmap asks for: 'Registrar exatamente gateway, versão, modo e cenário testados. Não prometer compatibilidade com todos os gateways.'",
+    "It is a record of what was OBSERVED and not a list of intentions. A row that names no tested scenario is not a homologation, whatever mode it declares, and PaymentMatrix::decision() answers 'undecided' for it — which is the machine-readable form of 'we promise nothing about this gateway'.",
+    "Every gateway of the store appears here, including the ones with no row: an absent gateway is undecided, and undecided is reported rather than silently treated as safe.",
+    "A row is added only after a run that actually placed an order in the gateway's sandbox. As of the last update that had not happened for any of them, because the blocker SANDBOX-PAYMENT records that no gateway is enabled and no credentials exist in this environment.",
+    "The decoration vocabulary lists what the code can withhold TODAY. It grows in the same change that teaches the presentation to withhold another one, because a decoration nobody honours would be a record that reads like a promise."
+  ],
+  "captured_at": "2026-09-11",
+  "captured_by": "agent",
+  "scenario_vocabulary": {
+    "sandbox": "An order placed in the gateway's sandbox mode completes and the store records it.",
+    "redirect": "A gateway that leaves the site and comes back returns to the order it started.",
+    "three_ds": "A 3-D Secure challenge is answered and the order is placed afterwards.",
+    "saved_token": "A saved token can be reused for a later order by the same customer.",
+    "retry": "A refused or abandoned attempt can be tried again without duplicating an order.",
+    "required_data": "A flow cannot complete while a field the store requires is unanswered.",
+    "refresh": "Changing the country, the shipping method or the payment method refreshes the payment area without losing what was typed.",
+    "express": "An express path (wallet, one-click) either satisfies the required fields or is not offered."
+  },
+  "decoration_vocabulary": {
+    "panel": "The box this plugin draws around the markup a gateway rendered."
+  },
+  "mode_vocabulary": {
+    "decorated": "Every decoration was applied and the scenarios below passed with it.",
+    "compatible": "A decoration this gateway did not tolerate is recorded in 'withheld' and is not applied.",
+    "unavailable": "The custom presentation must not offer this gateway at all; the reason is recorded.",
+    "undecided": "No homologation record exists. Nothing is promised, and the checkout reports this gateway as not homologated."
+  },
+  "gateways": []
+}

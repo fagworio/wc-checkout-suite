@@ -232,6 +232,64 @@ describe( 'the payment frame', () => {
 		expect( document.querySelectorAll( '.payment_box' ) ).toHaveLength( 0 );
 	} );
 
+	it( 'applies a decoration only when the record did not withhold it', () => {
+		// The matrix is data and this module is the consumer: a gateway whose record
+		// withheld the panel box gets the wiring — the id, the aria-controls, the mode
+		// on the row — and no marker for the stylesheet to draw a box from. A withheld
+		// decoration is never applied rather than applied and undone, which is the
+		// difference between a record that is honoured and one that is negotiated.
+		const frame = createPaymentFrame( {
+			decisions: {
+				wccs_card: { mode: 'compatible', withheld: [ 'panel' ] },
+				wccs_invoice: { mode: 'decorated', withheld: [] },
+			},
+		} );
+
+		frame.run( document.body );
+
+		const cardPanel = /** @type {any} */ (
+			el( '.payment_method_wccs_card .payment_box' )
+		);
+		const invoicePanel = /** @type {any} */ (
+			el( '.payment_method_wccs_invoice .payment_box' )
+		);
+
+		expect( cardPanel ).not.toHaveAttribute( 'data-wccs-payment-panel' );
+		expect( invoicePanel ).toHaveAttribute(
+			'data-wccs-payment-panel',
+			'true'
+		);
+
+		// Wired either way: what is withheld is the decoration, not the field's
+		// accessibility or the pairing the customer's screen reader reads.
+		expect(
+			/** @type {any} */ ( el( '#payment_method_wccs_card' ) )
+		).toHaveAttribute( 'aria-controls', cardPanel.id );
+		expect(
+			/** @type {any} */ ( el( '.payment_method_wccs_card' ) )
+		).toHaveAttribute( 'data-wccs-mode', 'compatible' );
+		expect(
+			/** @type {any} */ ( el( '.payment_method_wccs_invoice' ) )
+		).toHaveAttribute( 'data-wccs-mode', 'decorated' );
+	} );
+
+	it( 'treats a gateway with no record as undecided and says so on the row', () => {
+		const frame = createPaymentFrame();
+
+		frame.run( document.body );
+
+		// Nothing is promised about a gateway nobody ran, and the row says which answer
+		// it got rather than leaving a merchant to guess.
+		expect(
+			/** @type {any} */ ( el( '.payment_method_wccs_card' ) )
+		).toHaveAttribute( 'data-wccs-mode', 'undecided' );
+		expect(
+			/** @type {any} */ (
+				el( '.payment_method_wccs_card .payment_box' )
+			)
+		).toHaveAttribute( 'data-wccs-payment-panel', 'true' );
+	} );
+
 	it( 'accepts a method becoming available and refuses one going missing', () => {
 		const frame = createPaymentFrame();
 

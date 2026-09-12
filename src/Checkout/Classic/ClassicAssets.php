@@ -226,7 +226,7 @@ final class ClassicAssets {
 	 * renamed and the revision changes, and a bundle that hardcoded either would
 	 * be wrong the first time one of them moved.
 	 *
-	 * @return array{masks: array<string, array{key: string, version: int, definition: string|array<mixed>}>, summary: array{label: string, show: string, hide: string}, validation: array{url: string, nonce: string, revision: int}}
+	 * @return array{masks: array<string, array{key: string, version: int, definition: string|array<mixed>}>, payments: array{decisions: array<string, array{mode: string, withheld: array<int, string>}>, undecided: int, reason: string}, summary: array{label: string, show: string, hide: string}, validation: array{url: string, nonce: string, revision: int}}
 	 */
 	public static function bootstrap_data(): array {
 		$masks      = \WCCheckoutSuite\Domain\Registries::instance()->masks();
@@ -266,6 +266,7 @@ final class ClassicAssets {
 			'rules'      => self::rules(),
 			'conditions' => self::conditions(),
 			'uploads'    => self::uploads(),
+			'payments'   => self::payments(),
 			'summary'    => array(
 				'label' => __( 'Order summary', 'wc-checkoutsuite' ),
 				'show'  => __( 'Show order summary', 'wc-checkoutsuite' ),
@@ -331,6 +332,50 @@ final class ClassicAssets {
 		}
 
 		return false;
+	}
+
+	/**
+	 * What this plugin is allowed to do to each gateway the store offers.
+	 *
+	 * The record is the homologation matrix, and the answer for a gateway nobody ran is
+	 * `undecided` — published rather than hidden, because the difference between "we
+	 * tested it" and "we have not looked" is the thing a merchant has to be able to see.
+	 * The count travels with the decisions so a diagnostic surface can say how much of
+	 * this store's payment area is covered by an observation and how much is not.
+	 *
+	 * @return array{decisions: array<string, array{mode: string, withheld: array<int, string>}>, undecided: int, reason: string}
+	 */
+	private static function payments(): array {
+		$decisions = array();
+
+		if ( function_exists( 'WC' ) ) {
+			foreach ( WC()->payment_gateways()->get_available_payment_gateways() as $gateway ) {
+				if ( ! is_object( $gateway ) || ! isset( $gateway->id ) ) {
+					continue;
+				}
+
+				$decision = \WCCheckoutSuite\Domain\Payments\PaymentMatrix::decide_for( $gateway );
+
+				$decisions[ (string) $gateway->id ] = array(
+					'mode'     => $decision['mode'],
+					'withheld' => $decision['withheld'],
+				);
+			}
+		}
+
+		$undecided = 0;
+
+		foreach ( $decisions as $decision ) {
+			if ( \WCCheckoutSuite\Domain\Payments\PaymentMode::UNDECIDED === $decision['mode'] ) {
+				++$undecided;
+			}
+		}
+
+		return array(
+			'decisions' => $decisions,
+			'undecided' => $undecided,
+			'reason'    => \WCCheckoutSuite\Domain\Payments\PaymentMode::reason( \WCCheckoutSuite\Domain\Payments\PaymentMode::UNDECIDED ),
+		);
 	}
 
 	/**

@@ -126,10 +126,15 @@ function panelFor( radio ) {
  * properties it must have — a real radio, the panel that belongs to that radio, and
  * the pairing between them — are asserted per row rather than through the whole box.
  *
- * @param {HTMLInputElement} radio Radio input.
+ * The decision comes from the homologation matrix and is passed in rather than looked
+ * up here: this module holds no record of what was tested, and a module that guessed
+ * would be the second place the answer lives.
+ *
+ * @param {HTMLInputElement}                               radio      Radio input.
+ * @param {{mode?: string, withheld?: Array<string>}|null} [decision] Matrix decision.
  * @return {{prepared: boolean, reason: string, panel: HTMLElement|null}} Outcome.
  */
-export function prepareMethod( radio ) {
+export function prepareMethod( radio, decision = null ) {
 	const view = radio.ownerDocument.defaultView;
 
 	if ( ! view || ! ( radio instanceof view.HTMLInputElement ) ) {
@@ -142,6 +147,10 @@ export function prepareMethod( radio ) {
 		// not own, so it is left exactly as the gateway wrote it.
 		return { prepared: false, reason: 'not_a_method_radio', panel: null };
 	}
+
+	const withheld = Array.isArray( decision?.withheld )
+		? decision.withheld
+		: [];
 
 	const panel = panelFor( radio );
 	const label = labelFor( radio );
@@ -170,16 +179,28 @@ export function prepareMethod( radio ) {
 	radio.setAttribute( 'aria-controls', panel.id );
 
 	// The marker goes on the radio and on its row: the radio is what this function is
-	// asked about the next time, and the row is what the stylesheet reads.
+	// asked about the next time, and the row is what the stylesheet reads. The mode is
+	// recorded on the row too, whatever it says, because a merchant reading the markup
+	// should be able to see whether this gateway was observed at all.
 	radio.setAttribute( PREPARED, 'true' );
 
 	const row = radio.closest( 'li' );
 
 	if ( row ) {
 		row.setAttribute( PREPARED, 'true' );
+		row.setAttribute(
+			'data-wccs-mode',
+			String( decision?.mode ?? 'undecided' )
+		);
 	}
 
-	panel.setAttribute( 'data-wccs-payment-panel', 'true' );
+	// The panel marker is what the stylesheet draws the box from, and it is set only
+	// when the record did not withhold that decoration — so a withheld decoration is
+	// never applied rather than applied and then undone.
+
+	if ( ! withheld.includes( 'panel' ) ) {
+		panel.setAttribute( 'data-wccs-payment-panel', 'true' );
+	}
 
 	// The panel's visibility is left exactly as it was found. It is WooCommerce's
 	// state, expressed in the element's own inline style, and the checkout's script is
@@ -190,13 +211,15 @@ export function prepareMethod( radio ) {
 /**
  * Creates the payment frame over the checkout's own payment box.
  *
- * @param {Object}                [options]          Options.
- * @param {string}                [options.selector] Box selector.
- * @param {Document|Element|null} [options.root]     Where to look.
+ * @param {Object}                [options]           Options.
+ * @param {string}                [options.selector]  Box selector.
+ * @param {Record<string, any>}   [options.decisions] Homologation decisions, by gateway.
+ * @param {Document|Element|null} [options.root]      Where to look.
  * @return {{run: (root?: Document|Element|null) => number}} Component.
  */
 export function createPaymentFrame( {
 	selector = '.wc_payment_methods',
+	decisions = {},
 	root = null,
 } = {} ) {
 	/**
@@ -245,7 +268,10 @@ export function createPaymentFrame( {
 		let prepared = 0;
 
 		for ( const radio of radios( scope ) ) {
-			const outcome = prepareMethod( radio );
+			const outcome = prepareMethod(
+				radio,
+				decisions[ radio.value ] ?? null
+			);
 
 			// Only a row prepared in *this* pass counts. `prepared` is true for a row
 			// that was already done as well, and counting those would report that every

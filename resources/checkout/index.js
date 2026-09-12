@@ -68,7 +68,9 @@ const errors = createFieldErrors( { attribute: keeper.attribute } );
 // lifecycle for the same reason the fields are: the checkout replaces the payment box
 // and the order review over AJAX, and a component that ran twice over the same element
 // would add a second control to a summary that already has one.
-const payment = createPaymentFrame();
+const payment = createPaymentFrame( {
+	decisions: ( bootstrap.payments || {} ).decisions || {},
+} );
 const summary = createOrderSummary( bootstrap.summary || {} );
 const form = createFormValidation( {
 	checker,
