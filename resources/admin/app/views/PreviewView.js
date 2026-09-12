@@ -49,6 +49,10 @@ const DEVICES = {
  * @return {string} Control kind.
  */
 function controlFor( field ) {
+	if ( 'heading' === field?.type ) {
+		return 'content';
+	}
+
 	const known = [
 		'textarea',
 		'select',
@@ -174,7 +178,8 @@ export default function PreviewView( { document: doc, siteName, onBack } ) {
 
 		sections.forEach( ( /** @type {any} */ group ) => {
 			group.fields.forEach( ( /** @type {any} */ field ) => {
-				if ( ! field.required ) {
+				// A heading asks for nothing, so there is nothing to answer.
+				if ( ! field.required || 'content' === controlFor( field ) ) {
 					return;
 				}
 
@@ -877,6 +882,20 @@ function PreviewField( { field, invalid = false, files = [], onPick } ) {
 			/>
 		);
 	};
+
+	if ( 'content' === control ) {
+		return (
+			<div
+				className="content-field"
+				style={ { gridColumn: `span ${ columns }` } }
+			>
+				<h3>{ label }</h3>
+				{ field.settings?.content ? (
+					<p>{ field.settings.content }</p>
+				) : null }
+			</div>
+		);
+	}
 
 	if ( 'checkbox' === control ) {
 		return (

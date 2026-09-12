@@ -254,4 +254,41 @@ describe( 'the connected preview', () => {
 			screen.queryByText( /nota\.pdf · \d+ KB/ )
 		).not.toBeInTheDocument();
 	} );
+
+	it( 'draws a heading as content, not as a control', async () => {
+		render(
+			<PreviewView
+				document={ doc( [
+					field( {
+						type: 'heading',
+						label: 'Antes de continuar',
+						required: true,
+						settings: { content: 'Confira os dados acima.' },
+					} ),
+				] ) }
+				onBack={ () => {} }
+			/>
+		);
+
+		const heading = screen.getByRole( 'heading', {
+			name: 'Antes de continuar',
+		} );
+
+		expect( heading.closest( '.content-field' ) ).not.toBeNull();
+		expect(
+			screen.getByText( 'Confira os dados acima.' )
+		).toBeInTheDocument();
+
+		// A heading asks nothing of the customer, so the check must not call it empty
+		// even when the definition carries a required mark.
+		await userEvent.setup().click(
+			screen.getByRole( 'button', {
+				name: /Validar campos da prévia/,
+			} )
+		);
+
+		expect( screen.getByRole( 'status' ) ).toHaveTextContent(
+			'Os campos obrigatórios da prévia estão preenchidos'
+		);
+	} );
 } );
