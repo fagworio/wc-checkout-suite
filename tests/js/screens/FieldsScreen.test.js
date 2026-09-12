@@ -922,3 +922,39 @@ describe( 'a bulk action with consequences', () => {
 		).toBeEnabled();
 	} );
 } );
+
+describe( 'the row menu', () => {
+	it( 'closes with Escape and gives the focus back', async () => {
+		const user = userEvent.setup();
+
+		render( <FieldsScreen client={ client() } /> );
+
+		await screen.findByText( 'CPF' );
+
+		await user.click(
+			screen.getByRole( 'button', { name: 'Ações de CPF' } )
+		);
+
+		expect(
+			screen.getByRole( 'button', { name: 'Editar campo' } )
+		).toBeInTheDocument();
+
+		await user.keyboard( '{Escape}' );
+
+		await waitFor( () =>
+			expect(
+				screen.queryByRole( 'button', { name: 'Editar campo' } )
+			).not.toBeInTheDocument()
+		);
+
+		// The button that opened it takes the focus back: without that, the next Tab
+		// starts from the top of the screen and the merchant loses their place.
+		await waitFor( () =>
+			expect(
+				globalThis.document.getElementById(
+					'wccs-menu-billing_document'
+				)
+			).toHaveFocus()
+		);
+	} );
+} );

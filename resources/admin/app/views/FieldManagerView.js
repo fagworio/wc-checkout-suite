@@ -20,7 +20,7 @@
  * @package
  */
 
-import { useMemo, useState } from '@wordpress/element';
+import { useEffect, useMemo, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 
 import Dialog from '../components/Dialog';
@@ -188,6 +188,36 @@ export default function FieldManagerView( { model } ) {
 			token: current.token + 1,
 			message,
 		} ) );
+
+	// The prototype closes the open row menu on Escape. Focus goes back to the button
+	// that opened it, because a control that closes by keyboard and leaves the focus
+	// nowhere is a keyboard trap in reverse: the next Tab starts from the top of the
+	// screen.
+	useEffect( () => {
+		if ( ! menuOpen ) {
+			return undefined;
+		}
+
+		const onKey = ( /** @type {KeyboardEvent} */ event ) => {
+			if ( 'Escape' !== event.key ) {
+				return;
+			}
+
+			const opened = menuOpen;
+
+			setMenuOpen( null );
+			globalThis.requestAnimationFrame?.( () =>
+				globalThis.document
+					?.getElementById( `wccs-menu-${ opened }` )
+					?.focus()
+			);
+		};
+
+		globalThis.document?.addEventListener( 'keydown', onKey );
+
+		return () =>
+			globalThis.document?.removeEventListener( 'keydown', onKey );
+	}, [ menuOpen ] );
 
 	/**
 	 * The row a drag is carrying and the row it is over.
@@ -1419,6 +1449,7 @@ export default function FieldManagerView( { model } ) {
 													<div className="row-actions">
 														<button
 															type="button"
+															id={ `wccs-menu-${ field.id }` }
 															className="icon-btn row-menu-trigger"
 															aria-expanded={
 																menuOpen ===

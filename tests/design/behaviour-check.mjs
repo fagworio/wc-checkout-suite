@@ -171,6 +171,25 @@ await step( 'the mode switch announces what Blocks limits', async () => {
 	return { toast: said };
 } );
 
+await step( 'the row menu closes with Escape', async () => {
+	await page.evaluate( () => window.scrollTo( 0, 0 ) );
+	await page.waitForTimeout( 200 );
+
+	await page.locator( '.wccs-admin .row-menu-trigger' ).first().click();
+	await page.waitForTimeout( 250 );
+
+	const opened = await page.locator( '.wccs-admin .row-menu' ).count();
+
+	await page.keyboard.press( 'Escape' );
+	await page.waitForTimeout( 250 );
+
+	return {
+		opened,
+		closed: 0 === ( await page.locator( '.wccs-admin .row-menu' ).count() ),
+		focused: await page.evaluate( () => document.activeElement?.id ?? '' ),
+	};
+} );
+
 await step( 'duplicating a field announces the undo that follows', async () => {
 	await page.evaluate( () => window.scrollTo( 0, 0 ) );
 	await page.waitForTimeout( 200 );
