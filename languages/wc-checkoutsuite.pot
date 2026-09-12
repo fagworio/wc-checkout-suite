@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-12T10:54:02+00:00\n"
+"POT-Creation-Date: 2026-09-12T12:05:02+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.7.1\n"
 "X-Domain: wc-checkoutsuite\n"
@@ -18,7 +18,7 @@ msgstr ""
 #: src/Admin/AdminMenu.php:55
 #: src/Admin/AdminMenu.php:56
 #: src/Privacy/PrivacyPolicy.php:57
-#: resources/admin/app/AppShell.js:138
+#: resources/admin/app/AppShell.js:297
 msgid "WC CheckoutSuite"
 msgstr ""
 
@@ -27,7 +27,6 @@ msgid "Advanced checkout field management for WooCommerce: field types, Brazilia
 msgstr ""
 
 #: src/Admin/AdminMenu.php:89
-#: resources/admin/app/FieldsScreen.js:587
 msgid "Fields"
 msgstr ""
 
@@ -40,7 +39,7 @@ msgid "Rules"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:101
-#: resources/admin/app/components/FieldInspector.js:515
+#: resources/admin/app/components/FieldInspector.js:519
 msgid "Appearance"
 msgstr ""
 
@@ -1388,29 +1387,81 @@ msgstr ""
 msgid "WC CheckoutSuite requires PHP %1$s or higher. This server runs PHP %2$s, so the plugin is inactive."
 msgstr ""
 
-#: resources/admin/app/AppShell.js:73
+#: resources/admin/app/AppShell.js:42
+msgid "Editor de campos"
+msgstr ""
+
+#: resources/admin/app/AppShell.js:47
+msgid "Prévia do checkout"
+msgstr ""
+
+#: resources/admin/app/AppShell.js:52
+msgid "Arquivados"
+msgstr ""
+
+#: resources/admin/app/AppShell.js:57
+msgid "Regras do editor"
+msgstr ""
+
+#: resources/admin/app/AppShell.js:177
 msgid "Not built yet"
 msgstr ""
 
-#: resources/admin/app/AppShell.js:75
+#: resources/admin/app/AppShell.js:179
 msgid "Fields, Appearance, Settings and Diagnostics are the sections that work today. The remaining sections are built in later stages of the roadmap."
 msgstr ""
 
-#: resources/admin/app/AppShell.js:143
-msgid "Skip to content"
+#: resources/admin/app/AppShell.js:312
+msgid "Pular para o editor"
 msgstr ""
 
-#: resources/admin/app/AppShell.js:148
+#: resources/admin/app/AppShell.js:318
 msgid "Checkout suite sections"
 msgstr ""
 
-#: resources/admin/app/AppShell.js:154
-msgid "Your checkout"
+#: resources/admin/app/AppShell.js:333
+msgid "SEU CHECKOUT"
+msgstr ""
+
+#: resources/admin/app/AppShell.js:365
+msgid "Seu checkout, do seu jeito."
+msgstr ""
+
+#: resources/admin/app/AppShell.js:371
+msgid "Campos flexíveis."
+msgstr ""
+
+#: resources/admin/app/AppShell.js:373
+msgid "Uma experiência consistente."
+msgstr ""
+
+#: resources/admin/app/AppShell.js:379
+msgid "Field Manager"
+msgstr ""
+
+#: resources/admin/app/AppShell.js:392
+msgid "Sua loja"
 msgstr ""
 
 #. translators: %s: plugin version.
-#: resources/admin/app/AppShell.js:188
-msgid "Version %s"
+#: resources/admin/app/AppShell.js:398
+msgid "Versão %s"
+msgstr ""
+
+#: resources/admin/app/AppShell.js:404
+msgid "CheckoutSuite"
+msgstr ""
+
+#: resources/admin/app/AppShell.js:430
+msgid "Alternar tema"
+msgstr ""
+
+#: resources/admin/app/AppShell.js:436
+msgid "Ativar tema claro"
+msgstr ""
+
+#: resources/admin/app/AppShell.js:440
+msgid "Ativar tema escuro"
 msgstr ""
 
 #: resources/admin/app/components/Badge.js:33
@@ -1430,12 +1481,10 @@ msgid "Published"
 msgstr ""
 
 #: resources/admin/app/components/Badge.js:37
-#: resources/admin/app/FieldsScreen.js:605
 msgid "Unsaved changes"
 msgstr ""
 
 #: resources/admin/app/components/Badge.js:38
-#: resources/admin/app/FieldsScreen.js:952
 msgid "Archived"
 msgstr ""
 
@@ -1465,7 +1514,6 @@ msgstr ""
 
 #: resources/admin/app/components/BulkActions.js:96
 #: resources/admin/app/components/BulkActions.js:212
-#: resources/admin/app/FieldsScreen.js:1009
 msgid "Archive"
 msgstr ""
 
@@ -1527,6 +1575,7 @@ msgid "Visibility"
 msgstr ""
 
 #: resources/admin/app/components/BulkActions.js:275
+#: resources/admin/app/FieldsScreen.js:857
 msgid "Cancel"
 msgstr ""
 
@@ -1666,8 +1715,10 @@ msgstr ""
 msgid "With these values the rule does not match, so the field is hidden."
 msgstr ""
 
-#: resources/admin/app/components/Dialog.js:68
-msgid "Close dialog"
+#: resources/admin/app/components/Dialog.js:97
+#: resources/admin/app/views/FieldManagerView.js:1704
+#: resources/admin/app/views/FieldManagerView.js:1740
+msgid "Fechar"
 msgstr ""
 
 #. translators: %d: number of problems found.
@@ -1734,7 +1785,7 @@ msgid "A field with choices needs at least one option before it can be published
 msgstr ""
 
 #: resources/admin/app/components/FieldInspector.js:350
-#: resources/admin/app/components/FieldInspector.js:555
+#: resources/admin/app/components/FieldInspector.js:559
 msgid "Label"
 msgstr ""
 
@@ -1747,196 +1798,269 @@ msgstr ""
 msgid "Add option"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:402
+#: resources/admin/app/components/FieldInspector.js:406
 msgid "This type declares no settings of its own."
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:514
+#: resources/admin/app/components/FieldInspector.js:518
 msgid "General"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:518
+#: resources/admin/app/components/FieldInspector.js:522
 msgid "Mask and validation"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:522
+#: resources/admin/app/components/FieldInspector.js:526
 msgid "Storage and visibility"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:524
+#: resources/admin/app/components/FieldInspector.js:528
 msgid "Advanced"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:533
+#: resources/admin/app/components/FieldInspector.js:537
 msgid "Conditions"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:548
-#: resources/admin/app/FieldsScreen.js:1215
+#: resources/admin/app/components/FieldInspector.js:552
 msgid "Field properties"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:569
-#: resources/admin/app/FieldsScreen.js:1170
+#: resources/admin/app/components/FieldInspector.js:573
 msgid "Description"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:573
+#: resources/admin/app/components/FieldInspector.js:577
 msgid "Shown under the field, to explain what is expected."
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:591
-#: resources/admin/app/FieldsScreen.js:944
+#: resources/admin/app/components/FieldInspector.js:595
 msgid "Required"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:610
+#: resources/admin/app/components/FieldInspector.js:614
 msgid "WooCommerce requires this field. Making it optional needs an impact assessment and is refused by the server."
 msgstr ""
 
 #. translators: %s: device name.
-#: resources/admin/app/components/FieldInspector.js:627
+#: resources/admin/app/components/FieldInspector.js:631
 msgid "Width on %s"
 msgstr ""
 
 #. translators: %d: number of columns.
-#: resources/admin/app/components/FieldInspector.js:641
+#: resources/admin/app/components/FieldInspector.js:645
 msgid "%d of 12 columns"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:670
+#: resources/admin/app/components/FieldInspector.js:674
 msgid "Mask"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:674
+#: resources/admin/app/components/FieldInspector.js:678
 msgid "A mask shapes what is typed. It never replaces validation."
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:682
+#: resources/admin/app/components/FieldInspector.js:686
 msgid "No mask"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:717
+#: resources/admin/app/components/FieldInspector.js:721
 msgid "This type cannot be masked, so no mask is offered."
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:734
+#: resources/admin/app/components/FieldInspector.js:738
 msgid "Uploads are stored privately and reached through a token on the order, never through a public URL."
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:759
+#: resources/admin/app/components/FieldInspector.js:763
 msgid "WooCommerce persists this field through its own flow, so where its value is kept is not a choice here."
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:768
+#: resources/admin/app/components/FieldInspector.js:772
 msgid "Where the value is kept"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:797
+#: resources/admin/app/components/FieldInspector.js:801
 msgid "This type stores no value, so nothing is kept."
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:806
+#: resources/admin/app/components/FieldInspector.js:810
 msgid "How sensitive the value is"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:837
+#: resources/admin/app/components/FieldInspector.js:841
 msgid "Where the value may be shown"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:874
+#: resources/admin/app/components/FieldInspector.js:878
 msgid "This type stores no value, so there is nothing to show anywhere."
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:884
+#: resources/admin/app/components/FieldInspector.js:888
 msgid "When a rule hides the field"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:914
+#: resources/admin/app/components/FieldInspector.js:918
 msgid "Identifier"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:918
+#: resources/admin/app/components/FieldInspector.js:922
 msgid "Integration key"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:924
+#: resources/admin/app/components/FieldInspector.js:928
 msgid "Type"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:926
+#: resources/admin/app/components/FieldInspector.js:930
+#: resources/admin/app/views/FieldProperties.js:809
 msgid "Preset"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:928
+#: resources/admin/app/components/FieldInspector.js:932
 msgid "Origin"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:931
-#: resources/admin/app/components/FieldPicker.js:140
-#: resources/admin/app/FieldsScreen.js:936
+#: resources/admin/app/components/FieldInspector.js:935
+#: resources/admin/app/views/FieldProperties.js:633
 msgid "WooCommerce"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:935
+#: resources/admin/app/components/FieldInspector.js:939
 msgid "Created here"
 msgstr ""
 
-#: resources/admin/app/components/FieldInspector.js:949
+#: resources/admin/app/components/FieldInspector.js:953
 msgid "WooCommerce field"
 msgstr ""
 
-#: resources/admin/app/components/FieldPicker.js:116
-msgid "No WooCommerce field matches the search."
+#: resources/admin/app/components/FieldPicker.js:128
+#: resources/admin/app/components/FieldPicker.js:177
+msgid "Presets Brasil"
 msgstr ""
 
-#: resources/admin/app/components/FieldPicker.js:186
-msgid "All"
+#: resources/admin/app/components/FieldPicker.js:140
+#: resources/admin/app/components/FieldPicker.js:185
+msgid "Campos da WooCommerce"
 msgstr ""
 
-#: resources/admin/app/components/FieldPicker.js:236
-msgid "Search fields"
+#: resources/admin/app/components/FieldPicker.js:157
+#: resources/admin/app/views/FieldManagerView.js:757
+msgid "Todos os campos"
 msgstr ""
 
-#: resources/admin/app/components/FieldPicker.js:241
-msgid "CPF, address, upload…"
+#: resources/admin/app/components/FieldPicker.js:239
+msgid "Nome do campo *"
 msgstr ""
 
-#: resources/admin/app/components/FieldPicker.js:250
-msgid "Add to section"
+#: resources/admin/app/components/FieldPicker.js:254
+msgid "Chave de integração *"
 msgstr ""
 
-#: resources/admin/app/components/FieldPicker.js:265
-msgid "Loading the field list…"
+#: resources/admin/app/components/FieldPicker.js:270
+msgid "Única e permanente. Letras minúsculas, números e underscore; comece com uma letra."
 msgstr ""
 
-#: resources/admin/app/components/FieldPicker.js:272
-msgid "The field list could not be loaded"
+#: resources/admin/app/components/FieldPicker.js:279
+#: resources/admin/app/views/FieldProperties.js:429
+msgid "Seção"
 msgstr ""
 
-#: resources/admin/app/components/FieldPicker.js:283
-msgid "Category"
+#: resources/admin/app/components/FieldPicker.js:305
+#: resources/admin/app/views/FieldProperties.js:327
+msgid "Largura no desktop"
 msgstr ""
 
-#. translators: %s: the search term.
-#: resources/admin/app/components/FieldPicker.js:295
-msgid "Nothing matches \"%s\". Try a shorter term or another category."
+#: resources/admin/app/components/FieldPicker.js:321
+msgid "100% · linha inteira"
 msgstr ""
 
-#: resources/admin/app/components/FieldPicker.js:307
-msgid "Ready-made fields"
+#: resources/admin/app/components/FieldPicker.js:327
+msgid "50% · meia linha"
 msgstr ""
 
-#: resources/admin/app/components/FieldPicker.js:399
-msgid "WooCommerce fields"
+#: resources/admin/app/components/FieldPicker.js:333
+msgid "33% · um terço"
 msgstr ""
 
-#: resources/admin/app/components/FieldPicker.js:409
-msgid "WooCommerce fields of your store. Adding one lets you rename, describe and resize it; it cannot be archived or removed, because the checkout depends on it."
+#: resources/admin/app/components/FieldPicker.js:343
+msgid "Obrigatoriedade"
 msgstr ""
 
-#: resources/admin/app/components/FieldPicker.js:418
-msgid "Clear search"
+#: resources/admin/app/components/FieldPicker.js:361
+msgid "Opcional"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:364
+msgid "Obrigatório"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:380
+msgid "O campo entra no rascunho. Nada chega ao checkout antes de publicar."
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:392
+#: resources/admin/app/views/FieldManagerView.js:1133
+#: resources/admin/app/views/FieldProperties.js:177
+#: resources/admin/app/views/FieldProperties.js:824
+msgid "Campo sem nome"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:401
+#: resources/admin/app/views/FieldProperties.js:833
+msgid "Amostra do campo"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:412
+msgid "Tipos são estruturas. Presets combinam tipo, máscara e regras."
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:422
+msgid "Voltar"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:453
+#: resources/admin/app/views/FieldManagerView.js:479
+msgid "Adicionar campo"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:465
+msgid "Categorias de campos"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:495
+msgid "Buscar texto, CPF, arquivo…"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:499
+msgid "Buscar um tipo de campo"
+msgstr ""
+
+#. translators: %d: number of entries.
+#: resources/admin/app/components/FieldPicker.js:512
+msgid "%d tipos e presets disponíveis"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:525
+msgid "Nenhum tipo encontrado."
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:531
+msgid "Tente outro termo ou outra categoria."
+msgstr ""
+
+#. translators: %s: reason the inventory could not be read.
+#: resources/admin/app/components/FieldPicker.js:566
+msgid "Os campos da WooCommerce não puderam ser listados: %s"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:572
+msgid "Tipos são estruturas. Presets Brasil combinam tipo, máscara e regras. Senhas ficam no fluxo nativo."
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:582
+#: resources/admin/app/views/FieldManagerView.js:1772
+msgid "Cancelar"
 msgstr ""
 
 #: resources/admin/app/components/Notice.js:62
@@ -2183,7 +2307,6 @@ msgid "In the store"
 msgstr ""
 
 #: resources/admin/app/components/RevisionsList.js:144
-#: resources/admin/app/FieldsScreen.js:1013
 msgid "Restore"
 msgstr ""
 
@@ -2206,147 +2329,135 @@ msgstr ""
 msgid "Move %s down"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:204
+#: resources/admin/app/design/sectionMeta.js:25
+msgid "Contato"
+msgstr ""
+
+#: resources/admin/app/design/sectionMeta.js:26
+msgid "Como falar com o cliente"
+msgstr ""
+
+#: resources/admin/app/design/sectionMeta.js:27
+msgid "E-mail e informações de contato."
+msgstr ""
+
+#: resources/admin/app/design/sectionMeta.js:34
+msgid "Cobrança"
+msgstr ""
+
+#: resources/admin/app/design/sectionMeta.js:35
+msgid "Dados de cobrança"
+msgstr ""
+
+#: resources/admin/app/design/sectionMeta.js:36
+msgid "Informações do cliente e documentos."
+msgstr ""
+
+#: resources/admin/app/design/sectionMeta.js:43
+msgid "Entrega"
+msgstr ""
+
+#: resources/admin/app/design/sectionMeta.js:44
+msgid "Endereço de entrega"
+msgstr ""
+
+#: resources/admin/app/design/sectionMeta.js:45
+msgid "Campos para endereçamento e envio."
+msgstr ""
+
+#: resources/admin/app/design/sectionMeta.js:52
+msgid "Pedido"
+msgstr ""
+
+#: resources/admin/app/design/sectionMeta.js:53
+msgid "Detalhes do pedido"
+msgstr ""
+
+#: resources/admin/app/design/sectionMeta.js:54
+msgid "Instruções, arquivos e informações adicionais."
+msgstr ""
+
+#: resources/admin/app/design/sectionMeta.js:61
+msgid "Conta"
+msgstr ""
+
+#: resources/admin/app/design/sectionMeta.js:62
+msgid "Preferências da conta"
+msgstr ""
+
+#: resources/admin/app/design/sectionMeta.js:63
+msgid "Campos complementares. Senhas ficam no fluxo nativo."
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:263
 msgid "You have unsaved checkout field changes."
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:452
+#: resources/admin/app/FieldsScreen.js:495
 msgid "Draft saved."
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:497
+#: resources/admin/app/FieldsScreen.js:540
 msgid "Published."
 msgstr ""
 
 #. translators: %d: revision number.
-#: resources/admin/app/FieldsScreen.js:532
+#: resources/admin/app/FieldsScreen.js:575
 msgid "Revision %d was published again as a new revision."
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:557
+#: resources/admin/app/FieldsScreen.js:600
 msgid "Loading the schema…"
 msgstr ""
 
-#. translators: 1: active field count, 2: total field count.
-#: resources/admin/app/FieldsScreen.js:592
-msgid "%1$d active of %2$d. Changes are saved to the draft and never reach the checkout until you publish."
+#: resources/admin/app/FieldsScreen.js:686
+msgid "The export could not be produced."
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:617
-msgid "Undo edit"
+#: resources/admin/app/FieldsScreen.js:731
+msgid "That field is not in this document."
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:624
-msgid "Redo edit"
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:633
-msgid "Save draft"
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:667
-msgid "This schema was written by a newer version"
-msgstr ""
-
-#. translators: 1: revision version, 2: supported version.
-#: resources/admin/app/FieldsScreen.js:674
-msgid "The stored %1$s document uses schema version %2$d, which this build cannot read. Its fields are not lost; they are invisible until the plugin is updated."
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:687
-msgid "Some field types are no longer available"
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:693
-msgid "A plugin that provided these field types is not active. The fields and their stored values are intact; only the code that renders them is missing."
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:738
-msgid "No fields yet"
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:739
-msgid "Pick a ready-made field, a field type, or one of the fields WooCommerce already has, to start building the checkout."
-msgstr ""
-
-#. translators: %s: section title.
-#: resources/admin/app/FieldsScreen.js:783
-msgid "Move section %s earlier"
-msgstr ""
-
-#. translators: %s: section title.
-#: resources/admin/app/FieldsScreen.js:804
-msgid "Move section %s later"
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:835
-msgid "Rename"
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:852
-#: resources/admin/app/FieldsScreen.js:1030
-msgid "Remove"
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:860
-msgid "A WooCommerce location. Declare a section to rename it."
-msgstr ""
-
-#. translators: %s: section title.
-#: resources/admin/app/FieldsScreen.js:871
-msgid "Fields in %s"
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:881
-msgid "No fields in this section yet."
-msgstr ""
-
-#. translators: %s: field label.
-#: resources/admin/app/FieldsScreen.js:912
-msgid "Select %s"
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:967
-msgid "Edit"
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:983
-msgid "Duplicate"
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:1055
+#: resources/admin/app/FieldsScreen.js:847
 msgid "Add a section"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:1059
-msgid "A section groups fields and says where they belong. The five locations are the concepts the checkout already has."
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:1068
-#: resources/admin/app/FieldsScreen.js:1153
-msgid "Title"
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:1077
-#: resources/admin/app/FieldsScreen.js:1189
-msgid "Location"
-msgstr ""
-
-#: resources/admin/app/FieldsScreen.js:1103
+#: resources/admin/app/FieldsScreen.js:876
 msgid "Add section"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:1110
-msgid "Add a field"
+#: resources/admin/app/FieldsScreen.js:885
+msgid "A section groups fields and says where they belong. The five locations are the concepts the checkout already has."
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:1138
+#: resources/admin/app/FieldsScreen.js:893
+#: resources/admin/app/FieldsScreen.js:936
+msgid "Title"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:902
+#: resources/admin/app/FieldsScreen.js:959
+msgid "Location"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:921
 msgid "Section"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:1145
-#: resources/admin/app/FieldsScreen.js:1222
+#: resources/admin/app/FieldsScreen.js:928
 msgid "Done"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:992
+msgid "Move the section left"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:1011
+msgid "Move the section right"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:1041
+msgid "Remove section"
 msgstr ""
 
 #: resources/admin/app/previewCapabilities.js:27
@@ -2540,6 +2651,735 @@ msgstr ""
 
 #: resources/admin/app/SettingsScreen.js:221
 msgid "Reload"
+msgstr ""
+
+#: resources/admin/app/views/ArchiveView.js:61
+msgid "HISTÓRICO PRESERVADO"
+msgstr ""
+
+#: resources/admin/app/views/ArchiveView.js:64
+msgid "Fora do formulário. Não do histórico."
+msgstr ""
+
+#: resources/admin/app/views/ArchiveView.js:70
+msgid "Restaure um campo personalizado sem trocar a chave nem recriar a definição."
+msgstr ""
+
+#: resources/admin/app/views/ArchiveView.js:82
+#: resources/admin/app/views/RulesView.js:120
+msgid "Voltar ao editor"
+msgstr ""
+
+#: resources/admin/app/views/ArchiveView.js:89
+msgid "Arquivar desativa o campo: ele sai do formulário e mantém a chave, a definição e os valores já gravados nos pedidos. Restaurar volta a habilitá-lo."
+msgstr ""
+
+#: resources/admin/app/views/ArchiveView.js:101
+msgid "Nenhum campo arquivado."
+msgstr ""
+
+#: resources/admin/app/views/ArchiveView.js:107
+msgid "Ao remover um campo personalizado do checkout, ele aparece aqui. A exclusão permanente de dados não faz parte do editor."
+msgstr ""
+
+#: resources/admin/app/views/ArchiveView.js:117
+msgid "Voltar aos campos"
+msgstr ""
+
+#. translators: 1: section label, 2: type key.
+#: resources/admin/app/views/ArchiveView.js:132
+msgid "%1$s · %2$s · definição preservada"
+msgstr ""
+
+#: resources/admin/app/views/ArchiveView.js:143
+msgid "Arquivado"
+msgstr ""
+
+#: resources/admin/app/views/ArchiveView.js:151
+msgid "Restaurar"
+msgstr ""
+
+#. translators: 1: field label, 2: position number.
+#: resources/admin/app/views/FieldManagerView.js:211
+msgid "%1$s movido para a posição %2$d."
+msgstr ""
+
+#. translators: %d: number of fields.
+#: resources/admin/app/views/FieldManagerView.js:284
+msgid "%d campo(s) habilitado(s) no rascunho."
+msgstr ""
+
+#. translators: %d: number of fields.
+#: resources/admin/app/views/FieldManagerView.js:299
+msgid "%d campo(s) desativado(s) no rascunho."
+msgstr ""
+
+#. translators: %d: number of fields.
+#: resources/admin/app/views/FieldManagerView.js:313
+msgid "%d campo(s) arquivado(s) no rascunho."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:330
+msgid "Exportada apenas a configuração dos campos. Nenhum dado preenchido na prévia."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:387
+msgid "Limpe a busca e os filtros antes de reordenar."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:434
+msgid "Salvar rascunho"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:442
+#: resources/admin/app/views/FieldManagerView.js:1692
+msgid "Revisar publicação"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:460
+msgid "Campos que fazem a diferença"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:467
+msgid "Monte o formulário, ajuste os detalhes e veja seu checkout ganhar forma."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:487
+msgid "Contexto do checkout"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:502
+msgid "Classic Checkout"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:515
+msgid "Modo Blocks: limitações de posição e tipos foram sinalizadas."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:522
+msgid "Checkout Blocks"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:535
+msgid "Alterações não salvas"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:539
+msgid "Rascunho salvo"
+msgstr ""
+
+#. translators: %d: draft revision.
+#: resources/admin/app/views/FieldManagerView.js:544
+msgid "Revisão %d"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:561
+msgid "This schema was written by a newer version"
+msgstr ""
+
+#. translators: 1: revision version, 2: supported version.
+#: resources/admin/app/views/FieldManagerView.js:568
+msgid "The stored %1$s document uses schema version %2$d, which this build cannot read. Its fields are not lost; they are invisible until the plugin is updated."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:581
+msgid "Some field types are no longer available"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:587
+msgid "A plugin that provided these field types is not active. The fields and their stored values are intact; only the code that renders them is missing."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:621
+msgid "Modo Blocks · matriz de capacidades."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:626
+msgid "Campos nativos não têm ordem ou largura livre. Tipos da Suite usam componentes próprios; localizações precisam de integração homologada. A prévia não é o renderizador do WooCommerce."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:640
+msgid "Seções do checkout"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:686
+msgid "Nova seção"
+msgstr ""
+
+#. translators: 1: enabled field count, 2: total field count.
+#: resources/admin/app/views/FieldManagerView.js:710
+msgid "%1$d de %2$d ativos"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:732
+msgid "Buscar por nome, chave ou tipo…"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:736
+msgid "Buscar campos da seção"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:748
+msgid "Filtrar campos por origem"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:763
+msgid "Nativos"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:766
+msgid "Personalizados"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:772
+msgid "Desativados"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:784
+msgid "1 selecionado"
+msgstr ""
+
+#. translators: %d: number of selected fields.
+#: resources/admin/app/views/FieldManagerView.js:790
+msgid "%d selecionados"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:805
+msgid "Habilitar"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:817
+msgid "Desativar"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:829
+#: resources/admin/app/views/FieldProperties.js:870
+msgid "Arquivar"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:837
+msgid "Limpar seleção"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:857
+msgid "Selecionar campos visíveis"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:901
+msgid "Campos da seção"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:908
+msgid "Carregando…"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:921
+msgid "Nenhum resultado"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:925
+msgid "Esta seção está pronta para começar."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:933
+msgid "Ajuste a busca ou o filtro para encontrar seus campos."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:937
+msgid "Adicione campos complementares. Recursos de conta e senha continuam no fluxo nativo do WooCommerce."
+msgstr ""
+
+#. translators: %s: field label.
+#: resources/admin/app/views/FieldManagerView.js:1037
+msgid "Selecionar %s"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1055
+msgid "Arraste ou use Alt + setas para mover"
+msgstr ""
+
+#. translators: %s: field label.
+#: resources/admin/app/views/FieldManagerView.js:1061
+msgid "Ordenar %s. Alt e setas para mover."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1141
+msgid "obrigatório"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1151
+msgid "Possui regra condicional"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1163
+msgid "Campo estrutural protegido"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1192
+msgid "Nativo"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1196
+msgid "Personalizado"
+msgstr ""
+
+#. translators: %s: field label.
+#: resources/admin/app/views/FieldManagerView.js:1221
+msgid "Desativar %s"
+msgstr ""
+
+#. translators: %s: field label.
+#: resources/admin/app/views/FieldManagerView.js:1229
+msgid "Habilitar %s"
+msgstr ""
+
+#. translators: %s: field label.
+#: resources/admin/app/views/FieldManagerView.js:1255
+msgid "Ações de %s"
+msgstr ""
+
+#. translators: %s: field label.
+#: resources/admin/app/views/FieldManagerView.js:1278
+msgid "Mover %s para cima"
+msgstr ""
+
+#. translators: %s: field label.
+#: resources/admin/app/views/FieldManagerView.js:1301
+msgid "Mover %s para baixo"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1337
+msgid "Editar campo"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1354
+msgid "Duplicar como personalizado"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1372
+msgid "Desativar campo"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1376
+msgid "Habilitar campo"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1394
+msgid "Por que não posso excluir?"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1414
+msgid "Arquivar campo"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1432
+msgid "Excluir campo"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1455
+msgid "Adicionar campo nesta seção"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1464
+msgid "Arraste pela alça ou use as setas para ordenar."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1473
+msgid "Desfazer"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1477
+msgid "Desfazer alteração"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1489
+msgid "Refazer"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1493
+msgid "Refazer alteração"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1513
+msgid "Um formulário que entende contexto."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1519
+msgid "CPF para pessoa física, CNPJ para jurídica. Configure em"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1524
+#: resources/admin/app/views/FieldProperties.js:160
+msgid "Regras"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1529
+msgid "e experimente na prévia."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1538
+msgid "Ver campos no checkout"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1550
+msgid "Nativos protegidos. Personalizados arquivados, nunca apagados."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1560
+msgid "Entenda as regras"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1572
+#: resources/admin/app/views/FieldProperties.js:196
+msgid "Propriedades do campo"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1600
+#: resources/admin/app/views/FieldProperties.js:168
+msgid "PROPRIEDADES DO CAMPO"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1606
+msgid "Escolha um campo na lista para editar as propriedades dele."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1621
+msgid "Alterações não salvas. Salve um rascunho para continuar depois."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1625
+msgid "Tudo salvo no rascunho. Nada chega ao checkout antes de publicar."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1638
+msgid "Exportar configuração"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1649
+msgid "Revisões"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1659
+msgid "ADICIONAR CAMPO"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1660
+msgid "O que seu checkout precisa?"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1664
+msgid "Escolha um tipo ou comece com um preset pronto."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1691
+msgid "PUBLICAR"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1693
+msgid "O rascunho vira a versão que a loja corre. Publicar cria uma revisão nova e mantém a anterior."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1712
+msgid "Publicar alterações"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1729
+msgid "Histórico de publicação"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1730
+msgid "Voltar a uma versão anterior publica-a de novo como uma revisão nova. Nada é apagado."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1756
+msgid "Ação em massa"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1757
+msgid "Confirmar alteração em massa?"
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1761
+msgid "A alteração vai para o rascunho e não chega ao checkout antes de publicar."
+msgstr ""
+
+#: resources/admin/app/views/FieldManagerView.js:1784
+msgid "Confirmar"
+msgstr ""
+
+#. translators: 1: fields the action changes, 2: selected fields.
+#: resources/admin/app/views/FieldManagerView.js:1794
+msgid "%1$d de %2$d campo(s) selecionado(s) mudam."
+msgstr ""
+
+#. translators: %d: number of fields.
+#: resources/admin/app/views/FieldManagerView.js:1806
+msgid "%d campo(s) ficam intocados porque a WooCommerce os possui."
+msgstr ""
+
+#. translators: %d: number of fields.
+#: resources/admin/app/views/FieldManagerView.js:1818
+msgid "%d campo(s) já estão nesse estado."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:36
+msgid "desktop"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:37
+msgid "tablet"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:38
+msgid "mobile"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:135
+msgid "Um campo, todos os detalhes."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:138
+msgid "Selecione um campo para editar suas propriedades."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:159
+msgid "Geral"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:161
+msgid "Exibição"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:216
+msgid "Nome do campo"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:231
+#: resources/admin/app/views/FieldProperties.js:801
+msgid "Chave de integração"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:235
+msgid "Chave estável. Alterar o nome não altera o armazenamento."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:250
+msgid "Descrição de ajuda"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:254
+msgid "Informação exibida abaixo do campo."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:288
+msgid "Campo obrigatório"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:295
+msgid "Exigido apenas quando o campo estiver visível."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:309
+msgid "Campo habilitado"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:313
+msgid "Desativar preserva a definição e os valores guardados."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:335
+msgid "Largura do campo"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:362
+msgid "Tablet e mobile acompanham o grid responsivo do checkout."
+msgstr ""
+
+#. translators: %s: device name.
+#: resources/admin/app/views/FieldProperties.js:381
+msgid "Largura em %s"
+msgstr ""
+
+#. translators: %d: number of columns.
+#: resources/admin/app/views/FieldProperties.js:414
+msgid "%d de 12 colunas"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:432
+msgid "Campo nativo permanece no mapeamento de origem."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:436
+msgid "Mover para outra seção preserva a chave."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:479
+msgid "Máscara não é validação."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:485
+msgid "A máscara formata o que é digitado; o servidor rejeita o valor adulterado de qualquer forma."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:496
+msgid "Máscara de entrada"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:500
+msgid "A máscara molda o que é digitado. Nunca substitui a validação."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:530
+msgid "Sem máscara"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:549
+msgid "Este tipo não pode ser mascarado, portanto nenhuma máscara é oferecida."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:559
+msgid "Quando exibir este campo?"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:577
+msgid "Ao ocultar o campo"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:581
+msgid "Um campo oculto não aplica obrigatoriedade. Preservar exige política explícita."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:622
+msgid "Contrato estável"
+msgstr ""
+
+#. translators: 1: type key, 2: origin.
+#: resources/admin/app/views/FieldProperties.js:627
+msgid "Tipo: %1$s · Origem: %2$s"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:634
+msgid "Personalizado da Suite"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:640
+msgid "Trocar tipo ou normalização exige migração."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:649
+msgid "Armazenamento e visibilidade"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:663
+msgid "Onde o valor é guardado"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:702
+msgid "Quão sensível é o valor"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:745
+msgid "Onde o valor pode aparecer"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:779
+msgid "API pública: não expor. Arquivos e dados pessoais exigem autorização específica."
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:790
+msgid "Identidade e compatibilidade"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:797
+msgid "Identificador"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:807
+msgid "Tipo"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:818
+msgid "PRÉVIA DO CAMPO"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:819
+msgid "AMOSTRA"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:850
+msgid "Duplicar"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:861
+msgid "Nativo protegido"
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:27
+msgid "Adicionar com uma chave única"
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:28
+msgid "Cada campo recebe um identificador permanente e uma chave de integração. A chave não pode colidir com um campo ativo nem com um arquivado, e o servidor recusa a gravação quando colide."
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:36
+msgid "Nativos não são apagados"
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:37
+msgid "Um campo da WooCommerce pode ser renomeado, reposicionado e ter a largura mudada. Não pode ser removido nem desativado em silêncio: a razão vem do servidor, que recusa mesmo quando a interface não oferece."
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:45
+msgid "Remover significa arquivar"
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:46
+msgid "Um campo personalizado sai do formulário ao ser desativado, e mantém a chave, a definição e os valores já gravados nos pedidos. Restaurar não recria nada: volta a habilitar o que estava lá."
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:54
+msgid "Dependências nunca são silenciosas"
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:55
+msgid "Uma regra que depende de um campo inexistente, ou de um campo que depende dela de volta, bloqueia a publicação: não existe resposta para um ciclo, e o motor não escolhe uma."
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:63
+msgid "Rascunho não é publicado"
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:64
+msgid "Salvar grava o rascunho e nada mais. A loja continua a correr a revisão publicada até publicar, e o que o cliente vê é sempre a revisão que está no ar."
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:72
+msgid "Histórico separado de desfazer"
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:73
+msgid "Desfazer e refazer agem nas alterações que ainda não foram salvas. Restaurar uma publicação anterior publica o conteúdo antigo como uma revisão nova: o histórico nunca é reescrito."
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:99
+msgid "CONTRATOS DO EDITOR"
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:102
+msgid "Liberdade para criar. Regras para preservar."
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:108
+msgid "O que o editor garante, e onde cada garantia é aplicada."
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:139
+msgid "Referências:"
+msgstr ""
+
+#: resources/admin/app/views/RulesView.js:141
+msgid "ADR-0001 (autoridade de armazenamento), ADR-0002 (arquivos privados) e ROADMAP.md §4, 6, 7, 8, 11, 13, 19 e 20. O Checkout Sidebar permanece fora do escopo desta versão."
 msgstr ""
 
 #: resources/blocks/fields.js:484

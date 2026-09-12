@@ -15,7 +15,13 @@
  * which has its own suite.
  */
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import FieldsScreen from '../../../resources/admin/app/FieldsScreen';
@@ -464,5 +470,328 @@ describe( 'states the server reports', () => {
 				/gone\.type/
 			)
 		).toBeInTheDocument();
+	} );
+} );
+
+describe( 'reordering', () => {
+	/**
+	 * Builds a draft with two fields in one section, in a known order.
+	 *
+	 * @return {any} Document.
+	 */
+	function twoFields() {
+		return doc( [
+			field( { id: 'billing_document', label: 'CPF', position: 10 } ),
+			field( {
+				id: 'billing_ie',
+				label: 'IE',
+				integration_id: 'wc-checkoutsuite/billing_ie',
+				position: 20,
+			} ),
+		] );
+	}
+
+	/**
+	 * The labels of the rows on screen, in the order they are drawn.
+	 *
+	 * @return {string[]} Labels.
+	 */
+	function rowOrder() {
+		return Array.from(
+			globalThis.document.querySelectorAll(
+				'.field-row .field-name strong'
+			)
+		).map( ( node ) => node.textContent ?? '' );
+	}
+
+	/**
+	 * Starts dragging one row's handle and drops it on another row.
+	 *
+	 * jsdom has no `DataTransfer`, so the transfer object is the smallest one the
+	 * handlers use. That is the point: what is under test is where the drop lands,
+	 * not the browser's drag payload.
+	 *
+	 * @param {string} from Label of the row being dragged.
+	 * @param {string} to   Label of the row it is dropped on.
+	 * @return {void}
+	 */
+	function drag( from, to ) {
+		const handle = screen.getByRole( 'button', {
+			name: `Ordenar ${ from }. Alt e setas para mover.`,
+		} );
+		const source = handle.closest( '.field-row' );
+		const target = screen
+			.getByRole( 'button', {
+				name: `Ordenar ${ to }. Alt e setas para mover.`,
+			} )
+			.closest( '.field-row' );
+
+		if ( ! source || ! target ) {
+			throw new Error( 'The rows under test are not on screen.' );
+		}
+
+		const dataTransfer = {
+			effectAllowed: '',
+			setData: jest.fn(),
+			getData: () => from,
+		};
+
+		fireEvent.dragStart( handle, { dataTransfer } );
+		fireEvent.dragOver( target, { dataTransfer } );
+		fireEvent.drop( target, { dataTransfer } );
+		fireEvent.dragEnd( handle, { dataTransfer } );
+	}
+
+	it( 'moves a row onto the row it is dropped on', async () => {
+		render( <FieldsScreen client={ client( { draft: twoFields() } ) } /> );
+
+		await screen.findByText( 'CPF' );
+
+		expect( rowOrder() ).toEqual( [ 'CPF', 'IE' ] );
+
+		drag( 'IE', 'CPF' );
+
+		expect( rowOrder() ).toEqual( [ 'IE', 'CPF' ] );
+	} );
+
+	it( 'announces where the field landed, as the design does', async () => {
+		render( <FieldsScreen client={ client( { draft: twoFields() } ) } /> );
+
+		await screen.findByText( 'CPF' );
+
+		drag( 'IE', 'CPF' );
+
+		// The design keeps a live region beside the toast, so the sentence is read
+		// out whether or not the toast was seen. Both are asserted, in the order the
+		// design puts them in the DOM.
+		const announced = await screen.findAllByText(
+			'IE movido para a posição 1.'
+		);
+
+		expect( announced ).toHaveLength( 2 );
+		expect( announced[ 0 ] ).toHaveClass( 'sr-only' );
+		expect( announced[ 1 ] ).toHaveClass( 'toast' );
+	} );
+
+	it( 'refuses to reorder while a filter is on, and says why', async () => {
+		const user = userEvent.setup();
+
+		render( <FieldsScreen client={ client( { draft: twoFields() } ) } /> );
+
+		await screen.findByText( 'CPF' );
+
+		// Both fields are custom, so they stay on screen and only the *filter* is
+		// active — which is the state the design refuses to reorder in.
+		await user.selectOptions(
+			screen.getByRole( 'combobox', {
+				name: 'Filtrar campos por origem',
+			} ),
+			'custom'
+		);
+
+		drag( 'IE', 'CPF' );
+
+		// The drag is refused before anything moves: with a filter on, the rows on
+		// screen are not the order the document has, so the position a drop lands on
+		// would not be the position the merchant pointed at.
+		expect( rowOrder() ).toEqual( [ 'CPF', 'IE' ] );
+		expect(
+			await screen.findAllByText(
+				'Limpe a busca e os filtros antes de reordenar.'
+			)
+		).toHaveLength( 2 );
+	} );
+
+	it( 'moves a row with the arrow keys on its handle', async () => {
+		const user = userEvent.setup();
+
+		render( <FieldsScreen client={ client( { draft: twoFields() } ) } /> );
+
+		await screen.findByText( 'CPF' );
+
+		const handle = screen.getByRole( 'button', {
+			name: 'Ordenar IE. Alt e setas para mover.',
+		} );
+
+		await user.click( handle );
+		await user.keyboard( '[AltLeft>][ArrowUp][/AltLeft]' );
+
+		expect( rowOrder() ).toEqual( [ 'IE', 'CPF' ] );
+		expect(
+			await screen.findAllByText( 'IE movido para a posição 1.' )
+		).toHaveLength( 2 );
+	} );
+} );
+
+describe( 'announcements', () => {
+	/**
+	 * Two fields in the same section, so a bulk action has something to change.
+	 *
+	 * @return {any} Document.
+	 */
+	function twoFields() {
+		return doc( [
+			field(),
+			field( {
+				id: 'billing_ie',
+				label: 'IE',
+				integration_id: 'wc-checkoutsuite/billing_ie',
+				position: 20,
+			} ),
+		] );
+	}
+
+	it( 'says what a bulk action changed, and only what it changed', async () => {
+		const user = userEvent.setup();
+
+		render( <FieldsScreen client={ client( { draft: twoFields() } ) } /> );
+
+		await screen.findByText( 'CPF' );
+
+		await user.click(
+			screen.getByRole( 'checkbox', { name: 'Selecionar CPF' } )
+		);
+		await user.click(
+			screen.getByRole( 'checkbox', { name: 'Selecionar IE' } )
+		);
+
+		await user.click( screen.getByRole( 'button', { name: 'Desativar' } ) );
+
+		// The design's bar acts on click. The confirmation is where the impact is
+		// stated before anything changes — and where cancelling is possible.
+		expect(
+			await screen.findByText( '2 de 2 campo(s) selecionado(s) mudam.' )
+		).toBeInTheDocument();
+
+		await user.click( screen.getByRole( 'button', { name: 'Confirmar' } ) );
+
+		expect(
+			await screen.findAllByText(
+				'2 campo(s) desativado(s) no rascunho.'
+			)
+		).toHaveLength( 2 );
+	} );
+
+	it( 'changes nothing when the confirmation is dismissed', async () => {
+		const user = userEvent.setup();
+
+		render( <FieldsScreen client={ client( { draft: twoFields() } ) } /> );
+
+		await screen.findByText( 'CPF' );
+
+		await user.click(
+			screen.getByRole( 'checkbox', { name: 'Selecionar CPF' } )
+		);
+		await user.click( screen.getByRole( 'button', { name: 'Desativar' } ) );
+		await user.click( screen.getByRole( 'button', { name: 'Cancelar' } ) );
+
+		expect(
+			screen.queryAllByText( '1 campo(s) desativado(s) no rascunho.' )
+		).toHaveLength( 0 );
+		expect(
+			screen.getByRole( 'checkbox', { name: 'Selecionar CPF' } )
+		).toBeChecked();
+		expect(
+			screen.queryByText( 'Alterações não salvas' )
+		).not.toBeInTheDocument();
+	} );
+
+	it( 'says nothing when a bulk action is refused', async () => {
+		const user = userEvent.setup();
+
+		render(
+			<FieldsScreen
+				client={ client( {
+					draft: doc( [
+						field(),
+						field( {
+							id: 'billing_first_name',
+							label: 'Nome',
+							origin: 'core',
+							integration_id:
+								'wc-checkoutsuite/billing_first_name',
+							position: 20,
+						} ),
+					] ),
+				} ) }
+			/>
+		);
+
+		await screen.findByText( 'CPF' );
+
+		await user.click(
+			screen.getByRole( 'checkbox', { name: 'Selecionar CPF' } )
+		);
+		await user.click(
+			screen.getByRole( 'checkbox', { name: 'Selecionar Nome' } )
+		);
+
+		await user.click( screen.getByRole( 'button', { name: 'Desativar' } ) );
+
+		// The confirmation names the selected field it will not touch before the
+		// action runs, rather than reporting it afterwards.
+		expect(
+			await screen.findByText(
+				'1 campo(s) ficam intocados porque a WooCommerce os possui.'
+			)
+		).toBeInTheDocument();
+
+		await user.click( screen.getByRole( 'button', { name: 'Confirmar' } ) );
+
+		// A core field cannot be archived, and the screen applies a bulk action all
+		// or nothing — so there is no count to announce, and the reason is stated
+		// where the screen already states refusals.
+		expect(
+			screen.queryAllByText( '2 campo(s) desativado(s) no rascunho.' )
+		).toHaveLength( 0 );
+		expect(
+			await screen.findByText( /belongs to WooCommerce/ )
+		).toBeInTheDocument();
+	} );
+
+	it( 'announces the export the design announces', async () => {
+		const user = userEvent.setup();
+		const click = jest
+			.spyOn( globalThis.HTMLAnchorElement.prototype, 'click' )
+			.mockImplementation( () => {} );
+		const createObjectURL = jest.fn( () => 'blob:test' );
+
+		globalThis.URL.createObjectURL = createObjectURL;
+		globalThis.URL.revokeObjectURL = jest.fn();
+
+		render(
+			<FieldsScreen
+				client={ client( {
+					exportSchema: jest.fn( async () => ( {
+						ok: true,
+						data: { revision: 1 },
+					} ) ),
+				} ) }
+			/>
+		);
+
+		await screen.findByText( 'CPF' );
+
+		await user.click(
+			screen.getByRole( 'button', { name: 'Exportar configuração' } )
+		);
+
+		// The screen's own `document` is the schema, so a download that reaches for
+		// the page has to say so; before it did, this button threw and no file was
+		// ever produced.
+		expect( createObjectURL ).toHaveBeenCalledTimes( 1 );
+		expect( click ).toHaveBeenCalledTimes( 1 );
+
+		// The announcement arrives from a promise, so the toast is a render after the
+		// live region: wait for the visible one, then assert both carry the sentence.
+		const message =
+			'Exportada apenas a configuração dos campos. Nenhum dado preenchido na prévia.';
+
+		expect( await screen.findByRole( 'status' ) ).toHaveTextContent(
+			message
+		);
+		expect( screen.getAllByText( message ) ).toHaveLength( 2 );
+
+		click.mockRestore();
 	} );
 } );

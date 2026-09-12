@@ -30,6 +30,7 @@ import {
 	protectionReason,
 	removeField,
 	removeSection,
+	reorderField,
 	sectionGroups,
 	setFieldEnabled,
 	setFieldSection,
@@ -610,6 +611,104 @@ describe( 'ordering fields within a section', () => {
 		expect( moveField( doc(), 'nope', 'up' ).reason ).toMatch(
 			/does not exist/
 		);
+	} );
+} );
+
+describe( 'dropping a field onto another one', () => {
+	it( 'takes the target position and shifts the rest', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing', position: 10 } ),
+			custom( { id: 'b', section: 'billing', position: 20 } ),
+			custom( { id: 'c', section: 'billing', position: 30 } ),
+		] );
+
+		const result = reorderField( document, 'c', 'a' );
+
+		expect( result.ok ).toBe( true );
+		expect(
+			fieldsInSection( result.document, 'billing' ).map( ( f ) => f.id )
+		).toEqual( [ 'c', 'a', 'b' ] );
+		expect(
+			fieldsInSection( result.document, 'billing' ).map(
+				( f ) => f.position
+			)
+		).toEqual( [ 10, 20, 30 ] );
+	} );
+
+	it( 'moves a field down onto the row it is dropped on', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing', position: 10 } ),
+			custom( { id: 'b', section: 'billing', position: 20 } ),
+			custom( { id: 'c', section: 'billing', position: 30 } ),
+		] );
+
+		const result = reorderField( document, 'a', 'b' );
+
+		expect(
+			fieldsInSection( result.document, 'billing' ).map( ( f ) => f.id )
+		).toEqual( [ 'b', 'a', 'c' ] );
+	} );
+
+	it( 'leaves the fields of other sections alone', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing', position: 10 } ),
+			custom( { id: 'b', section: 'billing', position: 20 } ),
+			custom( { id: 'x', section: 'shipping', position: 10 } ),
+			custom( { id: 'y', section: 'shipping', position: 20 } ),
+		] );
+
+		const result = reorderField( document, 'b', 'a' );
+
+		expect(
+			fieldsInSection( result.document, 'shipping' ).map( ( f ) => f.id )
+		).toEqual( [ 'x', 'y' ] );
+	} );
+
+	it( 'refuses to cross a section boundary', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing', position: 10 } ),
+			custom( { id: 'x', section: 'shipping', position: 10 } ),
+		] );
+
+		const result = reorderField( document, 'a', 'x' );
+
+		expect( result.ok ).toBe( false );
+		expect( result.reason ).toMatch( /inside their own section/ );
+		expect( result.document ).toBe( document );
+	} );
+
+	it( 'refuses to drop a field on itself', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing', position: 10 } ),
+		] );
+
+		const result = reorderField( document, 'a', 'a' );
+
+		expect( result.ok ).toBe( false );
+		expect( result.reason ).toMatch( /already in that position/ );
+	} );
+
+	it( 'reports an unknown target instead of inventing a place to drop it', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing', position: 10 } ),
+		] );
+
+		expect( reorderField( document, 'a', 'nope' ).reason ).toMatch(
+			/does not exist/
+		);
+	} );
+
+	it( 'does not touch the document it is given', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing', position: 10 } ),
+			custom( { id: 'b', section: 'billing', position: 20 } ),
+		] );
+
+		reorderField( document, 'b', 'a' );
+
+		expect(
+			document.fields.map( ( /** @type {any} */ f ) => f.id )
+		).toEqual( [ 'a', 'b' ] );
 	} );
 } );
 

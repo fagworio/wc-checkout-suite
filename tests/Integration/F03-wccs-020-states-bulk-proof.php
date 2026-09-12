@@ -435,18 +435,27 @@ wccs_proof_out( '7. Build output' );
 
 $wccs_built_js = (string) file_get_contents( WCCS_PLUGIN_DIR . 'build/admin/index.js' );
 
+// The design's footer says "Desfazer alteração" and "Refazer alteração"; the history
+// keeps its own name, which is what keeps the two apart in the interface.
 wccs_proof_check(
 	'Local undo reached the shipped bundle, worded apart from the revision history',
-	false !== strpos( $wccs_built_js, 'Undo edit' )
-		&& false !== strpos( $wccs_built_js, 'Redo edit' )
+	false !== strpos( $wccs_built_js, 'Desfazer alteração' )
+		&& false !== strpos( $wccs_built_js, 'Refazer alteração' )
 		&& false !== strpos( $wccs_built_js, 'Publication history' ),
 	'undo and history both present'
 );
 
+// The confirmation is the design's dialog, so its copy is the design's Portuguese: how
+// many selected fields change, and how many stay as they are because WooCommerce owns
+// them. Both halves are asserted, because a count without the exception would tell the
+// merchant less than the truth.
 wccs_proof_check(
 	'The bulk confirmation reached the bundle',
-	false !== strpos( $wccs_built_js, 'selected field(s) will change' )
-		&& false !== strpos( $wccs_built_js, 'Left alone because WooCommerce owns them' ),
+	false !== strpos( $wccs_built_js, 'campo(s) selecionado(s) mudam' )
+		&& false !== strpos(
+			$wccs_built_js,
+			'ficam intocados porque a WooCommerce os possui'
+		),
 	'impact wording present'
 );
 

@@ -638,10 +638,13 @@ wccs_proof_check(
 
 $wccs_bundle = wccs_proof_read( 'build/admin/index.js' );
 
+// The class names are the design's, taken from roadmap/fields.html: the picker draws
+// `.picker-card` in a `.picker-grid` and the editor draws `.field-row`. Asserting the
+// names this project used before the port would assert a bundle that no longer exists.
 wccs_proof_check(
 	'The field manager reached the shipped bundle',
-	false !== strpos( $wccs_bundle, 'wccs-picker__item' )
-		&& false !== strpos( $wccs_bundle, 'wccs-fields__row' ),
+	false !== strpos( $wccs_bundle, 'picker-card' )
+		&& false !== strpos( $wccs_bundle, 'field-row' ),
 	'picker and manager markup present'
 );
 

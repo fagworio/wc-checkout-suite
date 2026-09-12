@@ -491,17 +491,19 @@ wccs_proof_out( '6. Build output' );
 $wccs_built_js  = (string) file_get_contents( WCCS_PLUGIN_DIR . 'build/admin/index.js' );
 $wccs_built_css = (string) file_get_contents( WCCS_PLUGIN_DIR . 'build/admin/index.css' );
 
+// The list is the design's: rows carry a `.drag-handle` and the drop target is marked
+// with `.drag-over`. The labels and the announcement are the design's Portuguese.
 wccs_proof_check(
 	'The reorderable list reached the shipped bundle',
-	false !== strpos( $wccs_built_js, 'wccs-sortable__item' )
-		&& false !== strpos( $wccs_built_css, 'wccs-sortable__' ),
+	false !== strpos( $wccs_built_js, 'drag-handle' )
+		&& false !== strpos( $wccs_built_css, 'drag-over' ),
 	'list markup and styles present'
 );
 
 wccs_proof_check(
 	'The controls name the item they move',
-	false !== strpos( $wccs_built_js, 'Move %s up' )
-		&& false !== strpos( $wccs_built_js, 'moved to position' ),
+	false !== strpos( $wccs_built_js, 'Mover %s para cima' )
+		&& false !== strpos( $wccs_built_js, 'movido para a posição' ),
 	'labels and announcement present'
 );
 

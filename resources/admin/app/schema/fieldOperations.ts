@@ -790,6 +790,112 @@ export function moveField(
 }
 
 /**
+ * Moves a field onto the place another field of the same section occupies.
+ *
+ * This is what a drag-and-drop reorder means: the dropped field takes the
+ * target's index and the fields between them shift by one. The operation carries
+ * the same guarantees `moveField` gives — only the section that changed is
+ * renumbered, so fields of other sections keep their positions.
+ *
+ * @param document Document.
+ * @param id       Identifier of the field being moved.
+ * @param targetId Identifier of the field it is dropped on.
+ * @return Result.
+ */
+export function reorderField(
+	document: SchemaDocument,
+	id: string,
+	targetId: string
+): OperationResult {
+	const fields = document.fields ?? [];
+	const field = fields.find( ( candidate ) => candidate.id === id );
+
+	if ( ! field ) {
+		return {
+			ok: false,
+			document,
+			reason: sprintf(
+				/* translators: %s: field identifier. */
+				__( 'The field "%s" does not exist.', 'wc-checkoutsuite' ),
+				id
+			),
+		};
+	}
+
+	const target = fields.find( ( candidate ) => candidate.id === targetId );
+
+	if ( ! target ) {
+		return {
+			ok: false,
+			document,
+			reason: sprintf(
+				/* translators: %s: field identifier. */
+				__( 'The field "%s" does not exist.', 'wc-checkoutsuite' ),
+				targetId
+			),
+		};
+	}
+
+	if ( id === targetId ) {
+		return {
+			ok: false,
+			document,
+			reason: __(
+				'The field is already in that position.',
+				'wc-checkoutsuite'
+			),
+		};
+	}
+
+	const section = field.section ?? 'order';
+
+	if ( ( target.section ?? 'order' ) !== section ) {
+		return {
+			ok: false,
+			document,
+			reason: __(
+				'Fields can only be reordered inside their own section.',
+				'wc-checkoutsuite'
+			),
+		};
+	}
+
+	const ordered = fieldsInSection( document, section );
+	const from = ordered.findIndex( ( candidate ) => candidate.id === id );
+	const to = ordered.findIndex( ( candidate ) => candidate.id === targetId );
+	const moved = [ ...ordered ];
+
+	moved.splice( from, 1 );
+	moved.splice( to, 0, field );
+
+	if (
+		moved.every( ( candidate, index ) => candidate === ordered[ index ] )
+	) {
+		return {
+			ok: false,
+			document,
+			reason: __(
+				'The field is already in that position.',
+				'wc-checkoutsuite'
+			),
+		};
+	}
+
+	const others = fields.filter(
+		( candidate ) => ( candidate.section ?? 'order' ) !== section
+	);
+
+	return {
+		ok: true,
+		document: {
+			...document,
+			fields: renumber( [ ...others, ...moved ] ),
+		},
+		reason: '',
+	};
+}
+
+/**
  * Moves a field to another section, at the end of it.
  *
  * @param document Document.

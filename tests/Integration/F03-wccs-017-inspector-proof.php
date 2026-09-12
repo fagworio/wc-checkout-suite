@@ -708,16 +708,18 @@ wccs_proof_out( '7. Build output' );
 $wccs_built_js  = (string) file_get_contents( WCCS_PLUGIN_DIR . 'build/admin/index.js' );
 $wccs_built_css = (string) file_get_contents( WCCS_PLUGIN_DIR . 'build/admin/index.css' );
 
+// The panel is the design's inspector, whose parts are `.inspector-head`,
+// `.inspector-body` and `.inspector-footer` in the prototype's stylesheet.
 wccs_proof_check(
 	'The inspector reached the shipped bundle',
-	false !== strpos( $wccs_built_js, 'wccs-inspector__panel' )
-		&& false !== strpos( $wccs_built_css, 'wccs-inspector__' ),
+	false !== strpos( $wccs_built_js, 'inspector-footer' )
+		&& false !== strpos( $wccs_built_css, 'inspector-head' ),
 	'inspector markup and styles present'
 );
 
 wccs_proof_check(
 	'The statement shown when a type cannot be masked shipped too',
-	false !== strpos( $wccs_built_js, 'cannot be masked' ),
+	false !== strpos( $wccs_built_js, 'não pode ser mascarado' ),
 	'explanation present'
 );
 

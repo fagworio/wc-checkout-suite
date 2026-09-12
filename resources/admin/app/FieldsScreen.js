@@ -47,12 +47,14 @@ import {
 } from './schema/failureState';
 import {
 	adoptCoreField,
+	bulkImpact,
 	createField,
 	createSection,
 	duplicateField,
 	isProtected,
 	moveField,
 	moveSection,
+	reorderField,
 	protectionReason,
 	removeField,
 	removeSection,
@@ -626,8 +628,8 @@ export default function FieldsScreen( { client, view = 'fields' } ) {
 	 * stored values, which is the promise the footnote makes — so the two actions
 	 * share one operation rather than pretending to be different states.
 	 *
-	 * @param {'enable'|'disable'|'archive'} action Action.
-	 * @return {void}
+	 * @param {'enable'|'disable'|'archive'} action Action to apply.
+	 * @return {{ok: boolean, count: number}} Whether it applied, and to how many.
 	 */
 	const bulk = ( action ) => {
 		let next = document;
@@ -651,13 +653,19 @@ export default function FieldsScreen( { client, view = 'fields' } ) {
 				}
 			} );
 
+		const attempted = selected.length;
+
 		if ( '' !== refused ) {
 			setRefusal( refused );
-		} else {
-			apply( { ok: true, reason: '', document: next } );
+			setSelected( [] );
+
+			return { ok: false, count: 0 };
 		}
 
+		apply( { ok: true, reason: '', document: next } );
 		setSelected( [] );
+
+		return { ok: true, count: attempted };
 	};
 
 	/**
@@ -667,7 +675,7 @@ export default function FieldsScreen( { client, view = 'fields' } ) {
 	 * gets the document they can import into another store, produced by the same
 	 * controller the import reads.
 	 *
-	 * @return {Promise<void>}
+	 * @return {Promise<boolean>} Whether the file was produced.
 	 */
 	const exportConfig = async () => {
 		const answer = await client.exportSchema();
@@ -681,21 +689,28 @@ export default function FieldsScreen( { client, view = 'fields' } ) {
 					)
 			);
 
-			return;
+			return false;
 		}
 
 		const blob = new Blob( [ JSON.stringify( answer.data, null, 2 ) ], {
 			type: 'application/json',
 		} );
 		const url = URL.createObjectURL( blob );
-		const link = document.createElement( 'a' );
+
+		// The screen's `document` is the schema, so the page has to be named
+		// explicitly here: reaching for `document` resolves to the schema, and the
+		// download then never starts.
+		const page = globalThis.document;
+		const link = page.createElement( 'a' );
 
 		link.href = url;
 		link.download = 'wc-checkoutsuite-schema.json';
-		document.body.appendChild( link );
+		page.body.appendChild( link );
 		link.click();
 		link.remove();
 		URL.revokeObjectURL( url );
+
+		return true;
 	};
 
 	/**
@@ -753,6 +768,9 @@ export default function FieldsScreen( { client, view = 'fields' } ) {
 					selected,
 					onToggleSelected: toggleSelected,
 					onBulk: bulk,
+					bulkImpactFor: (
+						/** @type {'enable'|'disable'|'archive'} */ action
+					) => bulkImpact( document, selected, action ),
 					onClearSelection: () => setSelected( [] ),
 					editing,
 					onEdit: setEditing,
@@ -775,6 +793,10 @@ export default function FieldsScreen( { client, view = 'fields' } ) {
 						/** @type {string} */ id,
 						/** @type {'up'|'down'} */ direction
 					) => apply( moveField( document, id, direction ) ),
+					onReorder: (
+						/** @type {string} */ id,
+						/** @type {string} */ targetId
+					) => apply( reorderField( document, id, targetId ) ),
 					onRemove: ( /** @type {string|null} */ id ) =>
 						id && apply( removeField( document, id ) ),
 					onProtect: explainProtection,

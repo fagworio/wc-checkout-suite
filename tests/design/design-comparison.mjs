@@ -60,7 +60,46 @@ const said = await page.evaluate( () => ( {
 	topbar: Boolean( document.querySelector( '.wccs-admin .topbar' ) ),
 	navItems: Array.from( document.querySelectorAll( '.wccs-admin .nav button span' ) ).map( ( element ) => element.textContent ),
 	actions: Array.from( document.querySelectorAll( '.wccs-admin .top-actions button' ) ).map( ( element ) => ( element.getAttribute( 'aria-label' ) || element.textContent ).trim() ),
+	// A port that is wider than the window it is drawn in scrolls sideways, which the
+	// prototype does not. Numbers, because a screenshot at one size cannot say it.
+	overflow: {
+		scrollWidth: document.documentElement.scrollWidth,
+		clientWidth: document.documentElement.clientWidth,
+	},
 } ) );
 
-console.log( JSON.stringify( { ...said, errors }, null, 1 ) );
+// The toast, from the same interaction in both documents: moving the first row down.
+// What this compares is the toast itself — where it sits, how it is shaped, how long
+// it stays — so the sentence differs only because the fields do.
+// The keyboard route, not the row's arrow buttons: in the real screen those sit at the
+// far right of the row and a click refuses to scroll to them, which the keyboard does
+// not need. It is also the shortcut the handle's own label advertises.
+const prototypeHandle = prototype.locator( '[data-drag]' ).first();
+await prototypeHandle.focus();
+await prototype.keyboard.press( 'Alt+ArrowDown' );
+await prototype.waitForTimeout( 300 );
+await prototype.screenshot( {
+	path: `${OUT}/prototype-toast.png`,
+	fullPage: false,
+} );
+const prototypeToast = await prototype.locator( '#toast' ).textContent();
+
+const adminHandle = page.locator( '.wccs-admin .field-row .drag-handle' ).first();
+await adminHandle.focus();
+await page.keyboard.press( 'Alt+ArrowDown' );
+await page.waitForTimeout( 300 );
+await page.screenshot( { path: `${OUT}/admin-toast.png`, fullPage: false } );
+const adminToast = await page.locator( '.wccs-admin .toast' ).textContent();
+
+console.log(
+	JSON.stringify(
+		{
+			...said,
+			toast: { prototype: prototypeToast, admin: adminToast },
+			errors,
+		},
+		null,
+		1
+	)
+);
 await browser.close();

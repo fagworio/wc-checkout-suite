@@ -32,6 +32,7 @@ import Notice from '../components/Notice';
 import PublishPanel from '../components/PublishPanel';
 import RevisionsList from '../components/RevisionsList';
 import Button from '../components/Button';
+import { Toast } from '../design/Toast';
 import { TopbarActions } from '../design/TopbarActions';
 import { Icon } from '../design/icons';
 import { sectionCopy } from '../design/sectionMeta';
@@ -108,12 +109,14 @@ export default function FieldManagerView( { model } ) {
 		selected,
 		onToggleSelected,
 		onBulk,
+		bulkImpactFor,
 		onClearSelection,
 		editing,
 		onEdit,
 		onDuplicate,
 		onToggleEnabled,
 		onMove,
+		onReorder,
 		onRemove,
 		onProtect,
 		onCreateField,
@@ -144,8 +147,72 @@ export default function FieldManagerView( { model } ) {
 		/** @type {string|null} */ ( null )
 	);
 	const [ pickerOpen, setPickerOpen ] = useState( false );
+	/**
+	 * The bulk action waiting for the merchant to confirm it, or null.
+	 *
+	 * The design's bar acts on click. A bulk change touches every selected field at
+	 * once and cannot be undone from the bar, so the action passes through the
+	 * design's own dialog first, which states what it will do and what it will leave
+	 * alone — the impact WCCS-020 asks the confirmation to state.
+	 */
+	const [ pendingBulk, setPendingBulk ] = useState(
+		/** @type {'enable'|'disable'|'archive'|null} */ ( null )
+	);
 	const [ publishOpen, setPublishOpen ] = useState( false );
 	const [ historyOpen, setHistoryOpen ] = useState( false );
+
+	/**
+	 * The design's toast: the message on screen and a counter that restarts its
+	 * timer. Announcing is the only way to change it, so the timer cannot be
+	 * outrun by two messages that happen to be identical.
+	 */
+	const [ announcement, setAnnouncement ] = useState( {
+		token: 0,
+		message: '',
+	} );
+
+	/**
+	 * Puts a message in the toast and the live region.
+	 *
+	 * @param {string} message Message to announce.
+	 * @return {void}
+	 */
+	const announce = ( message ) =>
+		setAnnouncement( ( current ) => ( {
+			token: current.token + 1,
+			message,
+		} ) );
+
+	/**
+	 * The row a drag is carrying and the row it is over.
+	 *
+	 * Held here rather than in the row so that the whole list agrees on which row
+	 * is being dragged: the styles that mark the dragged row and the drop target
+	 * are on two different rows.
+	 */
+	const [ drag, setDrag ] = useState( {
+		/** @type {string|null} */
+		id: null,
+		/** @type {string|null} */
+		over: null,
+	} );
+
+	/**
+	 * Announces a move in the design's words: which field, and where it landed.
+	 *
+	 * @param {string} label    Field label.
+	 * @param {number} position One-based position after the move.
+	 * @return {void}
+	 */
+	const announceMove = ( label, position ) =>
+		announce(
+			sprintf(
+				/* translators: 1: field label, 2: position number. */
+				__( '%1$s movido para a posição %2$d.', 'wc-checkoutsuite' ),
+				label,
+				position
+			)
+		);
 
 	const current = groups.find(
 		( /** @type {any} */ group ) => group.section.id === section
@@ -182,10 +249,157 @@ export default function FieldManagerView( { model } ) {
 
 	const filtered = '' !== search.trim() || 'all' !== origin;
 
+	/** What the pending bulk action would change, and what it would not. */
+	const bulkReport = pendingBulk ? bulkImpactFor( pendingBulk ) : null;
+
 	const editingField =
 		( doc?.fields ?? [] ).find(
 			( /** @type {any} */ field ) => field.id === editing
 		) ?? null;
+
+	/**
+	 * Applies a bulk action and announces what it changed.
+	 *
+	 * The screen applies a bulk action all or nothing: when one selected field
+	 * cannot take the change, nothing is applied and the reason goes to the
+	 * notice the screen already shows. So an announcement only exists for the
+	 * case where the document really changed.
+	 *
+	 * @param {'enable'|'disable'|'archive'} action Action to apply.
+	 * @return {void}
+	 */
+	const runBulk = ( action ) => {
+		const result = onBulk( action );
+
+		if ( ! result?.ok ) {
+			return;
+		}
+
+		const count = result.count;
+
+		if ( 'enable' === action ) {
+			announce(
+				sprintf(
+					/* translators: %d: number of fields. */
+					__(
+						'%d campo(s) habilitado(s) no rascunho.',
+						'wc-checkoutsuite'
+					),
+					count
+				)
+			);
+
+			return;
+		}
+
+		if ( 'disable' === action ) {
+			announce(
+				sprintf(
+					/* translators: %d: number of fields. */
+					__(
+						'%d campo(s) desativado(s) no rascunho.',
+						'wc-checkoutsuite'
+					),
+					count
+				)
+			);
+
+			return;
+		}
+
+		announce(
+			sprintf(
+				/* translators: %d: number of fields. */
+				__(
+					'%d campo(s) arquivado(s) no rascunho.',
+					'wc-checkoutsuite'
+				),
+				count
+			)
+		);
+	};
+
+	/**
+	 * Runs the export and announces it, the way the design does.
+	 *
+	 * @return {Promise<void>}
+	 */
+	const runExport = async () => {
+		if ( await onExport() ) {
+			announce(
+				__(
+					'Exportada apenas a configuração dos campos. Nenhum dado preenchido na prévia.',
+					'wc-checkoutsuite'
+				)
+			);
+		}
+	};
+
+	/**
+	 * Moves a row one place and says so, the way the design announces it.
+	 *
+	 * @param {any}         field     Field being moved.
+	 * @param {number}      index     Its index among the rows on screen.
+	 * @param {'up'|'down'} direction Direction of the move.
+	 * @return {void}
+	 */
+	const moveRow = ( field, index, direction ) => {
+		onMove( field.id, direction );
+		announceMove( field.label, 'up' === direction ? index : index + 2 );
+	};
+
+	/**
+	 * Starts carrying a row, unless the design disables its handle.
+	 *
+	 * @param {any}                                    field Field being dragged.
+	 * @param {import('react').DragEvent<HTMLElement>} event Drag event.
+	 * @return {void}
+	 */
+	const startDrag = ( field, event ) => {
+		setDrag( { id: field.id, over: null } );
+
+		if ( event.dataTransfer ) {
+			event.dataTransfer.effectAllowed = 'move';
+			event.dataTransfer.setData( 'text/plain', field.id );
+		}
+	};
+
+	/**
+	 * Drops a row onto another one.
+	 *
+	 * The refusal under an active filter is the design's: with a search or an
+	 * origin filter on, the rows on screen are not the order the document has, so
+	 * the position a drop lands on would not be the position the merchant sees.
+	 *
+	 * @param {any} field  Field being dropped.
+	 * @param {any} target Row it is dropped on.
+	 * @return {void}
+	 */
+	const dropRow = ( field, target ) => {
+		setDrag( { id: null, over: null } );
+
+		if ( field.id === target.id ) {
+			return;
+		}
+
+		if ( filtered ) {
+			announce(
+				__(
+					'Limpe a busca e os filtros antes de reordenar.',
+					'wc-checkoutsuite'
+				)
+			);
+
+			return;
+		}
+
+		const to = rows.findIndex(
+			( /** @type {any} */ row ) => row.id === target.id
+		);
+
+		onReorder( field.id, target.id );
+		announceMove( field.label, to + 1 );
+	};
 
 	// Three of the frame's destinations are views of this one document — the editor, the
 	// archive and the rules — so they are rendered here, where the document lives, and
@@ -291,9 +505,19 @@ export default function FieldManagerView( { model } ) {
 							type="button"
 							className={ 'blocks' === reference ? 'active' : '' }
 							aria-pressed={ 'blocks' === reference }
-							onClick={ () =>
-								model.onReferenceChange( 'blocks' )
-							}
+							onClick={ () => {
+								if ( 'blocks' === reference ) {
+									return;
+								}
+
+								model.onReferenceChange( 'blocks' );
+								announce(
+									__(
+										'Modo Blocks: limitações de posição e tipos foram sinalizadas.',
+										'wc-checkoutsuite'
+									)
+								);
+							} }
 						>
 							{ __( 'Checkout Blocks', 'wc-checkoutsuite' ) }
 						</button>
@@ -574,7 +798,9 @@ export default function FieldManagerView( { model } ) {
 										<button
 											type="button"
 											className="text-btn"
-											onClick={ () => onBulk( 'enable' ) }
+											onClick={ () =>
+												setPendingBulk( 'enable' )
+											}
 										>
 											{ __(
 												'Habilitar',
@@ -585,7 +811,7 @@ export default function FieldManagerView( { model } ) {
 											type="button"
 											className="text-btn"
 											onClick={ () =>
-												onBulk( 'disable' )
+												setPendingBulk( 'disable' )
 											}
 										>
 											{ __(
@@ -597,7 +823,7 @@ export default function FieldManagerView( { model } ) {
 											type="button"
 											className="text-btn danger"
 											onClick={ () =>
-												onBulk( 'archive' )
+												setPendingBulk( 'archive' )
 											}
 										>
 											{ __(
@@ -730,10 +956,20 @@ export default function FieldManagerView( { model } ) {
 										const moveDown =
 											! filtered &&
 											index < rows.length - 1;
+										// Blocks mode places core fields itself, so their
+										// handle is inert there — the design's rule, and the
+										// same one its capability badges state.
+										const moveDisabled =
+											'blocks' === reference && isCore;
+										const isDragging = drag.id === field.id;
+										const isDropTarget =
+											drag.over === field.id &&
+											! isDragging;
 
 										return (
 											<div
 												key={ field.id }
+												data-row-id={ field.id }
 												className={
 													'field-row' +
 													( isSelected
@@ -741,8 +977,50 @@ export default function FieldManagerView( { model } ) {
 														: '' ) +
 													( field.enabled
 														? ''
-														: ' disabled' )
+														: ' disabled' ) +
+													( isDragging
+														? ' dragging'
+														: '' ) +
+													( isDropTarget
+														? ' drag-over'
+														: '' )
 												}
+												onDragOver={ ( event ) => {
+													if (
+														! drag.id ||
+														isDragging
+													) {
+														return;
+													}
+
+													event.preventDefault();
+
+													if (
+														drag.over !== field.id
+													) {
+														setDrag( {
+															id: drag.id,
+															over: field.id,
+														} );
+													}
+												} }
+												onDrop={ ( event ) => {
+													const carried = (
+														doc?.fields ?? []
+													).find(
+														(
+															/** @type {any} */ entry
+														) =>
+															entry.id === drag.id
+													);
+
+													if ( ! carried ) {
+														return;
+													}
+
+													event.preventDefault();
+													dropRow( carried, field );
+												} }
 											>
 												<label
 													className="row-check"
@@ -773,20 +1051,63 @@ export default function FieldManagerView( { model } ) {
 												<button
 													type="button"
 													className="drag-handle"
+													draggable={ ! moveDisabled }
 													title={ __(
-														'Arraste ou use as setas para mover',
+														'Arraste ou use Alt + setas para mover',
 														'wc-checkoutsuite'
 													) }
 													aria-label={ sprintf(
 														/* translators: %s: field label. */
 														__(
-															'Ordenar %s',
+															'Ordenar %s. Alt e setas para mover.',
 															'wc-checkoutsuite'
 														),
 														field.label
 													) }
-													disabled={ filtered }
-													onClick={ () => {} }
+													disabled={ moveDisabled }
+													onDragStart={ ( event ) =>
+														startDrag(
+															field,
+															event
+														)
+													}
+													onDragEnd={ () =>
+														setDrag( {
+															id: null,
+															over: null,
+														} )
+													}
+													onKeyDown={ ( event ) => {
+														if ( ! event.altKey ) {
+															return;
+														}
+
+														if (
+															'ArrowUp' ===
+																event.key &&
+															moveUp
+														) {
+															event.preventDefault();
+															moveRow(
+																field,
+																index,
+																'up'
+															);
+														}
+
+														if (
+															'ArrowDown' ===
+																event.key &&
+															moveDown
+														) {
+															event.preventDefault();
+															moveRow(
+																field,
+																index,
+																'down'
+															);
+														}
+													} }
 												>
 													<Icon name="grip" />
 												</button>
@@ -964,8 +1285,9 @@ export default function FieldManagerView( { model } ) {
 																	! moveUp
 																}
 																onClick={ () =>
-																	onMove(
-																		field.id,
+																	moveRow(
+																		field,
+																		index,
 																		'up'
 																	)
 																}
@@ -986,8 +1308,9 @@ export default function FieldManagerView( { model } ) {
 																	! moveDown
 																}
 																onClick={ () =>
-																	onMove(
-																		field.id,
+																	moveRow(
+																		field,
+																		index,
 																		'down'
 																	)
 																}
@@ -1309,7 +1632,7 @@ export default function FieldManagerView( { model } ) {
 						<button
 							type="button"
 							className="text-btn"
-							onClick={ onExport }
+							onClick={ runExport }
 						>
 							<Icon name="download" />
 							{ __(
@@ -1428,6 +1751,82 @@ export default function FieldManagerView( { model } ) {
 				/>
 			</Dialog>
 
+			<Dialog
+				open={ null !== pendingBulk }
+				eyebrow={ __( 'Ação em massa', 'wc-checkoutsuite' ) }
+				title={ __(
+					'Confirmar alteração em massa?',
+					'wc-checkoutsuite'
+				) }
+				subtitle={ __(
+					'A alteração vai para o rascunho e não chega ao checkout antes de publicar.',
+					'wc-checkoutsuite'
+				) }
+				onClose={ () => setPendingBulk( null ) }
+				footer={
+					<>
+						<Button
+							variant="secondary"
+							onClick={ () => setPendingBulk( null ) }
+						>
+							{ __( 'Cancelar', 'wc-checkoutsuite' ) }
+						</Button>
+						<Button
+							variant="primary"
+							onClick={ () => {
+								if ( pendingBulk ) {
+									runBulk( pendingBulk );
+								}
+
+								setPendingBulk( null );
+							} }
+						>
+							{ __( 'Confirmar', 'wc-checkoutsuite' ) }
+						</Button>
+					</>
+				}
+			>
+				{ bulkReport ? (
+					<>
+						<p>
+							{ sprintf(
+								/* translators: 1: fields the action changes, 2: selected fields. */
+								__(
+									'%1$d de %2$d campo(s) selecionado(s) mudam.',
+									'wc-checkoutsuite'
+								),
+								bulkReport.affected,
+								bulkReport.total
+							) }
+						</p>
+						{ bulkReport.protected.length > 0 ? (
+							<p>
+								{ sprintf(
+									/* translators: %d: number of fields. */
+									__(
+										'%d campo(s) ficam intocados porque a WooCommerce os possui.',
+										'wc-checkoutsuite'
+									),
+									bulkReport.protected.length
+								) }
+							</p>
+						) : null }
+						{ bulkReport.unchanged.length > 0 ? (
+							<p>
+								{ sprintf(
+									/* translators: %d: number of fields. */
+									__(
+										'%d campo(s) já estão nesse estado.',
+										'wc-checkoutsuite'
+									),
+									bulkReport.unchanged.length
+								) }
+							</p>
+						) : null }
+					</>
+				) : null }
+			</Dialog>
+
 			{ sectionEditor }
 
 			{ sectionDraft }
@@ -1446,6 +1845,11 @@ export default function FieldManagerView( { model } ) {
 					</ul>
 				</Notice>
 			) : null }
+
+			<Toast
+				message={ announcement.message }
+				token={ announcement.token }
+			/>
 		</>
 	);
 }
