@@ -47,6 +47,24 @@ use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 final class ClassicAdapter {
 
 	/**
+	 * Attribute that marks a field this plugin added to the checkout.
+	 *
+	 * The identifier the merchant chose is not a pattern anything could match on,
+	 * so the server says which fields are its own with a data attribute — the
+	 * client half finds the fields it owns by it, and it travels with the
+	 * fragment if WooCommerce replaces it.
+	 *
+	 * It is a constant because it is a contract with three readers: the client
+	 * half that initialises its components on the marked fields, and
+	 * {@see \WCCheckoutSuite\Domain\Checkout\CoreFields}, which asks WooCommerce
+	 * which fields it owns through the very filter this adapter hooks. Without
+	 * the marker there, the plugin's own published fields come back inside the
+	 * answer and are mistaken for WooCommerce's — which is how a store ended up
+	 * refusing to save a document it had already published.
+	 */
+	public const FIELD_ATTRIBUTE = 'data-wccs-field';
+
+	/**
 	 * Suite section to the WooCommerce section it lands in.
 	 *
 	 * Section 4 warns that Billing, Shipping, Contact, Account and Order "não
@@ -473,7 +491,7 @@ final class ClassicAdapter {
 		// Only a custom field is marked. A field WooCommerce owns is WooCommerce's
 		// to re-render and to repopulate, and marking it would invite the client
 		// half to restore a value that the platform is already responsible for.
-		$field['custom_attributes'] = array( 'data-wccs-field' => $definition->id() );
+		$field['custom_attributes'] = array( self::FIELD_ATTRIBUTE => $definition->id() );
 
 		if ( is_int( $max_length ) && $max_length > 0 ) {
 			$field['custom_attributes']['maxlength'] = $max_length;

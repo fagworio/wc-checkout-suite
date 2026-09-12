@@ -9,6 +9,8 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Domain\Checkout;
 
+use WCCheckoutSuite\Checkout\Classic\ClassicAdapter;
+
 /**
  * Reads the checkout fields WooCommerce itself owns.
  *
@@ -138,6 +140,16 @@ final class CoreFields {
 					continue;
 				}
 
+				if ( self::is_contributed( $field ) ) {
+					// This plugin's own field, read back from the filter it hooks.
+					// The inventory is "what WooCommerce owns", and a field this
+					// plugin added to the checkout is not WooCommerce's — counting
+					// it here is what made a published custom field refuse to be
+					// saved a second time, and what would have shown it to the
+					// merchant as a field of the platform.
+					continue;
+				}
+
 				$entry = $this->describe( (string) $field_id, $section_key, $field );
 
 				$entries[] = $entry;
@@ -214,6 +226,28 @@ final class CoreFields {
 				)
 			)
 		);
+	}
+
+	/**
+	 * Whether a checkout field was added by this plugin.
+	 *
+	 * The classic adapter marks every custom field it adds with
+	 * {@see \WCCheckoutSuite\Checkout\Classic\ClassicAdapter::FIELD_ATTRIBUTE} and
+	 * adds them through `woocommerce_checkout_fields` — the same filter this
+	 * inventory reads. So the answer to "what does WooCommerce own?" arrives with
+	 * this plugin's own fields mixed into it, and the marker is what tells the two
+	 * apart. A field WooCommerce owns is never marked: the adapter deliberately
+	 * marks only the fields it creates itself.
+	 *
+	 * @param array<string, mixed> $field Raw field arguments.
+	 * @return bool
+	 */
+	private static function is_contributed( array $field ): bool {
+		$attributes = isset( $field['custom_attributes'] ) && is_array( $field['custom_attributes'] )
+			? $field['custom_attributes']
+			: array();
+
+		return isset( $attributes[ ClassicAdapter::FIELD_ATTRIBUTE ] );
 	}
 
 	/**
