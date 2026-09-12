@@ -34,6 +34,7 @@ use WCCheckoutSuite\Checkout\CustomerOrderFields;
 use WCCheckoutSuite\Checkout\OrderEmailFields;
 use WCCheckoutSuite\Http\Admin\SchemaController;
 use WCCheckoutSuite\Http\Admin\SettingsController;
+use WCCheckoutSuite\Http\Admin\TransferController;
 use WCCheckoutSuite\Http\Integration\OrderFieldsController;
 use WCCheckoutSuite\Privacy\OrderFieldsEraser;
 use WCCheckoutSuite\Privacy\OrderFieldsExporter;
@@ -143,6 +144,18 @@ final class Plugin {
 		$integration_controller = new OrderFieldsController();
 
 		add_action( 'rest_api_init', array( $integration_controller, 'register_routes' ) );
+
+		// Export, preview and import of the schema file. Built with the same repository the
+		// editor uses, because an import that wrote through a second path would be a second
+		// set of rules about what a valid document is.
+		$transfer_controller = new TransferController(
+			new SchemaRepository(
+				Registries::instance()->definition_validator(),
+				new CoreFieldGuard()
+			)
+		);
+
+		add_action( 'rest_api_init', array( $transfer_controller, 'register_routes' ) );
 
 		$settings_controller = new SettingsController();
 
