@@ -44,6 +44,17 @@
 	padding-bottom: 0;
 }
 
+/* `.row-actions` is wp-admin's own class. Its stylesheet parks the element far off
+ * to the left — measured at -129 987px — until a wp-admin list row is hovered, and
+ * our rows are not wp-admin list rows: the row menu and the move arrows were
+ * therefore unreachable by mouse. The ported rule is scoped to the application so it
+ * wins on specificity and the element stays where the design puts it.
+ */
+.wccs-admin .row-actions {
+	left: auto;
+	right: auto;
+}
+
 /* wp-admin keeps its own footer absolutely positioned over the bottom of the
  * content, which lands on the design's last strip — measured at 16px over the
  * status line, and enough to make its buttons unclickable. The footer goes back into
