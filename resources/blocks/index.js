@@ -141,6 +141,36 @@ export function buildFields(
 }
 
 /**
+ * The checkout areas a field may be registered under.
+ *
+ * `registerCheckoutBlock` takes an area as `metadata.parent` and throws — not
+ * returns — when it is missing or is not one of the platform's own areas. So the
+ * names are stated here, mapped from the location the payload already carries, in
+ * the same words WooCommerce's `innerBlockAreas` uses.
+ *
+ * A location with no area of its own lands in the fields column, which is the area
+ * every default checkout page has. Guessing a narrower one would be a field the
+ * merchant cannot place at all on a store whose page does not contain it.
+ *
+ * @type {Record<string, string>}
+ */
+export const PARENT_AREAS = {
+	address: 'woocommerce/checkout-shipping-address-block',
+	contact: 'woocommerce/checkout-contact-information-block',
+	order: 'woocommerce/checkout-fields-block',
+};
+
+/**
+ * The area a field belongs to, from the location the payload carries.
+ *
+ * @param {string} [location] Location, as the server mapped the section.
+ * @return {string} Inner block area.
+ */
+export function parentFor( location ) {
+	return PARENT_AREAS[ String( location ) ] ?? PARENT_AREAS.order;
+}
+
+/**
  * Registers the fields with the checkout.
  *
  * @param {Object}          [options]        Options.
@@ -203,6 +233,11 @@ export function register( { api = null, fields = null, render = null } = {} ) {
 			metadata: {
 				name: `wc-checkoutsuite/${ field.name }`,
 				title: field.label,
+				// Registration without an area is refused by the platform, and a
+				// refusal here is thrown: the field never registers and every
+				// checkout page load logs an error. The area is the one the field's
+				// location belongs to, which is what the payload carries.
+				parent: parentFor( field.location ),
 			},
 			component: () => elements.shift() ?? null,
 		} );
