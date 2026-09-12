@@ -141,7 +141,22 @@ function wccs_proof_write( array $fields, ?int $expected = null ): array {
 				'schema'            => array(
 					'revision' => 0,
 					'fields'   => $fields,
-					'sections' => array(),
+				'sections' => array(
+					array(
+						'id'       => 'documentos_para_analise',
+						'title'    => 'Documentos para análise',
+						'position' => 10,
+						'location' => 'order',
+						'areas'    => array( 'admin_order' ),
+					),
+					array(
+						'id'       => 'documentos_enviados',
+						'title'    => 'Documentos enviados',
+						'position' => 20,
+						'location' => 'order',
+						'areas'    => array( 'customer_order' ),
+					),
+				),
 					'settings' => array(),
 				),
 				'expected_revision' => $expected,

@@ -739,23 +739,40 @@ export default function FieldProperties( {
 																'wc-checkoutsuite'
 															) }
 														</option>
-														{ sections.map(
-															(
-																/** @type {any} */ option
-															) => (
-																<option
-																	key={
-																		option.id
-																	}
-																	value={
-																		option.id
-																	}
-																>
-																	{ option.label ??
-																		option.id }
-																</option>
+														{ /* Only the sections offered in this
+														     destination's area: a section
+														     from another area would be
+														     accepted by the form and refused
+														     by the server. */ }
+														{ sections
+															.filter(
+																(
+																	/** @type {any} */ option
+																) =>
+																	(
+																		option.areas ??
+																		[]
+																	).includes(
+																		entry.value
+																	)
 															)
-														) }
+															.map(
+																(
+																	/** @type {any} */ option
+																) => (
+																	<option
+																		key={
+																			option.id
+																		}
+																		value={
+																			option.id
+																		}
+																	>
+																		{ option.label ??
+																			option.id }
+																	</option>
+																)
+															) }
 													</select>
 												</Group>
 

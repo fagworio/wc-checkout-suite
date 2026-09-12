@@ -29,18 +29,20 @@ final class SectionDefinition {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $id          Permanent identifier.
-	 * @param string $title       Translatable title.
-	 * @param string $description Optional explanation.
-	 * @param int    $position    Ordering position among sections.
-	 * @param string $location    Logical location, one of SectionLocations.
+	 * @param string             $id          Permanent identifier.
+	 * @param string             $title       Translatable title.
+	 * @param string             $description Optional explanation.
+	 * @param int                $position    Ordering position among sections.
+	 * @param string             $location    Logical location, one of SectionLocations.
+	 * @param array<int, string> $areas       Areas the section may be offered in.
 	 */
 	public function __construct(
 		private string $id,
 		private string $title,
 		private string $description,
 		private int $position,
-		private string $location
+		private string $location,
+		private array $areas = array( 'checkout' )
 	) {
 	}
 
@@ -56,8 +58,32 @@ final class SectionDefinition {
 			isset( $data['title'] ) ? (string) $data['title'] : '',
 			isset( $data['description'] ) ? (string) $data['description'] : '',
 			isset( $data['position'] ) ? (int) $data['position'] : 0,
-			isset( $data['location'] ) ? (string) $data['location'] : 'order'
+			isset( $data['location'] ) ? (string) $data['location'] : 'order',
+			// A section written before areas existed was a checkout section: that is
+			// what it was, and reading it as one keeps it working.
+			isset( $data['areas'] ) && is_array( $data['areas'] )
+				? array_values( array_map( 'strval', $data['areas'] ) )
+				: array( 'checkout' )
 		);
+	}
+
+	/**
+	 * The areas this section may be offered in.
+	 *
+	 * @return array<int, string>
+	 */
+	public function areas(): array {
+		return $this->areas;
+	}
+
+	/**
+	 * Whether this section may be offered in one area.
+	 *
+	 * @param string $area Area key.
+	 * @return bool
+	 */
+	public function is_offered_in( string $area ): bool {
+		return in_array( $area, $this->areas, true );
 	}
 
 	/**
@@ -117,6 +143,7 @@ final class SectionDefinition {
 			'description' => $this->description,
 			'position'    => $this->position,
 			'location'    => $this->location,
+			'areas'       => $this->areas,
 		);
 	}
 }

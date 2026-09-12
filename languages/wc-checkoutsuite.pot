@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-12T17:40:27+00:00\n"
+"POT-Creation-Date: 2026-09-12T17:52:12+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.7.1\n"
 "X-Domain: wc-checkoutsuite\n"
@@ -813,59 +813,67 @@ msgstr ""
 msgid "Exposed outside the site. Off unless something else needs it."
 msgstr ""
 
-#: src/Domain/Fields/DefinitionVocabulary.php:201
+#: src/Domain/Fields/DefinitionVocabulary.php:197
+msgid "Checkout"
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:198
+msgid "Where the customer fills the fields in."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:247
 msgid "Show the file name and details"
 msgstr ""
 
-#: src/Domain/Fields/DefinitionVocabulary.php:202
+#: src/Domain/Fields/DefinitionVocabulary.php:248
 msgid "Name, size and when it was sent."
 msgstr ""
 
-#: src/Domain/Fields/DefinitionVocabulary.php:206
+#: src/Domain/Fields/DefinitionVocabulary.php:252
 msgid "Open it"
 msgstr ""
 
-#: src/Domain/Fields/DefinitionVocabulary.php:207
+#: src/Domain/Fields/DefinitionVocabulary.php:253
 msgid "Read the file without taking a copy."
 msgstr ""
 
-#: src/Domain/Fields/DefinitionVocabulary.php:211
+#: src/Domain/Fields/DefinitionVocabulary.php:257
 msgid "Download it"
 msgstr ""
 
-#: src/Domain/Fields/DefinitionVocabulary.php:212
+#: src/Domain/Fields/DefinitionVocabulary.php:258
 msgid "Take a copy of the file."
 msgstr ""
 
-#: src/Domain/Fields/DefinitionVocabulary.php:216
+#: src/Domain/Fields/DefinitionVocabulary.php:262
 msgid "Review and approve"
 msgstr ""
 
-#: src/Domain/Fields/DefinitionVocabulary.php:217
+#: src/Domain/Fields/DefinitionVocabulary.php:263
 msgid "Only for staff: decide whether the document is accepted."
 msgstr ""
 
-#: src/Domain/Fields/DefinitionVocabulary.php:224
+#: src/Domain/Fields/DefinitionVocabulary.php:270
 msgid "Send a new version"
 msgstr ""
 
-#: src/Domain/Fields/DefinitionVocabulary.php:225
+#: src/Domain/Fields/DefinitionVocabulary.php:271
 msgid "Replace the file that was sent before."
 msgstr ""
 
-#: src/Domain/Fields/DefinitionVocabulary.php:313
+#: src/Domain/Fields/DefinitionVocabulary.php:359
 msgid "Discard it"
 msgstr ""
 
-#: src/Domain/Fields/DefinitionVocabulary.php:314
+#: src/Domain/Fields/DefinitionVocabulary.php:360
 msgid "A value submitted while the field is hidden is refused rather than kept."
 msgstr ""
 
-#: src/Domain/Fields/DefinitionVocabulary.php:321
+#: src/Domain/Fields/DefinitionVocabulary.php:367
 msgid "Keep what was already saved"
 msgstr ""
 
-#: src/Domain/Fields/DefinitionVocabulary.php:322
+#: src/Domain/Fields/DefinitionVocabulary.php:368
 msgid "An existing value survives the field becoming hidden."
 msgstr ""
 
@@ -1177,48 +1185,63 @@ msgstr ""
 msgid "With the order notes, away from the addresses."
 msgstr ""
 
-#: src/Domain/Sections/SectionValidator.php:51
+#: src/Domain/Sections/SectionValidator.php:52
 msgid "A section requires an id."
 msgstr ""
 
 #. translators: %s: section id
-#: src/Domain/Sections/SectionValidator.php:60
+#: src/Domain/Sections/SectionValidator.php:61
 msgid "The section id \"%s\" must use lowercase letters, digits and underscores only."
 msgstr ""
 
 #. translators: %s: section id
-#: src/Domain/Sections/SectionValidator.php:74
+#: src/Domain/Sections/SectionValidator.php:75
 msgid "The section \"%s\" requires a title."
 msgstr ""
 
 #. translators: %s: section id
-#: src/Domain/Sections/SectionValidator.php:88
+#: src/Domain/Sections/SectionValidator.php:89
 msgid "The description of \"%s\" must be at most 500 characters long."
 msgstr ""
 
 #. translators: %s: section id
-#: src/Domain/Sections/SectionValidator.php:102
+#: src/Domain/Sections/SectionValidator.php:103
 msgid "The position of \"%s\" cannot be negative."
 msgstr ""
 
+#. translators: %s: section id
+#: src/Domain/Sections/SectionValidator.php:122
+msgid "The section \"%s\" must be offered in at least one area."
+msgstr ""
+
+#. translators: 1: area key, 2: section id
+#: src/Domain/Sections/SectionValidator.php:137
+msgid "The area \"%1$s\" is not one a section can be offered in (section \"%2$s\")."
+msgstr ""
+
 #. translators: 1: section id, 2: comma separated list of locations
-#: src/Domain/Sections/SectionValidator.php:116
+#: src/Domain/Sections/SectionValidator.php:153
 msgid "The location of \"%1$s\" must be one of: %2$s."
 msgstr ""
 
 #. translators: %d: index of the entry
-#: src/Domain/Sections/SectionValidator.php:145
+#: src/Domain/Sections/SectionValidator.php:182
 msgid "The section at index %d is not a definition."
 msgstr ""
 
 #. translators: %s: section id
-#: src/Domain/Sections/SectionValidator.php:164
+#: src/Domain/Sections/SectionValidator.php:201
 msgid "The section id \"%s\" appears more than once."
 msgstr ""
 
 #. translators: 1: field id, 2: section id
-#: src/Domain/Sections/SectionValidator.php:223
+#: src/Domain/Sections/SectionValidator.php:260
 msgid "The field \"%1$s\" belongs to the section \"%2$s\", which this document does not declare."
+msgstr ""
+
+#. translators: 1: destination key, 2: section id, 3: field id
+#: src/Domain/Sections/SectionValidator.php:308
+msgid "The section \"%2$s\" is not offered in the area \"%1$s\" (field \"%3$s\")."
 msgstr ""
 
 #: src/Domain/Settings/CheckoutSettings.php:99
@@ -1784,12 +1807,12 @@ msgstr ""
 #: resources/admin/app/components/FieldPicker.js:392
 #: resources/admin/app/views/FieldManagerView.js:1337
 #: resources/admin/app/views/FieldProperties.js:219
-#: resources/admin/app/views/FieldProperties.js:1250
+#: resources/admin/app/views/FieldProperties.js:1267
 msgid "Campo sem nome"
 msgstr ""
 
 #: resources/admin/app/components/FieldPicker.js:401
-#: resources/admin/app/views/FieldProperties.js:1259
+#: resources/admin/app/views/FieldProperties.js:1276
 msgid "Amostra do campo"
 msgstr ""
 
@@ -2240,92 +2263,97 @@ msgstr ""
 msgid "Campos complementares. Senhas ficam no fluxo nativo."
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:269
+#: resources/admin/app/FieldsScreen.js:278
 msgid "You have unsaved checkout field changes."
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:505
+#: resources/admin/app/FieldsScreen.js:514
 msgid "Draft saved."
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:550
+#: resources/admin/app/FieldsScreen.js:559
 msgid "Published."
 msgstr ""
 
 #. translators: %d: revision number.
-#: resources/admin/app/FieldsScreen.js:585
+#: resources/admin/app/FieldsScreen.js:594
 msgid "Revision %d was published again as a new revision."
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:610
+#: resources/admin/app/FieldsScreen.js:619
 msgid "Loading the schema…"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:677
+#: resources/admin/app/FieldsScreen.js:686
 #: resources/admin/app/views/FieldManagerView.js:1926
 msgid "Ação em massa"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:699
+#: resources/admin/app/FieldsScreen.js:708
 msgid "The export could not be produced."
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:744
+#: resources/admin/app/FieldsScreen.js:753
 msgid "That field is not in this document."
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:797
+#: resources/admin/app/FieldsScreen.js:807
 msgid "Duplicar campo"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:818
-#: resources/admin/app/FieldsScreen.js:826
+#: resources/admin/app/FieldsScreen.js:828
+#: resources/admin/app/FieldsScreen.js:836
 msgid "Reordenar campo"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:876
+#: resources/admin/app/FieldsScreen.js:886
 msgid "Add a section"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:886
+#: resources/admin/app/FieldsScreen.js:896
 msgid "Cancel"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:905
+#: resources/admin/app/FieldsScreen.js:919
 msgid "Add section"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:914
+#: resources/admin/app/FieldsScreen.js:928
 msgid "A section groups fields and says where they belong. The five locations are the concepts the checkout already has."
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:922
-#: resources/admin/app/FieldsScreen.js:965
+#: resources/admin/app/FieldsScreen.js:936
+#: resources/admin/app/FieldsScreen.js:1016
 msgid "Title"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:931
-#: resources/admin/app/FieldsScreen.js:988
+#: resources/admin/app/FieldsScreen.js:945
+#: resources/admin/app/FieldsScreen.js:1039
 msgid "Location"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:950
+#: resources/admin/app/FieldsScreen.js:964
+#: resources/admin/app/FieldsScreen.js:1069
+msgid "Areas"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:1001
 msgid "Section"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:957
+#: resources/admin/app/FieldsScreen.js:1008
 msgid "Done"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:1021
+#: resources/admin/app/FieldsScreen.js:1118
 msgid "Move the section left"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:1040
+#: resources/admin/app/FieldsScreen.js:1137
 msgid "Move the section right"
 msgstr ""
 
-#: resources/admin/app/FieldsScreen.js:1070
+#: resources/admin/app/FieldsScreen.js:1167
 msgid "Remove section"
 msgstr ""
 
@@ -2749,7 +2777,7 @@ msgid "Desativar"
 msgstr ""
 
 #: resources/admin/app/views/FieldManagerView.js:1032
-#: resources/admin/app/views/FieldProperties.js:1296
+#: resources/admin/app/views/FieldProperties.js:1313
 msgid "Arquivar"
 msgstr ""
 
@@ -3039,7 +3067,7 @@ msgid "Nome do campo"
 msgstr ""
 
 #: resources/admin/app/views/FieldProperties.js:273
-#: resources/admin/app/views/FieldProperties.js:1227
+#: resources/admin/app/views/FieldProperties.js:1244
 msgid "Chave de integração"
 msgstr ""
 
@@ -3154,132 +3182,132 @@ msgstr ""
 msgid "Seção do campo"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:764
+#: resources/admin/app/views/FieldProperties.js:781
 msgid "Título apresentado"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:768
+#: resources/admin/app/views/FieldProperties.js:785
 msgid "Como o campo é chamado neste destino."
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:797
+#: resources/admin/app/views/FieldProperties.js:814
 msgid "Ordem de exibição"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:830
+#: resources/admin/app/views/FieldProperties.js:847
 msgid "Ações permitidas"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:911
+#: resources/admin/app/views/FieldProperties.js:928
 msgid "Fluxo de aprovação"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:914
+#: resources/admin/app/views/FieldProperties.js:931
 msgid "Desligado, isto é apenas uma informação vinculada ao pedido: não muda estado nem bloqueia o processamento."
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:921
+#: resources/admin/app/views/FieldProperties.js:938
 msgid "Exigir análise manual"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:938
+#: resources/admin/app/views/FieldProperties.js:955
 msgid "Área de análise"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:942
+#: resources/admin/app/views/FieldProperties.js:959
 msgid "Obrigatória: sem ela o servidor recusa a configuração em vez de a completar por ti."
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:960
+#: resources/admin/app/views/FieldProperties.js:977
 msgid "Escolha uma área"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:980
+#: resources/admin/app/views/FieldProperties.js:997
 msgid "Seção da análise"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1002
+#: resources/admin/app/views/FieldProperties.js:1019
 msgid "Estado durante a análise"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1024
+#: resources/admin/app/views/FieldProperties.js:1041
 msgid "Permitir pedido de correção"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1042
+#: resources/admin/app/views/FieldProperties.js:1059
 msgid "Permitir reenvio pelo cliente"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1060
+#: resources/admin/app/views/FieldProperties.js:1077
 msgid "Mostrar a situação ao cliente"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1084
+#: resources/admin/app/views/FieldProperties.js:1101
 msgid "Contrato estável"
 msgstr ""
 
 #. translators: 1: type key, 2: origin.
-#: resources/admin/app/views/FieldProperties.js:1089
+#: resources/admin/app/views/FieldProperties.js:1106
 msgid "Tipo: %1$s · Origem: %2$s"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1095
+#: resources/admin/app/views/FieldProperties.js:1112
 msgid "WooCommerce"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1096
+#: resources/admin/app/views/FieldProperties.js:1113
 msgid "Personalizado da Suite"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1102
+#: resources/admin/app/views/FieldProperties.js:1119
 msgid "Trocar tipo ou normalização exige migração."
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1111
+#: resources/admin/app/views/FieldProperties.js:1128
 msgid "Armazenamento e visibilidade"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1125
+#: resources/admin/app/views/FieldProperties.js:1142
 msgid "Onde o valor é guardado"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1164
+#: resources/admin/app/views/FieldProperties.js:1181
 msgid "Quão sensível é o valor"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1205
+#: resources/admin/app/views/FieldProperties.js:1222
 msgid "API pública: não expor. Arquivos e dados pessoais exigem autorização específica."
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1216
+#: resources/admin/app/views/FieldProperties.js:1233
 msgid "Identidade e compatibilidade"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1223
+#: resources/admin/app/views/FieldProperties.js:1240
 msgid "Identificador"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1233
+#: resources/admin/app/views/FieldProperties.js:1250
 msgid "Tipo"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1235
+#: resources/admin/app/views/FieldProperties.js:1252
 msgid "Preset"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1244
+#: resources/admin/app/views/FieldProperties.js:1261
 msgid "PRÉVIA DO CAMPO"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1245
+#: resources/admin/app/views/FieldProperties.js:1262
 msgid "AMOSTRA"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1276
+#: resources/admin/app/views/FieldProperties.js:1293
 msgid "Duplicar"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1287
+#: resources/admin/app/views/FieldProperties.js:1304
 msgid "Nativo protegido"
 msgstr ""
 

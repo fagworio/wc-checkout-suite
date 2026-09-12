@@ -181,6 +181,52 @@ final class DefinitionVocabulary {
 	}
 
 	/**
+	 * The areas a section may be offered in, from ROADMAP.md section 4.
+	 *
+	 * The checkout is where a section is filled, and the seven destinations are where
+	 * its fields may be shown afterwards. The public API is not one of them: it is a
+	 * projection of values, not a place a panel is inserted, and offering a section
+	 * there would promise an interface that does not exist.
+	 *
+	 * @return array<int, array{value: string, label: string, description: string}>
+	 */
+	public static function section_areas(): array {
+		$areas = array(
+			array(
+				'value'       => 'checkout',
+				'label'       => __( 'Checkout', 'wc-checkoutsuite' ),
+				'description' => __(
+					'Where the customer fills the fields in.',
+					'wc-checkoutsuite'
+				),
+			),
+		);
+
+		foreach ( self::destinations() as $destination ) {
+			if ( 'public_api' === $destination['value'] ) {
+				continue;
+			}
+
+			$areas[] = array(
+				'value'       => $destination['value'],
+				'label'       => $destination['label'],
+				'description' => $destination['description'],
+			);
+		}
+
+		return $areas;
+	}
+
+	/**
+	 * Valid section area keys.
+	 *
+	 * @return array<int, string>
+	 */
+	public static function section_area_values(): array {
+		return self::values( self::section_areas() );
+	}
+
+	/**
 	 * Valid destination keys.
 	 *
 	 * @return array<int, string>
@@ -397,6 +443,7 @@ final class DefinitionVocabulary {
 			'storageSensitivities' => self::storage_sensitivities(),
 			'destinations'         => self::destinations(),
 			'destinationActions'   => self::destination_actions(),
+			'sectionAreas'         => self::section_areas(),
 			'hiddenValuePolicies'  => self::hidden_value_policies(),
 		);
 	}

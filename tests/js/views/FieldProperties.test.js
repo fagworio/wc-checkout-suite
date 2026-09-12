@@ -340,3 +340,51 @@ describe( 'the links and display tab', () => {
 		} );
 	} );
 } );
+
+describe( 'a section offered per area', () => {
+	it( 'offers a destination only the sections offered there', async () => {
+		const user = userEvent.setup();
+
+		renderInspector( {
+			sections: [
+				{
+					id: 'checkout_only',
+					label: 'Só no checkout',
+					areas: [ 'checkout' ],
+				},
+				{
+					id: 'para_analise',
+					label: 'Para análise',
+					areas: [ 'admin_order' ],
+				},
+			],
+			field: field( {
+				destinations: {
+					admin_order: { enabled: true },
+					customer_order: { enabled: true },
+				},
+			} ),
+		} );
+
+		await user.click( screen.getByRole( 'button', { name: 'Vínculos' } ) );
+
+		const [ staff, customer ] = screen.getAllByLabelText(
+			'Seção neste destino'
+		);
+
+		// The staff destination may use the analysis section; the customer
+		// destination may not, and offering it would let the form write something the
+		// server refuses.
+		expect(
+			within( staff ).getByRole( 'option', { name: 'Para análise' } )
+		).toBeInTheDocument();
+		expect(
+			within( customer ).queryByRole( 'option', { name: 'Para análise' } )
+		).not.toBeInTheDocument();
+		expect(
+			within( customer ).queryByRole( 'option', {
+				name: 'Só no checkout',
+			} )
+		).not.toBeInTheDocument();
+	} );
+} );

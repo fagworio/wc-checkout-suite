@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Domain\Sections;
 
+use WCCheckoutSuite\Domain\Fields\DefinitionVocabulary;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Fields\ValidationResult;
 
@@ -105,6 +106,42 @@ final class SectionValidator {
 					array( 'section' => $id )
 				)
 			);
+		}
+
+		// The areas a section is offered in. A section offered nowhere is a section
+		// nobody can choose; an area that does not exist is a promise of a panel that
+		// will never be drawn.
+		$areas = $section->areas();
+
+		if ( array() === $areas ) {
+			$result = $result->merge(
+				ValidationResult::invalid(
+					'section_without_area',
+					sprintf(
+						/* translators: %s: section id */
+						__( 'The section "%s" must be offered in at least one area.', 'wc-checkoutsuite' ),
+						$id
+					),
+					array( 'section' => $id )
+				)
+			);
+		}
+
+		foreach ( $areas as $area ) {
+			if ( ! in_array( (string) $area, DefinitionVocabulary::section_area_values(), true ) ) {
+				$result = $result->merge(
+					ValidationResult::invalid(
+						'section_unknown_area',
+						sprintf(
+							/* translators: 1: area key, 2: section id */
+							__( 'The area "%1$s" is not one a section can be offered in (section "%2$s").', 'wc-checkoutsuite' ),
+							(string) $area,
+							$id
+						),
+						array( 'section' => $id )
+					)
+				);
+			}
 		}
 
 		if ( ! SectionLocations::has( $section->location() ) ) {
@@ -230,6 +267,58 @@ final class SectionValidator {
 					)
 				)
 			);
+		}
+
+		// The section each destination link points at is checked here, where the
+		// document's sections are known. A link to a section that does not exist, or
+		// that is not offered in that destination's area, is configuration the
+		// merchant believes is in place and which would insert nothing anywhere.
+		$offered = array();
+
+		foreach ( $sections as $raw_section ) {
+			if ( ! is_array( $raw_section ) || ! isset( $raw_section['id'] ) ) {
+				continue;
+			}
+
+			$definition = SectionDefinition::from_array( $raw_section );
+
+			$offered[ $definition->id() ] = $definition->areas();
+		}
+
+		foreach ( $fields as $raw_field ) {
+			if ( ! is_array( $raw_field ) ) {
+				continue;
+			}
+
+			$definition = FieldDefinition::from_array( $raw_field );
+
+			foreach ( $definition->destinations() as $destination => $link ) {
+				$section = isset( $link['section'] ) ? (string) $link['section'] : '';
+
+				if ( '' === $section ) {
+					continue;
+				}
+
+				if ( ! isset( $offered[ $section ] ) || ! in_array( (string) $destination, $offered[ $section ], true ) ) {
+					$result = $result->merge(
+						ValidationResult::invalid(
+							'destination_section_not_offered',
+							sprintf(
+								/* translators: 1: destination key, 2: section id, 3: field id */
+								__( 'The section "%2$s" is not offered in the area "%1$s" (field "%3$s").', 'wc-checkoutsuite' ),
+								(string) $destination,
+								$section,
+								$definition->id()
+							),
+							array(
+								'field'       => $definition->id(),
+								'destination' => (string) $destination,
+								'section'     => $section,
+							)
+						)
+					);
+				}
+			}
 		}
 
 		return $result;

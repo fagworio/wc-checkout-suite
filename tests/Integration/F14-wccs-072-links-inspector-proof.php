@@ -246,7 +246,15 @@ $wccs_request->set_body(
 						),
 					),
 				),
-				'sections' => array(),
+				'sections' => array(
+					array(
+						'id'       => 'documentos_para_analise',
+						'title'    => 'Documentos para análise',
+						'position' => 10,
+						'location' => 'order',
+						'areas'    => array( 'admin_order' ),
+					),
+				),
 				'settings' => array(),
 			),
 			'expected_revision' => 0,

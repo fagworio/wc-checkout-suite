@@ -65,6 +65,12 @@ export interface SectionDefinition {
 	description: string;
 	position: number;
 	location: string;
+	/**
+	 * The areas the section may be offered in: the checkout, where its fields are
+	 * filled, and the destinations where they may be shown afterwards. A section
+	 * offered nowhere cannot be chosen by anything.
+	 */
+	areas: string[];
 }
 
 /**
@@ -145,6 +151,7 @@ export interface FieldCatalog {
 	masks: FieldMask[];
 	vocabulary: DefinitionVocabulary;
 	sectionLocations: SectionLocation[];
+	sectionAreas: VocabularyEntry[];
 	conditions?: ConditionVocabularyShape;
 }
 
@@ -205,6 +212,7 @@ export interface DefinitionVocabulary {
 	storageSensitivities: VocabularyEntry[];
 	destinations: DestinationEntry[];
 	destinationActions: VocabularyEntry[];
+	sectionAreas: VocabularyEntry[];
 	hiddenValuePolicies: VocabularyEntry[];
 }
 

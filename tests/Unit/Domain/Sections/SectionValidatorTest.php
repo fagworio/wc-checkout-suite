@@ -256,4 +256,141 @@ final class SectionValidatorTest extends TestCase {
 
 		self::assertContains( 'invalid_section_entry', $result->error_codes() );
 	}
+
+	/**
+	 * A section is offered somewhere. The checkout is what it was before areas
+	 * existed, and it keeps working because the definition defaults to it.
+	 *
+	 * @return void
+	 */
+	public function test_a_section_without_areas_is_read_as_a_checkout_section(): void {
+		$definition = SectionDefinition::from_array( $this->section() );
+
+		self::assertSame( array( 'checkout' ), $definition->areas() );
+		self::assertTrue( $definition->is_offered_in( 'checkout' ) );
+		self::assertFalse( $definition->is_offered_in( 'admin_order' ) );
+	}
+
+	/**
+	 * The same section may be offered in more than one area, which is what makes one
+	 * answer appear in two places without a second copy of it.
+	 *
+	 * @return void
+	 */
+	public function test_a_section_may_be_offered_in_several_areas(): void {
+		$result = SectionValidator::validate(
+			SectionDefinition::from_array(
+				$this->section(
+					array(
+						'areas' => array( 'checkout', 'admin_order', 'customer_order' ),
+					)
+				)
+			)
+		);
+
+		self::assertTrue( $result->is_valid() );
+	}
+
+	/**
+	 * An area that is not one a section may be offered in is refused.
+	 *
+	 * @return void
+	 */
+	public function test_an_unknown_area_is_refused(): void {
+		$result = SectionValidator::validate(
+			SectionDefinition::from_array(
+				$this->section( array( 'areas' => array( 'checkout', 'sidebar' ) ) )
+			)
+		);
+
+		self::assertContains( 'section_unknown_area', $result->error_codes() );
+	}
+
+	/**
+	 * A section offered nowhere cannot be chosen by anything, so it is refused.
+	 *
+	 * @return void
+	 */
+	public function test_a_section_offered_nowhere_is_refused(): void {
+		$result = SectionValidator::validate(
+			SectionDefinition::from_array( $this->section( array( 'areas' => array() ) ) )
+		);
+
+		self::assertContains( 'section_without_area', $result->error_codes() );
+	}
+
+	/**
+	 * A link to a section that is not offered in that destination's area is refused:
+	 * it is configuration the merchant believes is in place and which would insert
+	 * nothing anywhere.
+	 *
+	 * @return void
+	 */
+	public function test_a_destination_link_must_point_at_a_section_offered_there(): void {
+		$sections = array(
+			array(
+				'id'       => 'documentos',
+				'title'    => 'Documentos',
+				'position' => 10,
+				'location' => 'billing',
+				'areas'    => array( 'checkout' ),
+			),
+		);
+
+		$fields = array(
+			array(
+				'id'           => 'autorizacao',
+				'origin'       => 'custom',
+				'type'         => 'text',
+				'label'        => 'Autorização',
+				'section'      => 'billing',
+				'destinations' => array(
+					'admin_order' => array(
+						'enabled' => true,
+						'section' => 'documentos',
+					),
+				),
+			),
+		);
+
+		$result = SectionValidator::validate_references( $sections, $fields );
+
+		self::assertContains( 'destination_section_not_offered', $result->error_codes() );
+
+		// And the same link is accepted once the section is offered in that area.
+		$sections[0]['areas'] = array( 'checkout', 'admin_order' );
+
+		self::assertNotContains(
+			'destination_section_not_offered',
+			SectionValidator::validate_references( $sections, $fields )->error_codes()
+		);
+	}
+
+	/**
+	 * A link to a section the document does not declare is refused as well.
+	 *
+	 * @return void
+	 */
+	public function test_a_destination_link_to_an_undeclared_section_is_refused(): void {
+		$result = SectionValidator::validate_references(
+			array(),
+			array(
+				array(
+					'id'           => 'autorizacao',
+					'origin'       => 'custom',
+					'type'         => 'text',
+					'label'        => 'Autorização',
+					'section'      => 'billing',
+					'destinations' => array(
+						'customer_order' => array(
+							'enabled' => true,
+							'section' => 'nao_existe',
+						),
+					),
+				),
+			)
+		);
+
+		self::assertContains( 'destination_section_not_offered', $result->error_codes() );
+	}
 }

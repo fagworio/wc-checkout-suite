@@ -1019,6 +1019,9 @@ export function sectionGroups( document: SchemaDocument ): SectionGroup[] {
 					id,
 					title: titleFromLocation( id ),
 					description: '',
+					// A location the document did not declare is a place the checkout
+					// already has: it is offered there, and only there.
+					areas: [ 'checkout' ],
 					position: Number.MAX_SAFE_INTEGER,
 					location: id,
 				},
@@ -1075,11 +1078,17 @@ export function uniqueSectionId(
  * @param choice.title
  * @param choice.location
  * @param choice.description
+ * @param choice.areas
  * @return Result.
  */
 export function createSection(
 	document: SchemaDocument,
-	choice: { title: string; location: string; description?: string }
+	choice: {
+		title: string;
+		location: string;
+		description?: string;
+		areas?: string[];
+	}
 ): OperationResult {
 	const id = uniqueSectionId( document, choice.title );
 	const highest = ( document.sections ?? [] ).reduce(
@@ -1093,6 +1102,12 @@ export function createSection(
 		description: choice.description ?? '',
 		position: highest + POSITION_STEP,
 		location: choice.location,
+		// A section always belongs to somewhere: the checkout is what it was, unless
+		// the merchant says otherwise.
+		areas:
+			Array.isArray( choice.areas ) && choice.areas.length > 0
+				? choice.areas
+				: [ 'checkout' ],
 	};
 
 	return {

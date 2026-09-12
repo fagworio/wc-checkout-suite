@@ -157,6 +157,10 @@ final class CatalogController {
 		// would refuse.
 		$catalogue['sectionLocations'] = SectionLocations::all();
 
+		// The areas a section may be offered in: the checkout, where a section has
+		// always lived, and the destinations where its fields may be shown.
+		$catalogue['sectionAreas'] = DefinitionVocabulary::section_areas();
+
 		// The condition vocabulary. The rule editor offers exactly these operators
 		// and these sources because the validator accepts exactly these, and both
 		// read them from the same two classes — which is the only way the editor

@@ -34,7 +34,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import Button from './components/Button';
 import Dialog from './components/Dialog';
 import Notice from './components/Notice';
-import { TextField, SelectField } from './components/controls';
+import { TextField, SelectField, CheckboxField } from './components/controls';
 import FieldManagerView from './views/FieldManagerView';
 import useUnsavedChanges from './api/useUnsavedChanges';
 import { sectionHref } from './sectionUrl';
@@ -175,6 +175,15 @@ export default function FieldsScreen( {
 
 	/** @type {[string, Function]} */
 	const [ newSectionLocation, setNewSectionLocation ] = useState( 'billing' );
+	/**
+	 * The areas a section being created is offered in.
+	 *
+	 * A section is offered somewhere or it cannot be chosen; the checkout is where a
+	 * section has always lived, so that is what starts ticked.
+	 *
+	 * @type {[string[], Function]}
+	 */
+	const [ newSectionAreas, setNewSectionAreas ] = useState( [ 'checkout' ] );
 	/**
 	 * The document as the server last confirmed it.
 	 *
@@ -768,6 +777,7 @@ export default function FieldsScreen( {
 					sections: groups.map( ( /** @type {any} */ group ) => ( {
 						id: group.section.id,
 						label: group.section.title ?? group.section.id,
+						areas: group.section.areas ?? [ 'checkout' ],
 					} ) ),
 					loading,
 					dirty,
@@ -896,9 +906,13 @@ export default function FieldsScreen( {
 													title: newSectionTitle.trim(),
 													location:
 														newSectionLocation,
+													areas: newSectionAreas,
 												} )
 											);
 											setNewSectionTitle( '' );
+											setNewSectionAreas( [
+												'checkout',
+											] );
 											setSectionDraftOpen( false );
 										} }
 									>
@@ -942,6 +956,43 @@ export default function FieldsScreen( {
 									setNewSectionLocation( event.target.value )
 								}
 							/>
+
+							{ /* Where the section may be offered. The checkout is where
+							     its fields are filled; each destination is a place they
+							     may be shown afterwards. */ }
+							<div className="form-label">
+								{ __( 'Areas', 'wc-checkoutsuite' ) }
+							</div>
+							{ ( catalog?.sectionAreas ?? [] ).map(
+								( /** @type {any} */ entry ) => (
+									<CheckboxField
+										key={ entry.value }
+										id={ `wccs-new-section-area-${ entry.value }` }
+										label={ entry.label }
+										checked={ newSectionAreas.includes(
+											entry.value
+										) }
+										onChange={ (
+											/** @type {{ target: { checked: boolean } }} */ event
+										) =>
+											setNewSectionAreas(
+												event.target.checked
+													? [
+															...newSectionAreas,
+															entry.value,
+													  ]
+													: newSectionAreas.filter(
+															(
+																/** @type {string} */ key
+															) =>
+																key !==
+																entry.value
+													  )
+											)
+										}
+									/>
+								)
+							) }
 						</Dialog>
 					),
 					sectionEditor: (
@@ -1013,6 +1064,52 @@ export default function FieldsScreen( {
 											)
 										}
 									/>
+
+									<div className="form-label">
+										{ __( 'Areas', 'wc-checkoutsuite' ) }
+									</div>
+									{ ( catalog?.sectionAreas ?? [] ).map(
+										( /** @type {any} */ entry ) => (
+											<CheckboxField
+												key={ entry.value }
+												id={ `wccs-section-area-${ entry.value }` }
+												label={ entry.label }
+												checked={ (
+													editingSection.areas ?? []
+												).includes( entry.value ) }
+												onChange={ (
+													/** @type {{ target: { checked: boolean } }} */ event
+												) => {
+													const current =
+														editingSection.areas ??
+														[];
+
+													apply(
+														updateSection(
+															document,
+															editingSection.id,
+															{
+																areas: event
+																	.target
+																	.checked
+																	? [
+																			...current,
+																			entry.value,
+																	  ]
+																	: current.filter(
+																			(
+																				/** @type {string} */ key
+																			) =>
+																				key !==
+																				entry.value
+																	  ),
+															}
+														)
+													);
+												} }
+											/>
+										)
+									) }
 
 									<div className="inline-actions">
 										<button
