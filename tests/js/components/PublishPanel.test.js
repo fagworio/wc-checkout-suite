@@ -123,6 +123,26 @@ describe( 'state', () => {
 	} );
 } );
 
+describe( 'the list of impediments, in the design shape', () => {
+	it( 'lists each reason under its own subtitle', () => {
+		renderPanel( {
+			report: report( {
+				validation: {
+					valid: false,
+					errors: [ { code: 'field_key', message: 'Um erro.' } ],
+				},
+			} ),
+		} );
+
+		const list = globalThis.document.querySelector( '.validation-list' );
+
+		expect( list ).not.toBeNull();
+		expect( list?.closest( 'section' )?.textContent ).toContain(
+			'Corrija antes de publicar'
+		);
+	} );
+} );
+
 describe( 'the summary the design puts first', () => {
 	it( 'counts the changes, the enabled fields and the impediments', () => {
 		renderPanel( { enabled: 4 } );

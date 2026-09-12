@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-12T12:50:46+00:00\n"
+"POT-Creation-Date: 2026-09-12T12:52:46+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.7.1\n"
 "X-Domain: wc-checkoutsuite\n"
@@ -1967,7 +1967,7 @@ msgid "Única e permanente. Letras minúsculas, números e underscore; comece co
 msgstr ""
 
 #: resources/admin/app/components/FieldPicker.js:279
-#: resources/admin/app/components/PublishPanel.js:151
+#: resources/admin/app/components/PublishPanel.js:152
 #: resources/admin/app/views/FieldProperties.js:429
 msgid "Seção"
 msgstr ""
@@ -2189,101 +2189,101 @@ msgstr ""
 msgid "Customer"
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:42
+#: resources/admin/app/components/PublishPanel.js:43
 msgid "Nothing to publish"
 msgstr ""
 
 #. translators: %d: number of changes.
-#: resources/admin/app/components/PublishPanel.js:47
+#: resources/admin/app/components/PublishPanel.js:48
 msgid "%d change(s) ready"
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:101
-#: resources/admin/app/components/PublishPanel.js:131
+#: resources/admin/app/components/PublishPanel.js:102
+#: resources/admin/app/components/PublishPanel.js:132
 msgid "Adicionado"
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:109
-#: resources/admin/app/components/PublishPanel.js:135
+#: resources/admin/app/components/PublishPanel.js:110
+#: resources/admin/app/components/PublishPanel.js:136
 msgid "Removido"
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:117
-#: resources/admin/app/components/PublishPanel.js:139
+#: resources/admin/app/components/PublishPanel.js:118
+#: resources/admin/app/components/PublishPanel.js:140
 msgid "Alterado"
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:157
+#: resources/admin/app/components/PublishPanel.js:158
 msgid "Reordenado"
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:178
+#: resources/admin/app/components/PublishPanel.js:179
 msgid "Save the draft first."
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:180
+#: resources/admin/app/components/PublishPanel.js:181
 msgid "Fix the problems above first."
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:187
+#: resources/admin/app/components/PublishPanel.js:188
 msgid "Publish"
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:201
+#: resources/admin/app/components/PublishPanel.js:202
 msgid "alterações para revisar"
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:207
+#: resources/admin/app/components/PublishPanel.js:208
 msgid "campos habilitados"
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:212
+#: resources/admin/app/components/PublishPanel.js:213
 msgid "impedimentos"
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:217
+#: resources/admin/app/components/PublishPanel.js:218
 msgid "Your changes are in the draft. The store keeps running the published version until you publish, and publishing is a new revision you can go back to."
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:227
+#: resources/admin/app/components/PublishPanel.js:228
 msgid "Save the draft before publishing, so the published version is the one you are looking at."
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:237
-msgid "This draft cannot be published yet"
+#: resources/admin/app/components/PublishPanel.js:238
+msgid "Corrija antes de publicar"
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:259
+#: resources/admin/app/components/PublishPanel.js:261
 msgid "The draft is identical to the published version."
 msgstr ""
 
 #. translators: %s: revision number.
-#: resources/admin/app/components/PublishPanel.js:271
+#: resources/admin/app/components/PublishPanel.js:273
 msgid "Diferenças em relação à revisão %s"
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:304
+#: resources/admin/app/components/PublishPanel.js:306
 msgid "What each checkout does with these fields"
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:346
+#: resources/admin/app/components/PublishPanel.js:348
 msgid "Some fields need work before every checkout can show them"
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:352
+#: resources/admin/app/components/PublishPanel.js:354
 msgid "These do not block publication. They mean a checkout will not honour the configuration as written."
 msgstr ""
 
 #. translators: %s: adapter name.
-#: resources/admin/app/components/PublishPanel.js:372
+#: resources/admin/app/components/PublishPanel.js:374
 msgid "No incompatibilities with the %s."
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:413
+#: resources/admin/app/components/PublishPanel.js:415
 msgid "This store"
 msgstr ""
 
-#: resources/admin/app/components/PublishPanel.js:437
+#: resources/admin/app/components/PublishPanel.js:439
 msgid "Publish changes"
 msgstr ""
 

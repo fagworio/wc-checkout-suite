@@ -30,6 +30,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import Button from './Button';
 import Notice from './Notice';
 import { Badge } from './Badge';
+import { Icon } from '../design/icons';
 
 /**
  * Wording of the change count.
@@ -232,26 +233,27 @@ export default function PublishPanel( {
 			) : null }
 
 			{ invalid ? (
-				<Notice
-					status="error"
-					title={ __(
-						'This draft cannot be published yet',
-						'wc-checkoutsuite'
-					) }
-				>
-					<ul className="wccs-publish__list">
+				<>
+					<div className="publish-subtitle">
+						{ __(
+							'Corrija antes de publicar',
+							'wc-checkoutsuite'
+						) }
+					</div>
+					<ul className="validation-list">
 						{ ( validation.errors ?? [] ).map(
 							(
 								/** @type {any} */ entry,
 								/** @type {number} */ index
 							) => (
 								<li key={ `${ entry.code }-${ index }` }>
-									{ entry.message }
+									<Icon name="info" />
+									<span>{ entry.message }</span>
 								</li>
 							)
 						) }
 					</ul>
-				</Notice>
+				</>
 			) : null }
 
 			{ diff && diff.empty ? (
