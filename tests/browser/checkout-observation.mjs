@@ -92,6 +92,23 @@ const transitions = await page.evaluate(() => Array.from(document.querySelectorA
 
 record('Reduced motion: no long transition survives the preference', 0 === transitions, `elements=${transitions}`);
 
+// Why the region is not there: the bundle may never arrive, or it may arrive and find nowhere to
+// register. The two are different findings and only one of them is this plugin's to fix.
+const diagnostic = await page.evaluate(() => {
+	const runtime = /** @type {any} */ (window);
+	const scripts = Array.from(document.querySelectorAll('script[src]')).map((element) => element.getAttribute('src') || '');
+	return {
+		bundle: scripts.some((src) => src.includes('wc-checkout-suite/build/blocks')),
+		payload: typeof runtime.wccsBlocks === 'object' && runtime.wccsBlocks !== null ? Object.keys(runtime.wccsBlocks) : null,
+		fields: runtime.wccsBlocks && runtime.wccsBlocks.fields ? runtime.wccsBlocks.fields.length : null,
+		blocksCheckout: typeof runtime.wc?.blocksCheckout,
+		registerCheckoutBlock: typeof runtime.wc?.blocksCheckout?.registerCheckoutBlock,
+		componentRegistry: typeof runtime.wccsBlocksFields,
+	};
+});
+
+notes.push(`Diagnostic: ${JSON.stringify(diagnostic)}`);
+
 const widths = await page.evaluate(() => Array.from(document.querySelectorAll('.wccs-blocks-field')).slice(0, 3).map((element) => Math.round(element.getBoundingClientRect().width)));
 notes.push(`Region widths at 1280px: ${JSON.stringify(widths)}`);
 
