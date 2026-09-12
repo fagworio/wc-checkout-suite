@@ -35,6 +35,9 @@ use WCCheckoutSuite\Checkout\OrderEmailFields;
 use WCCheckoutSuite\Http\Admin\SchemaController;
 use WCCheckoutSuite\Http\Admin\SettingsController;
 use WCCheckoutSuite\Http\Integration\OrderFieldsController;
+use WCCheckoutSuite\Privacy\OrderFieldsEraser;
+use WCCheckoutSuite\Privacy\OrderFieldsExporter;
+use WCCheckoutSuite\Privacy\PrivacyPolicy;
 use WCCheckoutSuite\Http\Checkout\ValidationController;
 use WCCheckoutSuite\Support\Requirements;
 
@@ -251,6 +254,13 @@ final class Plugin {
 		// writes only through the order CRUD — which is what makes "identical on both
 		// backends" a property of the storage path rather than a promise about it.
 		OrderFieldsPanel::register();
+
+		// The privacy tools. The two flows a person can start — a copy of their data and
+		// its erasure — and the policy text the store is offered, all registered on
+		// WordPress's own hooks so the store's existing tools answer for this plugin too.
+		OrderFieldsExporter::register();
+		OrderFieldsEraser::register();
+		PrivacyPolicy::register();
 
 		// The customer's own view of the order. Registered on the template hook the
 		// thank-you page and My Account both fire, so the panel appears where the store
