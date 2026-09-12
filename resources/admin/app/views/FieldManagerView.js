@@ -160,6 +160,7 @@ export default function FieldManagerView( { model } ) {
 	 * design's own dialog first, which states what it will do and what it will leave
 	 * alone — the impact WCCS-020 asks the confirmation to state.
 	 */
+	const [ acknowledged, setAcknowledged ] = useState( false );
 	const [ pendingBulk, setPendingBulk ] = useState(
 		/** @type {'enable'|'disable'|'archive'|null} */ ( null )
 	);
@@ -957,9 +958,10 @@ export default function FieldManagerView( { model } ) {
 										<button
 											type="button"
 											className="text-btn"
-											onClick={ () =>
-												setPendingBulk( 'enable' )
-											}
+											onClick={ () => {
+												setAcknowledged( false );
+												setPendingBulk( 'enable' );
+											} }
 										>
 											{ __(
 												'Habilitar',
@@ -969,9 +971,10 @@ export default function FieldManagerView( { model } ) {
 										<button
 											type="button"
 											className="text-btn"
-											onClick={ () =>
-												setPendingBulk( 'disable' )
-											}
+											onClick={ () => {
+												setAcknowledged( false );
+												setPendingBulk( 'disable' );
+											} }
 										>
 											{ __(
 												'Desativar',
@@ -981,9 +984,10 @@ export default function FieldManagerView( { model } ) {
 										<button
 											type="button"
 											className="text-btn danger"
-											onClick={ () =>
-												setPendingBulk( 'archive' )
-											}
+											onClick={ () => {
+												setAcknowledged( false );
+												setPendingBulk( 'archive' );
+											} }
 										>
 											{ __(
 												'Arquivar',
@@ -1897,6 +1901,10 @@ export default function FieldManagerView( { model } ) {
 						</Button>
 						<Button
 							variant="primary"
+							disabled={
+								( bulkReport?.dependents?.length ?? 0 ) > 0 &&
+								! acknowledged
+							}
 							onClick={ () => {
 								if ( pendingBulk ) {
 									runBulk( pendingBulk );
@@ -1946,6 +1954,35 @@ export default function FieldManagerView( { model } ) {
 								)
 							) }
 						</ul>
+						{ bulkReport.dependents.length > 0 ? (
+							<label
+								className="confirm-check"
+								htmlFor="wccs-confirm-dependents"
+							>
+								<input
+									id="wccs-confirm-dependents"
+									type="checkbox"
+									checked={ acknowledged }
+									onChange={ (
+										/** @type {{target: {checked: boolean}}} */ event
+									) =>
+										setAcknowledged( event.target.checked )
+									}
+								/>
+								<span>
+									{ sprintf(
+										/* translators: %s: comma-separated field labels. */
+										__(
+											'Autorizo também deixar sem origem a regra de %s.',
+											'wc-checkoutsuite'
+										),
+										bulkReport.dependents
+											.map( labelOf )
+											.join( ', ' )
+									) }
+								</span>
+							</label>
+						) : null }
 						<p className="form-help">
 							{ sprintf(
 								/* translators: 1: fields the action changes, 2: selected fields. */

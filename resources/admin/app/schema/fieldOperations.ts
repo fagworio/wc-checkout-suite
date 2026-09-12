@@ -17,6 +17,8 @@
 
 import { __, sprintf } from '@wordpress/i18n';
 
+import { references } from './conditions';
+import type { ConditionNode } from './conditions';
 import type {
 	CoreFieldEntry,
 	FieldDefinition,
@@ -787,6 +789,34 @@ export function moveField(
 		},
 		reason: '',
 	};
+}
+
+/**
+ * The fields whose rules read one of the given fields.
+ *
+ * A rule that reads a field stops meaning what it meant when that field is
+ * disabled or archived: the condition has nothing to compare against. That is why
+ * a bulk action which leaves such a field behind is a change the merchant has to
+ * accept knowingly, and why this answers with the fields rather than a count.
+ *
+ * @param document Document.
+ * @param ids      Fields the bulk action is about to change.
+ * @return Identifiers of the fields that read them.
+ */
+export function conditionDependents(
+	document: SchemaDocument,
+	ids: string[]
+): string[] {
+	const wanted = new Set( ids );
+
+	return ( document.fields ?? [] )
+		.filter( ( field ) => ! wanted.has( field.id ) )
+		.filter( ( field ) =>
+			references( ( field.conditions ?? {} ) as ConditionNode ).some(
+				( id ) => wanted.has( id )
+			)
+		)
+		.map( ( field ) => field.id );
 }
 
 /**

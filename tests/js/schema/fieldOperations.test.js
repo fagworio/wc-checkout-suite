@@ -16,6 +16,7 @@ import {
 	archiveField,
 	archiveFields,
 	bulkImpact,
+	conditionDependents,
 	createField,
 	createSection,
 	duplicateField,
@@ -1175,5 +1176,84 @@ describe( 'bulk operations', () => {
 		expect( archiveFields( document, [ 'billing_first_name' ] ).ok ).toBe(
 			false
 		);
+	} );
+} );
+
+describe( 'the fields a rule reads', () => {
+	it( 'names the fields whose rules read the ones being changed', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing' } ),
+			custom( {
+				id: 'b',
+				section: 'billing',
+				conditions: {
+					all: [
+						{
+							source: 'field',
+							operator: 'not_empty',
+							field: 'a',
+						},
+					],
+				},
+			} ),
+		] );
+
+		expect( conditionDependents( document, [ 'a' ] ) ).toEqual( [ 'b' ] );
+	} );
+
+	it( 'does not name a field the action is already changing', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing' } ),
+			custom( {
+				id: 'b',
+				section: 'billing',
+				conditions: {
+					any: [
+						{
+							source: 'field',
+							operator: 'not_empty',
+							field: 'a',
+						},
+					],
+				},
+			} ),
+		] );
+
+		expect( conditionDependents( document, [ 'a', 'b' ] ) ).toEqual( [] );
+	} );
+
+	it( 'finds a reference nested inside a group', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing' } ),
+			custom( {
+				id: 'c',
+				section: 'billing',
+				conditions: {
+					all: [
+						{ source: 'cart_total', operator: 'gt', value: 100 },
+						{
+							any: [
+								{
+									source: 'field',
+									operator: 'empty',
+									field: 'a',
+								},
+							],
+						},
+					],
+				},
+			} ),
+		] );
+
+		expect( conditionDependents( document, [ 'a' ] ) ).toEqual( [ 'c' ] );
+	} );
+
+	it( 'says nothing when no rule reads the field', () => {
+		const document = doc( [
+			custom( { id: 'a', section: 'billing' } ),
+			custom( { id: 'b', section: 'billing', conditions: {} } ),
+		] );
+
+		expect( conditionDependents( document, [ 'a' ] ) ).toEqual( [] );
 	} );
 } );

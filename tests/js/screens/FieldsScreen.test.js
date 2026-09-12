@@ -825,3 +825,88 @@ describe( 'announcing an undo', () => {
 		).toHaveLength( 2 );
 	} );
 } );
+
+describe( 'a bulk action with consequences', () => {
+	/**
+	 * A draft where one field's rule reads another.
+	 *
+	 * @return {any} Document.
+	 */
+	function dependent() {
+		return doc( [
+			field(),
+			field( {
+				id: 'billing_ie',
+				label: 'IE',
+				integration_id: 'wc-checkoutsuite/billing_ie',
+				position: 20,
+				conditions: {
+					all: [
+						{
+							source: 'field',
+							operator: 'not_empty',
+							field: 'billing_document',
+						},
+					],
+				},
+			} ),
+		] );
+	}
+
+	it( 'waits for the merchant to accept what the action leaves behind', async () => {
+		const user = userEvent.setup();
+
+		render( <FieldsScreen client={ client( { draft: dependent() } ) } /> );
+
+		await screen.findByText( 'CPF' );
+
+		await user.click(
+			screen.getByRole( 'checkbox', { name: 'Selecionar CPF' } )
+		);
+		await user.click( screen.getByRole( 'button', { name: 'Desativar' } ) );
+
+		// The design asks for the acknowledgement, and names the field it costs.
+		const check = await screen.findByRole( 'checkbox', {
+			name: /Autorizo também deixar sem origem a regra de IE\./,
+		} );
+
+		expect( check ).not.toBeChecked();
+		expect(
+			screen.getByRole( 'button', { name: 'Confirmar' } )
+		).toBeDisabled();
+
+		await user.click( check );
+
+		expect(
+			screen.getByRole( 'button', { name: 'Confirmar' } )
+		).toBeEnabled();
+
+		await user.click( screen.getByRole( 'button', { name: 'Confirmar' } ) );
+
+		expect(
+			await screen.findAllByText(
+				'1 campo(s) desativado(s) no rascunho.'
+			)
+		).toHaveLength( 2 );
+	} );
+
+	it( 'asks for nothing when no rule reads the field', async () => {
+		const user = userEvent.setup();
+
+		render( <FieldsScreen client={ client() } /> );
+
+		await screen.findByText( 'CPF' );
+
+		await user.click(
+			screen.getByRole( 'checkbox', { name: 'Selecionar CPF' } )
+		);
+		await user.click( screen.getByRole( 'button', { name: 'Desativar' } ) );
+
+		expect(
+			globalThis.document.querySelector( '.confirm-check' )
+		).toBeNull();
+		expect(
+			screen.getByRole( 'button', { name: 'Confirmar' } )
+		).toBeEnabled();
+	} );
+} );

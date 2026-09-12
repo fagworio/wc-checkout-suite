@@ -48,6 +48,7 @@ import {
 import {
 	adoptCoreField,
 	bulkImpact,
+	conditionDependents,
 	createField,
 	createSection,
 	duplicateField,
@@ -782,7 +783,10 @@ export default function FieldsScreen( {
 					onBulk: bulk,
 					bulkImpactFor: (
 						/** @type {'enable'|'disable'|'archive'} */ action
-					) => bulkImpact( document, selected, action ),
+					) => ( {
+						...bulkImpact( document, selected, action ),
+						dependents: conditionDependents( document, selected ),
+					} ),
 					onClearSelection: () => setSelected( [] ),
 					editing,
 					onEdit: setEditing,
