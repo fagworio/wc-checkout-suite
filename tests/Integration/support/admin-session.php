@@ -69,8 +69,17 @@ $wccs_session_manager    = WP_Session_Tokens::get_instance( $wccs_session_user->
 $wccs_session_token      = $wccs_session_manager->create( $wccs_session_expiration );
 $wccs_session_cookie     = wp_generate_auth_cookie( $wccs_session_user->ID, $wccs_session_expiration, 'logged_in', $wccs_session_token );
 
+// Two cookies, because WordPress asks two different questions. The front end asks
+// whether the visitor is logged in, with the `logged_in` cookie; wp-admin asks
+// whether the request may enter the administration, with the `auth` cookie, and a
+// browser holding only the first is sent back to the login screen with `reauth=1`.
+// A session created here is therefore printed as both.
+$wccs_auth_cookie = wp_generate_auth_cookie( $wccs_session_user->ID, $wccs_session_expiration, 'auth', $wccs_session_token );
+
 echo 'user_id=' . $wccs_session_user->ID . "\n";
 echo 'expires=' . gmdate( 'c', $wccs_session_expiration ) . "\n";
 echo 'token=' . $wccs_session_token . "\n";
 echo 'cookie_name=' . LOGGED_IN_COOKIE . "\n";
 echo 'cookie_value=' . $wccs_session_cookie . "\n";
+echo 'auth_cookie_name=' . AUTH_COOKIE . "\n";
+echo 'auth_cookie_value=' . $wccs_auth_cookie . "\n";
