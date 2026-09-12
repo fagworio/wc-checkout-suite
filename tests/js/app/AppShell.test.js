@@ -24,6 +24,36 @@ const SECTIONS = [
 ];
 
 /**
+ * The name the navigation gives a section.
+ *
+ * The design names the two sections it draws — the field editor and the checkout
+ * preview — and writes them in its own words; the sections the plugin ships that the
+ * design does not draw keep the label the server publishes. The test asks for the name
+ * a merchant sees, so the design can be reworded without this file silently stopping
+ * finding the button it means.
+ *
+ * @param {{id: string, label: string}} section Section.
+ * @return {string} Accessible name.
+ */
+function navName( section ) {
+	const designed = {
+		fields: 'Editor de campos',
+		appearance: 'Prévia do checkout',
+	};
+
+	return designed[ section.id ] ?? section.label;
+}
+
+/** @type {{id: string, label: string}} */
+const FIELDS = SECTIONS.find( ( section ) => 'fields' === section.id );
+
+/** @type {{id: string, label: string}} */
+const RULES = SECTIONS.find( ( section ) => 'rules' === section.id );
+
+/** @type {{id: string, label: string}} */
+const APPEARANCE = SECTIONS.find( ( section ) => 'appearance' === section.id );
+
+/**
  * Puts a URL in place and returns a restore function.
  *
  * @param {string} search Query string.
@@ -56,7 +86,7 @@ describe( 'the section in the address bar', () => {
 			renderShell();
 
 			expect(
-				screen.getByRole( 'button', { name: 'Rules' } )
+				screen.getByRole( 'button', { name: navName( RULES ) } )
 			).toHaveAttribute( 'aria-current', 'page' );
 		} finally {
 			restore();
@@ -70,7 +100,7 @@ describe( 'the section in the address bar', () => {
 			renderShell();
 
 			expect(
-				screen.getByRole( 'button', { name: 'Rules' } )
+				screen.getByRole( 'button', { name: navName( RULES ) } )
 			).toHaveAttribute( 'aria-current', 'page' );
 		} finally {
 			restore();
@@ -84,7 +114,7 @@ describe( 'the section in the address bar', () => {
 			renderShell();
 
 			expect(
-				screen.getByRole( 'button', { name: 'Fields' } )
+				screen.getByRole( 'button', { name: navName( FIELDS ) } )
 			).toHaveAttribute( 'aria-current', 'page' );
 		} finally {
 			restore();
@@ -98,7 +128,7 @@ describe( 'the section in the address bar', () => {
 			renderShell();
 
 			expect(
-				screen.getByRole( 'button', { name: 'Fields' } )
+				screen.getByRole( 'button', { name: navName( FIELDS ) } )
 			).toHaveAttribute( 'aria-current', 'page' );
 		} finally {
 			restore();
@@ -114,7 +144,9 @@ describe( 'choosing a section', () => {
 		try {
 			renderShell();
 
-			await user.click( screen.getByRole( 'button', { name: 'Rules' } ) );
+			await user.click(
+				screen.getByRole( 'button', { name: navName( RULES ) } )
+			);
 
 			expect( window.location.search ).toContain( 'section=rules' );
 			expect( window.location.search ).toContain(
@@ -133,11 +165,11 @@ describe( 'choosing a section', () => {
 			renderShell();
 
 			await user.click(
-				screen.getByRole( 'button', { name: 'Appearance' } )
+				screen.getByRole( 'button', { name: navName( APPEARANCE ) } )
 			);
 
 			expect(
-				screen.getByRole( 'button', { name: 'Appearance' } )
+				screen.getByRole( 'button', { name: navName( APPEARANCE ) } )
 			).toHaveAttribute( 'aria-current', 'page' );
 			expect( window.location.search ).toContain( 'section=appearance' );
 		} finally {
@@ -154,7 +186,9 @@ describe( 'choosing a section', () => {
 
 			renderShell();
 
-			await user.click( screen.getByRole( 'button', { name: 'Rules' } ) );
+			await user.click(
+				screen.getByRole( 'button', { name: navName( RULES ) } )
+			);
 
 			expect( push ).not.toHaveBeenCalled();
 
@@ -174,7 +208,9 @@ describe( 'the shell itself', () => {
 
 			for ( const section of SECTIONS ) {
 				expect(
-					screen.getByRole( 'button', { name: section.label } )
+					screen.getByRole( 'button', {
+						name: navName( section ),
+					} )
 				).toBeInTheDocument();
 			}
 		} finally {

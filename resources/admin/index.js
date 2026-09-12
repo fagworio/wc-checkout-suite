@@ -12,6 +12,9 @@ import { render } from '@wordpress/element';
 import AppShell from './app/AppShell';
 import { createClient } from './app/api';
 import './app/app.css';
+// The field manager's design, ported from roadmap/fields.html. Loaded after the
+// shell so the design's own rules win where the two describe the same element.
+import './app/design/fields.css';
 
 const config = window.wccsAdmin ?? {};
 const mountId = config.mountId ?? 'wccs-admin-root';
@@ -34,6 +37,7 @@ if ( mount ) {
 		<AppShell
 			sections={ config.sections ?? [] }
 			version={ config.version ?? '' }
+			siteName={ config.siteName ?? '' }
 			client={ client }
 		/>,
 		mount

@@ -13,6 +13,10 @@
 /.phpunit.result.cache
 /.phpstan-cache/
 
+# The design comparison's screenshots. The instrument is versioned; its output is
+# regenerated on demand by `node tests/design/design-comparison.mjs`.
+/tests/design/shots/
+
 # The release artefacts and the smoke test's extraction directory. Both are built
 # from the tree by bin/build-release.php and bin/smoke-package.php, so they are output.
 /dist/

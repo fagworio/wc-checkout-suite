@@ -32,6 +32,7 @@ declare global {
 	interface WccsAdminBootstrap {
 		version?: string;
 		mountId?: string;
+		siteName?: string;
 		sections?: WccsAdminSection[];
 		rest?: WccsAdminRest;
 	}

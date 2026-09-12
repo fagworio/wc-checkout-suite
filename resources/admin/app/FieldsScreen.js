@@ -45,6 +45,7 @@ import IconButton from './components/IconButton';
 import { TextField, SelectField, TextareaField } from './components/controls';
 import BulkActions from './components/BulkActions';
 import { Badge } from './components/Badge';
+import { TopbarActions } from './design/TopbarActions';
 import useUnsavedChanges from './api/useUnsavedChanges';
 import useDocumentHistory from './schema/useDocumentHistory';
 import {
@@ -598,7 +599,12 @@ export default function FieldsScreen( { client } ) {
 						) }
 					</p>
 				</div>
+			</header>
 
+			{ /* The design puts these in the bar at the top of the window; the state
+			     they act on lives here, so they are rendered into the bar rather
+			     than moved to the frame. */ }
+			<TopbarActions>
 				<div className="wccs-fields__actions">
 					{ dirty ? (
 						<Badge tone="warning">
@@ -633,7 +639,7 @@ export default function FieldsScreen( { client } ) {
 						{ __( 'Save draft', 'wc-checkoutsuite' ) }
 					</Button>
 				</div>
-			</header>
+			</TopbarActions>
 
 			{ saved ? <Notice status="success">{ saved }</Notice> : null }
 

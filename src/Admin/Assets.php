@@ -168,6 +168,9 @@ final class Assets {
 			'version'  => WCCS_VERSION,
 			'mountId'  => AdminMenu::MOUNT_ID,
 			'sections' => AdminMenu::sections(),
+			// The shell's column states the store it is configuring and the version
+			// doing the configuring, which is the pair a support conversation needs.
+			'siteName' => wp_specialchars_decode( (string) get_bloginfo( 'name' ), ENT_QUOTES ),
 			'rest'     => array(
 				'root'      => esc_url_raw( rest_url() ),
 				'namespace' => WCCS_REST_NAMESPACE,
