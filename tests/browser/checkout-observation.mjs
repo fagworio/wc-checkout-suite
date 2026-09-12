@@ -21,7 +21,17 @@ const notes = [];
 
 const record = (label, ok, detail = '') => findings.push({ label, ok: Boolean(ok), detail });
 
-const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox'] });
+// The store is served over plain HTTP, and crypto.randomUUID exists only in a secure context, so
+// the Blocks checkout's scripts threw before this plugin could draw anything. The fix is a browser
+// switch and not a change to the environment: Chromium can be told to treat one origin as secure,
+// which is what makes it possible to observe a store that has not been given TLS yet.
+const browser = await chromium.launch({
+	executablePath: '/usr/bin/google-chrome',
+	args: [
+		'--no-sandbox',
+		`--unsafely-treat-insecure-origin-as-secure=${ORIGIN}`,
+	],
+});
 
 // The checkout block renders only when there is something to check out. The first run of this
 // script opened the page with an empty cart and found that out: a page answering 200 is not the
