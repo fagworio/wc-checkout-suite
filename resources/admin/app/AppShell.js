@@ -47,7 +47,24 @@ const DESIGNED_SECTIONS = [
 		label: __( 'Prévia do checkout', 'wc-checkoutsuite' ),
 		icon: 'eye',
 	},
+	{
+		id: 'archive',
+		label: __( 'Arquivados', 'wc-checkoutsuite' ),
+		icon: 'archive',
+	},
+	{
+		id: 'rules',
+		label: __( 'Regras do editor', 'wc-checkoutsuite' ),
+		icon: 'shield',
+	},
 ];
+
+/**
+ * Destinations the field manager owns.
+ *
+ * @type {Array<string>}
+ */
+const MANAGER_VIEWS = [ 'fields', 'appearance', 'archive', 'rules' ];
 
 /**
  * Glyph for a section, chosen from the design's own set.
@@ -104,9 +121,10 @@ function findSection( sections, id ) {
  * @return {Array<{id: string, label: string, icon: string}>} Navigation items.
  */
 function navigation( serverSections ) {
-	const designed = DESIGNED_SECTIONS.filter( ( item ) =>
-		serverSections.some( ( section ) => section.id === item.id )
-	);
+	// The design's four are always offered: they are views of one document, and the
+	// screen that owns it renders all four. The server's list is about its own screens,
+	// so it decides what is added beside them and not what exists at all.
+	const designed = DESIGNED_SECTIONS;
 
 	const extra = serverSections
 		.filter(
@@ -131,11 +149,14 @@ function navigation( serverSections ) {
  * @return {*} Rendered element tree.
  */
 function SectionContent( { section, client } ) {
-	if ( 'fields' === section && client ) {
-		return <FieldsScreen client={ client } />;
+	// The design's four destinations are views of one document: the editor, the checkout
+	// preview, the archive and the rules. They share the screen that owns the draft, so
+	// switching between them keeps the work in progress and reloads nothing.
+	if ( MANAGER_VIEWS.includes( section ) && client ) {
+		return <FieldsScreen client={ client } view={ section } />;
 	}
 
-	if ( 'appearance' === section ) {
+	if ( MANAGER_VIEWS.includes( section ) ) {
 		return <PreviewFrame capabilities={ previewCapabilities } />;
 	}
 

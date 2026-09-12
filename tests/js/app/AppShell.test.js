@@ -40,6 +40,8 @@ function navName( section ) {
 	const designed = {
 		fields: 'Editor de campos',
 		appearance: 'Prévia do checkout',
+		archive: 'Arquivados',
+		rules: 'Regras do editor',
 	};
 
 	return designed[ section.id ] ?? section.label;

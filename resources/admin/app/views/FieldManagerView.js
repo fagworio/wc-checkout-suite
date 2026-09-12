@@ -25,7 +25,9 @@ import { __, sprintf } from '@wordpress/i18n';
 
 import Dialog from '../components/Dialog';
 import FieldPicker from '../components/FieldPicker';
+import ArchiveView from './ArchiveView';
 import FieldProperties from './FieldProperties';
+import RulesView from './RulesView';
 import Notice from '../components/Notice';
 import PublishPanel from '../components/PublishPanel';
 import RevisionsList from '../components/RevisionsList';
@@ -184,6 +186,26 @@ export default function FieldManagerView( { model } ) {
 		( doc?.fields ?? [] ).find(
 			( /** @type {any} */ field ) => field.id === editing
 		) ?? null;
+
+	// Three of the frame's destinations are views of this one document — the editor, the
+	// archive and the rules — so they are rendered here, where the document lives, and
+	// switching between them does not reload anything. The branch sits after every hook
+	// on purpose: a component that returns before its hooks changes the order they run
+	// in, which React refuses.
+	if ( 'archive' === model.view ) {
+		return (
+			<ArchiveView
+				fields={ doc?.fields ?? [] }
+				catalog={ catalog }
+				onRestore={ model.onRestoreField }
+				onBack={ model.onBackToEditor }
+			/>
+		);
+	}
+
+	if ( 'rules' === model.view ) {
+		return <RulesView onBack={ model.onBackToEditor } />;
+	}
 
 	return (
 		<>
