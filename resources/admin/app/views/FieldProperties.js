@@ -22,7 +22,7 @@ import { useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 
 import ConditionBuilder from '../components/ConditionBuilder';
-import { SettingsControls } from '../components/FieldInspector';
+import { SettingsControls } from '../components/SettingsControls';
 import { isProtected, protectionReason } from '../schema/fieldOperations';
 import { Icon } from '../design/icons';
 import { typeGlyph } from '../design/typeGlyph';

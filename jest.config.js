@@ -22,7 +22,11 @@ module.exports = {
 	transform: {
 		'^.+\\.[jt]sx?$': [
 			require.resolve( 'babel-jest' ),
-			{ presets: [ require.resolve( '@wordpress/babel-preset-default' ) ] },
+			{
+				presets: [
+					require.resolve( '@wordpress/babel-preset-default' ),
+				],
+			},
 		],
 	},
 };

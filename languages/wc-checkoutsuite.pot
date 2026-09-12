@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-12T13:27:48+00:00\n"
+"POT-Creation-Date: 2026-09-12T13:34:12+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.7.1\n"
 "X-Domain: wc-checkoutsuite\n"
@@ -39,7 +39,6 @@ msgid "Rules"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:101
-#: resources/admin/app/components/FieldInspector.js:519
 msgid "Appearance"
 msgstr ""
 
@@ -1646,7 +1645,7 @@ msgstr ""
 
 #: resources/admin/app/components/ConditionBuilder.js:540
 #: resources/admin/app/components/ConditionBuilder.js:571
-#: resources/admin/app/components/FieldInspector.js:342
+#: resources/admin/app/components/SettingsControls.js:300
 msgid "Value"
 msgstr ""
 
@@ -1735,208 +1734,6 @@ msgstr[1] ""
 
 #: resources/admin/app/components/Field.js:56
 msgid "(required)"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:50
-#: resources/admin/app/components/PreviewFrame.js:46
-msgid "Desktop"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:51
-#: resources/admin/app/components/PreviewFrame.js:54
-msgid "Tablet"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:52
-#: resources/admin/app/components/PreviewFrame.js:62
-msgid "Mobile"
-msgstr ""
-
-#. translators: 1: minimum length, 2: maximum length.
-#: resources/admin/app/components/FieldInspector.js:104
-msgid "Between %1$d and %2$d characters."
-msgstr ""
-
-#. translators: 1: minimum value, 2: maximum value.
-#: resources/admin/app/components/FieldInspector.js:115
-msgid "From %1$s to %2$s."
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:231
-msgid "None yet."
-msgstr ""
-
-#. translators: 1: setting name, 2: position.
-#: resources/admin/app/components/FieldInspector.js:245
-msgid "%1$s %2$d"
-msgstr ""
-
-#. translators: 1: setting name, 2: position.
-#: resources/admin/app/components/FieldInspector.js:257
-msgid "Remove %1$s %2$d"
-msgstr ""
-
-#. translators: %s: setting name.
-#: resources/admin/app/components/FieldInspector.js:279
-msgid "Add %s"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:322
-msgid "Options"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:327
-msgid "A field with choices needs at least one option before it can be published."
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:350
-#: resources/admin/app/components/FieldInspector.js:559
-msgid "Label"
-msgstr ""
-
-#. translators: %d: position of the option.
-#: resources/admin/app/components/FieldInspector.js:359
-msgid "Remove option %d"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:380
-msgid "Add option"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:406
-msgid "This type declares no settings of its own."
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:518
-msgid "General"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:522
-msgid "Mask and validation"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:526
-msgid "Storage and visibility"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:528
-msgid "Advanced"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:537
-msgid "Conditions"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:552
-msgid "Field properties"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:573
-msgid "Description"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:577
-msgid "Shown under the field, to explain what is expected."
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:595
-msgid "Required"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:614
-msgid "WooCommerce requires this field. Making it optional needs an impact assessment and is refused by the server."
-msgstr ""
-
-#. translators: %s: device name.
-#: resources/admin/app/components/FieldInspector.js:631
-msgid "Width on %s"
-msgstr ""
-
-#. translators: %d: number of columns.
-#: resources/admin/app/components/FieldInspector.js:645
-msgid "%d of 12 columns"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:674
-msgid "Mask"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:678
-msgid "A mask shapes what is typed. It never replaces validation."
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:686
-msgid "No mask"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:721
-msgid "This type cannot be masked, so no mask is offered."
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:738
-msgid "Uploads are stored privately and reached through a token on the order, never through a public URL."
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:763
-msgid "WooCommerce persists this field through its own flow, so where its value is kept is not a choice here."
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:772
-msgid "Where the value is kept"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:801
-msgid "This type stores no value, so nothing is kept."
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:810
-msgid "How sensitive the value is"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:841
-msgid "Where the value may be shown"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:878
-msgid "This type stores no value, so there is nothing to show anywhere."
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:888
-msgid "When a rule hides the field"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:918
-msgid "Identifier"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:922
-msgid "Integration key"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:928
-msgid "Type"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:930
-#: resources/admin/app/views/FieldProperties.js:809
-msgid "Preset"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:932
-msgid "Origin"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:935
-#: resources/admin/app/views/FieldProperties.js:633
-msgid "WooCommerce"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:939
-msgid "Created here"
-msgstr ""
-
-#: resources/admin/app/components/FieldInspector.js:953
-msgid "WooCommerce field"
 msgstr ""
 
 #: resources/admin/app/components/FieldPicker.js:128
@@ -2073,12 +1870,24 @@ msgstr ""
 msgid "Dismiss notice"
 msgstr ""
 
+#: resources/admin/app/components/PreviewFrame.js:46
+msgid "Desktop"
+msgstr ""
+
 #: resources/admin/app/components/PreviewFrame.js:47
 msgid "Wide layout, as on a full-size screen."
 msgstr ""
 
+#: resources/admin/app/components/PreviewFrame.js:54
+msgid "Tablet"
+msgstr ""
+
 #: resources/admin/app/components/PreviewFrame.js:55
 msgid "Narrow layout, as on a tablet in portrait."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:62
+msgid "Mobile"
 msgstr ""
 
 #: resources/admin/app/components/PreviewFrame.js:63
@@ -2317,6 +2126,60 @@ msgstr ""
 
 #: resources/admin/app/components/RevisionsList.js:153
 msgid "Restaurar cria um rascunho e não altera a versão publicada. Desfazer edição e restaurar revisão são ações distintas."
+msgstr ""
+
+#. translators: 1: minimum length, 2: maximum length.
+#: resources/admin/app/components/SettingsControls.js:62
+msgid "Between %1$d and %2$d characters."
+msgstr ""
+
+#. translators: 1: minimum value, 2: maximum value.
+#: resources/admin/app/components/SettingsControls.js:73
+msgid "From %1$s to %2$s."
+msgstr ""
+
+#: resources/admin/app/components/SettingsControls.js:189
+msgid "None yet."
+msgstr ""
+
+#. translators: 1: setting name, 2: position.
+#: resources/admin/app/components/SettingsControls.js:203
+msgid "%1$s %2$d"
+msgstr ""
+
+#. translators: 1: setting name, 2: position.
+#: resources/admin/app/components/SettingsControls.js:215
+msgid "Remove %1$s %2$d"
+msgstr ""
+
+#. translators: %s: setting name.
+#: resources/admin/app/components/SettingsControls.js:237
+msgid "Add %s"
+msgstr ""
+
+#: resources/admin/app/components/SettingsControls.js:280
+msgid "Options"
+msgstr ""
+
+#: resources/admin/app/components/SettingsControls.js:285
+msgid "A field with choices needs at least one option before it can be published."
+msgstr ""
+
+#: resources/admin/app/components/SettingsControls.js:308
+msgid "Label"
+msgstr ""
+
+#. translators: %d: position of the option.
+#: resources/admin/app/components/SettingsControls.js:317
+msgid "Remove option %d"
+msgstr ""
+
+#: resources/admin/app/components/SettingsControls.js:338
+msgid "Add option"
+msgstr ""
+
+#: resources/admin/app/components/SettingsControls.js:364
+msgid "This type declares no settings of its own."
 msgstr ""
 
 #: resources/admin/app/components/SortableList.js:78
@@ -3292,6 +3155,10 @@ msgstr ""
 msgid "Tipo: %1$s · Origem: %2$s"
 msgstr ""
 
+#: resources/admin/app/views/FieldProperties.js:633
+msgid "WooCommerce"
+msgstr ""
+
 #: resources/admin/app/views/FieldProperties.js:634
 msgid "Personalizado da Suite"
 msgstr ""
@@ -3330,6 +3197,10 @@ msgstr ""
 
 #: resources/admin/app/views/FieldProperties.js:807
 msgid "Tipo"
+msgstr ""
+
+#: resources/admin/app/views/FieldProperties.js:809
+msgid "Preset"
 msgstr ""
 
 #: resources/admin/app/views/FieldProperties.js:818

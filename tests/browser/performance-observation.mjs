@@ -28,54 +28,61 @@ import { chromium } from 'playwright';
 
 import { renderComponent } from './support/component-harness.mjs';
 
-const CHECKOUT = process.env.WCCS_URL || 'http://wpagf.dvl.to:8080/finalizar-compra/';
+const CHECKOUT =
+	process.env.WCCS_URL || 'http://wpagf.dvl.to:8080/finalizar-compra/';
 const ORIGIN = new globalThis.URL( CHECKOUT ).origin;
 const PRODUCT = process.env.WCCS_PRODUCT || '';
 const COOKIE = process.env.WCCS_COOKIE || '';
-const BUNDLE = `${ORIGIN}/wp-content/plugins/wc-checkout-suite/build/blocks/index.js`;
+const BUNDLE = `${ ORIGIN }/wp-content/plugins/wc-checkout-suite/build/blocks/index.js`;
 const RELOADS = Number( process.env.WCCS_RELOADS || 6 );
 const TYPED = 'ABC-123-4567';
 const findings = [];
 const notes = [];
 
-const record = (label, ok, detail = '') => findings.push({ label, ok: Boolean(ok), detail });
-const note = (message) => notes.push(message);
+const record = ( label, ok, detail = '' ) =>
+	findings.push( { label, ok: Boolean( ok ), detail } );
+const note = ( message ) => notes.push( message );
 
-const browser = await chromium.launch({
+const browser = await chromium.launch( {
 	executablePath: '/usr/bin/google-chrome',
 	args: [
 		'--no-sandbox',
-		`--unsafely-treat-insecure-origin-as-secure=${ORIGIN}`,
+		`--unsafely-treat-insecure-origin-as-secure=${ ORIGIN }`,
 		// The heap gauge is only comparable across loads if the garbage has been
 		// collected: otherwise the series measures the collector's timing rather than
 		// what the page holds.
 		'--js-flags=--expose-gc',
 	],
-});
+} );
 
-const seed = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+const seed = await browser.newPage( {
+	viewport: { width: 1280, height: 900 },
+} );
 
-if (PRODUCT) {
-	await seed.goto(`${ORIGIN}/?add-to-cart=${PRODUCT}`, { waitUntil: 'networkidle', timeout: 45000 });
-	note(`Cart seeded with product ${PRODUCT}`);
+if ( PRODUCT ) {
+	await seed.goto( `${ ORIGIN }/?add-to-cart=${ PRODUCT }`, {
+		waitUntil: 'networkidle',
+		timeout: 45000,
+	} );
+	note( `Cart seeded with product ${ PRODUCT }` );
 }
 
 const state = await seed.context().storageState();
 
-if (COOKIE) {
-	const separator = COOKIE.indexOf('=');
+if ( COOKIE ) {
+	const separator = COOKIE.indexOf( '=' );
 	const host = new globalThis.URL( ORIGIN ).hostname;
 
-	state.cookies.push({
-		name: COOKIE.slice(0, separator),
-		value: COOKIE.slice(separator + 1),
+	state.cookies.push( {
+		name: COOKIE.slice( 0, separator ),
+		value: COOKIE.slice( separator + 1 ),
 		domain: host,
 		path: '/',
 		expires: -1,
 		httpOnly: true,
 		secure: false,
 		sameSite: 'Lax',
-	});
+	} );
 }
 
 /**
@@ -112,12 +119,17 @@ function since( all, from ) {
 	return all.slice( from );
 }
 
-const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, storageState: state });
+const page = await browser.newPage( {
+	viewport: { width: 1280, height: 900 },
+	storageState: state,
+} );
 const errors = [];
 const requests = watchRequests( page );
 const pluginRoutes = [];
 
-page.on( 'pageerror', ( error ) => errors.push( String( error.message ).slice( 0, 140 ) ) );
+page.on( 'pageerror', ( error ) =>
+	errors.push( String( error.message ).slice( 0, 140 ) )
+);
 page.on( 'request', ( request ) => {
 	if ( request.url().includes( '/wp-json/wc-checkoutsuite/' ) ) {
 		pluginRoutes.push( `${ request.method() } ${ request.url() }` );
@@ -131,12 +143,18 @@ await page.goto( CHECKOUT, { waitUntil: 'networkidle', timeout: 45000 } );
 
 const onLoad = requests.all.length;
 const onLoadPlugin = requests.plugin.length;
-const payload = await page.evaluate( () => /** @type {any} */ ( window ).wccsBlocks || null );
+const payload = await page.evaluate(
+	() => /** @type {any} */ ( window ).wccsBlocks || null
+);
 
 record(
 	'The checkout page carries the plugin payload the bundle reads',
-	Boolean( payload && Array.isArray( payload.fields ) && payload.fields.length > 0 ),
-	`payload=${ JSON.stringify( payload ? payload.fields.map( ( field ) => field.name ) : null ) }`
+	Boolean(
+		payload && Array.isArray( payload.fields ) && payload.fields.length > 0
+	),
+	`payload=${ JSON.stringify(
+		payload ? payload.fields.map( ( field ) => field.name ) : null
+	) }`
 );
 
 record(
@@ -145,9 +163,15 @@ record(
 	`plugin_requests=${ onLoadPlugin } of ${ onLoad }`
 );
 
-note( `Requests on load: ${ onLoad } in total, ${ onLoadPlugin } of them this plugin's own files.` );
+note(
+	`Requests on load: ${ onLoad } in total, ${ onLoadPlugin } of them this plugin's own files.`
+);
 
-const field = page.locator( '.wc-block-checkout input[type=text], .wc-block-checkout input[type=email], .wc-block-checkout textarea' ).first();
+const field = page
+	.locator(
+		'.wc-block-checkout input[type=text], .wc-block-checkout input[type=email], .wc-block-checkout textarea'
+	)
+	.first();
 
 if ( await field.count() ) {
 	const before = requests.all.length;
@@ -160,12 +184,27 @@ if ( await field.count() ) {
 
 	record(
 		'Typing into a checkout field starts no request that carries what was typed',
-		0 === during.filter( ( url ) => url.includes( encodeURIComponent( TYPED ) ) || url.includes( TYPED ) ).length,
-		`requests=${ during.length } for ${ TYPED.length } keystrokes: ${ JSON.stringify( during.slice( 0, 4 ) ) }`
+		0 ===
+			during.filter(
+				( url ) =>
+					url.includes( encodeURIComponent( TYPED ) ) ||
+					url.includes( TYPED )
+			).length,
+		`requests=${ during.length } for ${
+			TYPED.length
+		} keystrokes: ${ JSON.stringify( during.slice( 0, 4 ) ) }`
 	);
-	record( 'What was typed is still in the field: nothing re-rendered it away', typed === initial + TYPED, `value=${ typed }` );
+	record(
+		'What was typed is still in the field: nothing re-rendered it away',
+		typed === initial + TYPED,
+		`value=${ typed }`
+	);
 } else {
-	record( 'A field was on the checkout to type into', false, 'no text field was found' );
+	record(
+		'A field was on the checkout to type into',
+		false,
+		'no text field was found'
+	);
 }
 
 record(
@@ -178,13 +217,26 @@ record(
 // 2. This plugin's own component, and the same keystroke question.
 // ---------------------------------------------------------------------------
 if ( payload && Array.isArray( payload.fields ) && payload.fields.length > 0 ) {
-	const rendered = await page.evaluate( renderComponent, { bundle: BUNDLE, width: 1280, payload } );
+	const rendered = await page.evaluate( renderComponent, {
+		bundle: BUNDLE,
+		width: 1280,
+		payload,
+	} );
 
-	record( 'The plugin\'s controlled field rendered for the keystroke measurement', rendered.rendered, `rendered=${ rendered.rendered } reason=${ rendered.reason || '' }` );
+	record(
+		"The plugin's controlled field rendered for the keystroke measurement",
+		rendered.rendered,
+		`rendered=${ rendered.rendered } reason=${ rendered.reason || '' }`
+	);
 
 	if ( rendered.rendered ) {
-		const frame = page.frames().filter( ( candidate ) => candidate !== page.mainFrame() ).pop();
-		const control = frame.locator( '.wccs-blocks-field textarea, .wccs-blocks-field input' ).last();
+		const frame = page
+			.frames()
+			.filter( ( candidate ) => candidate !== page.mainFrame() )
+			.pop();
+		const control = frame
+			.locator( '.wccs-blocks-field textarea, .wccs-blocks-field input' )
+			.last();
 		const before = requests.all.length;
 		const beforePlugin = requests.plugin.length;
 		const seen = [];
@@ -199,25 +251,47 @@ if ( payload && Array.isArray( payload.fields ) && payload.fields.length > 0 ) {
 
 		const during = since( requests.all, before );
 		const pluginDuring = requests.plugin.length - beforePlugin;
-		const instances = await frame.evaluate( () => document.querySelectorAll( '.wccs-blocks-field' ).length );
+		const instances = await frame.evaluate(
+			() => document.querySelectorAll( '.wccs-blocks-field' ).length
+		);
 
 		record(
-			'Typing into this plugin\'s own field makes no request of this plugin: local validation is local',
-			0 === pluginDuring && 0 === during.filter( ( url ) => url.includes( '/wp-json/wc-checkoutsuite/' ) ).length,
-			`plugin=${ pluginDuring } any=${ during.length } for 4 keystrokes${ during.length ? ': ' + JSON.stringify( during.slice( 0, 3 ) ) : '' }`
+			"Typing into this plugin's own field makes no request of this plugin: local validation is local",
+			0 === pluginDuring &&
+				0 ===
+					during.filter( ( url ) =>
+						url.includes( '/wp-json/wc-checkoutsuite/' )
+					).length,
+			`plugin=${ pluginDuring } any=${ during.length } for 4 keystrokes${
+				during.length
+					? ': ' + JSON.stringify( during.slice( 0, 3 ) )
+					: ''
+			}`
 		);
-		record( 'One field, one instance, no matter how much was typed', 1 === instances, `instances=${ instances }` );
+		record(
+			'One field, one instance, no matter how much was typed',
+			1 === instances,
+			`instances=${ instances }`
+		);
 
 		if ( seen.every( ( value ) => '' === value ) ) {
 			note(
 				'The controlled field reported no value after each keystroke: the element is built once with the value the store held at that moment, and the default registration returns that same element (and then nothing) on a re-render, so nothing ever hands the component the value it just reported. Recorded as part of BLOCKS-CONTROLLED-FIELD-PLACEMENT rather than as a performance result.'
 			);
 		} else {
-			note( `The controlled field reported after each keystroke: ${ JSON.stringify( seen ) }` );
+			note(
+				`The controlled field reported after each keystroke: ${ JSON.stringify(
+					seen
+				) }`
+			);
 		}
 	}
 } else {
-	record( 'The plugin\'s own component could be rendered', false, 'the page carried no payload' );
+	record(
+		"The plugin's own component could be rendered",
+		false,
+		'the page carried no payload'
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -230,7 +304,8 @@ if ( payload && Array.isArray( payload.fields ) && payload.fields.length > 0 ) {
 // much heap it holds after a collection.
 const gauge = () => {
 	if ( 'function' === typeof ( /** @type {any} */ ( window ).gc ) ) {
-		( /** @type {any} */ ( window ).gc )();
+		window
+			/** @type {any} */ .gc();
 	}
 
 	const memory = /** @type {any} */ ( window ).performance.memory;
@@ -239,7 +314,10 @@ const gauge = () => {
 		nodes: document.querySelectorAll( '*' ).length,
 		plugins: navigator.plugins.length,
 		heap: memory ? memory.usedJSHeapSize : null,
-		listeners: 'undefined' === typeof window.getEventListeners ? null : Object.keys( window.getEventListeners( document ) ).length,
+		listeners:
+			'undefined' === typeof window.getEventListeners
+				? null
+				: Object.keys( window.getEventListeners( document ) ).length,
 	};
 };
 
@@ -264,25 +342,46 @@ const heapGrowth = first.heap > 0 ? ( last.heap - first.heap ) / first.heap : 0;
 record(
 	`Reloading the checkout ${ RELOADS } times leaves the DOM where it started`,
 	null != last.nodes && last.nodes <= first.nodes * 1.1 + 20,
-	`nodes first=${ first.nodes } last=${ last.nodes } every round=${ JSON.stringify( series.map( ( entry ) => entry.nodes ) ) }`
+	`nodes first=${ first.nodes } last=${
+		last.nodes
+	} every round=${ JSON.stringify( series.map( ( entry ) => entry.nodes ) ) }`
 );
 
 record(
 	`Reloading the checkout ${ RELOADS } times leaves the JavaScript heap where it started`,
 	null != last.heap && heapGrowth <= 0.3,
-	`heap first=${ Math.round( first.heap / 1024 ) } KB last=${ Math.round( last.heap / 1024 ) } KB growth=${ ( heapGrowth * 100 ).toFixed( 1 ) }%`
+	`heap first=${ Math.round( first.heap / 1024 ) } KB last=${ Math.round(
+		last.heap / 1024
+	) } KB growth=${ ( heapGrowth * 100 ).toFixed( 1 ) }%`
 );
 
-record( 'No uncaught script error across the reloads', 0 === errors.length, errors.join( ' | ' ) );
+record(
+	'No uncaught script error across the reloads',
+	0 === errors.length,
+	errors.join( ' | ' )
+);
 
-note( `After each reload, with the heap collected first: ${ JSON.stringify( series.map( ( entry ) => ( { nodes: entry.nodes, heap_kb: entry.heap ? Math.round( entry.heap / 1024 ) : null } ) ) ) }` );
-note( `Requests over the whole run: ${ requests.all.length } (${ requests.plugin.length } this plugin's own files, ${ pluginRoutes.length } to its REST routes).` );
+note(
+	`After each reload, with the heap collected first: ${ JSON.stringify(
+		series.map( ( entry ) => ( {
+			nodes: entry.nodes,
+			heap_kb: entry.heap ? Math.round( entry.heap / 1024 ) : null,
+		} ) )
+	) }`
+);
+note(
+	`Requests over the whole run: ${ requests.all.length } (${ requests.plugin.length } this plugin's own files, ${ pluginRoutes.length } to its REST routes).`
+);
 
 await seed.close();
 await browser.close();
 
 for ( const finding of findings ) {
-	console.log( `${ finding.ok ? 'PASS' : 'FAIL' }  ${ finding.label }${ finding.detail ? '  [' + finding.detail + ']' : '' }` );
+	console.log(
+		`${ finding.ok ? 'PASS' : 'FAIL' }  ${ finding.label }${
+			finding.detail ? '  [' + finding.detail + ']' : ''
+		}`
+	);
 }
 
 for ( const message of notes ) {
@@ -290,5 +389,9 @@ for ( const message of notes ) {
 }
 
 const failed = findings.filter( ( finding ) => ! finding.ok ).length;
-console.log( `RESULT: ${ findings.length - failed } passed, ${ failed } failed, ${ notes.length } notes` );
+console.log(
+	`RESULT: ${ findings.length - failed } passed, ${ failed } failed, ${
+		notes.length
+	} notes`
+);
 process.exit( failed > 0 ? 1 : 0 );

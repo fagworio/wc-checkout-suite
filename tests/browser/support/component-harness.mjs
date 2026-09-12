@@ -11,10 +11,16 @@
  * The function is passed to `page.evaluate`, so it must not close over module scope:
  * everything it needs arrives in its single argument.
  *
- * @package WCCheckoutSuite
+ * @package
  */
 
-export const renderComponent = async ( { bundle, width, payload, focus = false, zoom = false } ) => {
+export const renderComponent = async ( {
+	bundle,
+	width,
+	payload,
+	focus = false,
+	zoom = false,
+} ) => {
 	const frame = document.createElement( 'iframe' );
 	frame.setAttribute( 'title', 'wccs component harness' );
 	frame.style.cssText = `width:${ width }px;height:700px;border:0;display:block`;
@@ -24,7 +30,9 @@ export const renderComponent = async ( { bundle, width, payload, focus = false, 
 	const view = frame.contentWindow;
 
 	doc.open();
-	doc.write( '<!doctype html><html><head></head><body><div class="wc-block-checkout"><div id="wccs-component-harness"></div></div></body></html>' );
+	doc.write(
+		'<!doctype html><html><head></head><body><div class="wc-block-checkout"><div id="wccs-component-harness"></div></div></body></html>'
+	);
 	doc.close();
 
 	// The store's own stylesheets, so the region is presented exactly as it is on the
@@ -47,7 +55,8 @@ export const renderComponent = async ( { bundle, width, payload, focus = false, 
 
 	view.wc = {
 		blocksCheckout: {
-			registerCheckoutBlock: ( registration ) => captured.push( registration ),
+			registerCheckoutBlock: ( registration ) =>
+				captured.push( registration ),
 		},
 	};
 
@@ -56,7 +65,8 @@ export const renderComponent = async ( { bundle, width, payload, focus = false, 
 			const script = doc.createElement( 'script' );
 			script.src = bundle;
 			script.onload = () => resolve( undefined );
-			script.onerror = () => reject( new Error( 'the bundle did not load' ) );
+			script.onerror = () =>
+				reject( new Error( 'the bundle did not load' ) );
 			doc.head.appendChild( script );
 		} );
 	} catch ( error ) {
@@ -73,27 +83,42 @@ export const renderComponent = async ( { bundle, width, payload, focus = false, 
 		return { rendered: false, reason: 'no_component' };
 	}
 
-	/** @type {any} */ ( view ).wp.element.render( element, doc.getElementById( 'wccs-component-harness' ) );
+	/** @type {any} */ ( view ).wp.element.render(
+		element,
+		doc.getElementById( 'wccs-component-harness' )
+	);
 
 	await new Promise( ( resolve ) => setTimeout( resolve, 300 ) );
 
 	const region = doc.querySelector( '.wccs-blocks-field' );
-	const control = region ? region.querySelector( 'textarea, input, select' ) : null;
+	const control = region
+		? region.querySelector( 'textarea, input, select' )
+		: null;
 	const label = region ? region.querySelector( 'label' ) : null;
 	const htmlFor = label ? label.getAttribute( 'for' ) : null;
 
 	const observation = {
 		rendered: Boolean( region ),
 		width,
-		registeredName: captured[ 0 ].metadata ? captured[ 0 ].metadata.name : null,
-		registeredParent: captured[ 0 ].metadata ? captured[ 0 ].metadata.parent : null,
+		registeredName: captured[ 0 ].metadata
+			? captured[ 0 ].metadata.name
+			: null,
+		registeredParent: captured[ 0 ].metadata
+			? captured[ 0 ].metadata.parent
+			: null,
 		controlTag: control ? control.tagName.toLowerCase() : null,
 		controlType: control ? control.getAttribute( 'type' ) : null,
-		controlHeight: control ? Math.round( control.getBoundingClientRect().height ) : 0,
+		controlHeight: control
+			? Math.round( control.getBoundingClientRect().height )
+			: 0,
 		labelled: Boolean( htmlFor && control && control.id === htmlFor ),
 		labelText: label ? label.textContent.trim() : null,
-		regionWidth: region ? Math.round( region.getBoundingClientRect().width ) : 0,
-		regionRight: region ? Math.round( region.getBoundingClientRect().right ) : 0,
+		regionWidth: region
+			? Math.round( region.getBoundingClientRect().width )
+			: 0,
+		regionRight: region
+			? Math.round( region.getBoundingClientRect().right )
+			: 0,
 		overflow: doc.documentElement.scrollWidth - view.innerWidth,
 		documentWidth: view.innerWidth,
 	};
@@ -108,7 +133,9 @@ export const renderComponent = async ( { bundle, width, payload, focus = false, 
 		observation.outlineStyle = style.outlineStyle;
 		observation.boxShadow = style.boxShadow;
 		observation.transitionDuration = style.transitionDuration;
-		observation.transitionsInRegion = Array.from( region.querySelectorAll( '*' ) ).filter( ( child ) => {
+		observation.transitionsInRegion = Array.from(
+			region.querySelectorAll( '*' )
+		).filter( ( child ) => {
 			const value = view.getComputedStyle( child ).transitionDuration;
 
 			return value && '0s' !== value && parseFloat( value ) > 0.5;
@@ -121,7 +148,8 @@ export const renderComponent = async ( { bundle, width, payload, focus = false, 
 		// wide. What is asserted is reflow, which is what a zoomed reader experiences.
 		doc.documentElement.style.zoom = '2';
 		void doc.documentElement.offsetWidth;
-		observation.zoomOverflow = doc.documentElement.scrollWidth - view.innerWidth;
+		observation.zoomOverflow =
+			doc.documentElement.scrollWidth - view.innerWidth;
 		doc.documentElement.style.zoom = '';
 	}
 
@@ -131,16 +159,25 @@ export const renderComponent = async ( { bundle, width, payload, focus = false, 
 	// The facts a screen reader depends on: one control, a name for it, and nothing
 	// hiding the region from assistive technology. A real screen reader is not driven
 	// here, and the report says so.
-	observation.controls = region ? region.querySelectorAll( 'textarea, input, select' ).length : 0;
+	observation.controls = region
+		? region.querySelectorAll( 'textarea, input, select' ).length
+		: 0;
 	observation.hiddenFromAt = Boolean(
-		region && (
-			region.getAttribute( 'aria-hidden' ) === 'true'
-			|| 'none' === view.getComputedStyle( region ).display
-			|| 'hidden' === view.getComputedStyle( region ).visibility
-		)
+		region &&
+			( region.getAttribute( 'aria-hidden' ) === 'true' ||
+				'none' === view.getComputedStyle( region ).display ||
+				'hidden' === view.getComputedStyle( region ).visibility )
 	);
-	observation.token = region ? view.getComputedStyle( region ).getPropertyValue( '--wccs-ink' ).trim() : '';
-	observation.rootToken = view.getComputedStyle( doc.documentElement ).getPropertyValue( '--wccs-ink' ).trim();
+	observation.token = region
+		? view
+				.getComputedStyle( region )
+				.getPropertyValue( '--wccs-ink' )
+				.trim()
+		: '';
+	observation.rootToken = view
+		.getComputedStyle( doc.documentElement )
+		.getPropertyValue( '--wccs-ink' )
+		.trim();
 
 	return observation;
 };

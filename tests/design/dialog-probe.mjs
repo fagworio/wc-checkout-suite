@@ -13,27 +13,37 @@ import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
 
 const ORIGIN = 'http://wpagf.dvl.to:8080';
-const ADMIN = `${ORIGIN}/wp-admin/admin.php?page=wccs-checkoutsuite&section=fields`;
+const ADMIN = `${ ORIGIN }/wp-admin/admin.php?page=wccs-checkoutsuite&section=fields`;
 const OUT = process.env.WCCS_OUT || 'tests/design/shots';
 const browser = await chromium.launch( {
 	executablePath: '/usr/bin/google-chrome',
-	args: [ '--no-sandbox', `--unsafely-treat-insecure-origin-as-secure=${ORIGIN}` ],
+	args: [
+		'--no-sandbox',
+		`--unsafely-treat-insecure-origin-as-secure=${ ORIGIN }`,
+	],
 } );
-const page = await browser.newPage( { viewport: { width: 1440, height: 950 } } );
+const page = await browser.newPage( {
+	viewport: { width: 1440, height: 950 },
+} );
 
-for ( const pair of [ process.env.WCCS_COOKIE, process.env.WCCS_AUTH_COOKIE ].filter( Boolean ) ) {
+for ( const pair of [
+	process.env.WCCS_COOKIE,
+	process.env.WCCS_AUTH_COOKIE,
+].filter( Boolean ) ) {
 	const i = pair.indexOf( '=' );
 
-	await page.context().addCookies( [ {
-		name: pair.slice( 0, i ),
-		value: pair.slice( i + 1 ),
-		domain: 'wpagf.dvl.to',
-		path: '/',
-		expires: -1,
-		httpOnly: true,
-		secure: false,
-		sameSite: 'Lax',
-	} ] );
+	await page.context().addCookies( [
+		{
+			name: pair.slice( 0, i ),
+			value: pair.slice( i + 1 ),
+			domain: 'wpagf.dvl.to',
+			path: '/',
+			expires: -1,
+			httpOnly: true,
+			secure: false,
+			sameSite: 'Lax',
+		},
+	] );
 }
 
 /**
@@ -47,10 +57,9 @@ async function prototype( instance ) {
 		viewport: { width: 390, height: 844 },
 	} );
 
-	await narrow.setContent(
-		readFileSync( 'roadmap/fields.html', 'utf8' ),
-		{ waitUntil: 'load' }
-	);
+	await narrow.setContent( readFileSync( 'roadmap/fields.html', 'utf8' ), {
+		waitUntil: 'load',
+	} );
 	await narrow.waitForTimeout( 600 );
 
 	return narrow;
@@ -58,17 +67,26 @@ async function prototype( instance ) {
 
 const errs = [];
 
-page.on( 'pageerror', ( e ) => errs.push( String( e.message ).slice( 0, 300 ) ) );
+page.on( 'pageerror', ( e ) =>
+	errs.push( String( e.message ).slice( 0, 300 ) )
+);
 await page.goto( ADMIN, { waitUntil: 'networkidle', timeout: 45000 } );
 await page.waitForTimeout( 1200 );
 
 // The publication review, from the topbar.
 await page.getByRole( 'button', { name: 'Revisar publicação' } ).click();
 await page.waitForTimeout( 500 );
-await page.screenshot( { path: `${OUT}/admin-publish.png`, fullPage: false } );
+await page.screenshot( {
+	path: `${ OUT }/admin-publish.png`,
+	fullPage: false,
+} );
 const publish = await page.evaluate( () => ( {
-	stats: Array.from( document.querySelectorAll( '.publish-stat' ) ).map( ( s ) => s.textContent ),
-	rows: Array.from( document.querySelectorAll( '.diff-row' ) ).map( ( r ) => r.textContent ),
+	stats: Array.from( document.querySelectorAll( '.publish-stat' ) ).map(
+		( s ) => s.textContent
+	),
+	rows: Array.from( document.querySelectorAll( '.diff-row' ) ).map(
+		( r ) => r.textContent
+	),
 	subtitle: document.querySelector( '.publish-subtitle' )?.textContent ?? '',
 } ) );
 
@@ -85,9 +103,14 @@ await page.waitForTimeout( 300 );
 // cannot make.
 await page.getByRole( 'button', { name: 'Revisões' } ).click();
 await page.waitForTimeout( 500 );
-await page.screenshot( { path: `${OUT}/admin-history.png`, fullPage: false } );
+await page.screenshot( {
+	path: `${ OUT }/admin-history.png`,
+	fullPage: false,
+} );
 const history = await page.evaluate( () =>
-	Array.from( document.querySelectorAll( '.history-row' ) ).map( ( r ) => r.textContent )
+	Array.from( document.querySelectorAll( '.history-row' ) ).map(
+		( r ) => r.textContent
+	)
 );
 
 // The conditions, which are the controls the design's own markup styles: the shared
@@ -109,10 +132,7 @@ await page
 	.first()
 	.click();
 await page.waitForTimeout( 300 );
-await page
-	.locator( '.wccs-admin .inspector-tabs button' )
-	.nth( 1 )
-	.click();
+await page.locator( '.wccs-admin .inspector-tabs button' ).nth( 1 ).click();
 await page.waitForTimeout( 300 );
 // A rule the real vocabulary accepts: the builder's own button, not a document
 // written by hand, because a source key the vocabulary does not know renders nothing.
@@ -127,7 +147,10 @@ if ( await addCondition.count() ) {
 	await page.waitForTimeout( 300 );
 }
 
-await page.screenshot( { path: `${OUT}/admin-conditions.png`, fullPage: false } );
+await page.screenshot( {
+	path: `${ OUT }/admin-conditions.png`,
+	fullPage: false,
+} );
 // Is the wp-admin footer really over the screen's last strip, or was the click just
 // below the fold? Measured, because a workaround that hides a defect is worse than the
 // defect.
@@ -156,8 +179,10 @@ const conditions = await page.evaluate( () => {
 		tabs: Array.from(
 			document.querySelectorAll( '.wccs-admin .inspector-tabs button' )
 		).map( ( b ) => b.textContent ),
-		panel: document.querySelector( '.wccs-admin .inspector-body' )
-			?.textContent.slice( 0, 120 ) ?? '',
+		panel:
+			document
+				.querySelector( '.wccs-admin .inspector-body' )
+				?.textContent.slice( 0, 120 ) ?? '',
 		builder: Boolean( document.querySelector( '.wccs-conditions' ) ),
 		rows: document.querySelectorAll( '.condition-row' ).length,
 		rowClass: row?.className ?? '',
@@ -165,7 +190,8 @@ const conditions = await page.evaluate( () => {
 		selectHeight: select ? getComputedStyle( select ).height : '',
 		selectBorder: select ? getComputedStyle( select ).borderTopColor : '',
 		labelSize: label ? getComputedStyle( label ).fontSize : '',
-		result: document.querySelector( '.condition-result' )?.textContent ?? '',
+		result:
+			document.querySelector( '.condition-result' )?.textContent ?? '',
 	};
 } );
 
@@ -175,7 +201,7 @@ const narrowPrototype = await prototype( browser );
 await narrowPrototype.locator( '[data-edit-field]' ).first().click();
 await narrowPrototype.waitForTimeout( 400 );
 await narrowPrototype.screenshot( {
-	path: `${OUT}/prototype-mobile-inspector.png`,
+	path: `${ OUT }/prototype-mobile-inspector.png`,
 	fullPage: false,
 } );
 const prototypeMobile = await narrowPrototype.evaluate( () => ( {
@@ -183,22 +209,29 @@ const prototypeMobile = await narrowPrototype.evaluate( () => ( {
 	column: getComputedStyle( document.querySelector( '#inspector' ) ).display,
 } ) );
 
-const mobile = await browser.newPage( { viewport: { width: 390, height: 844 } } );
+const mobile = await browser.newPage( {
+	viewport: { width: 390, height: 844 },
+} );
 await mobile.context().addCookies( await page.context().cookies() );
-mobile.on( 'pageerror', ( e ) => errs.push( String( e.message ).slice( 0, 160 ) ) );
+mobile.on( 'pageerror', ( e ) =>
+	errs.push( String( e.message ).slice( 0, 160 ) )
+);
 await mobile.goto( ADMIN, { waitUntil: 'networkidle', timeout: 45000 } );
 await mobile.waitForTimeout( 900 );
 await mobile.locator( '.wccs-admin .field-info' ).first().click();
 await mobile.waitForTimeout( 400 );
 await mobile.screenshot( {
-	path: `${OUT}/admin-mobile-inspector.png`,
+	path: `${ OUT }/admin-mobile-inspector.png`,
 	fullPage: false,
 } );
 const adminMobile = await mobile.evaluate( () => ( {
 	open: Boolean( document.querySelector( '.mobile-inspector' )?.open ),
-	column: getComputedStyle( document.querySelector( '.wccs-admin .inspector' ) )
-		.display,
-	head: document.querySelector( '.mobile-inspector-top strong' )?.textContent ?? '',
+	column: getComputedStyle(
+		document.querySelector( '.wccs-admin .inspector' )
+	).display,
+	head:
+		document.querySelector( '.mobile-inspector-top strong' )?.textContent ??
+		'',
 } ) );
 
 console.log(
