@@ -293,6 +293,41 @@ final class ClassicPresentationTest extends TestCase {
 	}
 
 	/**
+	 * The disclosure honours `[hidden]`, and the names on both sides agree.
+	 *
+	 * `display: flex` on an element whose visibility is an attribute is how a control
+	 * ends up on a page it was hidden from, so the rule states it explicitly. And the
+	 * two names this file reads — the attribute the payment frame puts on a gateway's
+	 * panel and the class the summary control carries — are read out of the modules
+	 * that write them, so a rename that moved only one side fails here instead of
+	 * leaving a rule that styles nothing.
+	 *
+	 * @return void
+	 */
+	public function test_the_disclosure_honours_hidden_and_the_names_agree(): void {
+		$css = $this->rules();
+
+		self::assertMatchesRegularExpression(
+			'/\.wccs-summary__toggle\[hidden\]\s*\{[^}]*display:\s*none/s',
+			$css
+		);
+
+		self::assertStringContainsString(
+			'data-wccs-payment-panel',
+			$this->shipped( 'resources/checkout/payment.js' ),
+			'the attribute this file styles is the one the payment frame writes'
+		);
+
+		self::assertStringContainsString(
+			"'wccs-summary__toggle'",
+			$this->shipped( 'resources/checkout/summary.js' ),
+			'the class this file styles is the one the summary control carries'
+		);
+
+		self::assertStringContainsString( '.wccs-summary__toggle:focus-visible', $css );
+	}
+
+	/**
 	 * No template is shipped, which is what keeps every hook in place.
 	 *
 	 * @return void

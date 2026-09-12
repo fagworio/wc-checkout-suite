@@ -32,7 +32,9 @@ import { createFieldErrors } from './errors';
 import { createFormValidation } from './form';
 import { createLifecycle } from './lifecycle';
 import { createMaskedFields } from './masks';
+import { createPaymentFrame } from './payment';
 import { createRemoteValidation } from './remote';
+import { createOrderSummary } from './summary';
 import { createFieldChecker } from './validate';
 import { createValueKeeper } from './values';
 
@@ -60,6 +62,14 @@ const conditional = createConditionalFields( {
 } );
 
 const errors = createFieldErrors( { attribute: keeper.attribute } );
+
+// The payment accordion and the order summary are presentations of markup
+// WooCommerce already rendered, and both are registered as components of the same
+// lifecycle for the same reason the fields are: the checkout replaces the payment box
+// and the order review over AJAX, and a component that ran twice over the same element
+// would add a second control to a summary that already has one.
+const payment = createPaymentFrame();
+const summary = createOrderSummary( bootstrap.summary || {} );
 const form = createFormValidation( {
 	checker,
 	errors,
@@ -104,6 +114,20 @@ lifecycle.register( 'suite-masks', {
 	start: ( element ) => masked.apply( element ),
 } );
 
+// The payment box: the accordion follows the radios the checkout rendered, and the
+// module creates none of them.
+lifecycle.register( 'suite-payment-frame', {
+	selector: '.wc_payment_methods',
+	start: ( element ) => payment.run( element ),
+} );
+
+// The order review: the numbers inside it are WooCommerce's and are never touched,
+// only revealed or hidden.
+lifecycle.register( 'suite-summary', {
+	selector: '.woocommerce-checkout-review-order',
+	start: ( element ) => summary.run( element ),
+} );
+
 // The first pass marks every field already on the page, so a later refresh is
 // only ever offered the elements it actually replaced.
 $( () => {
@@ -122,6 +146,12 @@ $( document.body ).on( 'update_checkout', () => {
 $( document.body ).on( 'updated_checkout', () => {
 	lifecycle.run( document.body );
 	conditional.run();
+
+	// A refresh can change which method is selected — a gateway that becomes
+	// unavailable on a shipping choice, for instance — and which panel is open is a
+	// question the frame answers by reading the form again.
+	payment.run( document.body );
+	summary.run( document.body );
 } );
 
 // A rule is re-decided while the form is being filled in: the country the

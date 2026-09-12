@@ -226,7 +226,7 @@ final class ClassicAssets {
 	 * renamed and the revision changes, and a bundle that hardcoded either would
 	 * be wrong the first time one of them moved.
 	 *
-	 * @return array{masks: array<string, array{key: string, version: int, definition: string|array<mixed>}>, validation: array{url: string, nonce: string, revision: int}}
+	 * @return array{masks: array<string, array{key: string, version: int, definition: string|array<mixed>}>, summary: array{label: string, show: string, hide: string}, validation: array{url: string, nonce: string, revision: int}}
 	 */
 	public static function bootstrap_data(): array {
 		$masks      = \WCCheckoutSuite\Domain\Registries::instance()->masks();
@@ -266,6 +266,11 @@ final class ClassicAssets {
 			'rules'      => self::rules(),
 			'conditions' => self::conditions(),
 			'uploads'    => self::uploads(),
+			'summary'    => array(
+				'label' => __( 'Order summary', 'wc-checkoutsuite' ),
+				'show'  => __( 'Show order summary', 'wc-checkoutsuite' ),
+				'hide'  => __( 'Hide order summary', 'wc-checkoutsuite' ),
+			),
 			'validation' => array(
 				'url'      => rest_url(
 					\WCCheckoutSuite\Http\Admin\SchemaController::rest_namespace()

@@ -215,3 +215,85 @@
 		--wccs-checkout-gap: var(--wccs-space-12);
 	}
 }
+
+/* ------------------------------------------------------- Payment accordion */
+
+/*
+ * The payment list and the panel a gateway wrote. Neither rule opens or closes
+ * anything: which panel is visible is WooCommerce's own state — the template renders
+ * it as an inline style and `frontend/checkout.js` slides it — and a stylesheet that
+ * set `display` on the panel would be a second owner of it. What is here is the box
+ * around what the gateway rendered, and the spacing between methods.
+ */
+.wccs-checkout .wc_payment_methods {
+	display: grid;
+	gap: var(--wccs-checkout-field-gap);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.wccs-checkout .wc_payment_method {
+	margin: 0;
+}
+
+.wccs-checkout [data-wccs-payment-panel] {
+	margin: 0;
+	padding: var(--wccs-space-12);
+	border-radius: var(--wccs-radius-row);
+	background: var(--wccs-brand-subtle);
+	color: var(--wccs-ink);
+}
+
+/* The radio a gateway renders is a control the customer clicks, so it keeps the same
+   ring every other control on this checkout has. */
+.wccs-checkout .wc_payment_method input[type="radio"]:focus-visible,
+.wccs-checkout [data-wccs-payment-panel] input:focus-visible,
+.wccs-checkout [data-wccs-payment-panel] select:focus-visible,
+.wccs-checkout [data-wccs-payment-panel] textarea:focus-visible {
+	outline: var(--wccs-size-focus-outline-width) solid var(--wccs-focus-ring);
+	outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------ Order summary */
+
+/*
+ * The summary control, added next to the order review by
+ * `resources/checkout/summary.js` and shown only where the summary would otherwise
+ * push the form down the page. It is a real button, so the keyboard already knows how
+ * to press it; this is the ring that says so.
+ */
+.wccs-checkout .wccs-summary__toggle {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--wccs-space-8);
+	inline-size: 100%;
+	min-block-size: var(--wccs-size-action-height-min);
+
+	/* No margin: the control becomes a child of the checkout form's own grid, which
+	   already carries the gap — and on a wide page it is `hidden`, so it takes no cell
+	   and the two columns stay where they were. */
+	margin: 0;
+	padding-inline: var(--wccs-space-12);
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-row);
+	background: var(--wccs-surface);
+	color: var(--wccs-ink);
+	font-size: var(--wccs-text-label);
+	font-weight: var(--wccs-weight-medium);
+	line-height: var(--wccs-leading-body);
+	text-align: start;
+	cursor: pointer;
+}
+
+/* The one element whose visibility is an attribute of ours, and therefore the one rule
+   that has to say so: `display: flex` above would otherwise beat `[hidden]`. */
+.wccs-checkout .wccs-summary__toggle[hidden] {
+	display: none;
+}
+
+.wccs-checkout .wccs-summary__toggle:focus-visible {
+	outline: var(--wccs-size-focus-outline-width) solid var(--wccs-focus-ring);
+	outline-offset: 2px;
+}

@@ -84,6 +84,15 @@ declare global {
 				reason?: string;
 				maxBytes?: number;
 			};
+			/**
+			 * The wording of the order summary control, published by the server
+			 * so the bundle hardcodes no string a translator has to find.
+			 */
+			summary?: {
+				label?: string;
+				show?: string;
+				hide?: string;
+			};
 			validation?: {
 				url?: string;
 				nonce?: string;
