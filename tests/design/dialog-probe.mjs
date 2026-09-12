@@ -10,6 +10,7 @@
  * `seed-design-draft.php` and a publication provide that pair.
  */
 import { chromium } from 'playwright';
+import { readFileSync } from 'node:fs';
 
 const ORIGIN = 'http://wpagf.dvl.to:8080';
 const ADMIN = `${ORIGIN}/wp-admin/admin.php?page=wccs-checkoutsuite&section=fields`;
@@ -33,6 +34,26 @@ for ( const pair of [ process.env.WCCS_COOKIE, process.env.WCCS_AUTH_COOKIE ].fi
 		secure: false,
 		sameSite: 'Lax',
 	} ] );
+}
+
+/**
+ * Opens the prototype at the design's phone width.
+ *
+ * @param {any} instance Browser.
+ * @return {Promise<any>} Page.
+ */
+async function prototype( instance ) {
+	const narrow = await instance.newPage( {
+		viewport: { width: 390, height: 844 },
+	} );
+
+	await narrow.setContent(
+		readFileSync( 'roadmap/fields.html', 'utf8' ),
+		{ waitUntil: 'load' }
+	);
+	await narrow.waitForTimeout( 600 );
+
+	return narrow;
 }
 
 const errs = [];
@@ -69,5 +90,48 @@ const history = await page.evaluate( () =>
 	Array.from( document.querySelectorAll( '.history-row' ) ).map( ( r ) => r.textContent )
 );
 
-console.log( JSON.stringify( { publish, history, errs }, null, 1 ) );
+// The inspector below the design's 870px breakpoint: the column is hidden by the
+// stylesheet and the same properties open over the list, in both documents.
+const narrowPrototype = await prototype( browser );
+await narrowPrototype.locator( '[data-edit-field]' ).first().click();
+await narrowPrototype.waitForTimeout( 400 );
+await narrowPrototype.screenshot( {
+	path: `${OUT}/prototype-mobile-inspector.png`,
+	fullPage: false,
+} );
+const prototypeMobile = await narrowPrototype.evaluate( () => ( {
+	open: Boolean( document.querySelector( '#mobileInspector' )?.open ),
+	column: getComputedStyle( document.querySelector( '#inspector' ) ).display,
+} ) );
+
+const mobile = await browser.newPage( { viewport: { width: 390, height: 844 } } );
+await mobile.context().addCookies( await page.context().cookies() );
+mobile.on( 'pageerror', ( e ) => errs.push( String( e.message ).slice( 0, 160 ) ) );
+await mobile.goto( ADMIN, { waitUntil: 'networkidle', timeout: 45000 } );
+await mobile.waitForTimeout( 900 );
+await mobile.locator( '.wccs-admin .field-info' ).first().click();
+await mobile.waitForTimeout( 400 );
+await mobile.screenshot( {
+	path: `${OUT}/admin-mobile-inspector.png`,
+	fullPage: false,
+} );
+const adminMobile = await mobile.evaluate( () => ( {
+	open: Boolean( document.querySelector( '.mobile-inspector' )?.open ),
+	column: getComputedStyle( document.querySelector( '.wccs-admin .inspector' ) )
+		.display,
+	head: document.querySelector( '.mobile-inspector-top strong' )?.textContent ?? '',
+} ) );
+
+console.log(
+	JSON.stringify(
+		{
+			publish,
+			history,
+			mobileInspector: { prototype: prototypeMobile, admin: adminMobile },
+			errs,
+		},
+		null,
+		1
+	)
+);
 await browser.close();

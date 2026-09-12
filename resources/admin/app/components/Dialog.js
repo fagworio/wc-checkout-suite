@@ -26,15 +26,17 @@ import { Icon } from '../design/icons';
 let dialogCounter = 0;
 
 /**
- * @param {Object}                  props            Component properties.
- * @param {boolean}                 props.open       Whether the dialog is open.
- * @param {string}                  props.title      Accessible title.
- * @param {(...args: any[]) => any} props.onClose    Called when the dialog asks to close.
- * @param {*}                       props.children   Dialog body.
- * @param {*}                       [props.footer]   Optional footer content.
- * @param {string}                  [props.eyebrow]  Small caps line above the title.
- * @param {string}                  [props.subtitle] Line under the title.
- * @param {string}                  [props.size]     `picker`, `confirm` or `publish`.
+ * @param {Object}                  props             Component properties.
+ * @param {boolean}                 props.open        Whether the dialog is open.
+ * @param {string}                  props.title       Accessible title.
+ * @param {(...args: any[]) => any} props.onClose     Called when the dialog asks to close.
+ * @param {*}                       props.children    Dialog body.
+ * @param {*}                       [props.footer]    Optional footer content.
+ * @param {string}                  [props.eyebrow]   Small caps line above the title.
+ * @param {string}                  [props.subtitle]  Line under the title.
+ * @param {string}                  [props.size]      `picker`, `confirm` or `publish`.
+ * @param {boolean}                 [props.topBar]    Compact head instead of the design's.
+ * @param {string}                  [props.className] Extra classes for the dialog.
  */
 export default function Dialog( {
 	open,
@@ -45,6 +47,8 @@ export default function Dialog( {
 	eyebrow = '',
 	subtitle = '',
 	size = '',
+	topBar = false,
+	className = '',
 } ) {
 	/** @type {{ current: HTMLDialogElement|null }} */
 	const ref = useRef( null );
@@ -68,13 +72,18 @@ export default function Dialog( {
 
 	// The prototype's dialog classes carry the widths its three dialogs use; the
 	// generic frame needs none of them, so an unnamed size adds nothing.
-	const className =
-		'' === size ? 'wccs-dialog' : `wccs-dialog ${ size }-dialog`;
+	const classes = [
+		'wccs-dialog',
+		'' === size ? '' : `${ size }-dialog`,
+		className,
+	]
+		.filter( Boolean )
+		.join( ' ' );
 
 	return (
 		<dialog
 			ref={ ref }
-			className={ className }
+			className={ classes }
 			aria-labelledby={ titleId }
 			onCancel={ ( event ) => {
 				// Escape is handled here rather than by the browser so the caller
@@ -83,23 +92,42 @@ export default function Dialog( {
 				onClose();
 			} }
 		>
-			<div className="dialog-head">
-				<div>
-					{ '' !== eyebrow ? (
-						<div className="eyebrow">{ eyebrow }</div>
-					) : null }
-					<h2 id={ titleId }>{ title }</h2>
-					{ '' !== subtitle ? <p>{ subtitle }</p> : null }
+			{ topBar ? (
+				// The design's compact head, for the dialog that opens the field
+				// properties over the list on a narrow window.
+				<div className="mobile-inspector-top">
+					<strong id={ titleId }>{ title }</strong>
+					<button
+						type="button"
+						className="icon-btn"
+						aria-label={ __(
+							'Fechar propriedades',
+							'wc-checkoutsuite'
+						) }
+						onClick={ onClose }
+					>
+						<Icon name="close" />
+					</button>
 				</div>
-				<button
-					type="button"
-					className="icon-btn"
-					aria-label={ __( 'Fechar', 'wc-checkoutsuite' ) }
-					onClick={ onClose }
-				>
-					<Icon name="close" />
-				</button>
-			</div>
+			) : (
+				<div className="dialog-head">
+					<div>
+						{ '' !== eyebrow ? (
+							<div className="eyebrow">{ eyebrow }</div>
+						) : null }
+						<h2 id={ titleId }>{ title }</h2>
+						{ '' !== subtitle ? <p>{ subtitle }</p> : null }
+					</div>
+					<button
+						type="button"
+						className="icon-btn"
+						aria-label={ __( 'Fechar', 'wc-checkoutsuite' ) }
+						onClick={ onClose }
+					>
+						<Icon name="close" />
+					</button>
+				</div>
+			) }
 
 			<div className="dialog-body">{ children }</div>
 

@@ -37,6 +37,7 @@ import { Toast } from '../design/Toast';
 import { TopbarActions } from '../design/TopbarActions';
 import { Icon } from '../design/icons';
 import { sectionCopy } from '../design/sectionMeta';
+import { useNarrowViewport } from '../design/useNarrowViewport';
 import { typeGlyph } from '../design/typeGlyph';
 
 /**
@@ -148,6 +149,9 @@ export default function FieldManagerView( { model } ) {
 		/** @type {string|null} */ ( null )
 	);
 	const [ pickerOpen, setPickerOpen ] = useState( false );
+
+	/** Whether the window is narrow enough for the properties to open in a dialog. */
+	const narrow = useNarrowViewport();
 	/**
 	 * The bulk action waiting for the merchant to confirm it, or null.
 	 *
@@ -473,6 +477,27 @@ export default function FieldManagerView( { model } ) {
 			/>
 		</Dialog>
 	);
+
+	// The field properties are one element with two homes, as the design draws them: the
+	// editor's right column on a wide window, and a dialog over the list below 870px,
+	// where the stylesheet hides that column.
+	const properties = editingField ? (
+		<FieldProperties
+			field={ editingField }
+			catalog={ catalog }
+			sections={ sections }
+			fields={ ( doc?.fields ?? [] ).map(
+				( /** @type {any} */ entry ) => ( {
+					id: entry.id,
+					label: entry.label,
+				} )
+			) }
+			onChange={ model.onChangeField }
+			onDuplicate={ () => onDuplicate( editingField.id ) }
+			onArchive={ () => onToggleEnabled( editingField.id ) }
+			onProtect={ () => onProtect( editingField.id ) }
+		/>
+	) : null;
 
 	// Four of the frame's destinations are views of this one document — the editor, the
 	// preview, the archive and the rules — so they are rendered here, where the document
@@ -1651,26 +1676,8 @@ export default function FieldManagerView( { model } ) {
 							'wc-checkoutsuite'
 						) }
 					>
-						{ editingField ? (
-							<FieldProperties
-								field={ editingField }
-								catalog={ catalog }
-								sections={ sections }
-								fields={ ( doc?.fields ?? [] ).map(
-									( /** @type {any} */ entry ) => ( {
-										id: entry.id,
-										label: entry.label,
-									} )
-								) }
-								onChange={ model.onChangeField }
-								onDuplicate={ () =>
-									onDuplicate( editingField.id )
-								}
-								onArchive={ () =>
-									onToggleEnabled( editingField.id )
-								}
-								onProtect={ () => onProtect( editingField.id ) }
-							/>
+						{ properties && ! narrow ? (
+							properties
 						) : (
 							<div className="inspector-head">
 								<div className="eyebrow">
@@ -1689,6 +1696,21 @@ export default function FieldManagerView( { model } ) {
 						) }
 					</aside>
 				</div>
+
+				{ narrow && properties ? (
+					<Dialog
+						open
+						title={ __(
+							'Propriedades do campo',
+							'wc-checkoutsuite'
+						) }
+						topBar
+						className="mobile-inspector"
+						onClose={ () => onEdit( null ) }
+					>
+						{ properties }
+					</Dialog>
+				) : null }
 
 				<div className="bottom-status">
 					<span>
