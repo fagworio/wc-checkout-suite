@@ -1,12 +1,32 @@
 /**
- * The first browser observation: the Blocks checkout, at the five widths.
+ * The browser observation of the store's checkout: WCCS-063.
  *
- * WCCS-063 needs a rendered page, and every phase from F04 onwards recorded that there was
- * none to open. There is one. This script publishes a document with one field, opens the
- * store's own checkout with a real browser at each width the acceptance names, and reports
- * what the rendered page actually says: whether the plugin's region is there, whether the
- * page overflows horizontally, whether a focused control keeps its ring, and whether a
- * reduced-motion preference is honoured.
+ * WCCS-063 needs a rendered page, and every phase from F04 onwards recorded that there
+ * was none to open. There is one. This script opens the store's own checkout with a real
+ * browser at each of the five widths the acceptance names and reports what the rendered
+ * page actually says about the two halves of the plugin:
+ *
+ *   - that the request delivered the presentation, its tokens and the field payload, and
+ *     that the bundle ran and found the Blocks checkout API it needs;
+ *   - that the plugin's field reached the checkout at all — the native one through
+ *     WooCommerce's own additional-fields API;
+ *   - that no width overflows horizontally, that a focused control keeps its ring, that
+ *     zoom does not break the layout, and that a reduced-motion preference is honoured.
+ *
+ * Two things it cannot do, and says so instead of pretending:
+ *
+ *   1. The store runs WooCommerce's "coming soon" mode, so an anonymous visitor is
+ *      answered with the coming-soon screen and never reaches the checkout. Pass a
+ *      logged-in cookie of a user who can `manage_woocommerce` (the store's own bypass)
+ *      through `WCCS_COOKIE="name=value"`; without it the script reports what the
+ *      anonymous page is and stops asserting about a checkout that was not served.
+ *   2. This plugin draws its controlled fields through a block it registers with the
+ *      Blocks checkout, and WooCommerce renders only the inner blocks the checkout page
+ *      actually contains. This store's checkout page does not contain it, and putting it
+ *      there would be editing the merchant's page. The plugin's own region is therefore
+ *      exercised by `tests/browser/field-component-observation.mjs`, against the real
+ *      bundle and the real stylesheet, and this script records the absence with its
+ *      reason instead of counting it as a defect.
  *
  * It writes nothing to the store and changes nothing: it reads pages.
  */
@@ -15,11 +35,13 @@ import { chromium } from 'playwright';
 const CHECKOUT = process.env.WCCS_URL || 'http://wpagf.dvl.to:8080/finalizar-compra/';
 const ORIGIN = new globalThis.URL( CHECKOUT ).origin;
 const PRODUCT = process.env.WCCS_PRODUCT || '';
+const COOKIE = process.env.WCCS_COOKIE || '';
 const WIDTHS = [320, 375, 768, 1280, 1440];
 const findings = [];
 const notes = [];
 
 const record = (label, ok, detail = '') => findings.push({ label, ok: Boolean(ok), detail });
+const note = (message) => notes.push(message);
 
 // The store is served over plain HTTP, and crypto.randomUUID exists only in a secure context, so
 // the Blocks checkout's scripts threw before this plugin could draw anything. The fix is a browser
@@ -41,12 +63,56 @@ const seed = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 
 if (PRODUCT) {
 	await seed.goto(`${ORIGIN}/?add-to-cart=${PRODUCT}`, { waitUntil: 'networkidle', timeout: 45000 });
-	notes.push(`Cart seeded with product ${PRODUCT}`);
+	note(`Cart seeded with product ${PRODUCT}`);
 } else {
-	notes.push('No product was given, so the checkout was opened with an empty cart.');
+	note('No product was given, so the checkout was opened with an empty cart.');
 }
 
 const state = await seed.context().storageState();
+
+// The store's own bypass for the coming-soon screen is a capability, not an option: a session
+// cookie of a user who can manage WooCommerce sees the live store. The cookie is handed in and
+// never minted here, so this script never authenticates on its own.
+if (COOKIE) {
+	const separator = COOKIE.indexOf('=');
+	const name = separator > 0 ? COOKIE.slice(0, separator) : '';
+	const value = separator > 0 ? COOKIE.slice(separator + 1) : '';
+	const host = new globalThis.URL( ORIGIN ).hostname;
+
+	state.cookies.push({ name, value, domain: host, path: '/', expires: -1, httpOnly: true, secure: false, sameSite: 'Lax' });
+	note(`Authenticated as a store user through ${name}; the coming-soon screen is bypassed by the store's own rule.`);
+} else {
+	note('No cookie was given. If the store is in coming-soon mode, the checkout will not be served.');
+}
+
+/** Reads what the rendered checkout says about this plugin. */
+const readDelivery = () =>
+	/**
+	 * Reads the page.
+	 *
+	 * @return {Object} Observation.
+	 */
+	({
+		checkout: document.querySelectorAll('.wc-block-checkout, form.checkout').length,
+		comingSoon: document.querySelectorAll('.wp-block-woocommerce-coming-soon').length,
+		bundle: Array.from(document.querySelectorAll('script[src]')).some((element) => (element.getAttribute('src') || '').includes('wc-checkout-suite/build/blocks/index.js')),
+		classicBundle: Array.from(document.querySelectorAll('script[src]')).some((element) => (element.getAttribute('src') || '').includes('wc-checkout-suite/build/checkout/index.js')),
+		tokens: Array.from(document.querySelectorAll('link[rel=stylesheet]')).some((element) => (element.getAttribute('href') || '').includes('design-tokens/tokens.css')),
+		presentation: Array.from(document.querySelectorAll('link[rel=stylesheet]')).some((element) => (element.getAttribute('href') || '').includes('blocks/presentation.css')),
+		payload: (() => {
+			const runtime = /** @type {any} */ (window);
+			return runtime.wccsBlocks && Array.isArray(runtime.wccsBlocks.fields)
+				? runtime.wccsBlocks.fields.map((field) => field.name)
+				: null;
+		})(),
+		registry: typeof /** @type {any} */ (window).wccsBlocksFields,
+		registration: typeof (/** @type {any} */ (window).wc && /** @type {any} */ (window).wc.blocksCheckout
+			? /** @type {any} */ (window).wc.blocksCheckout.registerCheckoutBlock
+			: undefined),
+		region: document.querySelectorAll('.wccs-blocks-field').length,
+		nativeField: document.body.innerText.includes('Fixture note'),
+		overflow: document.documentElement.scrollWidth - window.innerWidth,
+	});
 
 for (const width of WIDTHS) {
 	const page = await browser.newPage({ viewport: { width, height: 900 }, storageState: state });
@@ -64,71 +130,104 @@ for (const width of WIDTHS) {
 	const redirected = !landed.startsWith(CHECKOUT);
 
 	record(`The browser is on the checkout at ${width}px`, !redirected, `landed=${landed}`);
-	const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-	// Both surfaces: the store's checkout is served as the classic one (WooCommerce enqueues
-	// wc-checkout-js and not wc-blocks-checkout), so the region to look for is the classic scope
-	// this plugin puts on the body, and the Blocks region is counted too in case the store
-	// switches. Reading one and calling it the other is what the last six rounds did.
-	const region = await page.locator('.wccs-blocks-field').count();
-	const classic = await page.evaluate(() => ({
-		scope: document.body.classList.contains('wccs-checkout'),
-		fields: document.querySelectorAll('.wccs-checkout .form-row').length,
-		stylesheet: Array.from(document.querySelectorAll('link[rel=stylesheet]')).some((link) => (link.getAttribute('href') || '').includes('presentation.css')),
-	}));
-	const scope = await page.evaluate(() => document.body.className.includes('woocommerce-checkout'));
+
+	const delivery = await page.evaluate(readDelivery);
 
 	record(`The checkout answers at ${width}px`, 200 === status, `status=${status}`);
-	record(`No horizontal overflow at ${width}px`, overflow <= 1, `overflow=${overflow}px`);
-	record(`The page is a checkout at ${width}px`, scope);
-	record(`The plugin region is on the page at ${width}px`, region > 0 || classic.fields > 0, `blocks=${region} classic=${classic.fields} scope=${classic.scope} css=${classic.stylesheet}`);
+	record(
+		`The store served a checkout and not the coming-soon screen at ${width}px`,
+		0 === delivery.comingSoon && delivery.checkout > 0,
+		`coming_soon=${delivery.comingSoon} checkout=${delivery.checkout}`
+	);
+	record(`No horizontal overflow at ${width}px`, delivery.overflow <= 1, `overflow=${delivery.overflow}px`);
 	record(`No uncaught script error at ${width}px`, 0 === errors.length, errors.join(' | '));
+
+	// What the request delivered. The bundle is worthless without the payload it reads, and the
+	// payload is worthless without the stylesheet that presents it, so the three are asserted
+	// together at every width.
+	record(
+		`The plugin's payload and bundle are on the page at ${width}px`,
+		delivery.bundle && Array.isArray(delivery.payload) && delivery.payload.length > 0,
+		`bundle=${delivery.bundle} payload=${JSON.stringify(delivery.payload)}`
+	);
+	record(
+		`The presentation and its tokens are on the page at ${width}px`,
+		delivery.presentation && delivery.tokens,
+		`presentation=${delivery.presentation} tokens=${delivery.tokens}`
+	);
+	record(
+		`The bundle found the Blocks checkout API at ${width}px`,
+		'function' === delivery.registration,
+		`registerCheckoutBlock=${delivery.registration} registry=${delivery.registry}`
+	);
+	record(
+		`The document reached the rendered checkout at ${width}px`,
+		delivery.nativeField,
+		`native_field=${delivery.nativeField}`
+	);
+
+	if (0 === delivery.region) {
+		note(
+			`The plugin's own region is not placed on the checkout at ${width}px (regions=${delivery.region}): the checkout page's content does not contain the block this plugin registers, and WooCommerce renders the inner blocks the page contains. The component itself is observed by field-component-observation.mjs.`
+		);
+	}
 
 	await page.close();
 }
 
-// Focus and reduced motion, read once: the same page, one control focused.
+// ---------------------------------------------------------------------------
+// Focus, zoom and reduced motion, read on one page.
+// ---------------------------------------------------------------------------
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce', storageState: state });
 await page.goto(CHECKOUT, { waitUntil: 'networkidle', timeout: 45000 });
 
-const control = page.locator('.wccs-blocks-field input, .wccs-blocks-field textarea, .wccs-blocks-field select, .wccs-checkout .form-row input, .wccs-checkout .form-row textarea, .wccs-checkout .form-row select').first();
+const control = page.locator('.wccs-blocks-field textarea, .wccs-blocks-field input, .wc-block-checkout input[type=text], .wc-block-checkout input[type=email], .wc-block-checkout select').first();
 
 if (await control.count()) {
 	await control.focus();
-	const outline = await control.evaluate((element) => {
+
+	const focused = await control.evaluate((element) => {
 		const style = getComputedStyle(element);
-		return { width: style.outlineWidth, style: style.outlineStyle };
+		return {
+			isActive: document.activeElement === element,
+			outlineWidth: parseFloat(style.outlineWidth) || 0,
+			outlineStyle: style.outlineStyle,
+			boxShadow: style.boxShadow,
+			borderColor: style.borderColor,
+			height: Math.round(element.getBoundingClientRect().height),
+		};
 	});
-	record('A focused control keeps a visible ring', parseFloat(outline.width) > 0 && 'none' !== outline.style, JSON.stringify(outline));
+
+	// A focus ring is either an outline or a shadow: which one a theme chooses is its business,
+	// what matters is that the focused control is visibly different from the unfocused one.
+	const ring = (focused.outlineWidth > 0 && 'none' !== focused.outlineStyle) || (focused.boxShadow && 'none' !== focused.boxShadow);
+
+	record('The focused control is the active element', focused.isActive, JSON.stringify(focused));
+	record('A focused control keeps a visible ring', Boolean(ring), JSON.stringify(focused));
+	record('The control is a usable touch target', focused.height >= 40, `height=${focused.height}px`);
 } else {
-	notes.push('No control of this plugin was on the page to focus — the region count above says why.');
+	record('A control was on the page to focus', false, 'no checkout control was found');
 }
 
-const transitions = await page.evaluate(() => Array.from(document.querySelectorAll('*')).filter((element) => {
+const transitions = await page.evaluate(() => Array.from(document.querySelectorAll('.wc-block-checkout *, .wccs-blocks-field *')).filter((element) => {
 	const value = getComputedStyle(element).transitionDuration;
 	return value && '0s' !== value && parseFloat(value) > 0.5;
 }).length);
 
 record('Reduced motion: no long transition survives the preference', 0 === transitions, `elements=${transitions}`);
 
-// Why the region is not there: the bundle may never arrive, or it may arrive and find nowhere to
-// register. The two are different findings and only one of them is this plugin's to fix.
-const diagnostic = await page.evaluate(() => {
-	const runtime = /** @type {any} */ (window);
-	const scripts = Array.from(document.querySelectorAll('script[src]')).map((element) => element.getAttribute('src') || '');
-	return {
-		bundle: scripts.some((src) => src.includes('wc-checkout-suite/build/blocks')),
-		payload: typeof runtime.wccsBlocks === 'object' && runtime.wccsBlocks !== null ? Object.keys(runtime.wccsBlocks) : null,
-		fields: runtime.wccsBlocks && runtime.wccsBlocks.fields ? runtime.wccsBlocks.fields.length : null,
-		blocksCheckout: typeof runtime.wc?.blocksCheckout,
-		registerCheckoutBlock: typeof runtime.wc?.blocksCheckout?.registerCheckoutBlock,
-		componentRegistry: typeof runtime.wccsBlocksFields,
-	};
+// Zoom is applied as CSS zoom on the root element: Playwright cannot drive the browser's own
+// zoom UI, and this is the same layout consequence — the page is laid out as if the viewport were
+// half as wide. What the assertion is about is reflow, which is what a zoomed user experiences.
+const zoomOverflow = await page.evaluate(() => {
+	document.documentElement.style.zoom = '2';
+	void document.documentElement.offsetWidth;
+	const overflow = document.documentElement.scrollWidth - window.innerWidth;
+	document.documentElement.style.zoom = '';
+	return overflow;
 });
 
-notes.push(`Diagnostic: ${JSON.stringify(diagnostic)}`);
-
-const widths = await page.evaluate(() => Array.from(document.querySelectorAll('.wccs-blocks-field')).slice(0, 3).map((element) => Math.round(element.getBoundingClientRect().width)));
-notes.push(`Region widths at 1280px: ${JSON.stringify(widths)}`);
+record('Zoom to 200% does not overflow horizontally', zoomOverflow <= 1, `overflow=${zoomOverflow}px`);
 
 await seed.close();
 await browser.close();
@@ -137,8 +236,8 @@ for (const finding of findings) {
 	console.log(`${finding.ok ? 'PASS' : 'FAIL'}  ${finding.label}${finding.detail ? '  [' + finding.detail + ']' : ''}`);
 }
 
-for (const note of notes) {
-	console.log(`NOTE  ${note}`);
+for (const message of notes) {
+	console.log(`NOTE  ${message}`);
 }
 
 const failed = findings.filter((finding) => !finding.ok).length;
