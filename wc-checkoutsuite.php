@@ -2,11 +2,13 @@
 /**
  * Plugin Name:       WC CheckoutSuite
  * Description:       Advanced checkout field management for WooCommerce: field types, Brazilian presets, masks, server-side validation, conditional logic, private uploads and order persistence for Classic Checkout, Checkout Blocks and HPOS.
- * Version:           0.1.0
+ * Version:           1.0.0-rc.1
  * Requires at least: 7.1
  * Requires PHP:      8.2
  * WC requires at least: 11.1
  * WC tested up to:   11.1
+ * License:           GPL-2.0-or-later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       wc-checkoutsuite
  * Domain Path:       /languages
  *
@@ -14,9 +16,13 @@
  *
  * Notes on deliberately absent metadata:
  *
- * - Author, Author URI, Plugin URI, License and License URI are intentionally
- *   omitted. They are a commercial distribution decision tracked by WCCS-067
- *   (F13) and must not be invented here.
+ * - Author, Author URI and Plugin URI are still omitted, and the licence is the one
+ *   header that is not: a WordPress plugin has to be GPL-compatible to be installed at
+ *   all, so GPL-2.0-or-later is the ecosystem's requirement rather than a commercial
+ *   choice. The commercial side of WCCS-067 — who distributes it, under what price and
+ *   with which update channel — is written down in
+ *   docs/operations/licensing-and-distribution.md and stays a product decision that is
+ *   not invented in a file header.
  *
  * - The `Requires Plugins` header is deliberately NOT used. It would hard-block
  *   activation without WooCommerce, but the acceptance for WCCS-006 requires
@@ -43,7 +49,7 @@ if ( defined( 'WCCS_VERSION' ) ) {
  * Changing any of them must be a single edit here.
  * -----------------------------------------------------------------------------
  */
-define( 'WCCS_VERSION', '0.1.0' );
+define( 'WCCS_VERSION', '1.0.0-rc.1' );
 define( 'WCCS_PLUGIN_FILE', __FILE__ );
 define( 'WCCS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WCCS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

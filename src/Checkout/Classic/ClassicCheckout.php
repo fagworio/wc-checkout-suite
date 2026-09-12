@@ -57,7 +57,7 @@ final class ClassicCheckout {
 		 * than its type promises, is reported instead of being faked. The
 		 * diagnostics section reads this.
 		 *
-		 * @since 0.1.0
+		 * @since 1.0.0
 		 *
 		 * @param array<int, array{field: string, type: string, level: string, reason: string}> $report Report entries.
 		 */

@@ -13,6 +13,11 @@
 /.phpunit.result.cache
 /.phpstan-cache/
 
+# The release artefacts and the smoke test's extraction directory. Both are built
+# from the tree by bin/build-release.php and bin/smoke-package.php, so they are output.
+/dist/
+/.release-smoke/
+
 # Deliberately NOT ignored: the planning package under roadmap/.
 #
 # It is the record of what was asked for. The validation documents cite it by

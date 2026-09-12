@@ -179,7 +179,7 @@ final class CoreFields {
 		 * to hide a field from the picker; removing a field here does not remove
 		 * it from the checkout.
 		 *
-		 * @since 0.1.0
+		 * @since 1.0.0
 		 *
 		 * @param array{available: bool, reason: string, sections: array<int, array<string, mixed>>, fields: array<int, array<string, mixed>>} $inventory Inventory.
 		 */

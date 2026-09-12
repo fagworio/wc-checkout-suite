@@ -314,7 +314,7 @@ final class BlocksRenderer {
 		 * the half that renders, and a field it cannot draw is reported here rather
 		 * than left as a field that silently is not on the checkout.
 		 *
-		 * @since 0.1.0
+		 * @since 1.0.0
 		 *
 		 * @param array<int, string>                                              $registered Identifiers registered.
 		 * @param array<int, array{field: string, code: string, reason: string}> $report     Report entries.

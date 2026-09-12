@@ -1,21 +1,23 @@
 # Copyright (C) 2026 
-# This file is distributed under the same license as the WC CheckoutSuite plugin.
+# This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: WC CheckoutSuite 0.1.0\n"
+"Project-Id-Version: WC CheckoutSuite 1.0.0-rc.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wc-checkout-suite\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-11T15:59:48+00:00\n"
+"POT-Creation-Date: 2026-09-12T03:16:46+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.7.1\n"
 "X-Domain: wc-checkoutsuite\n"
 
 #. Plugin Name of the plugin
-#: resources/admin/index.js:26
+#: src/Admin/AdminMenu.php:55
+#: src/Admin/AdminMenu.php:56
+#: src/Privacy/PrivacyPolicy.php:57
 msgid "WC CheckoutSuite"
 msgstr ""
 
@@ -23,210 +25,795 @@ msgstr ""
 msgid "Advanced checkout field management for WooCommerce: field types, Brazilian presets, masks, server-side validation, conditional logic, private uploads and order persistence for Classic Checkout, Checkout Blocks and HPOS."
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:40
-msgid "Text"
+#: src/Admin/AdminMenu.php:89
+msgid "Fields"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:41
-msgid "Textarea"
+#: src/Admin/AdminMenu.php:93
+msgid "Sections"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:42
-msgid "Email"
+#: src/Admin/AdminMenu.php:97
+msgid "Rules"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:43
-#: src/Domain/Fields/CoreTypes.php:129
-msgid "Phone"
+#: src/Admin/AdminMenu.php:101
+msgid "Appearance"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:44
-msgid "URL"
+#: src/Admin/AdminMenu.php:105
+msgid "Checkout page"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:50
-msgid "Select"
+#: src/Admin/AdminMenu.php:109
+msgid "Import / Export"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:51
-msgid "Multi Select"
+#: src/Admin/AdminMenu.php:113
+msgid "Diagnostics"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:52
-msgid "Radio"
+#: src/Admin/AdminMenu.php:117
+msgid "Settings"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:53
-msgid "Checkbox Group"
+#: src/Admin/AdminMenu.php:143
+msgid "You are not allowed to manage checkout fields."
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:57
-msgid "Date"
+#: src/Admin/AdminMenu.php:144
+msgid "Forbidden"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:58
-msgid "Time"
+#: src/Admin/AdminMenu.php:152
+msgid "The WC CheckoutSuite administration interface requires JavaScript."
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:59
-msgid "Date and time"
+#: src/Admin/Orders/OrderFieldsPanel.php:126
+#: src/Privacy/OrderFieldsEraser.php:62
+#: src/Privacy/OrderFieldsExporter.php:63
+msgid "Checkout fields"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:62
-msgid "Hidden"
+#: src/Admin/Orders/OrderFieldsPanel.php:291
+msgid "This order carries checkout values this version cannot read. They are left untouched."
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:63
-msgid "Heading"
+#: src/Admin/Orders/OrderFieldsPanel.php:301
+msgid "No checkout field is shown on the order screen."
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:64
-msgid "Paragraph"
+#: src/Admin/Orders/OrderFieldsPanel.php:350
+msgid "Validated the same way the checkout validates it."
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:65
-msgid "Restricted HTML"
+#: src/Admin/Orders/OrderFieldsPanel.php:351
+msgid "Shown for reference: this field is not kept on the order."
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:68
-msgid "File"
+#: src/Admin/Orders/OrderFieldsPanel.php:373
+#: src/Checkout/CustomerOrderFields.php:181
+#: src/Checkout/OrderEmailFields.php:343
+#: src/Privacy/OrderFieldsExporter.php:176
+msgid "Yes"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:71
+#: src/Admin/Orders/OrderFieldsPanel.php:373
+#: src/Checkout/CustomerOrderFields.php:181
+#: src/Checkout/OrderEmailFields.php:343
+#: src/Privacy/OrderFieldsExporter.php:176
+msgid "No"
+msgstr ""
+
+#: src/Checkout/Classic/ClassicAssets.php:284
+msgid "Order summary"
+msgstr ""
+
+#: src/Checkout/Classic/ClassicAssets.php:285
+msgid "Show order summary"
+msgstr ""
+
+#: src/Checkout/Classic/ClassicAssets.php:286
+msgid "Hide order summary"
+msgstr ""
+
+#: src/Checkout/CustomerOrderFields.php:146
+#: src/Checkout/OrderEmailFields.php:195
+msgid "Checkout information"
+msgstr ""
+
+#: src/Checkout/OrderEmailFields.php:194
+msgid "Checkout information (store copy)"
+msgstr ""
+
+#: src/Checkout/OrderEmailFields.php:265
+#: src/Checkout/OrderEmailFields.php:286
+msgid "A document was provided with this order."
+msgstr ""
+
+#: src/Checkout/OrderEmailFields.php:292
+msgid "Open your document"
+msgstr ""
+
+#: src/Domain/Checkout/AdapterCapabilities.php:84
+msgid "Classic checkout"
+msgstr ""
+
+#: src/Domain/Checkout/AdapterCapabilities.php:85
+msgid "The shortcode checkout, rendered through the plugin's own PHP hooks."
+msgstr ""
+
+#: src/Domain/Checkout/AdapterCapabilities.php:92
+msgid "Block checkout"
+msgstr ""
+
+#: src/Domain/Checkout/AdapterCapabilities.php:93
+msgid "The Block checkout, which renders fields through its own API."
+msgstr ""
+
+#: src/Domain/Checkout/AdapterCapabilities.php:129
+msgid "The classic checkout renders this through the plugin's own hooks."
+msgstr ""
+
+#. translators: %s: field type key
+#: src/Domain/Checkout/AdapterCapabilities.php:140
+msgid "The classic checkout has no rendering for the type \"%s\", so the field is skipped rather than shown as something else."
+msgstr ""
+
+#. translators: %s: adapter key
+#: src/Domain/Checkout/AdapterCapabilities.php:154
+msgid "The adapter \"%s\" is not one this build knows."
+msgstr ""
+
+#: src/Domain/Checkout/AdapterCapabilities.php:163
+msgid "Provided by the additional-fields API of the Block checkout."
+msgstr ""
+
+#. translators: %s: field type key
+#: src/Domain/Checkout/AdapterCapabilities.php:174
+msgid "The Block checkout API provides text, select and checkbox. A field of type \"%s\" needs a Suite component."
+msgstr ""
+
+#: src/Domain/Checkout/CapabilityResolver.php:125
+msgid "WooCommerce owns this field: it can be renamed, moved and resized, and it cannot be removed, archived or retyped."
+msgstr ""
+
+#: src/Domain/Checkout/CapabilityResolver.php:148
+msgid "This field claims a WooCommerce field that is no longer in the inventory, so the store cannot honour the override."
+msgstr ""
+
+#. translators: 1: viewport, 2: width in columns.
+#: src/Domain/Checkout/CapabilityResolver.php:187
+msgid "The %1$s width of %2$s columns is not one the grid offers, so it is not applied."
+msgstr ""
+
+#: src/Domain/Checkout/CapabilityResolver.php:199
+msgid "The classic checkout has a twelve column grid: twelve and six are honoured by the grid, and four and three by a class this plugin applies."
+msgstr ""
+
+#: src/Domain/Checkout/CapabilityResolver.php:206
+msgid "The Block checkout lays out its own fields, so the requested width is not applied there."
+msgstr ""
+
+#. translators: %s: section identifier.
+#: src/Domain/Checkout/CapabilityResolver.php:231
+msgid "The section \"%s\" is not part of the document, so no checkout has a place to put this field."
+msgstr ""
+
+#: src/Domain/Checkout/CapabilityResolver.php:239
+msgid "The classic checkout has no contact step, so the field is drawn with the billing address."
+msgstr ""
+
+#: src/Domain/Checkout/CapabilityResolver.php:240
+msgid "The classic checkout draws the field in this location."
+msgstr ""
+
+#: src/Domain/Checkout/CapabilityResolver.php:256
+msgid "The Block checkout has no location this section maps to."
+msgstr ""
+
+#. translators: %s: Blocks location.
+#: src/Domain/Checkout/CapabilityResolver.php:259
+msgid "The Block checkout draws the field in its \"%s\" location."
+msgstr ""
+
+#: src/Domain/Checkout/CapabilityResolver.php:297
+msgid "The classic checkout renders this type."
+msgstr ""
+
+#. translators: %s: field type.
+#: src/Domain/Checkout/CapabilityResolver.php:300
+msgid "The classic checkout cannot render a \"%s\" field."
+msgstr ""
+
+#: src/Domain/Checkout/CoreFields.php:93
+#: src/Domain/Migration/ThemeHighAdapter.php:458
+#: src/Domain/Sections/SectionLocations.php:40
+msgid "Billing"
+msgstr ""
+
+#: src/Domain/Checkout/CoreFields.php:94
+#: src/Domain/Migration/ThemeHighAdapter.php:461
+#: src/Domain/Sections/SectionLocations.php:48
+msgid "Shipping"
+msgstr ""
+
+#: src/Domain/Checkout/CoreFields.php:95
+#: src/Domain/Sections/SectionLocations.php:64
+msgid "Account"
+msgstr ""
+
+#: src/Domain/Checkout/CoreFields.php:96
+#: src/Domain/Sections/SectionLocations.php:72
+msgid "Order"
+msgstr ""
+
+#: src/Domain/Checkout/CoreFields.php:345
+msgid "WooCommerce is not active, so its checkout fields cannot be listed."
+msgstr ""
+
+#: src/Domain/Checkout/CoreFields.php:354
+msgid "WooCommerce has not finished starting, so its checkout fields cannot be listed yet."
+msgstr ""
+
+#: src/Domain/Checkout/CoreFields.php:363
+msgid "The WooCommerce checkout object could not be built, so its fields cannot be listed."
+msgstr ""
+
+#. translators: %s: error message
+#: src/Domain/Checkout/CoreFields.php:375
+msgid "Reading the WooCommerce checkout fields failed: %s"
+msgstr ""
+
+#: src/Domain/Checkout/CoreFields.php:395
+msgid "The WooCommerce checkout fields are unavailable."
+msgstr ""
+
+#: src/Domain/Conditions/ConditionValidator.php:66
+msgid "The conditions of a field must be a rule, not a value of another kind."
+msgstr ""
+
+#. translators: %s: path inside the rule
+#: src/Domain/Conditions/ConditionValidator.php:98
+msgid "The rule at %s is neither a group nor a comparison."
+msgstr ""
+
+#. translators: %s: path inside the rule
+#: src/Domain/Conditions/ConditionValidator.php:135
+msgid "The group at %s has no conditions in it."
+msgstr ""
+
+#. translators: %s: source key
+#: src/Domain/Conditions/ConditionValidator.php:177
+msgid "The condition reads \"%s\", which is not something this store can look at."
+msgstr ""
+
+#. translators: %s: operator key
+#: src/Domain/Conditions/ConditionValidator.php:191
+msgid "The condition uses the operator \"%s\", which does not exist."
+msgstr ""
+
+#: src/Domain/Conditions/ConditionValidator.php:207
+msgid "The condition reads another field but does not say which one."
+msgstr ""
+
+#: src/Domain/Conditions/ConditionValidator.php:217
+msgid "A field cannot depend on itself."
+msgstr ""
+
+#. translators: 1: operator label, 2: source label, 3: value type
+#: src/Domain/Conditions/ConditionValidator.php:238
+msgid "The operator \"%1$s\" cannot read %2$s, which holds a value of type %3$s."
+msgstr ""
+
+#. translators: %s: operator key
+#: src/Domain/Conditions/ConditionValidator.php:255
+msgid "The operator \"%s\" asks a question about what is there and takes no value."
+msgstr ""
+
+#. translators: %s: operator key
+#: src/Domain/Conditions/ConditionValidator.php:272
+msgid "The operator \"%s\" needs something to compare against."
+msgstr ""
+
+#: src/Domain/Conditions/ConditionValidator.php:287
+msgid "A condition compares against text, a number, a boolean or a list, and nothing else."
+msgstr ""
+
+#. translators: 1: operator key, 2: value type
+#: src/Domain/Conditions/ConditionValidator.php:299
+msgid "The operator \"%1$s\" cannot compare against a value of type %2$s."
+msgstr ""
+
+#. translators: 1: field id, 2: referenced field id
+#: src/Domain/Conditions/ConditionValidator.php:384
+msgid "The conditions of \"%1$s\" read the field \"%2$s\", which is not in the schema."
+msgstr ""
+
+#. translators: 1: operator key, 2: field id, 3: value type
+#: src/Domain/Conditions/ConditionValidator.php:434
+msgid "The operator \"%1$s\" cannot read the field \"%2$s\", which holds a value of type %3$s."
+msgstr ""
+
+#. translators: 1: field id, 2: the chain of fields
+#: src/Domain/Conditions/ConditionValidator.php:478
+msgid "The conditions of \"%1$s\" depend on themselves, through %2$s."
+msgstr ""
+
+#: src/Domain/Conditions/Operators.php:40
+msgid "is equal to"
+msgstr ""
+
+#: src/Domain/Conditions/Operators.php:47
+msgid "is not equal to"
+msgstr ""
+
+#: src/Domain/Conditions/Operators.php:55
+msgid "contains"
+msgstr ""
+
+#: src/Domain/Conditions/Operators.php:62
+msgid "does not contain"
+msgstr ""
+
+#: src/Domain/Conditions/Operators.php:70
+msgid "is greater than"
+msgstr ""
+
+#: src/Domain/Conditions/Operators.php:77
+msgid "is less than"
+msgstr ""
+
+#: src/Domain/Conditions/Operators.php:84
+msgid "is empty"
+msgstr ""
+
+#: src/Domain/Conditions/Operators.php:91
+msgid "is not empty"
+msgstr ""
+
+#: src/Domain/Conditions/Operators.php:99
+msgid "is one of"
+msgstr ""
+
+#: src/Domain/Conditions/Operators.php:107
+msgid "is not one of"
+msgstr ""
+
+#: src/Domain/Conditions/Sources.php:39
+msgid "Another field"
+msgstr ""
+
+#: src/Domain/Conditions/Sources.php:41
+#: src/Domain/Fields/CoreTypes.php:78
 msgid "Country"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:72
+#: src/Domain/Conditions/Sources.php:42
+#: src/Domain/Fields/CoreTypes.php:79
 msgid "State"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:92
-#: src/Domain/Fields/CoreTypes.php:94
+#: src/Domain/Conditions/Sources.php:43
+msgid "Shipping method"
+msgstr ""
+
+#: src/Domain/Conditions/Sources.php:44
+msgid "Payment method"
+msgstr ""
+
+#: src/Domain/Conditions/Sources.php:48
+msgid "Customer is logged in"
+msgstr ""
+
+#: src/Domain/Conditions/Sources.php:49
+msgid "Products in the cart"
+msgstr ""
+
+#: src/Domain/Conditions/Sources.php:50
+msgid "Product categories in the cart"
+msgstr ""
+
+#: src/Domain/Conditions/Sources.php:51
+msgid "Cart total"
+msgstr ""
+
+#: src/Domain/Fields/BrazilianPresets.php:52
 msgid "CPF"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:105
-#: src/Domain/Fields/CoreTypes.php:107
+#: src/Domain/Fields/BrazilianPresets.php:53
 msgid "CNPJ"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:115
+#: src/Domain/Fields/BrazilianPresets.php:61
+#: src/Domain/Fields/BrazilianPresets.php:63
 msgid "RG"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:119
-#: src/Domain/Fields/CoreTypes.php:121
+#: src/Domain/Fields/BrazilianPresets.php:69
 msgid "CEP"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:129
+#: src/Domain/Fields/BrazilianPresets.php:74
 msgid "Landline phone"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:130
+#: src/Domain/Fields/BrazilianPresets.php:77
+#: src/Domain/Fields/CoreTypes.php:50
+msgid "Phone"
+msgstr ""
+
+#: src/Domain/Fields/BrazilianPresets.php:90
+#: src/Domain/Fields/BrazilianPresets.php:93
 msgid "Mobile phone"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:131
+#: src/Domain/Fields/BrazilianPresets.php:106
 msgid "Person type (PF/PJ)"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:131
+#: src/Domain/Fields/BrazilianPresets.php:108
 msgid "Person type"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:132
+#: src/Domain/Fields/BrazilianPresets.php:113
+msgid "Individual"
+msgstr ""
+
+#: src/Domain/Fields/BrazilianPresets.php:117
+msgid "Company"
+msgstr ""
+
+#: src/Domain/Fields/BrazilianPresets.php:125
 msgid "Legal name"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:133
+#: src/Domain/Fields/BrazilianPresets.php:126
 msgid "Trade name"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:134
-msgid "Address number"
-msgstr ""
-
-#: src/Domain/Fields/CoreTypes.php:134
+#: src/Domain/Fields/BrazilianPresets.php:127
 #: src/Domain/Fields/Types/NumberFieldType.php:40
 msgid "Number"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:135
+#: src/Domain/Fields/BrazilianPresets.php:128
 msgid "Neighborhood"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:136
-msgid "Address complement"
-msgstr ""
-
-#: src/Domain/Fields/CoreTypes.php:136
+#: src/Domain/Fields/BrazilianPresets.php:129
 msgid "Complement"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:139
+#: src/Domain/Fields/BrazilianPresets.php:133
 msgid "State registration"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:140
+#: src/Domain/Fields/BrazilianPresets.php:134
 msgid "Municipal registration"
 msgstr ""
 
-#: src/Domain/Fields/CoreTypes.php:141
+#: src/Domain/Fields/BrazilianPresets.php:135
 msgid "Date of birth"
 msgstr ""
 
-#: src/Domain/Fields/DefinitionValidator.php:65
+#: src/Domain/Fields/CoreTypes.php:47
+msgid "Text"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:48
+msgid "Textarea"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:49
+msgid "Email"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:51
+msgid "URL"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:57
+msgid "Select"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:58
+msgid "Multi Select"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:59
+msgid "Radio"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:60
+msgid "Checkbox Group"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:64
+msgid "Date"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:65
+msgid "Time"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:66
+#: src/Domain/Fields/FieldCategory.php:56
+msgid "Date and time"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:69
+msgid "Hidden"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:70
+msgid "Heading"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:71
+msgid "Paragraph"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:72
+msgid "Restricted HTML"
+msgstr ""
+
+#: src/Domain/Fields/CoreTypes.php:75
+msgid "File"
+msgstr ""
+
+#. translators: %s: field type key
+#: src/Domain/Fields/DefinitionValidator.php:113
+msgid "The field type \"%s\" cannot be masked."
+msgstr ""
+
+#. translators: 1: field id, 2: comma separated list of scopes
+#: src/Domain/Fields/DefinitionValidator.php:134
+msgid "The storage scope of \"%1$s\" must be one of: %2$s."
+msgstr ""
+
+#. translators: %s: field id
+#: src/Domain/Fields/DefinitionValidator.php:149
+msgid "The field \"%s\" stores no value, so its storage scope has to be \"none\"."
+msgstr ""
+
+#. translators: 1: field id, 2: comma separated list of levels
+#: src/Domain/Fields/DefinitionValidator.php:163
+msgid "The sensitivity of \"%1$s\" must be one of: %2$s."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionValidator.php:179
+msgid "The visibility of a field must be a map of audience to true or false."
+msgstr ""
+
+#. translators: 1: audience key, 2: field id
+#: src/Domain/Fields/DefinitionValidator.php:191
+msgid "The audience \"%1$s\" is not one a field can be exposed to (field \"%2$s\")."
+msgstr ""
+
+#. translators: 1: audience key, 2: field id
+#: src/Domain/Fields/DefinitionValidator.php:204
+msgid "The audience \"%1$s\" must be true or false (field \"%2$s\")."
+msgstr ""
+
+#. translators: %s: field id
+#: src/Domain/Fields/DefinitionValidator.php:220
+msgid "The field \"%s\" stores no value, so it cannot be exposed through the Store API."
+msgstr ""
+
+#. translators: 1: field id, 2: comma separated list of policies
+#: src/Domain/Fields/DefinitionValidator.php:235
+msgid "What happens to a hidden value of \"%1$s\" must be one of: %2$s."
+msgstr ""
+
+#. translators: %s: field id
+#: src/Domain/Fields/DefinitionValidator.php:268
+msgid "The mask configured on \"%s\" has no key."
+msgstr ""
+
+#. translators: 1: mask key, 2: field id
+#: src/Domain/Fields/DefinitionValidator.php:286
+msgid "The mask \"%1$s\" configured on \"%2$s\" is not registered."
+msgstr ""
+
+#. translators: 1: field id, 2: configured version, 3: current version
+#: src/Domain/Fields/DefinitionValidator.php:302
+msgid "The mask on \"%1$s\" was configured against version %2$d, but version %3$d is registered. Re-apply the mask to accept the current one."
+msgstr ""
+
+#. translators: %s: field id
+#: src/Domain/Fields/DefinitionValidator.php:343
+msgid "The id \"%s\" belongs to a WooCommerce checkout field. A definition using it must declare the core origin."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionValidator.php:364
 msgid "A field definition requires an id."
 msgstr ""
 
 #. translators: %s: field id
-#: src/Domain/Fields/DefinitionValidator.php:74
+#: src/Domain/Fields/DefinitionValidator.php:373
 msgid "The field id \"%s\" must use lowercase letters, digits and underscores only."
 msgstr ""
 
-#: src/Domain/Fields/DefinitionValidator.php:86
+#: src/Domain/Fields/DefinitionValidator.php:385
 msgid "A field definition requires a label."
 msgstr ""
 
 #. translators: %s: field type key
-#: src/Domain/Fields/DefinitionValidator.php:99
+#: src/Domain/Fields/DefinitionValidator.php:400
 msgid "The field type \"%s\" is not registered."
 msgstr ""
 
 #. translators: %s: field type key
-#: src/Domain/Fields/DefinitionValidator.php:117
+#: src/Domain/Fields/DefinitionValidator.php:418
 msgid "The field type \"%s\" stores no value and cannot carry validators."
 msgstr ""
 
 #. translators: %s: preset key
-#: src/Domain/Fields/DefinitionValidator.php:138
+#: src/Domain/Fields/DefinitionValidator.php:439
 msgid "The preset \"%s\" is not registered."
 msgstr ""
 
 #. translators: 1: preset key, 2: preset type, 3: field type
-#: src/Domain/Fields/DefinitionValidator.php:150
+#: src/Domain/Fields/DefinitionValidator.php:451
 msgid "The preset \"%1$s\" is built on type \"%2$s\" but the field declares \"%3$s\"."
 msgstr ""
 
 #. translators: %s: validator key
-#: src/Domain/Fields/DefinitionValidator.php:170
+#: src/Domain/Fields/DefinitionValidator.php:471
 #: src/Domain/Fields/ValidatorRegistry.php:75
 msgid "The validator \"%s\" is not registered."
 msgstr ""
 
 #. translators: %s: normalizer key
-#: src/Domain/Fields/DefinitionValidator.php:187
+#: src/Domain/Fields/DefinitionValidator.php:488
 msgid "The normalizer \"%s\" is not registered."
 msgstr ""
 
-#: src/Domain/Fields/DefinitionValidator.php:199
+#: src/Domain/Fields/DefinitionValidator.php:500
+msgid "The field description must be at most 500 characters long."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionValidator.php:512
 msgid "The field position cannot be negative."
 msgstr ""
 
 #. translators: 1: viewport name, 2: width
-#: src/Domain/Fields/DefinitionValidator.php:211
+#: src/Domain/Fields/DefinitionValidator.php:524
 msgid "The %1$s width must be between 1 and 12 columns; %2$d was given."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:47
+msgid "With the order"
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:48
+msgid "The value is written to the order and follows it through refunds and exports."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:55
+msgid "On the customer"
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:56
+msgid "The value is remembered for the customer and offered again on the next order."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:63
+msgid "Not stored"
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:64
+msgid "The value is used during checkout and then discarded."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:81
+msgid "Not personal"
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:82
+msgid "The value identifies nobody on its own."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:89
+msgid "Personal"
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:90
+msgid "The value identifies a person and is removed from exports unless asked for."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:97
+msgid "Sensitive"
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:98
+msgid "The value is a document or other data that needs extra care, such as a CPF or CNPJ."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:115
+msgid "Order screen, for staff"
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:116
+msgid "Shown to staff when they open the order."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:123
+msgid "Order screen, for the customer"
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:124
+msgid "Shown to the customer in their account."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:131
+msgid "Emails to the customer"
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:132
+msgid "Included in the order emails the customer receives."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:139
+msgid "Emails to the store"
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:140
+msgid "Included in the order emails the store receives."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:147
+msgid "Store API and webhooks"
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:148
+msgid "Exposed outside the site. Off unless something else needs it."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:165
+msgid "Discard it"
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:166
+msgid "A value submitted while the field is hidden is refused rather than kept."
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:173
+msgid "Keep what was already saved"
+msgstr ""
+
+#: src/Domain/Fields/DefinitionVocabulary.php:174
+msgid "An existing value survives the field becoming hidden."
+msgstr ""
+
+#: src/Domain/Fields/FieldCategory.php:54
+msgid "Text and contact"
+msgstr ""
+
+#: src/Domain/Fields/FieldCategory.php:55
+msgid "Choice"
+msgstr ""
+
+#: src/Domain/Fields/FieldCategory.php:57
+msgid "Numbers"
+msgstr ""
+
+#: src/Domain/Fields/FieldCategory.php:58
+msgid "Address"
+msgstr ""
+
+#: src/Domain/Fields/FieldCategory.php:59
+msgid "Files"
+msgstr ""
+
+#: src/Domain/Fields/FieldCategory.php:60
+msgid "Content and layout"
+msgstr ""
+
+#: src/Domain/Fields/FieldCategory.php:61
+msgid "Other"
 msgstr ""
 
 #. translators: %s: setting name
@@ -241,6 +828,7 @@ msgstr ""
 
 #. translators: 1: setting name, 2: expected type
 #: src/Domain/Fields/SchemaValidator.php:93
+#: src/Domain/Fields/SchemaValidator.php:238
 msgid "The setting \"%1$s\" must be of type %2$s."
 msgstr ""
 
@@ -269,8 +857,13 @@ msgstr ""
 msgid "The setting \"%1$s\" must be at most %2$s."
 msgstr ""
 
-#. translators: 1: setting name, 2: maximum number of items
+#. translators: 1: setting name, 2: minimum number of items
 #: src/Domain/Fields/SchemaValidator.php:189
+msgid "The setting \"%1$s\" must contain at least %2$d items."
+msgstr ""
+
+#. translators: 1: setting name, 2: maximum number of items
+#: src/Domain/Fields/SchemaValidator.php:204
 msgid "The setting \"%1$s\" must contain at most %2$d items."
 msgstr ""
 
@@ -291,51 +884,51 @@ msgstr ""
 msgid "This field expects a checked or unchecked value."
 msgstr ""
 
-#: src/Domain/Fields/Types/ChoiceFieldType.php:143
+#: src/Domain/Fields/Types/ChoiceFieldType.php:161
 msgid "This field has no selectable options configured."
 msgstr ""
 
-#: src/Domain/Fields/Types/ChoiceFieldType.php:151
+#: src/Domain/Fields/Types/ChoiceFieldType.php:169
 msgid "This field expects a list of choices."
 msgstr ""
 
 #. translators: %s: submitted value
-#: src/Domain/Fields/Types/ChoiceFieldType.php:161
-#: src/Domain/Fields/Types/ChoiceFieldType.php:184
+#: src/Domain/Fields/Types/ChoiceFieldType.php:179
+#: src/Domain/Fields/Types/ChoiceFieldType.php:202
 msgid "\"%s\" is not one of the available choices."
 msgstr ""
 
-#: src/Domain/Fields/Types/ChoiceFieldType.php:175
+#: src/Domain/Fields/Types/ChoiceFieldType.php:193
 msgid "This field expects a single choice."
 msgstr ""
 
-#: src/Domain/Fields/Types/ContentFieldType.php:155
+#: src/Domain/Fields/Types/ContentFieldType.php:159
 msgid "This field is presentational and cannot store a value."
 msgstr ""
 
-#: src/Domain/Fields/Types/ContentFieldType.php:166
+#: src/Domain/Fields/Types/ContentFieldType.php:170
 #: src/Domain/Fields/Types/TextFieldType.php:143
 msgid "This field expects text."
 msgstr ""
 
-#: src/Domain/Fields/Types/ContentFieldType.php:173
+#: src/Domain/Fields/Types/ContentFieldType.php:177
 msgid "Please enter at most 500 characters."
 msgstr ""
 
-#: src/Domain/Fields/Types/FileFieldType.php:153
+#: src/Domain/Fields/Types/FileFieldType.php:157
 msgid "This field expects a list of uploaded files."
 msgstr ""
 
-#: src/Domain/Fields/Types/FileFieldType.php:161
+#: src/Domain/Fields/Types/FileFieldType.php:165
 msgid "An uploaded file reference is not valid."
 msgstr ""
 
 #. translators: %d: maximum number of files
-#: src/Domain/Fields/Types/FileFieldType.php:173
+#: src/Domain/Fields/Types/FileFieldType.php:177
 msgid "Please attach at most %d files."
 msgstr ""
 
-#: src/Domain/Fields/Types/FileFieldType.php:183
+#: src/Domain/Fields/Types/FileFieldType.php:187
 msgid "Please attach a single file."
 msgstr ""
 
@@ -399,26 +992,369 @@ msgstr ""
 msgid "The validator \"%s\" did not return a ValidationResult."
 msgstr ""
 
+#: src/Domain/Migration/ThemeHighAdapter.php:330
+msgid "A migration carries the configuration and not the orders: values already stored on past orders are not migrated, which is stated in section 21 of the planning."
+msgstr ""
+
+#: src/Domain/Migration/ThemeHighAdapter.php:464
+msgid "Additional"
+msgstr ""
+
+#. translators: %s: field id
+#: src/Domain/Schema/CoreFieldGuard.php:128
+msgid "The field id \"%s\" appears more than once. Identifiers must be unique."
+msgstr ""
+
+#. translators: %s: field id
+#: src/Domain/Schema/CoreFieldGuard.php:156
+msgid "The field \"%s\" belongs to WooCommerce and cannot be removed. Disable it or change how it is presented instead."
+msgstr ""
+
+#. translators: %s: field id
+#: src/Domain/Schema/CoreFieldGuard.php:174
+msgid "The field \"%s\" belongs to WooCommerce and cannot be re-declared as a custom field."
+msgstr ""
+
+#. translators: 1: field id, 2: current type, 3: requested type
+#: src/Domain/Schema/CoreFieldGuard.php:218
+msgid "The field \"%1$s\" belongs to WooCommerce and stores a value as \"%2$s\". Changing it to \"%3$s\" would change what the store persists."
+msgstr ""
+
+#. translators: %s: field id
+#: src/Domain/Schema/CoreFieldGuard.php:241
+msgid "The integration key of \"%s\" cannot change: other code and stored orders refer to it."
+msgstr ""
+
+#. translators: %s: field id
+#: src/Domain/Schema/CoreFieldGuard.php:258
+msgid "The field \"%s\" belongs to WooCommerce and cannot be archived. Shipping, tax and payment read it."
+msgstr ""
+
+#. translators: %s: field id
+#: src/Domain/Schema/CoreFieldGuard.php:275
+msgid "The field \"%s\" is required by WooCommerce. Making it optional needs an impact assessment, which this version does not provide."
+msgstr ""
+
+#. translators: %s: field id
+#: src/Domain/Schema/PublishIncompatibilities.php:155
+msgid "The WooCommerce field \"%s\" no longer exists on this store, so this override applies to nothing."
+msgstr ""
+
+#. translators: 1: size of the file in bytes, 2: largest accepted size in bytes.
+#: src/Domain/Schema/SchemaTransfer.php:142
+msgid "The file is %1$d bytes and the largest accepted is %2$d."
+msgstr ""
+
+#: src/Domain/Schema/SchemaTransfer.php:154
+msgid "The file is not valid JSON."
+msgstr ""
+
+#: src/Domain/Schema/SchemaTransfer.php:163
+msgid "The file does not contain an object."
+msgstr ""
+
+#: src/Domain/Schema/SchemaTransfer.php:174
+msgid "The file was not written by this plugin."
+msgstr ""
+
+#. translators: 1: version of the file, 2: version this store understands.
+#: src/Domain/Schema/SchemaTransfer.php:188
+msgid "The file is version %1$d and this store understands version %2$d."
+msgstr ""
+
+#. translators: 1: field count, 2: largest accepted, 3: section count, 4: largest accepted.
+#: src/Domain/Schema/SchemaTransfer.php:207
+msgid "The file carries %1$d fields and %3$d sections; the limits are %2$d and %4$d."
+msgstr ""
+
+#. translators: 1: revision the file came from, 2: revision the store holds now.
+#: src/Domain/Schema/SchemaTransfer.php:243
+msgid "The file came from revision %1$d and this store is at revision %2$d, so somebody has edited since. The preview shows what would change; nothing has been written."
+msgstr ""
+
+#: src/Domain/Sections/SectionLocations.php:41
+msgid "Alongside the billing address."
+msgstr ""
+
+#: src/Domain/Sections/SectionLocations.php:49
+msgid "Alongside the shipping address, when the order is shipped."
+msgstr ""
+
+#: src/Domain/Sections/SectionLocations.php:56
+msgid "Contact"
+msgstr ""
+
+#: src/Domain/Sections/SectionLocations.php:57
+msgid "With the details used to reach the customer."
+msgstr ""
+
+#: src/Domain/Sections/SectionLocations.php:65
+msgid "With the sign-in and account creation fields."
+msgstr ""
+
+#: src/Domain/Sections/SectionLocations.php:73
+msgid "With the order notes, away from the addresses."
+msgstr ""
+
+#: src/Domain/Sections/SectionValidator.php:51
+msgid "A section requires an id."
+msgstr ""
+
+#. translators: %s: section id
+#: src/Domain/Sections/SectionValidator.php:60
+msgid "The section id \"%s\" must use lowercase letters, digits and underscores only."
+msgstr ""
+
+#. translators: %s: section id
+#: src/Domain/Sections/SectionValidator.php:74
+msgid "The section \"%s\" requires a title."
+msgstr ""
+
+#. translators: %s: section id
+#: src/Domain/Sections/SectionValidator.php:88
+msgid "The description of \"%s\" must be at most 500 characters long."
+msgstr ""
+
+#. translators: %s: section id
+#: src/Domain/Sections/SectionValidator.php:102
+msgid "The position of \"%s\" cannot be negative."
+msgstr ""
+
+#. translators: 1: section id, 2: comma separated list of locations
+#: src/Domain/Sections/SectionValidator.php:116
+msgid "The location of \"%1$s\" must be one of: %2$s."
+msgstr ""
+
+#. translators: %d: index of the entry
+#: src/Domain/Sections/SectionValidator.php:145
+msgid "The section at index %d is not a definition."
+msgstr ""
+
+#. translators: %s: section id
+#: src/Domain/Sections/SectionValidator.php:164
+msgid "The section id \"%s\" appears more than once."
+msgstr ""
+
+#. translators: 1: field id, 2: section id
+#: src/Domain/Sections/SectionValidator.php:223
+msgid "The field \"%1$s\" belongs to the section \"%2$s\", which this document does not declare."
+msgstr ""
+
+#: src/Domain/Settings/CheckoutSettings.php:99
+msgid "The custom checkout is not enabled on this store."
+msgstr ""
+
+#. translators: %s: comma separated list of payment gateway identifiers.
+#: src/Domain/Settings/CheckoutSettings.php:126
+msgid "The custom checkout steps aside because the gateway homologation record marks these gateways unavailable: %s."
+msgstr ""
+
+#: src/Domain/Settings/CheckoutSettings.php:135
+msgid "The custom checkout is enabled and no offered gateway blocks it."
+msgstr ""
+
+#: src/Domain/Uploads/DownloadPolicy.php:79
+msgid "That file is not available."
+msgstr ""
+
+#: src/Domain/Uploads/PrivateStorage.php:163
+msgid "The private upload directory could not be created or is not writable."
+msgstr ""
+
+#: src/Domain/Uploads/PrivateStorage.php:176
+msgid "The private upload directory did not accept a file."
+msgstr ""
+
+#: src/Domain/Uploads/PrivateStorage.php:196
+msgid "The address of the private directory could not be derived, so its privacy cannot be checked."
+msgstr ""
+
+#. translators: %s: error message.
+#: src/Domain/Uploads/PrivateStorage.php:206
+msgid "The private directory could not be reached over HTTP (%s), so whether it is public is unknown."
+msgstr ""
+
+#: src/Domain/Uploads/PrivateStorage.php:219
+msgid "A file placed in the private directory was served over HTTP, so this environment does not protect it."
+msgstr ""
+
+#: src/Domain/Uploads/UploadRules.php:105
+msgid "The file is empty."
+msgstr ""
+
+#: src/Domain/Uploads/UploadRules.php:107
+msgid "The file did not arrive complete. Try again."
+msgstr ""
+
+#: src/Domain/Uploads/UploadRules.php:109
+msgid "The file is larger than this store accepts."
+msgstr ""
+
+#: src/Domain/Uploads/UploadRules.php:111
+msgid "This kind of file is not accepted here."
+msgstr ""
+
+#: src/Domain/Uploads/UploadRules.php:113
+msgid "You have reached the amount of space this checkout gives you."
+msgstr ""
+
+#: src/Domain/Uploads/UploadRules.php:115
+msgid "Uploads are not available on this store."
+msgstr ""
+
+#: src/Domain/Uploads/UploadRules.php:117
+msgid "That upload belongs to another session."
+msgstr ""
+
+#: src/Domain/Uploads/UploadRules.php:119
+msgid "That upload is not on file."
+msgstr ""
+
+#: src/Domain/Uploads/UploadRules.php:122
+msgid "The file could not be accepted."
+msgstr ""
+
+#: src/Domain/Uploads/UploadsEnvironment.php:71
+msgid "The uploads table has not been created, so an upload has nowhere to be recorded."
+msgstr ""
+
+#: src/Domain/Uploads/UploadsEnvironment.php:75
+msgid "The private upload directory could not be resolved on this installation."
+msgstr ""
+
+#: src/Domain/Uploads/UploadsEnvironment.php:81
+msgid "Uploads have not been checked on this store yet, so they are not offered."
+msgstr ""
+
+#: src/Domain/Uploads/UploadService.php:106
+msgid "This checkout has no session to attach an upload to."
+msgstr ""
+
+#: src/Domain/Uploads/UploadService.php:139
+msgid "The store could not write the file."
+msgstr ""
+
+#: src/Domain/Uploads/UploadService.php:157
+msgid "The store could not record the file."
+msgstr ""
+
+#: src/Domain/Validation/Validators/DocumentValidator.php:234
+msgid "This field expects a number written as text."
+msgstr ""
+
+#: src/Domain/Validation/Validators/DocumentValidator.php:235
+msgid "This CPF is not a valid number. Check the digits you entered."
+msgstr ""
+
+#: src/Domain/Validation/Validators/DocumentValidator.php:236
+msgid "This CNPJ is not a valid number. Check the digits you entered."
+msgstr ""
+
+#: src/Domain/Validation/Validators/DocumentValidator.php:237
+msgid "Enter a postcode with eight digits."
+msgstr ""
+
+#: src/Domain/Validation/Validators/DocumentValidator.php:238
+msgid "Enter a phone number with its area code."
+msgstr ""
+
 #. translators: %s: field label
-#: src/Domain/Validation/ValueProcessor.php:110
+#: src/Domain/Validation/ValueProcessor.php:112
 msgid "%s is a required field."
 msgstr ""
 
-#: src/Http/Admin/SchemaController.php:141
+#: src/Http/Admin/CatalogController.php:105
+#: src/Http/Admin/SchemaController.php:241
 msgid "You are not allowed to manage the checkout schema."
 msgstr ""
 
-#: src/Http/Admin/SchemaController.php:268
+#: src/Http/Admin/SchemaController.php:368
 msgid "Another administrator changed this configuration. Reload it and review the differences before saving again."
 msgstr ""
 
-#: src/Http/Admin/SchemaController.php:278
+#: src/Http/Admin/SchemaController.php:378
 msgid "The schema was not published because it contains invalid definitions."
 msgstr ""
 
+#: src/Http/Admin/SettingsController.php:105
+msgid "You are not allowed to manage this store's checkout."
+msgstr ""
+
+#: src/Http/Admin/TransferController.php:146
+msgid "You are not allowed to manage this store's checkout fields."
+msgstr ""
+
+#: src/Http/Checkout/UploadController.php:79
+#: src/Http/Checkout/UploadController.php:118
+#: src/Http/Checkout/UploadController.php:156
+msgid "This page is out of date. Reload the checkout and try again."
+msgstr ""
+
+#: src/Http/Integration/OrderFieldsController.php:205
+msgid "You are not allowed to read this store's orders."
+msgstr ""
+
 #. translators: 1: plugin name, 2: list of missing requirements
-#: src/Plugin.php:231
+#: src/Plugin.php:458
 msgid "%1$s is inactive. %2$s"
+msgstr ""
+
+#. translators: 1: number of values, 2: number of orders.
+#: src/Privacy/OrderFieldsEraser.php:121
+msgid "%1$d checkout value was erased from %2$d order."
+msgid_plural "%1$d checkout values were erased from %2$d orders."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Privacy/OrderFieldsEraser.php:135
+msgid "The orders themselves are kept: they are the store's record of the purchase, and section 14 of the planning states that a refund or a cancellation does not automatically delete what the history needs. The store decides when an order is deleted."
+msgstr ""
+
+#. translators: %s: comma separated order numbers.
+#: src/Privacy/OrderFieldsEraser.php:141
+msgid "A document attached to order %s is kept while that order exists and is removed with it by the store's own upload retention; ask the store to delete the order if the document must go now."
+msgstr ""
+
+#: src/Privacy/OrderFieldsEraser.php:147
+msgid "This store holds no checkout value about that address."
+msgstr ""
+
+#. translators: %s: order number.
+#: src/Privacy/OrderFieldsExporter.php:110
+msgid "Checkout fields (order %s)"
+msgstr ""
+
+#: src/Privacy/OrderFieldsExporter.php:166
+msgid "A document was provided with this order. Ask the store for a copy."
+msgstr ""
+
+#: src/Privacy/PrivacyPolicy.php:72
+msgid "This store uses WC CheckoutSuite to add fields to its checkout. The fields it collects are chosen by the store, and each one declares what it holds and who may see it."
+msgstr ""
+
+#: src/Privacy/PrivacyPolicy.php:77
+msgid "A field collected at checkout is kept with the order it was given on, not on your account: changing your account does not rewrite a past order, and a past order does not change when your account does."
+msgstr ""
+
+#: src/Privacy/PrivacyPolicy.php:92
+msgid "Each field is one of three kinds, and the difference decides what is exported and what a request to be forgotten removes:"
+msgstr ""
+
+#: src/Privacy/PrivacyPolicy.php:108
+msgid "Where a value is shown is a separate decision for every field:"
+msgstr ""
+
+#. translators: 1: largest upload size in megabytes, 2: hours a temporary upload is kept.
+#: src/Privacy/PrivacyPolicy.php:117
+msgid "A document you upload is stored outside the public part of the site and is never attached to an e-mail. Uploads are limited to %1$s MB. A document that reaches a placed order is kept while that order exists; an upload that never reached one is removed after %2$d hours."
+msgstr ""
+
+#: src/Privacy/PrivacyPolicy.php:126
+msgid "You can ask this store for a copy of the data it holds about you, and you can ask it to erase it. The store's tools answer both, and the answer names what was erased and what is kept, and why."
+msgstr ""
+
+#: src/Privacy/PrivacyPolicy.php:131
+msgid "This text describes what the plugin does, and is offered as a suggestion for the store's own policy. It is not legal advice and makes no claim of conformity with any particular law; the store decides what it must tell its customers and for how long it must keep its records."
 msgstr ""
 
 #. translators: 1: component name, 2: required version
@@ -432,6 +1368,6 @@ msgid "%1$s %2$s or higher is required. Version %3$s was detected."
 msgstr ""
 
 #. translators: 1: required PHP version, 2: current PHP version
-#: wc-checkoutsuite.php:83
+#: wc-checkoutsuite.php:89
 msgid "WC CheckoutSuite requires PHP %1$s or higher. This server runs PHP %2$s, so the plugin is inactive."
 msgstr ""

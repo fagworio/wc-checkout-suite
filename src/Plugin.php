@@ -294,7 +294,7 @@ final class Plugin {
 		 * Modules register their hooks here. Nothing is loaded before this point,
 		 * so a site without WooCommerce pays no cost beyond this class.
 		 *
-		 * @since 0.1.0
+		 * @since 1.0.0
 		 */
 		do_action( 'wccs_booted' );
 	}

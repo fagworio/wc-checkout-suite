@@ -149,7 +149,7 @@ final class Registries {
 		/**
 		 * Registers field types.
 		 *
-		 * @since 0.1.0
+		 * @since 1.0.0
 		 *
 		 * @param FieldTypeRegistry $types Field type registry.
 		 */
@@ -158,7 +158,7 @@ final class Registries {
 		/**
 		 * Registers field presets.
 		 *
-		 * @since 0.1.0
+		 * @since 1.0.0
 		 *
 		 * @param PresetRegistry $presets Preset registry.
 		 */
@@ -167,7 +167,7 @@ final class Registries {
 		/**
 		 * Registers named validators.
 		 *
-		 * @since 0.1.0
+		 * @since 1.0.0
 		 *
 		 * @param ValidatorRegistry $validators Validator registry.
 		 */
@@ -181,7 +181,7 @@ final class Registries {
 		 * a first-class key of a field definition (section 4), so it needs the
 		 * same registration path as a validator.
 		 *
-		 * @since 0.1.0
+		 * @since 1.0.0
 		 *
 		 * @param NormalizerRegistry $normalizers Normalizer registry.
 		 */
@@ -190,7 +190,7 @@ final class Registries {
 		/**
 		 * Registers declarative masks.
 		 *
-		 * @since 0.1.0
+		 * @since 1.0.0
 		 *
 		 * @param MaskRegistry $masks Mask registry.
 		 */
@@ -199,7 +199,7 @@ final class Registries {
 		/**
 		 * Registers renderers per adapter.
 		 *
-		 * @since 0.1.0
+		 * @since 1.0.0
 		 *
 		 * @param RendererRegistry $renderers Renderer registry.
 		 */
@@ -212,7 +212,7 @@ final class Registries {
 		 * normalizer hook: the pipeline needs a versioned contract to ask, and
 		 * F06 replaces the default implementation behind it.
 		 *
-		 * @since 0.1.0
+		 * @since 1.0.0
 		 *
 		 * @param ConditionEvaluatorRegistry $conditions Condition evaluator registry.
 		 */
@@ -221,7 +221,7 @@ final class Registries {
 		/**
 		 * Fires after every registry has been populated.
 		 *
-		 * @since 0.1.0
+		 * @since 1.0.0
 		 *
 		 * @param Registries $registries Registry container.
 		 */
