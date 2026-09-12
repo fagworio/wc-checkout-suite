@@ -47,7 +47,7 @@ export const HISTORY_LIMIT = 50;
  * Local edit history over one document.
  *
  * @param {*} initial Document the editor starts from.
- * @return {{ document: any, commit: (next: any) => void, reset: (next: any) => void, undo: () => void, redo: () => void, canUndo: boolean, canRedo: boolean, depth: {past: number, future: number} }} Current document, the operations and their availability.
+ * @return {{ document: any, commit: (next: any, label?: string) => void, reset: (next: any) => void, undo: () => string, redo: () => string, canUndo: boolean, canRedo: boolean, depth: {past: number, future: number} }} Current document, the operations and their availability. `undo` and `redo` answer with the label of the step they took, so a screen can say what changed.
  */
 export default function useDocumentHistory( initial = null ) {
 	const [ present, setPresent ] = useState( initial );
@@ -69,9 +69,19 @@ export default function useDocumentHistory( initial = null ) {
 	/**
 	 * Past and future documents.
 	 *
-	 * @type {{ current: { past: any[], future: any[] } }}
+	 * @type {{ current: { past: {document: any, label: string}[], future: {document: any, label: string}[] } }}
 	 */
 	const stack = useRef( { past: [], future: [] } );
+
+	/**
+	 * The label of the edit that produced the document on screen.
+	 *
+	 * Carried beside the document rather than inside it: the document is what the
+	 * server stores, and a label is a sentence for the merchant.
+	 *
+	 * @type {{ current: string }}
+	 */
+	const label = useRef( '' );
 
 	/**
 	 * Publishes how deep each direction is.
@@ -92,11 +102,12 @@ export default function useDocumentHistory( initial = null ) {
 	 * described is no longer reachable. That is what every editor does, and the
 	 * alternative — keeping a branch — is a feature nobody asked for.
 	 *
-	 * @param {*} next New document, or a function of the current one.
+	 * @param {*}      next          New document, or a function of the current one.
+	 * @param {string} [actionLabel] What the edit was, for the announcement.
 	 * @return {void}
 	 */
 	const commit = useCallback(
-		( /** @type {any} */ next ) => {
+		( /** @type {any} */ next, actionLabel = '' ) => {
 			const previous = current.current;
 			const value = 'function' === typeof next ? next( previous ) : next;
 
@@ -104,7 +115,10 @@ export default function useDocumentHistory( initial = null ) {
 				return;
 			}
 
-			stack.current.past.push( previous );
+			stack.current.past.push( {
+				document: previous,
+				label: label.current,
+			} );
 
 			if ( stack.current.past.length > HISTORY_LIMIT ) {
 				stack.current.past.shift();
@@ -113,6 +127,7 @@ export default function useDocumentHistory( initial = null ) {
 			stack.current.future = [];
 
 			current.current = value;
+			label.current = actionLabel;
 			setPresent( value );
 			sync();
 		},
@@ -142,39 +157,53 @@ export default function useDocumentHistory( initial = null ) {
 	/**
 	 * Steps back one edit.
 	 *
-	 * @return {void}
+	 * @return {string} What was undone, for the announcement.
 	 */
 	const undo = useCallback( () => {
-		const previous = stack.current.past.pop();
+		const entry = stack.current.past.pop();
 
-		if ( undefined === previous ) {
-			return;
+		if ( undefined === entry ) {
+			return '';
 		}
 
-		stack.current.future.push( current.current );
-		current.current = previous;
+		const undone = label.current;
 
-		setPresent( previous );
+		stack.current.future.push( {
+			document: current.current,
+			label: undone,
+		} );
+		current.current = entry.document;
+		label.current = entry.label;
+
+		setPresent( entry.document );
 		sync();
+
+		return undone;
 	}, [ sync ] );
 
 	/**
 	 * Steps forward one edit.
 	 *
-	 * @return {void}
+	 * @return {string} What was redone, for the announcement.
 	 */
 	const redo = useCallback( () => {
-		const next = stack.current.future.pop();
+		const entry = stack.current.future.pop();
 
-		if ( undefined === next ) {
-			return;
+		if ( undefined === entry ) {
+			return '';
 		}
 
-		stack.current.past.push( current.current );
-		current.current = next;
+		stack.current.past.push( {
+			document: current.current,
+			label: label.current,
+		} );
+		current.current = entry.document;
+		label.current = entry.label;
 
-		setPresent( next );
+		setPresent( entry.document );
 		sync();
+
+		return entry.label;
 	}, [ sync ] );
 
 	// Memoised so the identity only changes when something observable does. The

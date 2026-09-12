@@ -796,3 +796,32 @@ describe( 'announcements', () => {
 		click.mockRestore();
 	} );
 } );
+
+describe( 'announcing an undo', () => {
+	it( 'says which edit was undone, as the design does', async () => {
+		const user = userEvent.setup();
+
+		render( <FieldsScreen client={ client() } /> );
+
+		await screen.findByText( 'CPF' );
+
+		await duplicateField( user, 'CPF' );
+
+		await user.click(
+			screen.getByRole( 'button', { name: 'Desfazer alteração' } )
+		);
+
+		expect(
+			await screen.findAllByText( 'Desfeito: Duplicar campo.' )
+		).toHaveLength( 2 );
+
+		// And the other direction names the same edit.
+		await user.click(
+			screen.getByRole( 'button', { name: 'Refazer alteração' } )
+		);
+
+		expect(
+			await screen.findAllByText( 'Refeito: Duplicar campo.' )
+		).toHaveLength( 2 );
+	} );
+} );

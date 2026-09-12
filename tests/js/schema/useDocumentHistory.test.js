@@ -174,3 +174,41 @@ describe( 'the stack is bounded', () => {
 		expect( result.current.document ).toEqual( doc( HISTORY_LIMIT + 9 ) );
 	} );
 } );
+
+describe( 'the label of a step', () => {
+	it( 'answers with what was undone and what was redone', () => {
+		const { result } = renderHook( () => useDocumentHistory( 'a' ) );
+
+		act( () => result.current.commit( 'b', 'Reordenar campo' ) );
+		act( () => result.current.commit( 'c', 'Duplicar campo' ) );
+
+		let said = '';
+
+		act( () => {
+			said = result.current.undo();
+		} );
+
+		expect( said ).toBe( 'Duplicar campo' );
+
+		act( () => {
+			said = result.current.undo();
+		} );
+
+		expect( said ).toBe( 'Reordenar campo' );
+
+		act( () => {
+			said = result.current.redo();
+		} );
+
+		expect( said ).toBe( 'Reordenar campo' );
+	} );
+
+	it( 'says nothing when there is nothing to step through', () => {
+		const { result } = renderHook( () => useDocumentHistory( 'a' ) );
+
+		act( () => {
+			expect( result.current.undo() ).toBe( '' );
+			expect( result.current.redo() ).toBe( '' );
+		} );
+	} );
+} );

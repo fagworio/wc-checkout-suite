@@ -320,11 +320,15 @@ export default function FieldsScreen( {
 	/**
 	 * Applies an operation result, surfacing a refusal instead of swallowing it.
 	 *
-	 * @param {import('./schema/types').OperationResult} result Operation result.
+	 * @param {import('./schema/types').OperationResult} result  Operation result.
+	 * @param {string}                                   [label] What the edit was.
 	 * @return {void}
 	 */
 	const apply = useCallback(
-		( /** @type {import('./schema/types').OperationResult} */ result ) => {
+		(
+			/** @type {import('./schema/types').OperationResult} */ result,
+			label = ''
+		) => {
 			if ( ! result.ok ) {
 				setRefusal( result.reason );
 
@@ -334,7 +338,7 @@ export default function FieldsScreen( {
 			setRefusal( '' );
 			setProblems( [] );
 			setSaved( '' );
-			commitDocument( result.document );
+			commitDocument( result.document, label );
 		},
 		[ commitDocument ]
 	);
@@ -667,7 +671,10 @@ export default function FieldsScreen( {
 			return { ok: false, count: 0 };
 		}
 
-		apply( { ok: true, reason: '', document: next } );
+		apply(
+			{ ok: true, reason: '', document: next },
+			__( 'Ação em massa', 'wc-checkoutsuite' )
+		);
 		setSelected( [] );
 
 		return { ok: true, count: attempted };
@@ -780,7 +787,11 @@ export default function FieldsScreen( {
 					editing,
 					onEdit: setEditing,
 					onDuplicate: ( /** @type {string|null} */ id ) =>
-						id && apply( duplicateField( document, id ) ),
+						id &&
+						apply(
+							duplicateField( document, id ),
+							__( 'Duplicar campo', 'wc-checkoutsuite' )
+						),
 					onToggleEnabled: ( /** @type {string} */ id ) => {
 						const field = document.fields.find(
 							( /** @type {any} */ entry ) => entry.id === id
@@ -797,11 +808,19 @@ export default function FieldsScreen( {
 					onMove: (
 						/** @type {string} */ id,
 						/** @type {'up'|'down'} */ direction
-					) => apply( moveField( document, id, direction ) ),
+					) =>
+						apply(
+							moveField( document, id, direction ),
+							__( 'Reordenar campo', 'wc-checkoutsuite' )
+						),
 					onReorder: (
 						/** @type {string} */ id,
 						/** @type {string} */ targetId
-					) => apply( reorderField( document, id, targetId ) ),
+					) =>
+						apply(
+							reorderField( document, id, targetId ),
+							__( 'Reordenar campo', 'wc-checkoutsuite' )
+						),
 					onRemove: ( /** @type {string|null} */ id ) =>
 						id && apply( removeField( document, id ) ),
 					onProtect: explainProtection,

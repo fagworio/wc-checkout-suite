@@ -352,6 +352,52 @@ export default function FieldManagerView( { model } ) {
 	};
 
 	/**
+	 * Announces an undo or a redo, in the design's words.
+	 *
+	 * The design names what was undone — "Desfeito: Reordenar campo." — and falls back
+	 * to the bare verb when the edit has no name of its own.
+	 *
+	 * @param {string}  label   What the step was.
+	 * @param {boolean} forward Whether it was a redo.
+	 * @return {void}
+	 */
+	const announceStep = ( label, forward = false ) => {
+		if ( ! label && ! forward ) {
+			return;
+		}
+
+		if ( '' === label ) {
+			announce(
+				forward
+					? __( 'Refeito.', 'wc-checkoutsuite' )
+					: __( 'Desfeito.', 'wc-checkoutsuite' )
+			);
+
+			return;
+		}
+
+		if ( forward ) {
+			announce(
+				sprintf(
+					/* translators: %s: what the edit was. */
+					__( 'Refeito: %s.', 'wc-checkoutsuite' ),
+					label
+				)
+			);
+
+			return;
+		}
+
+		announce(
+			sprintf(
+				/* translators: %s: what the edit was. */
+				__( 'Desfeito: %s.', 'wc-checkoutsuite' ),
+				label
+			)
+		);
+	};
+
+	/**
 	 * Moves a row one place and says so, the way the design announces it.
 	 *
 	 * @param {any}         field     Field being moved.
@@ -1592,7 +1638,9 @@ export default function FieldManagerView( { model } ) {
 											'wc-checkoutsuite'
 										) }
 										disabled={ ! edits.canUndo }
-										onClick={ edits.undo }
+										onClick={ () =>
+											announceStep( edits.undo() )
+										}
 									>
 										<Icon name="undo" />
 									</button>
@@ -1608,7 +1656,9 @@ export default function FieldManagerView( { model } ) {
 											'wc-checkoutsuite'
 										) }
 										disabled={ ! edits.canRedo }
-										onClick={ edits.redo }
+										onClick={ () =>
+											announceStep( edits.redo(), true )
+										}
 									>
 										<Icon name="redo" />
 									</button>
