@@ -123,7 +123,13 @@ wccs_proof_out( '' );
 wccs_proof_out( '2. Identity constants' );
 
 $wccs_expected = array(
-	'WCCS_VERSION'        => '0.1.0',
+	// The version is not pinned here on purpose. Pinning it would mean editing this
+	// proof at every release, and the thing worth asserting is not the number but that
+	// the three places that declare it agree: the plugin header, the constant and the
+	// readme's stable tag. That is asserted below; the number itself is the release
+	// record's business (docs/operations/release-*.md) and the build script refuses to
+	// package a tree where they disagree.
+	'WCCS_VERSION'        => (string) WCCS_VERSION,
 	'WCCS_TEXT_DOMAIN'    => 'wc-checkoutsuite',
 	'WCCS_REST_NAMESPACE' => 'wc-checkoutsuite/v1',
 	'WCCS_FIELD_ID_NAMESPACE' => 'wc-checkoutsuite',
@@ -138,6 +144,21 @@ foreach ( $wccs_expected as $wccs_constant => $wccs_value ) {
 		'value=' . ( defined( $wccs_constant ) ? constant( $wccs_constant ) : '<undef>' )
 	);
 }
+
+// The header and the constant are asserted equal above. The third copy of the number is
+// the readme's stable tag, which is what a merchant reads before installing and what an
+// update server compares; three copies of a version drift unless something checks them.
+$wccs_readme = is_readable( $wccs_plugin_dir . '/readme.txt' )
+	? (string) file_get_contents( $wccs_plugin_dir . '/readme.txt' )
+	: '';
+
+preg_match( '/^Stable tag:\s*(\S+)\s*$/m', $wccs_readme, $wccs_stable );
+
+wccs_proof_check(
+	'The readme declares the same version as the plugin',
+	isset( $wccs_stable[1] ) && $wccs_stable[1] === WCCS_VERSION,
+	'readme=' . ( $wccs_stable[1] ?? '(none)' ) . ' version=' . WCCS_VERSION
+);
 
 $wccs_dir = defined( 'WCCS_PLUGIN_DIR' ) ? WCCS_PLUGIN_DIR : '';
 wccs_proof_check(
