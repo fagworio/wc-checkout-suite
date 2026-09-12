@@ -12,6 +12,7 @@ namespace WCCheckoutSuite\Checkout;
 use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
 use WCCheckoutSuite\Domain\Approval\ReviewStatus;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
+use WCCheckoutSuite\Domain\Orders\AreaProjection;
 use WCCheckoutSuite\Domain\Orders\OrderFieldEntry;
 use WCCheckoutSuite\Domain\Orders\OrderFieldsService;
 use WCCheckoutSuite\Domain\Uploads\FilePermissions;
@@ -64,12 +65,31 @@ final class CustomerOrderFields {
 	}
 
 	/**
+	 * The area a customer request is being rendered for.
+	 *
+	 * The hook fires on both pages the customer can see an order on, and section 14
+	 * names them as two destinations. Reading that from the page rather than from the
+	 * document is what keeps a field linked only to the thank-you page off the account
+	 * page, and the other way round: the surface is decided where it is rendered.
+	 *
+	 * @return string Destination key.
+	 */
+	public static function area(): string {
+		if ( function_exists( 'is_order_received_page' ) && is_order_received_page() ) {
+			return 'order_received';
+		}
+
+		return 'customer_order';
+	}
+
+	/**
 	 * The fields the customer may be shown, keyed by identifier.
 	 *
 	 * @param array<int, array<string, mixed>> $definitions Published definitions.
+	 * @param string                           $destination Destination key.
 	 * @return array<string, array<string, mixed>> Allowed definitions.
 	 */
-	public static function visible( array $definitions ): array {
+	public static function visible( array $definitions, string $destination = 'customer_order' ): array {
 		$visible = array();
 
 		foreach ( $definitions as $raw ) {
@@ -88,7 +108,7 @@ final class CustomerOrderFields {
 
 			// The link, not a copy of it: a destination is enabled per field, and the
 			// model is the only place that knows.
-			if ( ! $definition->shows_in( 'customer_order' ) ) {
+			if ( ! $definition->shows_in( $destination ) ) {
 				continue;
 			}
 
@@ -97,7 +117,7 @@ final class CustomerOrderFields {
 			// so there is nothing left to print when the link withholds it.
 			if (
 				FilePermissions::is_file( $definition )
-				&& ! FilePermissions::allows( $definition, 'customer_order', 'show_metadata' )
+				&& ! FilePermissions::allows( $definition, $destination, 'show_metadata' )
 			) {
 				continue;
 			}
@@ -113,10 +133,11 @@ final class CustomerOrderFields {
 	 *
 	 * @param WC_Order                         $order       Order.
 	 * @param array<int, array<string, mixed>> $definitions Published definitions.
+	 * @param string                           $destination Destination key.
 	 * @return array<int, OrderFieldEntry> Entries, in the order the values were stored.
 	 */
-	public static function entries( WC_Order $order, array $definitions ): array {
-		$visible = self::visible( $definitions );
+	public static function entries( WC_Order $order, array $definitions, string $destination = 'customer_order' ): array {
+		$visible = self::visible( $definitions, $destination );
 		$shown   = array();
 
 		foreach ( ( new OrderFieldsService() )->history( $order, $definitions ) as $entry ) {
@@ -141,6 +162,10 @@ final class CustomerOrderFields {
 	 * customer's business even when the document itself is not shown to them, which is
 	 * why the panel no longer disappears just because there are no rows to print.
 	 *
+	 * The rows come out the way this destination configured them — the section the link
+	 * names, the title it gives the field and the order it puts it in — because the
+	 * same field may be third here and first on the order screen.
+	 *
 	 * @param mixed $order Order the template is rendering.
 	 * @return void
 	 */
@@ -149,8 +174,10 @@ final class CustomerOrderFields {
 			return;
 		}
 
-		$definitions = PublishedDocument::read()->fields();
-		$entries     = self::entries( $order, $definitions );
+		$document    = PublishedDocument::read();
+		$definitions = $document->fields();
+		$destination = self::area();
+		$entries     = self::entries( $order, $definitions, $destination );
 		$situation   = ReviewStatus::situation( $order, $definitions );
 
 		if ( array() === $entries && null === $situation ) {
@@ -179,14 +206,21 @@ final class CustomerOrderFields {
 			);
 		}
 
-		if ( array() !== $entries ) {
+		foreach ( AreaProjection::group( $entries, $definitions, $document->sections(), $destination ) as $group ) {
+			if ( '' !== $group['title'] ) {
+				printf(
+					'<h3 class="wccs-customer-fields__section">%s</h3>',
+					esc_html( $group['title'] )
+				);
+			}
+
 			echo '<dl class="wccs-customer-fields__list">';
 
-			foreach ( $entries as $entry ) {
+			foreach ( $group['fields'] as $shown ) {
 				printf(
 					'<dt class="wccs-customer-fields__label">%s</dt><dd class="wccs-customer-fields__value">%s</dd>',
-					esc_html( $entry->label() ),
-					esc_html( self::display( $entry->value() ) )
+					esc_html( $shown['title'] ),
+					esc_html( self::display( $shown['entry']->value() ) )
 				);
 			}
 

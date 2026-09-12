@@ -11,6 +11,7 @@ namespace WCCheckoutSuite\Checkout;
 
 use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
+use WCCheckoutSuite\Domain\Orders\AreaProjection;
 use WCCheckoutSuite\Domain\Orders\OrderFieldEntry;
 use WCCheckoutSuite\Domain\Orders\OrderFieldsService;
 use WCCheckoutSuite\Domain\Uploads\FilePermissions;
@@ -193,11 +194,28 @@ final class OrderEmailFields {
 			return;
 		}
 
-		$entries = self::entries( $order, PublishedDocument::read()->fields(), (bool) $sent_to_admin );
+		$document = PublishedDocument::read();
+		$key      = self::audience_key( (bool) $sent_to_admin );
+		$entries  = self::entries( $order, $document->fields(), (bool) $sent_to_admin );
 
 		if ( array() === $entries ) {
 			return;
 		}
+
+		// The definitions the entries were allowed by, so each row can be rendered from
+		// the definition that permitted it rather than from a second lookup.
+		$payloads = array();
+
+		foreach ( $entries as $shown ) {
+			$payloads[ $shown['entry']->id() ] = $shown['field'];
+		}
+
+		$groups = AreaProjection::group(
+			array_column( $entries, 'entry' ),
+			$document->fields(),
+			$document->sections(),
+			$key
+		);
 
 		$heading = $sent_to_admin
 			? __( 'Checkout information (store copy)', 'wc-checkoutsuite' )
@@ -211,13 +229,25 @@ final class OrderEmailFields {
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- This is the text/plain part of the e-mail. Escaping here is the defect the format split exists to avoid: the customer would read `&amp;` where they wrote an ampersand.
 			echo "\n" . $heading . "\n\n";
 
-			foreach ( $entries as $shown ) {
-				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Same reason: text part, and `plain()` returns text rather than markup.
-				echo $shown['entry']->label() . ': ' . self::plain( $shown ) . "\n";
-			}
+			foreach ( $groups as $group ) {
+				if ( '' !== $group['title'] ) {
+					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- A section title from the store's own document, on the text part.
+					echo $group['title'] . "\n";
+				}
 
-			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- A newline.
-			echo "\n";
+				foreach ( $group['fields'] as $field ) {
+					$shown = array(
+						'entry' => $field['entry'],
+						'field' => $payloads[ $field['entry']->id() ] ?? array(),
+					);
+
+					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Same reason: text part, and `plain()` returns text rather than markup.
+					echo $field['title'] . ': ' . self::plain( $shown ) . "\n";
+				}
+
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- A newline.
+				echo "\n";
+			}
 
 			return;
 		}
@@ -229,13 +259,27 @@ final class OrderEmailFields {
 
 		echo '<div style="margin-bottom: 24px;">';
 
-		foreach ( $entries as $shown ) {
-			printf(
-				'<p style="margin: 0 0 8px;"><strong>%s</strong><br />%s</p>',
-				esc_html( $shown['entry']->label() ),
-				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- `rich()` returns escaped text, an escaped link, or escaped wording; the sniff cannot follow the call.
-				self::rich( $shown )
-			);
+		foreach ( $groups as $group ) {
+			if ( '' !== $group['title'] ) {
+				printf(
+					'<h3 style="color: #202334; display: block; font-family: \'Helvetica Neue\', Helvetica, Roboto, Arial, sans-serif; font-size: 15px; font-weight: bold; line-height: 130%%; margin: 0 0 8px;">%s</h3>',
+					esc_html( $group['title'] )
+				);
+			}
+
+			foreach ( $group['fields'] as $field ) {
+				$shown = array(
+					'entry' => $field['entry'],
+					'field' => $payloads[ $field['entry']->id() ] ?? array(),
+				);
+
+				printf(
+					'<p style="margin: 0 0 8px;"><strong>%s</strong><br />%s</p>',
+					esc_html( $field['title'] ),
+					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- `rich()` returns escaped text, an escaped link, or escaped wording; the sniff cannot follow the call.
+					self::rich( $shown )
+				);
+			}
 		}
 
 		echo '</div>';

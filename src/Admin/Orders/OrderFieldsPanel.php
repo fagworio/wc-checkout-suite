@@ -11,6 +11,7 @@ namespace WCCheckoutSuite\Admin\Orders;
 
 use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
+use WCCheckoutSuite\Domain\Orders\AreaProjection;
 use WCCheckoutSuite\Domain\Orders\OrderFieldEntry;
 use WCCheckoutSuite\Domain\Orders\OrderFieldsService;
 use WCCheckoutSuite\Domain\Orders\OrderFieldValues;
@@ -242,7 +243,8 @@ final class OrderFieldsPanel {
 			return;
 		}
 
-		$definitions = PublishedDocument::read()->fields();
+		$document    = PublishedDocument::read();
+		$definitions = $document->fields();
 		$editable    = self::editable( $definitions );
 		$stored      = self::service()->read( $order );
 		$status      = self::service()->read_status( $order );
@@ -289,7 +291,9 @@ final class OrderFieldsPanel {
 			);
 		}
 
-		if ( array() === $entries ) {
+		$groups = AreaProjection::group( $entries, $definitions, $document->sections(), 'admin_order' );
+
+		if ( array() === $groups ) {
 			printf(
 				'<p class="wccs-order-fields__empty">%s</p>',
 				esc_html__( 'No checkout field is shown on the order screen.', 'wc-checkoutsuite' )
@@ -299,55 +303,69 @@ final class OrderFieldsPanel {
 			return;
 		}
 
-		echo '<table class="widefat striped wccs-order-fields__table"><tbody>';
-
-		foreach ( $entries as $entry ) {
-			$id             = $entry->id();
-			$editable_field = isset( $editable[ $id ] );
-
-			// A label points at a control. The read-only row has none, so it gets a
-			// heading and not a `for` pointing at an element that does not exist — the
-			// kind of thing a screen reader announces as a control and a keyboard
-			// cannot reach.
-			printf(
-				'<tr><th scope="row">%s</th><td>',
-				$editable_field
-					? sprintf(
-						'<label for="%s">%s</label>',
-						esc_attr( self::INPUT_PREFIX . $id ),
-						esc_html( $entry->label() )
-					)
-					: sprintf(
-						'<span class="wccs-order-fields__label">%s</span>',
-						esc_html( $entry->label() )
-					)
-			);
-
-			if ( $editable_field ) {
+		// One table per section the links name: the merchant configured where each
+		// field is shown, and the screen is the place that has to obey it.
+		foreach ( $groups as $group ) {
+			if ( '' !== $group['title'] ) {
 				printf(
-					'<input type="text" class="regular-text" id="%s" name="%s" value="%s" />',
-					esc_attr( self::INPUT_PREFIX . $id ),
-					esc_attr( self::INPUT_PREFIX . $id ),
-					esc_attr( is_scalar( $entry->value() ) ? (string) $entry->value() : '' )
-				);
-			} else {
-				printf(
-					'<span class="wccs-order-fields__value">%s</span>',
-					esc_html( self::display( $entry ) )
+					'<h3 class="wccs-order-fields__section">%s</h3>',
+					esc_html( $group['title'] )
 				);
 			}
 
-			printf(
-				'<p class="description">%s</p></td></tr>',
-				esc_html(
+			echo '<table class="widefat striped wccs-order-fields__table"><tbody>';
+
+			foreach ( $group['fields'] as $shown ) {
+				$entry          = $shown['entry'];
+				$id             = $entry->id();
+				$editable_field = isset( $editable[ $id ] );
+
+				// A label points at a control. The read-only row has none, so it gets a
+				// heading and not a `for` pointing at an element that does not exist — the
+				// kind of thing a screen reader announces as a control and a keyboard
+				// cannot reach.
+				printf(
+					'<tr><th scope="row">%s</th><td>',
 					$editable_field
-						? __( 'Validated the same way the checkout validates it.', 'wc-checkoutsuite' )
-						: __( 'Shown for reference: this field is not kept on the order.', 'wc-checkoutsuite' )
-				)
-			);
+						? sprintf(
+							'<label for="%s">%s</label>',
+							esc_attr( self::INPUT_PREFIX . $id ),
+							esc_html( $shown['title'] )
+						)
+						: sprintf(
+							'<span class="wccs-order-fields__label">%s</span>',
+							esc_html( $shown['title'] )
+						)
+				);
+
+				if ( $editable_field ) {
+					printf(
+						'<input type="text" class="regular-text" id="%s" name="%s" value="%s" />',
+						esc_attr( self::INPUT_PREFIX . $id ),
+						esc_attr( self::INPUT_PREFIX . $id ),
+						esc_attr( is_scalar( $entry->value() ) ? (string) $entry->value() : '' )
+					);
+				} else {
+					printf(
+						'<span class="wccs-order-fields__value">%s</span>',
+						esc_html( self::display( $entry ) )
+					);
+				}
+
+				printf(
+					'<p class="description">%s</p></td></tr>',
+					esc_html(
+						$editable_field
+							? __( 'Validated the same way the checkout validates it.', 'wc-checkoutsuite' )
+							: __( 'Shown for reference: this field is not kept on the order.', 'wc-checkoutsuite' )
+					)
+				);
+			}
+
+			echo '</tbody></table>';
 		}
 
-		echo '</tbody></table></div>';
+		echo '</div>';
 	}
 
 	/**
