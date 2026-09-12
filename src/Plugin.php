@@ -328,13 +328,23 @@ final class Plugin {
 	/**
 	 * Deactivation callback.
 	 *
-	 * Deliberately does nothing destructive. The merchant's data is preserved;
-	 * what uninstall removes is a separate, explicit policy (WCCS-068).
+	 * Nothing destructive: the merchant's data is preserved, and what uninstall removes
+	 * is a separate, explicit policy (WCCS-068). What it does do is take this plugin's
+	 * own scheduled work off the calendar — the retention sweep — because a scheduled
+	 * event that outlives the plugin is a job with no callback left to run it. Leaving
+	 * it there is not harmless: WordPress keeps firing `wccs_uploads_cleanup` on a
+	 * plugin that is no longer loaded, and a store that never reactivates accumulates a
+	 * calendar entry nobody will ever clear.
+	 *
+	 * Only this plugin's own hooks are cleared, and only the scheduling: no option, no
+	 * table and no order is touched.
 	 *
 	 * @return void
 	 */
 	public static function deactivate(): void {
-		// Intentionally empty.
+		if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
+			wp_clear_scheduled_hook( UploadsRetention::HOOK );
+		}
 	}
 
 	/**
