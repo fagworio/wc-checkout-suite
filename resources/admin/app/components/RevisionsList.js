@@ -1,12 +1,19 @@
 /**
  * Publication history.
  *
- * Lists the revisions the store has published and offers to go back to one.
+ * Lists the revisions the store has published and offers to go back to one, in the
+ * rows the design draws: an icon, the revision number, the moment it was published
+ * and the button that puts it back in the draft.
  *
  * Restoring does not overwrite a revision: the repository publishes the old
  * document again as a **new** revision. That is deliberate and the panel says so,
  * because a history you can rewrite is not a history — and because the merchant
  * needs to be able to undo the restore as easily as they made it.
+ *
+ * One thing the prototype's row shows is missing here, and it is missing because
+ * the server does not keep it: its rows list how many fields the revision had and
+ * which checkout it was written for. The stored revision is a number, a moment, an
+ * author and a hash — so the row states what exists instead of inventing the rest.
  *
  * ROADMAP.md section 428 keeps the two mechanisms apart: "Undo local de edição e
  * histórico de publicação são mecanismos separados". This is the second one. The
@@ -19,7 +26,7 @@ import { __, sprintf } from '@wordpress/i18n';
 
 import Button from './Button';
 import Notice from './Notice';
-import { Badge } from './Badge';
+import { Icon } from '../design/icons';
 
 /**
  * Formats a stored timestamp for display.
@@ -32,7 +39,7 @@ import { Badge } from './Badge';
  */
 function formatWhen( value ) {
 	if ( ! value ) {
-		return __( 'date unknown', 'wc-checkoutsuite' );
+		return __( 'data desconhecida', 'wc-checkoutsuite' );
 	}
 
 	const parsed = new Date( value );
@@ -41,7 +48,10 @@ function formatWhen( value ) {
 		return value;
 	}
 
-	return parsed.toLocaleString();
+	return parsed.toLocaleString( 'pt-BR', {
+		dateStyle: 'short',
+		timeStyle: 'short',
+	} );
 }
 
 /**
@@ -71,16 +81,9 @@ export default function RevisionsList( {
 			className="wccs-revisions"
 			aria-labelledby="wccs-revisions-title"
 		>
-			<h3 className="wccs-revisions__title" id="wccs-revisions-title">
-				{ __( 'Publication history', 'wc-checkoutsuite' ) }
+			<h3 className="sr-only" id="wccs-revisions-title">
+				{ __( 'Histórico de publicação', 'wc-checkoutsuite' ) }
 			</h3>
-
-			<p className="wccs-revisions__statement">
-				{ __(
-					'Going back to an earlier version publishes it again as a new revision. Nothing is erased.',
-					'wc-checkoutsuite'
-				) }
-			</p>
 
 			{ error ? <Notice status="error">{ error }</Notice> : null }
 			{ restored ? <Notice status="success">{ restored }</Notice> : null }
@@ -88,49 +91,42 @@ export default function RevisionsList( {
 			{ 0 === entries.length ? (
 				<Notice status="info">
 					{ __(
-						'Nothing has been published yet. The store is running without a configured checkout.',
+						'Nada foi publicado ainda. A loja corre sem um checkout configurado.',
 						'wc-checkoutsuite'
 					) }
 				</Notice>
 			) : (
-				<ol className="wccs-revisions__list">
+				<div className="wccs-revisions__list">
 					{ entries.map( ( entry ) => {
 						const isCurrent =
 							Number( entry.revision ) ===
 							Number( currentRevision );
 
 						return (
-							<li
-								key={ entry.revision }
-								className={
-									'wccs-revisions__item' +
-									( isCurrent ? ' is-current' : '' )
-								}
-							>
-								<div className="wccs-revisions__main">
-									<span className="wccs-revisions__number">
+							<div className="history-row" key={ entry.revision }>
+								<Icon name="history" />
+								<div>
+									<strong>
 										{ sprintf(
 											/* translators: %d: revision number. */
 											__(
-												'Revision %d',
+												'Revisão %d',
 												'wc-checkoutsuite'
 											),
 											entry.revision
 										) }
-									</span>
-									<span className="wccs-revisions__when">
-										{ formatWhen( entry.published_at ) }
-									</span>
+										{ isCurrent ? (
+											<span className="badge green">
+												{ __(
+													'Na loja',
+													'wc-checkoutsuite'
+												) }
+											</span>
+										) : null }
+									</strong>
+									<p>{ formatWhen( entry.published_at ) }</p>
 								</div>
-
-								{ isCurrent ? (
-									<Badge tone="success">
-										{ __(
-											'In the store',
-											'wc-checkoutsuite'
-										) }
-									</Badge>
-								) : (
+								{ isCurrent ? null : (
 									<Button
 										size="small"
 										busy={ restoring }
@@ -141,14 +137,24 @@ export default function RevisionsList( {
 											)
 										}
 									>
-										{ __( 'Restore', 'wc-checkoutsuite' ) }
+										{ __(
+											'Usar como rascunho',
+											'wc-checkoutsuite'
+										) }
 									</Button>
 								) }
-							</li>
+							</div>
 						);
 					} ) }
-				</ol>
+				</div>
 			) }
+
+			<p className="form-help">
+				{ __(
+					'Restaurar cria um rascunho e não altera a versão publicada. Desfazer edição e restaurar revisão são ações distintas.',
+					'wc-checkoutsuite'
+				) }
+			</p>
 		</section>
 	);
 }

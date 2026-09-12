@@ -461,6 +461,11 @@ export default function FieldManagerView( { model } ) {
 		>
 			<PublishPanel
 				report={ report }
+				enabled={
+					( doc?.fields ?? [] ).filter(
+						( /** @type {any} */ field ) => field.enabled
+					).length
+				}
 				dirty={ dirty }
 				publishing={ publishing }
 				error={ publishError }

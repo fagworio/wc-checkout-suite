@@ -600,14 +600,14 @@ $wccs_built_css = (string) file_get_contents( WCCS_PLUGIN_DIR . 'build/admin/ind
 
 wccs_proof_check(
 	'The publication panel reached the shipped bundle',
-	false !== strpos( $wccs_built_js, 'wccs-publish__changes' )
-		&& false !== strpos( $wccs_built_css, 'wccs-publish__' ),
+	false !== strpos( $wccs_built_js, 'publish-stats' )
+		&& false !== strpos( $wccs_built_css, 'diff-row' ),
 	'panel markup and styles present'
 );
 
 wccs_proof_check(
 	'The history reached the bundle too',
-	false !== strpos( $wccs_built_js, 'wccs-revisions__item' ),
+	false !== strpos( $wccs_built_js, 'history-row' ),
 	'history markup present'
 );
 

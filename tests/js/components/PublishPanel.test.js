@@ -123,17 +123,34 @@ describe( 'state', () => {
 	} );
 } );
 
+describe( 'the summary the design puts first', () => {
+	it( 'counts the changes, the enabled fields and the impediments', () => {
+		renderPanel( { enabled: 4 } );
+
+		const stats = globalThis.document.querySelectorAll( '.publish-stat' );
+
+		expect( stats ).toHaveLength( 3 );
+		expect( stats[ 0 ] ).toHaveTextContent( 'alterações para revisar' );
+		expect( stats[ 1 ] ).toHaveTextContent( '4' );
+		expect( stats[ 1 ] ).toHaveTextContent( 'campos habilitados' );
+		expect( stats[ 2 ] ).toHaveTextContent( 'impedimentos' );
+	} );
+} );
+
 describe( 'differences', () => {
-	it( 'lists what was added', () => {
+	it( 'lists what was added, with the kind of change it is', () => {
 		renderPanel();
 
-		const heading = screen.getByRole( 'heading', { name: /Fields added/ } );
-		const group = heading.closest( 'div' );
+		// The design draws one row per change: a badge with the kind, the field's
+		// name and its key under it.
+		const row = screen
+			.getByText( 'billing_document' )
+			.closest( '.diff-row' );
 
-		expect( group ).not.toBeNull();
+		expect( row ).not.toBeNull();
 		expect(
-			within( /** @type {HTMLElement} */ ( group ) ).getByText(
-				'billing_document'
+			within( /** @type {HTMLElement} */ ( row ) ).getByText(
+				'Adicionado'
 			)
 		).toBeInTheDocument();
 	} );
@@ -141,16 +158,15 @@ describe( 'differences', () => {
 	it( 'shows both sides of a changed value', () => {
 		renderPanel();
 
-		expect( screen.getByText( 'IE' ) ).toBeInTheDocument();
-		expect( screen.getByText( 'Inscrição Estadual' ) ).toBeInTheDocument();
+		expect(
+			screen.getByText( /label: IE → Inscrição Estadual/ )
+		).toBeInTheDocument();
 	} );
 
-	it( 'does not list a group that has nothing in it', () => {
+	it( 'does not list a kind of change that has nothing in it', () => {
 		renderPanel();
 
-		expect(
-			screen.queryByRole( 'heading', { name: /Fields removed/ } )
-		).toBeNull();
+		expect( screen.queryByText( 'Removido' ) ).toBeNull();
 	} );
 
 	it( 'reports a reordering with the two orders', () => {
@@ -416,8 +432,6 @@ describe( 'publishing', () => {
 		expect(
 			screen.getByText( 'Someone else published first.' )
 		).toBeInTheDocument();
-		expect(
-			screen.getByRole( 'heading', { name: /Fields added/ } )
-		).toBeInTheDocument();
+		expect( screen.getByText( 'billing_document' ) ).toBeInTheDocument();
 	} );
 } );

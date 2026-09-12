@@ -441,7 +441,7 @@ wccs_proof_check(
 	'Local undo reached the shipped bundle, worded apart from the revision history',
 	false !== strpos( $wccs_built_js, 'Desfazer alteração' )
 		&& false !== strpos( $wccs_built_js, 'Refazer alteração' )
-		&& false !== strpos( $wccs_built_js, 'Publication history' ),
+		&& false !== strpos( $wccs_built_js, 'Histórico de publicação' ),
 	'undo and history both present'
 );
 

@@ -61,11 +61,27 @@ function renderList( overrides = {} ) {
 	return { ...result, onRestore };
 }
 
+/**
+ * The rows of the history, in the order the design draws them.
+ *
+ * The design draws them as rows in a panel, not as items of an ordered list, so the
+ * order is read from the DOM the screen actually produces.
+ *
+ * @return {HTMLElement[]} Rows.
+ */
+function list() {
+	return Array.from(
+		globalThis.document.querySelectorAll(
+			'.wccs-revisions__list .history-row'
+		)
+	);
+}
+
 describe( 'the current revision', () => {
 	it( 'is marked as the one in the store', () => {
 		renderList();
 
-		expect( screen.getByText( 'In the store' ) ).toBeInTheDocument();
+		expect( screen.getByText( 'Na loja' ) ).toBeInTheDocument();
 	} );
 
 	it( 'offers no way to restore itself', () => {
@@ -73,7 +89,7 @@ describe( 'the current revision', () => {
 
 		// Three revisions, one of them current: two restorable buttons.
 		expect(
-			screen.getAllByRole( 'button', { name: 'Restore' } )
+			screen.getAllByRole( 'button', { name: 'Usar como rascunho' } )
 		).toHaveLength( 2 );
 	} );
 } );
@@ -82,36 +98,38 @@ describe( 'the history', () => {
 	it( 'lists every revision with its number', () => {
 		renderList();
 
-		expect( screen.getByText( 'Revision 5' ) ).toBeInTheDocument();
-		expect( screen.getByText( 'Revision 4' ) ).toBeInTheDocument();
-		expect( screen.getByText( 'Revision 2' ) ).toBeInTheDocument();
+		expect( screen.getByText( 'Revisão 5' ) ).toBeInTheDocument();
+		expect( screen.getByText( 'Revisão 4' ) ).toBeInTheDocument();
+		expect( screen.getByText( 'Revisão 2' ) ).toBeInTheDocument();
 	} );
 
 	it( 'keeps the order it was given, newest first', () => {
 		renderList();
 
-		const items = within( screen.getByRole( 'list' ) ).getAllByRole(
-			'listitem'
-		);
+		const items = list();
 
-		expect( items[ 0 ] ).toHaveTextContent( 'Revision 5' );
-		expect( items[ 2 ] ).toHaveTextContent( 'Revision 2' );
+		expect( items[ 0 ] ).toHaveTextContent( 'Revisão 5' );
+		expect( items[ 2 ] ).toHaveTextContent( 'Revisão 2' );
 	} );
 
 	it( 'explains that restoring publishes again rather than erasing', () => {
 		renderList();
 
 		expect(
-			screen.getByText( /publishes it again as a new revision/ )
+			screen.getByText( /Restaurar cria um rascunho/ )
 		).toBeInTheDocument();
-		expect( screen.getByText( /Nothing is erased/ ) ).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				/Desfazer edição e restaurar revisão são ações distintas/
+			)
+		).toBeInTheDocument();
 	} );
 
 	it( 'says so when nothing has ever been published', () => {
 		renderList( { revisions: [] } );
 
 		expect(
-			screen.getByText( /Nothing has been published yet/ )
+			screen.getByText( /Nada foi publicado ainda/ )
 		).toBeInTheDocument();
 	} );
 
@@ -128,7 +146,7 @@ describe( 'the history', () => {
 			revisions: [ { revision: 1, published_at: '' } ],
 		} );
 
-		expect( screen.getByText( 'date unknown' ) ).toBeInTheDocument();
+		expect( screen.getByText( 'data desconhecida' ) ).toBeInTheDocument();
 	} );
 } );
 
@@ -137,12 +155,12 @@ describe( 'restoring', () => {
 		const user = userEvent.setup();
 		const { onRestore } = renderList();
 
-		const rows = within( screen.getByRole( 'list' ) ).getAllByRole(
-			'listitem'
-		);
+		const rows = list();
 
 		await user.click(
-			within( rows[ 1 ] ).getByRole( 'button', { name: 'Restore' } )
+			within( rows[ 1 ] ).getByRole( 'button', {
+				name: 'Usar como rascunho',
+			} )
 		);
 
 		expect( onRestore ).toHaveBeenCalledWith( 4 );
@@ -154,7 +172,9 @@ describe( 'restoring', () => {
 		// The name is matched loosely on purpose: while it is busy, Button keeps
 		// its label and appends "(working…)" to the accessible name rather than
 		// replacing it, which is the behaviour worth having.
-		const buttons = screen.getAllByRole( 'button', { name: /Restore/ } );
+		const buttons = screen.getAllByRole( 'button', {
+			name: /Usar como rascunho/,
+		} );
 
 		expect( buttons ).toHaveLength( 2 );
 
@@ -165,11 +185,12 @@ describe( 'restoring', () => {
 
 	it( 'confirms what happened after a restore', () => {
 		renderList( {
-			restored: 'Revision 2 was published again as a new revision.',
+			restored:
+				'A revisão 2 foi publicada de novo como uma revisão nova.',
 		} );
 
 		expect(
-			screen.getByText( /Revision 2 was published again/ )
+			screen.getByText( /A revisão 2 foi publicada de novo/ )
 		).toBeInTheDocument();
 	} );
 
@@ -179,6 +200,6 @@ describe( 'restoring', () => {
 		expect(
 			screen.getByText( 'The revision could not be restored.' )
 		).toBeInTheDocument();
-		expect( screen.getByText( 'Revision 4' ) ).toBeInTheDocument();
+		expect( screen.getByText( 'Revisão 4' ) ).toBeInTheDocument();
 	} );
 } );

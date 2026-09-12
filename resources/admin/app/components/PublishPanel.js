@@ -50,89 +50,6 @@ function badgeLabel( changes ) {
 }
 
 /**
- * Renders one side of a difference.
- *
- * @param {Object} props       Component properties.
- * @param {*}      props.value Value to render.
- * @return {*} Rendered element tree.
- */
-function ValueText( { value } ) {
-	if ( null === value || undefined === value ) {
-		return <em>{ __( 'not set', 'wc-checkoutsuite' ) }</em>;
-	}
-
-	if ( '' === value ) {
-		return <em>{ __( 'empty', 'wc-checkoutsuite' ) }</em>;
-	}
-
-	if ( 'object' === typeof value ) {
-		return <code>{ JSON.stringify( value ) }</code>;
-	}
-
-	if ( 'boolean' === typeof value ) {
-		return <code>{ value ? 'true' : 'false' }</code>;
-	}
-
-	return <code>{ String( value ) }</code>;
-}
-
-/**
- * Renders a list of key/from/to differences.
- *
- * @param {Object} props             Component properties.
- * @param {any[]}  props.differences Differences.
- * @return {*} Rendered element tree.
- */
-function Differences( { differences } ) {
-	if ( ! Array.isArray( differences ) || 0 === differences.length ) {
-		return null;
-	}
-
-	return (
-		<ul className="wccs-publish__differences">
-			{ differences.map( ( entry ) => (
-				<li key={ entry.key }>
-					<span className="wccs-publish__key">{ entry.key }</span>
-					<ValueText value={ entry.from } />
-					<span aria-hidden="true">→</span>
-					<ValueText value={ entry.to } />
-				</li>
-			) ) }
-		</ul>
-	);
-}
-
-/**
- * Renders one group of a diff.
- *
- * @param {Object}                            props            Component properties.
- * @param {string}                            props.title      Group title.
- * @param {any[]}                             props.items      Items to list.
- * @param {(item: any, index: number) => any} props.renderItem Renders one item.
- * @return {*} Rendered element tree.
- */
-function Group( { title, items, renderItem } ) {
-	if ( ! Array.isArray( items ) || 0 === items.length ) {
-		return null;
-	}
-
-	return (
-		<div className="wccs-publish__group">
-			<h4 className="wccs-publish__group-title">
-				{ title } <Badge tone="neutral">{ items.length }</Badge>
-			</h4>
-			<ul className="wccs-publish__list">
-				{ items.map( ( item, index ) => (
-					<li key={ item.id ?? index }>
-						{ renderItem( item, index ) }
-					</li>
-				) ) }
-			</ul>
-		</div>
-	);
-}
-
-/**
  * Publication panel.
  *
  * @param {Object}                  props              Component properties.
@@ -141,6 +58,7 @@ function Group( { title, items, renderItem } ) {
  * @param {boolean}                 [props.publishing] Whether a publication is in progress.
  * @param {boolean}                 [props.dirty]      Whether the draft has unsaved changes.
  * @param {string}                  [props.error]      Failure from the last attempt.
+ * @param {number}                  [props.enabled]    Fields the draft would activate.
  * @return {*} Rendered element tree.
  */
 export default function PublishPanel( {
@@ -149,6 +67,7 @@ export default function PublishPanel( {
 	publishing = false,
 	dirty = false,
 	error = '',
+	enabled = 0,
 } ) {
 	const diff = report?.diff ?? null;
 	const validation = report?.validation ?? null;
@@ -158,6 +77,96 @@ export default function PublishPanel( {
 	const invalid = validation ? ! validation.valid : false;
 	const blocked = invalid || dirty || publishing;
 	const changes = diff?.total_changes ?? 0;
+
+	/**
+	 * The design's diff rows: one badge, one label and one detail each.
+	 *
+	 * Built from the same report the panel already reports, so the dialog states the
+	 * differences once and in one shape instead of a group per kind.
+	 *
+	 * @return {{kind: string, tone: string, label: string, detail: string}[]} Rows.
+	 */
+	const diffRows = () => {
+		if ( ! diff || diff.empty ) {
+			return [];
+		}
+
+		/** @type {{kind: string, tone: string, label: string, detail: string}[]} */
+		const rows = [];
+		const code = ( /** @type {any} */ entry ) =>
+			entry.id ?? entry.key ?? '';
+
+		( diff.fields?.added ?? [] ).forEach( ( /** @type {any} */ entry ) =>
+			rows.push( {
+				kind: __( 'Adicionado', 'wc-checkoutsuite' ),
+				tone: 'green',
+				label: entry.label ?? code( entry ),
+				detail: code( entry ),
+			} )
+		);
+		( diff.fields?.removed ?? [] ).forEach( ( /** @type {any} */ entry ) =>
+			rows.push( {
+				kind: __( 'Removido', 'wc-checkoutsuite' ),
+				tone: 'red',
+				label: entry.label ?? code( entry ),
+				detail: code( entry ),
+			} )
+		);
+		( diff.fields?.changed ?? [] ).forEach( ( /** @type {any} */ entry ) =>
+			rows.push( {
+				kind: __( 'Alterado', 'wc-checkoutsuite' ),
+				tone: 'amber',
+				label: entry.label ?? code( entry ),
+				detail: ( entry.differences ?? [] )
+					.map(
+						( /** @type {any} */ difference ) =>
+							`${ difference.key }: ${ difference.from } → ${ difference.to }`
+					)
+					.join( ' · ' ),
+			} )
+		);
+		/** @type {Record<string,{kind: string, tone: string}>} */
+		const sectionKinds = {
+			added: {
+				kind: __( 'Adicionado', 'wc-checkoutsuite' ),
+				tone: 'green',
+			},
+			removed: {
+				kind: __( 'Removido', 'wc-checkoutsuite' ),
+				tone: 'red',
+			},
+			changed: {
+				kind: __( 'Alterado', 'wc-checkoutsuite' ),
+				tone: 'amber',
+			},
+		};
+
+		Object.keys( sectionKinds ).forEach( ( kind ) => {
+			( diff.sections?.[ kind ] ?? [] ).forEach(
+				( /** @type {any} */ entry ) =>
+					rows.push( {
+						kind: sectionKinds[ kind ].kind,
+						tone: sectionKinds[ kind ].tone,
+						label: entry.title ?? entry.id ?? '',
+						detail: __( 'Seção', 'wc-checkoutsuite' ),
+					} )
+			);
+		} );
+		( diff.order ?? [] ).forEach( ( /** @type {any} */ entry ) =>
+			rows.push( {
+				kind: __( 'Reordenado', 'wc-checkoutsuite' ),
+				tone: 'purple',
+				label: entry.section ?? '',
+				detail: `${ ( entry.from ?? [] ).join( ', ' ) } → ${ (
+					entry.to ?? []
+				).join( ', ' ) }`,
+			} )
+		);
+
+		return rows;
+	};
+
+	const rows = diffRows();
 	const incompatibilityTotal = incompatibilities?.total ?? 0;
 
 	// Why publishing is unavailable, in the order that matters: an unsaved draft
@@ -184,6 +193,25 @@ export default function PublishPanel( {
 					</Badge>
 				) : null }
 			</header>
+
+			<div className="publish-stats">
+				<div className="publish-stat">
+					<strong>{ changes }</strong>
+					<span>
+						{ __( 'alterações para revisar', 'wc-checkoutsuite' ) }
+					</span>
+				</div>
+				<div className="publish-stat">
+					<strong>{ enabled }</strong>
+					<span>
+						{ __( 'campos habilitados', 'wc-checkoutsuite' ) }
+					</span>
+				</div>
+				<div className="publish-stat">
+					<strong>{ ( validation?.errors ?? [] ).length }</strong>
+					<span>{ __( 'impedimentos', 'wc-checkoutsuite' ) }</span>
+				</div>
+			</div>
 
 			<p className="wccs-publish__statement">
 				{ __(
@@ -235,76 +263,35 @@ export default function PublishPanel( {
 				</Notice>
 			) : null }
 
-			{ diff && ! diff.empty ? (
-				<div className="wccs-publish__changes">
-					<Group
-						title={ __( 'Fields added', 'wc-checkoutsuite' ) }
-						items={ diff.fields?.added }
-						renderItem={ ( item ) => (
-							<span>
-								{ item.label } <code>{ item.id }</code>
-							</span>
+			{ rows.length > 0 ? (
+				<>
+					<div className="publish-subtitle">
+						{ sprintf(
+							/* translators: %s: revision number. */
+							__(
+								'Diferenças em relação à revisão %s',
+								'wc-checkoutsuite'
+							),
+							String( diff?.published?.revision ?? 0 )
 						) }
-					/>
-					<Group
-						title={ __( 'Fields removed', 'wc-checkoutsuite' ) }
-						items={ diff.fields?.removed }
-						renderItem={ ( item ) => (
-							<span>
-								{ item.label } <code>{ item.id }</code>
-							</span>
-						) }
-					/>
-					<Group
-						title={ __( 'Fields changed', 'wc-checkoutsuite' ) }
-						items={ diff.fields?.changed }
-						renderItem={ ( item ) => (
-							<span>
-								{ item.label }{ ' ' }
-								<Differences differences={ item.differences } />
-							</span>
-						) }
-					/>
-					<Group
-						title={ __( 'Sections added', 'wc-checkoutsuite' ) }
-						items={ diff.sections?.added }
-						renderItem={ ( item ) => (
-							<span>
-								{ item.title } <code>{ item.id }</code>
-							</span>
-						) }
-					/>
-					<Group
-						title={ __( 'Sections removed', 'wc-checkoutsuite' ) }
-						items={ diff.sections?.removed }
-						renderItem={ ( item ) => (
-							<span>
-								{ item.title } <code>{ item.id }</code>
-							</span>
-						) }
-					/>
-					<Group
-						title={ __( 'Sections changed', 'wc-checkoutsuite' ) }
-						items={ diff.sections?.changed }
-						renderItem={ ( item ) => (
-							<span>
-								{ item.title }{ ' ' }
-								<Differences differences={ item.differences } />
-							</span>
-						) }
-					/>
-					<Group
-						title={ __( 'Order changed', 'wc-checkoutsuite' ) }
-						items={ diff.order }
-						renderItem={ ( item ) => (
-							<span>
-								<code>{ item.section }</code>{ ' ' }
-								{ item.from.join( ', ' ) } →{ ' ' }
-								{ item.to.join( ', ' ) }
-							</span>
-						) }
-					/>
-				</div>
+					</div>
+					<div className="diff-list">
+						{ rows.map( ( row, index ) => (
+							<div
+								className="diff-row"
+								key={ `${ row.kind }-${ row.label }-${ index }` }
+							>
+								<span className={ `badge ${ row.tone }` }>
+									{ row.kind }
+								</span>
+								<div>
+									<strong>{ row.label }</strong>
+									<small>{ row.detail }</small>
+								</div>
+							</div>
+						) ) }
+					</div>
+				</>
 			) : null }
 
 			{ capabilities.length > 0 ? (
