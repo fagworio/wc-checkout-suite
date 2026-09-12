@@ -19,6 +19,10 @@ if ( ! function_exists( 'wccs_proof_expected_hooks' ) ) {
 	 */
 	function wccs_proof_expected_hooks(): array {
 		return array(
+			// WCCS-046: the scope the presentation stylesheet is written under. It
+			// comes from the same gate that enqueues the stylesheet, so the class is
+			// on exactly the requests that are given the presentation.
+			'body_class@10:body_class',
 			'woocommerce_after_checkout_validation@20:collect_errors',
 			// WCCS-044: the uploads a checkout submitted, bound to the order.
 			'woocommerce_checkout_create_order@20:bind',

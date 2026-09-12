@@ -1,0 +1,217 @@
+/*
+ * The classic checkout, presented by this plugin.
+ *
+ * Section 17 of the planning records the defect this file exists to avoid:
+ *
+ *   `.field + .field { margin-top: 9px; }` also affects the second and third
+ *   element inside the grid and causes misalignment. The new reference uses `gap`
+ *   on the container and on the field wrappers, with no margin between sibling
+ *   inputs.
+ *
+ * So there is no margin between fields here, at all: the spacing is `gap` on the
+ * container and `gap` on each wrapper, and a rule that would space siblings is
+ * absent rather than overridden. A stylesheet that set the margins to zero would
+ * still be a stylesheet that had them, and the next person to add a field would
+ * inherit the same misalignment one selector later.
+ *
+ * Everything is scoped to `.wccs-checkout`, which `ClassicAssets::SCOPE_CLASS` puts
+ * on the body of the checkout page and on nothing else. Three consequences, and they
+ * are the point of the scope: no rule here can reach another page, no rule here can
+ * change a WooCommerce element outside the checkout, and a theme that also styles
+ * the checkout keeps its own precedence except where this file is more specific —
+ * which is why the selectors that matter are qualified with the scope rather than
+ * written bare.
+ *
+ * The class comes from the same gate that enqueues this file, and not from a
+ * template: this plugin ships no template, and a scope nothing emitted would be a
+ * stylesheet that never applied.
+ *
+ * The hooks are preserved by not touching the markup: this file styles the classes
+ * the adapter already emits — WooCommerce's own `form-row-wide`,
+ * `form-row-first` and `form-row-last`, and this plugin's `wccs-col-3` and
+ * `wccs-col-4` — and adds no template, no wrapper and no element of its own. A
+ * presentation that restructured the form would break every `woocommerce_*` hook
+ * that renders into it, which is what "hooks preservados" is about.
+ */
+
+/* ---------------------------------------------------------------- Container */
+
+.wccs-checkout .woocommerce {
+	--wccs-checkout-gap: var(--wccs-space-16);
+	--wccs-checkout-field-gap: var(--wccs-space-8);
+}
+
+.wccs-checkout form.checkout {
+	display: grid;
+	gap: var(--wccs-checkout-gap);
+	align-items: start;
+}
+
+/* The two columns of the classic checkout: the form and the order review. */
+@media (min-width: 900px) {
+	.wccs-checkout form.checkout {
+		grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+	}
+
+	.wccs-checkout form.checkout #customer_details,
+	.wccs-checkout form.checkout .woocommerce-checkout-review-order {
+		grid-column: span 1;
+	}
+}
+
+/* ------------------------------------------------------------- Field groups */
+
+/* The field wrapper carries the gap, once, for every row inside it. */
+.wccs-checkout .woocommerce-billing-fields__field-wrapper,
+.wccs-checkout .woocommerce-shipping-fields__field-wrapper,
+.wccs-checkout .woocommerce-additional-fields__field-wrapper,
+.wccs-checkout .woocommerce-account-fields {
+	display: grid;
+	grid-template-columns: repeat(12, minmax(0, 1fr));
+	gap: var(--wccs-checkout-gap);
+	margin: 0;
+	padding: 0;
+}
+
+/*
+ * A field spans the columns its width asked for. The adapter emits
+ * `wccs-col-<n>` for the widths the classic grid has no class for, and
+ * WooCommerce's own two classes are mapped onto the same twelve columns so a
+ * core field and a Suite field line up.
+ */
+.wccs-checkout .form-row {
+	grid-column: span 12;
+	margin: 0;
+	padding: 0;
+}
+
+.wccs-checkout .form-row-wide {
+	grid-column: span 12;
+}
+
+.wccs-checkout .form-row-first,
+.wccs-checkout .form-row-last {
+	grid-column: span 6;
+}
+
+.wccs-checkout .wccs-col-4 {
+	grid-column: span 4;
+}
+
+.wccs-checkout .wccs-col-3 {
+	grid-column: span 3;
+}
+
+/* Inside a row, the label, the control and the message are spaced by the same
+   mechanism: a gap on the wrapper, and no vertical margin on anything in it.
+
+   Written as a reset on the elements a row contains, and deliberately not as a
+   sibling rule that sets a margin — that shape of rule is the defect this file is
+   about, and a reset expressed that way is a rule the next person copies. */
+.wccs-checkout .form-row > * {
+	margin-block: 0;
+}
+
+.wccs-checkout .form-row label,
+.wccs-checkout .form-row .wccs-upload__state,
+.wccs-checkout .form-row .wccs-field__help,
+.wccs-checkout .form-row .wccs-field__error {
+	display: block;
+}
+
+.wccs-checkout .form-row .wccs-field__help,
+.wccs-checkout .form-row .wccs-field__error,
+.wccs-checkout .form-row .wccs-upload__state {
+	margin-block: 0;
+	font-size: var(--wccs-text-help);
+	line-height: var(--wccs-leading-body);
+}
+
+.wccs-checkout .form-row .wccs-field__error,
+.wccs-checkout .form-row .wccs-upload__error {
+	color: var(--wccs-danger);
+}
+
+/* ------------------------------------------------------------------ Controls */
+
+.wccs-checkout .form-row input[type="text"],
+.wccs-checkout .form-row input[type="email"],
+.wccs-checkout .form-row input[type="tel"],
+.wccs-checkout .form-row input[type="url"],
+.wccs-checkout .form-row input[type="number"],
+.wccs-checkout .form-row input[type="password"],
+.wccs-checkout .form-row input[type="date"],
+.wccs-checkout .form-row input[type="time"],
+.wccs-checkout .form-row select,
+.wccs-checkout .form-row textarea,
+.wccs-checkout .form-row .wccs-input {
+	inline-size: 100%;
+	min-block-size: var(--wccs-size-field-height);
+	padding-inline: var(--wccs-space-12);
+	border: 1px solid var(--wccs-border-control);
+	border-radius: var(--wccs-radius-field);
+	background: var(--wccs-surface);
+	color: var(--wccs-ink);
+	font-size: var(--wccs-text-body-checkout);
+	line-height: var(--wccs-leading-body);
+}
+
+/* The focus ring is never removed, and never replaced by a colour change alone:
+   a field that is focused says so with the ring the tokens define. */
+.wccs-checkout .form-row input:focus-visible,
+.wccs-checkout .form-row select:focus-visible,
+.wccs-checkout .form-row textarea:focus-visible,
+.wccs-checkout .wccs-upload__trigger:focus-visible,
+.wccs-checkout .wccs-upload__action:focus-visible {
+	outline: var(--wccs-size-focus-outline-width) solid var(--wccs-focus-ring);
+	outline-offset: 2px;
+}
+
+.wccs-checkout .wccs-upload {
+	display: grid;
+	gap: var(--wccs-checkout-field-gap);
+}
+
+.wccs-checkout .wccs-upload__input {
+	/* The input stays in the form and keeps its label; the component draws the
+	   control the customer uses, and hiding the original would take the field away
+	   from a checkout that submits without JavaScript. */
+	position: absolute;
+	inline-size: 1px;
+	block-size: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+}
+
+.wccs-checkout .wccs-upload__list {
+	display: grid;
+	gap: var(--wccs-checkout-field-gap);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.wccs-checkout .wccs-upload__item {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--wccs-checkout-field-gap);
+}
+
+/* ------------------------------------------------------------- Small screens */
+
+/* Below the narrow breakpoint every field is full width and the checkout is one
+   column: a two column order review on a phone is a column of unreadable text. */
+@media (max-width: 599px) {
+	.wccs-checkout .form-row,
+	.wccs-checkout .form-row-first,
+	.wccs-checkout .form-row-last,
+	.wccs-checkout .wccs-col-4,
+	.wccs-checkout .wccs-col-3 {
+		grid-column: span 12;
+	}
+
+	.wccs-checkout .woocommerce {
+		--wccs-checkout-gap: var(--wccs-space-12);
+	}
+}

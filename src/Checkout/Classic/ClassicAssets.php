@@ -33,12 +33,82 @@ final class ClassicAssets {
 	public const SCRIPT_HANDLE = 'wccs-checkout';
 
 	/**
+	 * Handle of the stylesheet that presents the checkout.
+	 */
+	public const STYLE_HANDLE = 'wccs-checkout-presentation';
+
+	/**
+	 * Handle of the design tokens the presentation reads.
+	 */
+	public const TOKENS_HANDLE = 'wccs-design-tokens';
+
+	/**
+	 * The class the presentation is scoped to, put on the checkout body.
+	 */
+	public const SCOPE_CLASS = 'wccs-checkout';
+
+	/**
 	 * Registers the hooks.
 	 *
 	 * @return void
 	 */
 	public static function register(): void {
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
+		add_filter( 'body_class', array( __CLASS__, 'body_class' ) );
+	}
+
+	/**
+	 * Marks the checkout body, which is what scopes the presentation.
+	 *
+	 * Every selector in the stylesheet is written under `.wccs-checkout` so that no
+	 * rule it contains can reach another page of the store. A scope the stylesheet
+	 * expects and nothing emits is a stylesheet that never applies, and this plugin
+	 * ships no template to emit it — so it is emitted here, by the same gate that
+	 * delivers the stylesheet. The class is therefore present on exactly the requests
+	 * that are given the presentation.
+	 *
+	 * @param array<int, string>|mixed $classes Body classes.
+	 * @return array<int, string>|mixed
+	 */
+	public static function body_class( $classes ) {
+		if ( ! is_array( $classes ) ) {
+			return $classes;
+		}
+
+		// Asked in this order on purpose: on every page of the store that is not the
+		// checkout, the published schema is not read at all.
+		if ( ! self::is_classic_checkout() ) {
+			return $classes;
+		}
+
+		return self::add_scope( $classes, true, self::has_renderable_fields() );
+	}
+
+	/**
+	 * The body classes with the scope added, when the checkout needs it.
+	 *
+	 * Extracted for the same reason the gate was: the decision is two booleans and a
+	 * mistake in it would either leak the scope across the storefront or leave the
+	 * presentation unscoped. Being an array function, it is also the half of this
+	 * behaviour a unit test can exercise without a checkout page.
+	 *
+	 * @param array<int, string> $classes     Body classes.
+	 * @param bool               $is_checkout Whether the request is the classic checkout.
+	 * @param bool               $has_fields  Whether the published schema has a renderable field.
+	 * @return array<int, string>
+	 */
+	public static function add_scope( array $classes, bool $is_checkout, bool $has_fields ): array {
+		if ( ! self::should_enqueue( $is_checkout, $has_fields ) ) {
+			return $classes;
+		}
+
+		if ( in_array( self::SCOPE_CLASS, $classes, true ) ) {
+			return $classes;
+		}
+
+		$classes[] = self::SCOPE_CLASS;
+
+		return $classes;
 	}
 
 	/**
@@ -77,6 +147,11 @@ final class ClassicAssets {
 			return;
 		}
 
+		// The presentation first, so a request that has both gets the layout before
+		// the behaviour: the stylesheet is what makes the fields line up, and the
+		// bundle is an improvement on a checkout that already works without it.
+		self::enqueue_presentation();
+
 		$bundle = 'build/checkout/index.js';
 
 		// A bundle that was never built is not enqueued. Enqueuing a URL that is
@@ -108,6 +183,44 @@ final class ClassicAssets {
 			self::SCRIPT_HANDLE,
 			'window.wccsCheckout = ' . wp_json_encode( self::bootstrap_data() ) . ';',
 			'before'
+		);
+	}
+
+	/**
+	 * Styles the checkout the way the planning describes it.
+	 *
+	 * The tokens are enqueued first and declared as a dependency, because every
+	 * value in the presentation comes from them: a stylesheet that loaded before the
+	 * variables it uses would render the layout with its fallbacks, which is the
+	 * kind of difference nobody notices until a merchant changes a token and nothing
+	 * moves.
+	 *
+	 * The stylesheet is served as a file rather than injected by the bundle. It is
+	 * the same file the build does not have to touch, and a layout that arrives with
+	 * the JavaScript is a layout a customer does not get until the bundle has run.
+	 *
+	 * @return void
+	 */
+	private static function enqueue_presentation(): void {
+		$tokens       = 'resources/design-tokens/tokens.css';
+		$presentation = 'resources/checkout/presentation.css';
+
+		if ( ! is_readable( WCCS_PLUGIN_DIR . $presentation ) ) {
+			return;
+		}
+
+		$dependencies = array();
+
+		if ( is_readable( WCCS_PLUGIN_DIR . $tokens ) ) {
+			wp_enqueue_style( self::TOKENS_HANDLE, WCCS_PLUGIN_URL . $tokens, array(), WCCS_VERSION );
+			$dependencies[] = self::TOKENS_HANDLE;
+		}
+
+		wp_enqueue_style(
+			self::STYLE_HANDLE,
+			WCCS_PLUGIN_URL . $presentation,
+			$dependencies,
+			WCCS_VERSION
 		);
 	}
 

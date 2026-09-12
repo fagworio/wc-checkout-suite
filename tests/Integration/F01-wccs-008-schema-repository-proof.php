@@ -130,6 +130,15 @@ $wccs_option_names = array(
 	'wccs_schema_revisions',
 );
 
+// A harness that passes only on a database someone else left clean fails for a reason
+// that is not about the code. The three options this proof is about are cleared here,
+// which makes the empty state this file's own decision and the run independent of what
+// ran before it.
+foreach ( $wccs_option_names as $wccs_option_name ) {
+	delete_option( $wccs_option_name );
+	wp_cache_delete( $wccs_option_name, 'options' );
+}
+
 $wccs_before = wccs_proof_option_count();
 
 // ---------------------------------------------------------------------------
@@ -138,7 +147,7 @@ $wccs_before = wccs_proof_option_count();
 wccs_proof_out( '' );
 wccs_proof_out( '1. Empty state' );
 
-wccs_proof_check( 'No schema option exists before the proof', 0 === $wccs_before, 'options=' . $wccs_before );
+wccs_proof_check( 'The proof starts from no schema option, having cleared them itself', 0 === $wccs_before, 'options=' . $wccs_before );
 wccs_proof_check( 'An absent draft reads as revision 0', 0 === $wccs_repository->read( SchemaRepository::SLOT_DRAFT )->revision() );
 wccs_proof_check( 'An absent published schema reads as revision 0', 0 === $wccs_repository->read( SchemaRepository::SLOT_PUBLISHED )->revision() );
 
@@ -370,7 +379,7 @@ foreach ( $wccs_option_names as $wccs_option_name ) {
 
 $wccs_after = wccs_proof_option_count();
 
-wccs_proof_check( 'No schema option is left behind', $wccs_after === $wccs_before, 'before=' . $wccs_before . ' after=' . $wccs_after );
+wccs_proof_check( 'No schema option is left behind', 0 === $wccs_after, 'after=' . $wccs_after );
 wccs_proof_note( 'Options created by the proof', implode( ', ', $wccs_option_names ) );
 wccs_proof_note(
 	'CAS mechanism',

@@ -387,6 +387,20 @@ wccs_proof_out( '4. What a request that is not the checkout gets' );
 wp_dequeue_script( \WCCheckoutSuite\Checkout\Classic\ClassicAssets::SCRIPT_HANDLE );
 wp_deregister_script( \WCCheckoutSuite\Checkout\Classic\ClassicAssets::SCRIPT_HANDLE );
 
+// The two stylesheets WCCS-046 delivers are cleared for the same reason: the section
+// above exercised the positive path, so they are in the registry because of this
+// harness and not because of this request. The question below is about what *this*
+// request registers.
+foreach (
+	array(
+		\WCCheckoutSuite\Checkout\Classic\ClassicAssets::STYLE_HANDLE,
+		\WCCheckoutSuite\Checkout\Classic\ClassicAssets::TOKENS_HANDLE,
+	) as $wccs_handle
+) {
+	wp_dequeue_style( $wccs_handle );
+	wp_deregister_style( $wccs_handle );
+}
+
 // Asking the real gate: this request is WP-CLI, so it is not a checkout.
 \WCCheckoutSuite\Checkout\Classic\ClassicAssets::enqueue();
 
