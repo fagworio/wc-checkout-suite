@@ -447,6 +447,18 @@ export function componentFor( field ) {
 	// A type contributed by another plugin declares which control draws it, and the
 	// control is what chooses the component: a membership code is a text input here, and
 	// what makes it a membership code is the validation the contributing plugin wrote.
+	// A component the extension registered for this exact type wins over anything this bundle
+	// would have chosen: a contributed type draws what its author wrote.
+	const registry = /** @type {any} */ ( globalThis ).wccsBlocksFields;
+
+	if (
+		registry &&
+		registry.components &&
+		'function' === typeof registry.components[ field.type ]
+	) {
+		return registry.components[ field.type ];
+	}
+
 	if ( 'string' === typeof field.control && field.control !== field.type ) {
 		return COMPONENTS[ field.control ] ?? null;
 	}

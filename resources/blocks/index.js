@@ -28,6 +28,41 @@ import { createFieldLifecycle, createValueStore } from './values';
 const payload = /** @type {any} */ ( window ).wccsBlocks || {};
 
 /**
+ * The registry an extension contributes its own component to.
+ *
+ * Published before anything is drawn, and documented in docs/api/extension-contracts.md: a plugin
+ * that wants its own React component in the checkout registers it here and declares the script
+ * dependency `wc-checkout-suite-blocks`, which is what guarantees this object exists before its
+ * script runs. A component registered here wins over the one this bundle would have used, so a
+ * contributed type draws what its author wrote and not a degradation of it.
+ *
+ * @type {Record<string, any>}
+ */
+const contributed = /** @type {any} */ (
+	window.wccsBlocksFields = /** @type {any} */ ( window )
+		.wccsBlocksFields || {
+		components: {},
+	}
+);
+
+/**
+ * Registers a component for a field type.
+ *
+ * @param {string}   key       Field type key.
+ * @param {Function} component React component.
+ * @return {void}
+ */
+contributed.register = function registerContributed( key, component ) {
+	if (
+		'string' === typeof key &&
+		'' !== key &&
+		'function' === typeof component
+	) {
+		contributed.components[ key ] = component;
+	}
+};
+
+/**
  * Where the values live while the checkout re-renders itself.
  *
  * One store for the page, created once. A component is a view over it: the checkout

@@ -130,6 +130,17 @@ declare global {
 		/**
 		 * Bootstrap payload of the administration application.
 		 */
+		/**
+		 * The component registry a plugin contributes its own React component to.
+		 *
+		 * Published by the checkout bundle before anything is drawn; documented in
+		 * docs/api/extension-contracts.md.
+		 */
+		wccsBlocksFields?: {
+			components: Record< string, any >;
+			register?: ( key: string, component: any ) => void;
+		};
+
 		wccsAdmin?: WccsAdminBootstrap;
 
 		/**
