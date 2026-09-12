@@ -29,6 +29,7 @@ use WCCheckoutSuite\Checkout\Classic\ClassicOrderFields;
 use WCCheckoutSuite\Checkout\Classic\ClassicOrderUploads;
 use WCCheckoutSuite\Checkout\Classic\ClassicValidation;
 use WCCheckoutSuite\Http\Admin\CatalogController;
+use WCCheckoutSuite\Admin\Orders\OrderFieldsPanel;
 use WCCheckoutSuite\Http\Admin\SchemaController;
 use WCCheckoutSuite\Http\Admin\SettingsController;
 use WCCheckoutSuite\Http\Checkout\ValidationController;
@@ -233,6 +234,12 @@ final class Plugin {
 		// is_admin() instead would buy nothing and would make the wiring
 		// impossible to exercise from WP-CLI.
 		AdminMenu::register();
+
+		// The order editor. Registered on both the legacy posts screen and the HPOS
+		// orders screen, through the hook WooCommerce fires for each, and it reads and
+		// writes only through the order CRUD — which is what makes "identical on both
+		// backends" a property of the storage path rather than a promise about it.
+		OrderFieldsPanel::register();
 		Assets::register();
 
 		/**

@@ -59,14 +59,19 @@
 	<rule ref="PHPCompatibilityWP"/>
 
 	<!--
-		manage_woocommerce is registered by WooCommerce at runtime and required by
-		ROADMAP.md section 19. Teaching the sniff about it here is why the plugin
-		needs no per-line suppression for capabilities.
+		These capabilities are registered by WooCommerce at runtime and required by
+		ROADMAP.md sections 14 and 19: `manage_woocommerce` for the administration,
+		and the order capabilities the order screen checks per order — which is what
+		makes "edição autorizada" a question about one order rather than about a
+		screen. Teaching the sniff about them here is why the plugin needs no
+		per-line suppression for capabilities.
 	-->
 	<rule ref="WordPress.WP.Capabilities">
 		<properties>
 			<property name="custom_capabilities" type="array">
 				<element value="manage_woocommerce"/>
+				<element value="edit_shop_order"/>
+				<element value="edit_shop_orders"/>
 			</property>
 		</properties>
 	</rule>
