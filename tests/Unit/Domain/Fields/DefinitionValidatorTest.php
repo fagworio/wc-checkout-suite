@@ -481,6 +481,10 @@ final class DefinitionValidatorTest extends TestCase {
 	/**
 	 * A complete approval flow is accepted, and stays off when it is not asked for.
 	 *
+	 * Complete means the flow names where the review happens, in which section, and
+	 * the state the order waits in: without the state there is nowhere to wait, and the
+	 * plugin reports that instead of inventing a status for the store.
+	 *
 	 * @return void
 	 */
 	public function test_a_complete_approval_flow_is_accepted(): void {
@@ -494,11 +498,28 @@ final class DefinitionValidatorTest extends TestCase {
 					'require_review' => true,
 					'area'           => 'admin_order',
 					'section'        => 'documentos_para_analise',
+					'status'         => 'Pendente de aprovação',
 				),
 			)
 		);
 
 		self::assertNotContains( 'approval_incomplete', $complete->error_codes() );
+
+		$no_state = $this->validator()->validate_array(
+			array(
+				'id'       => 'authorisation',
+				'origin'   => 'custom',
+				'type'     => 'file',
+				'label'    => 'Autorização',
+				'approval' => array(
+					'require_review' => true,
+					'area'           => 'admin_order',
+					'section'        => 'documentos_para_analise',
+				),
+			)
+		);
+
+		self::assertContains( 'approval_incomplete', $no_state->error_codes() );
 
 		$off = $this->validator()->validate_array(
 			array(

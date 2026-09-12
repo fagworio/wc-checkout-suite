@@ -54,6 +54,21 @@ upload temporário (que não chegou a um pedido) expira; um ligado a um pedido f
 existir; um órfão (pedido apagado) vai com ele. A política sugerida ao cliente está escrita em
 `docs/validation/WCCS-055.md` e na política de privacidade que o WordPress oferece.
 
+**Onde cada documento aparece, e o que se pode fazer com ele.** No inspetor, a aba **Vínculos** decide
+destino a destino: se o documento aparece no pedido administrativo, no pedido do cliente, na página de
+pedido recebido, nos e-mails ou no perfil — e, em cada um, se pode mostrar o nome, abrir, baixar, ser
+aprovado (só na equipa) ou ser reenviado. **Nada aparece por omissão**: um campo publicado não vai para
+nenhum sítio até ser vinculado, e um destino desligado não mostra o campo em lado nenhum.
+
+**Exigir análise manual é opcional e separado.** Ligado na mesma aba, o fluxo exige três coisas antes de
+fazer seja o que for: a área de análise, a secção onde ela acontece e **o nome do estado em que o pedido
+espera**. Faltando alguma, o rascunho é recusado com o que falta — o plugin não inventa um estado para a
+loja. Com o fluxo completo, um pedido que traga um documento desses fica nesse estado, com uma nota no
+pedido a dizer por quê, e o cliente vê «Situação da análise» no painel do pedido se marcar essa opção.
+Duas consequências que convém saber: **esse estado não tem e-mail** (o WooCommerce envia e-mails nas
+transições que conhece, e o plugin não inventa um); e **desligar o fluxo depois de haver pedidos retidos**
+deixa esses pedidos num estado que já não tem nome na lista. Ver `docs/validation/WCCS-075.md`.
+
 ## 3. Layout — a apresentação
 
 **Onde:** `WC CheckoutSuite → Configurações` (o interruptor) e o ficheiro de tokens para as cores.

@@ -950,9 +950,20 @@ export default function FieldProperties( {
 							help=""
 							checked={ Boolean( approval.require_review ) }
 							onToggle={ ( /** @type {boolean} */ next ) =>
-								changeApproval( {
-									require_review: next,
-								} )
+								changeApproval(
+									next
+										? {
+												// A suggestion, written where the
+												// merchant can see and change it: the
+												// server refuses a flow that names no
+												// state rather than inventing one.
+												require_review: true,
+												status:
+													approval.status ??
+													'Pendente de aprovação',
+										  }
+										: { require_review: false }
+								)
 							}
 						/>
 

@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-12T18:14:25+00:00\n"
+"POT-Creation-Date: 2026-09-12T18:30:13+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.7.1\n"
 "X-Domain: wc-checkoutsuite\n"
@@ -94,7 +94,7 @@ msgid "Shown for reference: this field is not kept on the order."
 msgstr ""
 
 #: src/Admin/Orders/OrderFieldsPanel.php:367
-#: src/Checkout/CustomerOrderFields.php:193
+#: src/Checkout/CustomerOrderFields.php:219
 #: src/Checkout/OrderEmailFields.php:352
 #: src/Privacy/OrderFieldsExporter.php:176
 #: resources/admin/app/components/ConditionBuilder.js:552
@@ -104,7 +104,7 @@ msgid "Yes"
 msgstr ""
 
 #: src/Admin/Orders/OrderFieldsPanel.php:367
-#: src/Checkout/CustomerOrderFields.php:193
+#: src/Checkout/CustomerOrderFields.php:219
 #: src/Checkout/OrderEmailFields.php:352
 #: src/Privacy/OrderFieldsExporter.php:176
 #: resources/admin/app/components/ConditionBuilder.js:556
@@ -125,9 +125,14 @@ msgstr ""
 msgid "Hide order summary"
 msgstr ""
 
-#: src/Checkout/CustomerOrderFields.php:158
+#: src/Checkout/CustomerOrderFields.php:166
 #: src/Checkout/OrderEmailFields.php:204
 msgid "Checkout information"
+msgstr ""
+
+#. translators: %s: the review state the store configured.
+#: src/Checkout/CustomerOrderFields.php:175
+msgid "Review status: %s"
 msgstr ""
 
 #: src/Checkout/OrderEmailFields.php:203
@@ -141,6 +146,17 @@ msgstr ""
 
 #: src/Checkout/OrderEmailFields.php:301
 msgid "Open your document"
+msgstr ""
+
+#. translators: %s: number of orders.
+#: src/Domain/Approval/ReviewStatus.php:77
+msgid "Waiting for review (%s)"
+msgid_plural "Waiting for review (%s)"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Domain/Approval/ReviewStatus.php:198
+msgid "Waiting for review: a document on this order needs approval."
 msgstr ""
 
 #: src/Domain/Checkout/AdapterCapabilities.php:84
@@ -578,139 +594,139 @@ msgid "File"
 msgstr ""
 
 #. translators: %s: field type key
-#: src/Domain/Fields/DefinitionValidator.php:115
+#: src/Domain/Fields/DefinitionValidator.php:116
 msgid "The field type \"%s\" cannot be masked."
 msgstr ""
 
 #. translators: 1: field id, 2: comma separated list of scopes
-#: src/Domain/Fields/DefinitionValidator.php:136
+#: src/Domain/Fields/DefinitionValidator.php:137
 msgid "The storage scope of \"%1$s\" must be one of: %2$s."
 msgstr ""
 
 #. translators: %s: field id
-#: src/Domain/Fields/DefinitionValidator.php:151
+#: src/Domain/Fields/DefinitionValidator.php:152
 msgid "The field \"%s\" stores no value, so its storage scope has to be \"none\"."
 msgstr ""
 
 #. translators: 1: field id, 2: comma separated list of levels
-#: src/Domain/Fields/DefinitionValidator.php:165
+#: src/Domain/Fields/DefinitionValidator.php:166
 msgid "The sensitivity of \"%1$s\" must be one of: %2$s."
 msgstr ""
 
 #. translators: 1: field id, 2: comma separated list of policies
-#: src/Domain/Fields/DefinitionValidator.php:190
+#: src/Domain/Fields/DefinitionValidator.php:191
 msgid "What happens to a hidden value of \"%1$s\" must be one of: %2$s."
 msgstr ""
 
 #. translators: 1: destination key, 2: field id
-#: src/Domain/Fields/DefinitionValidator.php:228
+#: src/Domain/Fields/DefinitionValidator.php:229
 msgid "The destination \"%1$s\" is not one a field can be shown in (field \"%2$s\")."
 msgstr ""
 
 #. translators: 1: destination key, 2: field id
-#: src/Domain/Fields/DefinitionValidator.php:245
+#: src/Domain/Fields/DefinitionValidator.php:246
 msgid "The destination \"%1$s\" must be a map (field \"%2$s\")."
 msgstr ""
 
 #. translators: 1: destination key, 2: field id
-#: src/Domain/Fields/DefinitionValidator.php:262
+#: src/Domain/Fields/DefinitionValidator.php:263
 msgid "Whether \"%1$s\" shows the field must be true or false (field \"%2$s\")."
 msgstr ""
 
 #. translators: 1: destination key, 2: field id
-#: src/Domain/Fields/DefinitionValidator.php:281
+#: src/Domain/Fields/DefinitionValidator.php:282
 msgid "The destination \"%1$s\" cannot be given file actions, because the field \"%2$s\" stores no file."
 msgstr ""
 
 #. translators: 1: action key, 2: destination key, 3: field id
-#: src/Domain/Fields/DefinitionValidator.php:297
+#: src/Domain/Fields/DefinitionValidator.php:298
 msgid "The action \"%1$s\" is not one \"%2$s\" can perform (field \"%3$s\")."
 msgstr ""
 
 #. translators: %s: field id
-#: src/Domain/Fields/DefinitionValidator.php:318
+#: src/Domain/Fields/DefinitionValidator.php:319
 msgid "The field \"%s\" stores no value, so it cannot be exposed through the Store API."
 msgstr ""
 
 #. translators: 1: field id, 2: comma separated list of missing keys
-#: src/Domain/Fields/DefinitionValidator.php:364
+#: src/Domain/Fields/DefinitionValidator.php:363
 msgid "The approval flow of \"%1$s\" needs: %2$s."
 msgstr ""
 
 #. translators: %s: field id
-#: src/Domain/Fields/DefinitionValidator.php:400
+#: src/Domain/Fields/DefinitionValidator.php:395
 msgid "The mask configured on \"%s\" has no key."
 msgstr ""
 
 #. translators: 1: mask key, 2: field id
-#: src/Domain/Fields/DefinitionValidator.php:418
+#: src/Domain/Fields/DefinitionValidator.php:413
 msgid "The mask \"%1$s\" configured on \"%2$s\" is not registered."
 msgstr ""
 
 #. translators: 1: field id, 2: configured version, 3: current version
-#: src/Domain/Fields/DefinitionValidator.php:434
+#: src/Domain/Fields/DefinitionValidator.php:429
 msgid "The mask on \"%1$s\" was configured against version %2$d, but version %3$d is registered. Re-apply the mask to accept the current one."
 msgstr ""
 
 #. translators: %s: field id
-#: src/Domain/Fields/DefinitionValidator.php:501
+#: src/Domain/Fields/DefinitionValidator.php:496
 msgid "The id \"%s\" belongs to a WooCommerce checkout field. A definition using it must declare the core origin."
 msgstr ""
 
-#: src/Domain/Fields/DefinitionValidator.php:522
+#: src/Domain/Fields/DefinitionValidator.php:517
 msgid "A field definition requires an id."
 msgstr ""
 
 #. translators: %s: field id
-#: src/Domain/Fields/DefinitionValidator.php:531
+#: src/Domain/Fields/DefinitionValidator.php:526
 msgid "The field id \"%s\" must use lowercase letters, digits and underscores only."
 msgstr ""
 
-#: src/Domain/Fields/DefinitionValidator.php:543
+#: src/Domain/Fields/DefinitionValidator.php:538
 msgid "A field definition requires a label."
 msgstr ""
 
 #. translators: %s: field type key
-#: src/Domain/Fields/DefinitionValidator.php:558
+#: src/Domain/Fields/DefinitionValidator.php:553
 msgid "The field type \"%s\" is not registered."
 msgstr ""
 
 #. translators: %s: field type key
-#: src/Domain/Fields/DefinitionValidator.php:576
+#: src/Domain/Fields/DefinitionValidator.php:571
 msgid "The field type \"%s\" stores no value and cannot carry validators."
 msgstr ""
 
 #. translators: %s: preset key
-#: src/Domain/Fields/DefinitionValidator.php:597
+#: src/Domain/Fields/DefinitionValidator.php:592
 msgid "The preset \"%s\" is not registered."
 msgstr ""
 
 #. translators: 1: preset key, 2: preset type, 3: field type
-#: src/Domain/Fields/DefinitionValidator.php:609
+#: src/Domain/Fields/DefinitionValidator.php:604
 msgid "The preset \"%1$s\" is built on type \"%2$s\" but the field declares \"%3$s\"."
 msgstr ""
 
 #. translators: %s: validator key
-#: src/Domain/Fields/DefinitionValidator.php:629
+#: src/Domain/Fields/DefinitionValidator.php:624
 #: src/Domain/Fields/ValidatorRegistry.php:75
 msgid "The validator \"%s\" is not registered."
 msgstr ""
 
 #. translators: %s: normalizer key
-#: src/Domain/Fields/DefinitionValidator.php:646
+#: src/Domain/Fields/DefinitionValidator.php:641
 msgid "The normalizer \"%s\" is not registered."
 msgstr ""
 
-#: src/Domain/Fields/DefinitionValidator.php:658
+#: src/Domain/Fields/DefinitionValidator.php:653
 msgid "The field description must be at most 500 characters long."
 msgstr ""
 
-#: src/Domain/Fields/DefinitionValidator.php:670
+#: src/Domain/Fields/DefinitionValidator.php:665
 msgid "The field position cannot be negative."
 msgstr ""
 
 #. translators: 1: viewport name, 2: width
-#: src/Domain/Fields/DefinitionValidator.php:682
+#: src/Domain/Fields/DefinitionValidator.php:677
 msgid "The %1$s width must be between 1 and 12 columns; %2$d was given."
 msgstr ""
 
@@ -1190,63 +1206,68 @@ msgstr ""
 msgid "With the order notes, away from the addresses."
 msgstr ""
 
-#: src/Domain/Sections/SectionValidator.php:52
+#: src/Domain/Sections/SectionValidator.php:53
 msgid "A section requires an id."
 msgstr ""
 
 #. translators: %s: section id
-#: src/Domain/Sections/SectionValidator.php:61
+#: src/Domain/Sections/SectionValidator.php:62
 msgid "The section id \"%s\" must use lowercase letters, digits and underscores only."
 msgstr ""
 
 #. translators: %s: section id
-#: src/Domain/Sections/SectionValidator.php:75
+#: src/Domain/Sections/SectionValidator.php:76
 msgid "The section \"%s\" requires a title."
 msgstr ""
 
 #. translators: %s: section id
-#: src/Domain/Sections/SectionValidator.php:89
+#: src/Domain/Sections/SectionValidator.php:90
 msgid "The description of \"%s\" must be at most 500 characters long."
 msgstr ""
 
 #. translators: %s: section id
-#: src/Domain/Sections/SectionValidator.php:103
+#: src/Domain/Sections/SectionValidator.php:104
 msgid "The position of \"%s\" cannot be negative."
 msgstr ""
 
 #. translators: %s: section id
-#: src/Domain/Sections/SectionValidator.php:122
+#: src/Domain/Sections/SectionValidator.php:123
 msgid "The section \"%s\" must be offered in at least one area."
 msgstr ""
 
 #. translators: 1: area key, 2: section id
-#: src/Domain/Sections/SectionValidator.php:137
+#: src/Domain/Sections/SectionValidator.php:138
 msgid "The area \"%1$s\" is not one a section can be offered in (section \"%2$s\")."
 msgstr ""
 
 #. translators: 1: section id, 2: comma separated list of locations
-#: src/Domain/Sections/SectionValidator.php:153
+#: src/Domain/Sections/SectionValidator.php:154
 msgid "The location of \"%1$s\" must be one of: %2$s."
 msgstr ""
 
 #. translators: %d: index of the entry
-#: src/Domain/Sections/SectionValidator.php:182
+#: src/Domain/Sections/SectionValidator.php:183
 msgid "The section at index %d is not a definition."
 msgstr ""
 
 #. translators: %s: section id
-#: src/Domain/Sections/SectionValidator.php:201
+#: src/Domain/Sections/SectionValidator.php:202
 msgid "The section id \"%s\" appears more than once."
 msgstr ""
 
 #. translators: 1: field id, 2: section id
-#: src/Domain/Sections/SectionValidator.php:260
+#: src/Domain/Sections/SectionValidator.php:261
 msgid "The field \"%1$s\" belongs to the section \"%2$s\", which this document does not declare."
 msgstr ""
 
 #. translators: 1: destination key, 2: section id, 3: field id
-#: src/Domain/Sections/SectionValidator.php:308
+#: src/Domain/Sections/SectionValidator.php:309
 msgid "The section \"%2$s\" is not offered in the area \"%1$s\" (field \"%3$s\")."
+msgstr ""
+
+#. translators: 1: area key, 2: section id, 3: field id
+#: src/Domain/Sections/SectionValidator.php:339
+msgid "The approval review of \"%3$s\" happens in the section \"%2$s\", which is not offered in the area \"%1$s\"."
 msgstr ""
 
 #: src/Domain/Settings/CheckoutSettings.php:99
@@ -1404,7 +1425,7 @@ msgid "You are not allowed to read this store's orders."
 msgstr ""
 
 #. translators: 1: plugin name, 2: list of missing requirements
-#: src/Plugin.php:458
+#: src/Plugin.php:465
 msgid "%1$s is inactive. %2$s"
 msgstr ""
 
@@ -1812,12 +1833,12 @@ msgstr ""
 #: resources/admin/app/components/FieldPicker.js:392
 #: resources/admin/app/views/FieldManagerView.js:1337
 #: resources/admin/app/views/FieldProperties.js:223
-#: resources/admin/app/views/FieldProperties.js:1275
+#: resources/admin/app/views/FieldProperties.js:1286
 msgid "Campo sem nome"
 msgstr ""
 
 #: resources/admin/app/components/FieldPicker.js:401
-#: resources/admin/app/views/FieldProperties.js:1284
+#: resources/admin/app/views/FieldProperties.js:1295
 msgid "Amostra do campo"
 msgstr ""
 
@@ -2782,7 +2803,7 @@ msgid "Desativar"
 msgstr ""
 
 #: resources/admin/app/views/FieldManagerView.js:1032
-#: resources/admin/app/views/FieldProperties.js:1321
+#: resources/admin/app/views/FieldProperties.js:1332
 msgid "Arquivar"
 msgstr ""
 
@@ -3072,7 +3093,7 @@ msgid "Nome do campo"
 msgstr ""
 
 #: resources/admin/app/views/FieldProperties.js:277
-#: resources/admin/app/views/FieldProperties.js:1252
+#: resources/admin/app/views/FieldProperties.js:1263
 msgid "Chave de integração"
 msgstr ""
 
@@ -3215,104 +3236,104 @@ msgstr ""
 msgid "Exigir análise manual"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:963
+#: resources/admin/app/views/FieldProperties.js:974
 msgid "Área de análise"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:967
+#: resources/admin/app/views/FieldProperties.js:978
 msgid "Obrigatória: sem ela o servidor recusa a configuração em vez de a completar por ti."
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:985
+#: resources/admin/app/views/FieldProperties.js:996
 msgid "Escolha uma área"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1005
+#: resources/admin/app/views/FieldProperties.js:1016
 msgid "Seção da análise"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1027
+#: resources/admin/app/views/FieldProperties.js:1038
 msgid "Estado durante a análise"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1049
+#: resources/admin/app/views/FieldProperties.js:1060
 msgid "Permitir pedido de correção"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1067
+#: resources/admin/app/views/FieldProperties.js:1078
 msgid "Permitir reenvio pelo cliente"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1085
+#: resources/admin/app/views/FieldProperties.js:1096
 msgid "Mostrar a situação ao cliente"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1109
+#: resources/admin/app/views/FieldProperties.js:1120
 msgid "Contrato estável"
 msgstr ""
 
 #. translators: 1: type key, 2: origin.
-#: resources/admin/app/views/FieldProperties.js:1114
+#: resources/admin/app/views/FieldProperties.js:1125
 msgid "Tipo: %1$s · Origem: %2$s"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1120
+#: resources/admin/app/views/FieldProperties.js:1131
 msgid "WooCommerce"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1121
+#: resources/admin/app/views/FieldProperties.js:1132
 msgid "Personalizado da Suite"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1127
+#: resources/admin/app/views/FieldProperties.js:1138
 msgid "Trocar tipo ou normalização exige migração."
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1136
+#: resources/admin/app/views/FieldProperties.js:1147
 msgid "Armazenamento e visibilidade"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1150
+#: resources/admin/app/views/FieldProperties.js:1161
 msgid "Onde o valor é guardado"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1189
+#: resources/admin/app/views/FieldProperties.js:1200
 msgid "Quão sensível é o valor"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1230
+#: resources/admin/app/views/FieldProperties.js:1241
 msgid "API pública: não expor. Arquivos e dados pessoais exigem autorização específica."
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1241
+#: resources/admin/app/views/FieldProperties.js:1252
 msgid "Identidade e compatibilidade"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1248
+#: resources/admin/app/views/FieldProperties.js:1259
 msgid "Identificador"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1258
+#: resources/admin/app/views/FieldProperties.js:1269
 msgid "Tipo"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1260
+#: resources/admin/app/views/FieldProperties.js:1271
 msgid "Preset"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1269
+#: resources/admin/app/views/FieldProperties.js:1280
 msgid "PRÉVIA DO CAMPO"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1270
+#: resources/admin/app/views/FieldProperties.js:1281
 msgid "AMOSTRA"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1301
+#: resources/admin/app/views/FieldProperties.js:1312
 msgid "Duplicar"
 msgstr ""
 
-#: resources/admin/app/views/FieldProperties.js:1312
+#: resources/admin/app/views/FieldProperties.js:1323
 msgid "Nativo protegido"
 msgstr ""
 

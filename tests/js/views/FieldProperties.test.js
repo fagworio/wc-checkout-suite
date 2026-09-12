@@ -339,8 +339,12 @@ describe( 'the links and display tab', () => {
 		expect(
 			screen.getByRole( 'group', { name: 'Order screen, for staff' } )
 		).toBeInTheDocument();
-		expect( screen.getByLabelText( 'Seção neste destino' ) ).toBeInTheDocument();
-		expect( screen.queryByText( 'Ações permitidas' ) ).not.toBeInTheDocument();
+		expect(
+			screen.getByLabelText( 'Seção neste destino' )
+		).toBeInTheDocument();
+		expect(
+			screen.queryByText( 'Ações permitidas' )
+		).not.toBeInTheDocument();
 		expect(
 			screen.queryByRole( 'checkbox', { name: 'Open it' } )
 		).not.toBeInTheDocument();
@@ -363,8 +367,39 @@ describe( 'the links and display tab', () => {
 			screen.getByRole( 'checkbox', { name: 'Exigir análise manual' } )
 		);
 
+		// Turning it on offers the state the design suggests, in the field the merchant
+		// can edit. The server refuses a flow that names no state, so a suggestion here
+		// is the difference between a flow that can be configured and one that cannot.
 		expect( onChange ).toHaveBeenCalledWith( {
-			approval: { require_review: true },
+			approval: {
+				require_review: true,
+				status: 'Pendente de aprovação',
+			},
+		} );
+	} );
+
+	it( 'keeps a state the merchant already named', async () => {
+		const user = userEvent.setup();
+		const { onChange } = renderInspector( {
+			field: field( {
+				approval: {
+					require_review: false,
+					status: 'Aguardando conferência',
+				},
+			} ),
+		} );
+
+		await user.click( screen.getByRole( 'button', { name: 'Vínculos' } ) );
+
+		await user.click(
+			screen.getByRole( 'checkbox', { name: 'Exigir análise manual' } )
+		);
+
+		expect( onChange ).toHaveBeenCalledWith( {
+			approval: {
+				require_review: true,
+				status: 'Aguardando conferência',
+			},
 		} );
 	} );
 } );

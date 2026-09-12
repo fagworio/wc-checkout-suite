@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace WCCheckoutSuite\Checkout;
 
 use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
+use WCCheckoutSuite\Domain\Approval\ReviewStatus;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Orders\OrderFieldEntry;
 use WCCheckoutSuite\Domain\Orders\OrderFieldsService;
@@ -135,6 +136,11 @@ final class CustomerOrderFields {
 	/**
 	 * Draws the panel.
 	 *
+	 * Two things can be said here, and they are independent: the answers this order
+	 * may show, and the state an approval flow put the order in. The second one is the
+	 * customer's business even when the document itself is not shown to them, which is
+	 * why the panel no longer disappears just because there are no rows to print.
+	 *
 	 * @param mixed $order Order the template is rendering.
 	 * @return void
 	 */
@@ -143,9 +149,11 @@ final class CustomerOrderFields {
 			return;
 		}
 
-		$entries = self::entries( $order, PublishedDocument::read()->fields() );
+		$definitions = PublishedDocument::read()->fields();
+		$entries     = self::entries( $order, $definitions );
+		$situation   = ReviewStatus::situation( $order, $definitions );
 
-		if ( array() === $entries ) {
+		if ( array() === $entries && null === $situation ) {
 			// Nothing to show is shown as nothing: a heading with no rows tells the
 			// customer that something was withheld, which is information they were not
 			// given and the store did not choose to give.
@@ -157,17 +165,35 @@ final class CustomerOrderFields {
 			'<h2 class="wccs-customer-fields__title">%s</h2>',
 			esc_html__( 'Checkout information', 'wc-checkoutsuite' )
 		);
-		echo '<dl class="wccs-customer-fields__list">';
 
-		foreach ( $entries as $entry ) {
+		if ( null !== $situation ) {
 			printf(
-				'<dt class="wccs-customer-fields__label">%s</dt><dd class="wccs-customer-fields__value">%s</dd>',
-				esc_html( $entry->label() ),
-				esc_html( self::display( $entry->value() ) )
+				'<p class="wccs-customer-fields__status">%s</p>',
+				esc_html(
+					sprintf(
+						/* translators: %s: the review state the store configured. */
+						__( 'Review status: %s', 'wc-checkoutsuite' ),
+						$situation
+					)
+				)
 			);
 		}
 
-		echo '</dl></section>';
+		if ( array() !== $entries ) {
+			echo '<dl class="wccs-customer-fields__list">';
+
+			foreach ( $entries as $entry ) {
+				printf(
+					'<dt class="wccs-customer-fields__label">%s</dt><dd class="wccs-customer-fields__value">%s</dd>',
+					esc_html( $entry->label() ),
+					esc_html( self::display( $entry->value() ) )
+				);
+			}
+
+			echo '</dl>';
+		}
+
+		echo '</section>';
 	}
 
 	/**

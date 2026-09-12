@@ -32,6 +32,7 @@ use WCCheckoutSuite\Http\Admin\CatalogController;
 use WCCheckoutSuite\Admin\Orders\OrderFieldsPanel;
 use WCCheckoutSuite\Checkout\CustomerOrderFields;
 use WCCheckoutSuite\Checkout\OrderEmailFields;
+use WCCheckoutSuite\Domain\Approval\ReviewStatus;
 use WCCheckoutSuite\Http\Admin\SchemaController;
 use WCCheckoutSuite\Http\Admin\SettingsController;
 use WCCheckoutSuite\Http\Admin\TransferController;
@@ -286,6 +287,12 @@ final class Plugin {
 		// projections — customer or store, HTML or text — are decided from what the
 		// platform hands over rather than from a setting that could disagree with it.
 		OrderEmailFields::register();
+
+		// The optional approval flow. Registered unconditionally, and does nothing at
+		// all until a published field enables a complete flow: a store that does not
+		// review documents gets no status, no filter and no hook from this line.
+		ReviewStatus::register();
+
 		Assets::register();
 
 		/**

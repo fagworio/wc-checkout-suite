@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Domain\Fields;
 
+use WCCheckoutSuite\Domain\Approval\ApprovalFlow;
 use WCCheckoutSuite\Domain\Conditions\ConditionValidator;
 use WCCheckoutSuite\Domain\Validation\MaskRegistry;
 use WCCheckoutSuite\Domain\Validation\NormalizerRegistry;
@@ -330,50 +331,44 @@ final class DefinitionValidator {
 	/**
 	 * Validates the optional approval flow.
 	 *
-	 * Approving means holding an order back, so the flow is only complete when it
-	 * says where the review happens. An incomplete flow is refused: the plugin points
-	 * at what is missing instead of creating links or permissions in silence.
+	 * Approving means holding an order back, so the flow is only complete when it says
+	 * where the review happens, in which section, and which state the order waits in.
+	 * An incomplete flow is refused: the plugin points at what is missing instead of
+	 * creating links, permissions or a state in silence.
+	 *
+	 * The rule itself lives in {@see ApprovalFlow}, because the runtime asks the same
+	 * question before it holds anything — one rule, asked at the two moments it matters.
 	 *
 	 * @param string                    $id       Field identifier.
 	 * @param array<string, mixed>|null $approval Approval configuration, or null.
 	 * @return ValidationResult
 	 */
 	private function validate_approval( string $id, ?array $approval ): ValidationResult {
-		$result = ValidationResult::valid();
+		$flow = new ApprovalFlow( $approval, $id );
 
-		if ( null === $approval || empty( $approval['require_review'] ) ) {
-			return $result;
+		if ( ! $flow->enabled() ) {
+			return ValidationResult::valid();
 		}
 
-		$missing = array();
+		$missing = $flow->missing();
 
-		if ( empty( $approval['area'] ) ) {
-			$missing[] = 'area';
+		if ( array() === $missing ) {
+			return ValidationResult::valid();
 		}
 
-		if ( empty( $approval['section'] ) ) {
-			$missing[] = 'section';
-		}
-
-		if ( array() !== $missing ) {
-			$result = $result->merge(
-				ValidationResult::invalid(
-					'approval_incomplete',
-					sprintf(
-						/* translators: 1: field id, 2: comma separated list of missing keys */
-						__( 'The approval flow of "%1$s" needs: %2$s.', 'wc-checkoutsuite' ),
-						$id,
-						implode( ', ', $missing )
-					),
-					array(
-						'field'   => $id,
-						'missing' => $missing,
-					)
-				)
-			);
-		}
-
-		return $result;
+		return ValidationResult::invalid(
+			'approval_incomplete',
+			sprintf(
+				/* translators: 1: field id, 2: comma separated list of missing keys */
+				__( 'The approval flow of "%1$s" needs: %2$s.', 'wc-checkoutsuite' ),
+				$id,
+				implode( ', ', $missing )
+			),
+			array(
+				'field'   => $id,
+				'missing' => $missing,
+			)
+		);
 	}
 
 	/**

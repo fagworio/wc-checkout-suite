@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Domain\Sections;
 
+use WCCheckoutSuite\Domain\Approval\ApprovalFlow;
 use WCCheckoutSuite\Domain\Fields\DefinitionVocabulary;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Fields\ValidationResult;
@@ -314,6 +315,36 @@ final class SectionValidator {
 								'field'       => $definition->id(),
 								'destination' => (string) $destination,
 								'section'     => $section,
+							)
+						)
+					);
+				}
+			}
+
+			// The approval flow names an area and a section too, and they are checked
+			// the same way for the same reason: a review that happens in a section the
+			// store does not offer there is a review nobody will see.
+			$flow = ApprovalFlow::of( $definition );
+
+			if ( $flow->enabled() ) {
+				$area    = $flow->area();
+				$section = $flow->section();
+
+				if ( '' !== $section && ( ! isset( $offered[ $section ] ) || ! in_array( $area, $offered[ $section ], true ) ) ) {
+					$result = $result->merge(
+						ValidationResult::invalid(
+							'approval_section_not_offered',
+							sprintf(
+								/* translators: 1: area key, 2: section id, 3: field id */
+								__( 'The approval review of "%3$s" happens in the section "%2$s", which is not offered in the area "%1$s".', 'wc-checkoutsuite' ),
+								$area,
+								$section,
+								$definition->id()
+							),
+							array(
+								'field'   => $definition->id(),
+								'area'    => $area,
+								'section' => $section,
 							)
 						)
 					);
