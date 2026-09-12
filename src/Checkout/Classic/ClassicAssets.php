@@ -302,15 +302,13 @@ final class ClassicAssets {
 			return false;
 		}
 
-		if ( function_exists( 'has_block' ) ) {
-			$page = get_post( wc_get_page_id( 'checkout' ) );
-
-			if ( $page instanceof \WP_Post && has_block( 'woocommerce/checkout', $page ) ) {
-				return false;
-			}
-		}
-
-		return true;
+		// The two gates are complements by construction rather than by assumption: this is the
+		// classic checkout when WooCommerce is not serving the blocks one. The previous version
+		// asked whether the page's CONTENT carried the checkout block, which is a different
+		// question — and on a page whose content has the block while the store serves the
+		// classic checkout, it refused here and the Blocks gate refused there, so neither half
+		// of the plugin rendered. Found by printing this decision into the page.
+		return ! \WCCheckoutSuite\Checkout\Blocks\BlocksRenderer::is_blocks_checkout();
 	}
 
 	/**

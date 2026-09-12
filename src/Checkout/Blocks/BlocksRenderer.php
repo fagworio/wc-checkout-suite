@@ -93,9 +93,12 @@ final class BlocksRenderer {
 		// parsed the page's content, found no block comment, and refused to deliver the
 		// fields to a checkout that was genuinely a Blocks checkout.
 		if ( class_exists( '\Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils' )
-			&& method_exists( '\Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils', 'is_checkout_block_default' )
-			&& \Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils::is_checkout_block_default() ) {
-			return true;
+			&& method_exists( '\Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils', 'is_checkout_block_default' ) ) {
+			// The platform's answer is THE answer. Falling through to the content test when it
+			// says no was the dead zone: on a page whose content carries the block while
+			// WooCommerce serves the classic checkout, both gates refused and neither half of
+			// this plugin drew anything.
+			return \Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils::is_checkout_block_default();
 		}
 
 		$page = get_post( wc_get_page_id( 'checkout' ) );
