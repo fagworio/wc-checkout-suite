@@ -159,6 +159,13 @@ final class BlocksAdapter {
 			return 'controlled';
 		}
 
+		// A type another plugin contributed and that declares which control renders it is
+		// rendered by this plugin's own bundle — the same answer a controlled type gets,
+		// because that is what it is: a component of ours drawing a control that exists.
+		if ( '' !== \WCCheckoutSuite\Domain\Registries::instance()->types()->control( $type ) ) {
+			return 'controlled';
+		}
+
 		return 'restricted';
 	}
 

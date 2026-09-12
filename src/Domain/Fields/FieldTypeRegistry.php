@@ -21,6 +21,30 @@ namespace WCCheckoutSuite\Domain\Fields;
 final class FieldTypeRegistry extends AbstractRegistry {
 
 	/**
+	 * The control a type declares it is rendered by.
+	 *
+	 * The question the adapters ask about a type this plugin does not know. A type that
+	 * declares nothing answers with an empty string, and an empty string is rendered
+	 * nowhere — which is the state a contributed type is in until it declares one.
+	 *
+	 * @param string $type Field type.
+	 * @return string Control name, or an empty string.
+	 */
+	public function control( string $type ): string {
+		$registered = $this->get( $type );
+
+		if ( ! is_object( $registered ) || ! method_exists( $registered, 'supports' ) ) {
+			return '';
+		}
+
+		$supports = $registered->supports();
+		$control  = is_array( $supports ) && isset( $supports['control'] ) ? (string) $supports['control'] : '';
+
+		return 'control' === $control ? '' : $control;
+	}
+
+
+	/**
 	 * Category of each registered type, keyed by type key.
 	 *
 	 * Kept beside the registry rather than inside it because the shared

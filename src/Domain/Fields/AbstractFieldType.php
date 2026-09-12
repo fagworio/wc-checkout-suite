@@ -52,7 +52,7 @@ abstract class AbstractFieldType implements FieldTypeInterface {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * @return array
+	 * @return array{value: bool, multiple: bool, maskable: bool, conditional: bool, control: string}
 	 */
 	public function supports(): array {
 		return array(
@@ -60,6 +60,15 @@ abstract class AbstractFieldType implements FieldTypeInterface {
 			'multiple'    => false,
 			'maskable'    => false,
 			'conditional' => true,
+			// Which existing control renders this type, when the type is not one this
+			// plugin knows. Empty means the type declares nothing, and a type that declares
+			// nothing is rendered nowhere — which is the answer a new type gets today, and
+			// the answer WCCS-058 exists to replace with a declaration.
+			//
+			// A contributed type is not given a new control by declaring this: it is given
+			// one of the controls that already exist. A select is still a select, and the
+			// validation the contributing plugin wrote is what makes it a membership code.
+			'control'     => '',
 		);
 	}
 

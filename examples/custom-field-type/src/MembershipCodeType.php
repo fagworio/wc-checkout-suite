@@ -85,6 +85,10 @@ final class MembershipCodeType extends AbstractFieldType {
 			'multiple'    => false,
 			'maskable'    => true,
 			'conditional' => true,
+			// The declaration that makes this type visible in both checkouts: it is
+			// rendered by the text control that already exists, and what makes it a
+			// membership code is normalize() and validate() below.
+			'control'     => 'text',
 		);
 	}
 

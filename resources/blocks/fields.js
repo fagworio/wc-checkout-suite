@@ -45,6 +45,7 @@ import { keyboardFor, optionsFor } from '../checkout/masks';
  * @property {string}                                          name          Field identifier.
  * @property {string}                                          label         Label the customer reads.
  * @property {string}                                          type          Suite field type.
+ * @property {string}                                          control       Control that draws it: the type itself, or the control a contributed type declared.
  * @property {string}                                          location      Blocks location.
  * @property {boolean}                                         required      Whether it is required.
  * @property {string}                                          [description] Help text.
@@ -441,6 +442,13 @@ export const COMPONENTS = {
 export function componentFor( field ) {
 	if ( ! field || 'string' !== typeof field.type ) {
 		return null;
+	}
+
+	// A type contributed by another plugin declares which control draws it, and the
+	// control is what chooses the component: a membership code is a text input here, and
+	// what makes it a membership code is the validation the contributing plugin wrote.
+	if ( 'string' === typeof field.control && field.control !== field.type ) {
+		return COMPONENTS[ field.control ] ?? null;
 	}
 
 	// A masked field of a type that is otherwise native is rendered here, because

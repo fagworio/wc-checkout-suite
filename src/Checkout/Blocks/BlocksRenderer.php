@@ -169,6 +169,12 @@ final class BlocksRenderer {
 				'name'     => $id,
 				'label'    => $definition->label(),
 				'type'     => $type,
+				// Which control draws it. For a type this plugin knows the component is
+				// chosen by the type; for a contributed one it is the declaration that
+				// makes it visible at all.
+				'control'  => '' !== \WCCheckoutSuite\Domain\Registries::instance()->types()->control( $type )
+					? \WCCheckoutSuite\Domain\Registries::instance()->types()->control( $type )
+					: $type,
 				'location' => $location,
 				'required' => $definition->is_required(),
 				'section'  => $section,

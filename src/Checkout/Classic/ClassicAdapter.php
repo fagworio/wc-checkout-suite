@@ -127,7 +127,32 @@ final class ClassicAdapter {
 	 * @return bool
 	 */
 	public static function can_render( string $type ): bool {
-		return isset( self::TYPE_MAP[ $type ] ) || isset( self::DEGRADED[ $type ] );
+		return isset( self::TYPE_MAP[ $type ] )
+			|| isset( self::DEGRADED[ $type ] )
+			|| '' !== self::control_for( $type );
+	}
+
+	/**
+	 * The control a contributed type is rendered by.
+	 *
+	 * A type this plugin knows is rendered by its own entry in the maps above. A type
+	 * contributed by another plugin is rendered by the control it declares — and only by a
+	 * control that exists here, because a declaration is a choice among what is available
+	 * and not a promise that anything can be drawn.
+	 *
+	 * @param string $type Field type.
+	 * @return string Control name, or an empty string.
+	 */
+	public static function control_for( string $type ): string {
+		if ( isset( self::TYPE_MAP[ $type ] ) || isset( self::DEGRADED[ $type ] ) ) {
+			return '';
+		}
+
+		$control = \WCCheckoutSuite\Domain\Registries::instance()->types()->control( $type );
+
+		return in_array( $control, array( 'text', 'textarea', 'email', 'tel', 'select', 'radio', 'checkbox' ), true )
+			? $control
+			: '';
 	}
 
 	/**
@@ -399,7 +424,13 @@ final class ClassicAdapter {
 	 * @return array<string, mixed>
 	 */
 	private function add_custom( array $fields, FieldDefinition $definition, string $section, array $classes ): array {
-		$type = self::TYPE_MAP[ $definition->type() ] ?? 'text';
+		// A type this plugin knows is rendered by its own entry. A type another plugin
+		// contributed is rendered by the control it declared — and the blind fallback to
+		// text is what happened before WCCS-058: a membership code became a text box with
+		// nobody told, which is the same silent loss the migration task refuses.
+		$declared = self::control_for( $definition->type() );
+
+		$type = self::TYPE_MAP[ $definition->type() ] ?? ( '' !== $declared ? $declared : 'text' );
 
 		if ( ! isset( $fields[ $section ] ) || ! is_array( $fields[ $section ] ) ) {
 			$fields[ $section ] = array();
