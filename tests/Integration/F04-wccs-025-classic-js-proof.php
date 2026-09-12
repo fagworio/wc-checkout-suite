@@ -394,7 +394,7 @@ wp_deregister_script( \WCCheckoutSuite\Checkout\Classic\ClassicAssets::SCRIPT_HA
 foreach (
 	array(
 		\WCCheckoutSuite\Checkout\Classic\ClassicAssets::STYLE_HANDLE,
-		\WCCheckoutSuite\Checkout\Classic\ClassicAssets::TOKENS_HANDLE,
+		\WCCheckoutSuite\Checkout\Presentation::TOKENS_HANDLE,
 	) as $wccs_handle
 ) {
 	wp_dequeue_style( $wccs_handle );

@@ -49,6 +49,16 @@ final class BlocksRenderer {
 	public const SCRIPT_HANDLE = 'wc-checkout-suite-blocks';
 
 	/**
+	 * Handle of the stylesheet that presents the fields on the Blocks checkout.
+	 */
+	public const STYLE_HANDLE = 'wccs-blocks-presentation';
+
+	/**
+	 * The stylesheet's file, relative to the plugin root.
+	 */
+	public const STYLE_FILE = 'resources/blocks/presentation.css';
+
+	/**
 	 * Registers the hook.
 	 *
 	 * @return void
@@ -219,6 +229,11 @@ final class BlocksRenderer {
 		if ( ! $is_blocks || array() === $payload['fields'] ) {
 			return;
 		}
+
+		// The presentation first, and for the same reason the classic checkout gets
+		// it first: the stylesheet is what makes the region line up, and the bundle is
+		// an improvement on a checkout that already works without it.
+		\WCCheckoutSuite\Checkout\Presentation::enqueue( self::STYLE_HANDLE, self::STYLE_FILE );
 
 		$bundle = 'build/blocks/index.js';
 

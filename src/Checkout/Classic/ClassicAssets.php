@@ -38,9 +38,9 @@ final class ClassicAssets {
 	public const STYLE_HANDLE = 'wccs-checkout-presentation';
 
 	/**
-	 * Handle of the design tokens the presentation reads.
+	 * The stylesheet's file, relative to the plugin root.
 	 */
-	public const TOKENS_HANDLE = 'wccs-design-tokens';
+	public const STYLE_FILE = 'resources/checkout/presentation.css';
 
 	/**
 	 * The class the presentation is scoped to, put on the checkout body.
@@ -193,7 +193,9 @@ final class ClassicAssets {
 	 * value in the presentation comes from them: a stylesheet that loaded before the
 	 * variables it uses would render the layout with its fallbacks, which is the
 	 * kind of difference nobody notices until a merchant changes a token and nothing
-	 * moves.
+	 * moves. That rule and the file itself are the shared `Presentation`'s business,
+	 * because the Blocks checkout is given a presentation of its own and the order
+	 * should not be two implementations that agree today.
 	 *
 	 * The stylesheet is served as a file rather than injected by the bundle. It is
 	 * the same file the build does not have to touch, and a layout that arrives with
@@ -202,26 +204,7 @@ final class ClassicAssets {
 	 * @return void
 	 */
 	private static function enqueue_presentation(): void {
-		$tokens       = 'resources/design-tokens/tokens.css';
-		$presentation = 'resources/checkout/presentation.css';
-
-		if ( ! is_readable( WCCS_PLUGIN_DIR . $presentation ) ) {
-			return;
-		}
-
-		$dependencies = array();
-
-		if ( is_readable( WCCS_PLUGIN_DIR . $tokens ) ) {
-			wp_enqueue_style( self::TOKENS_HANDLE, WCCS_PLUGIN_URL . $tokens, array(), WCCS_VERSION );
-			$dependencies[] = self::TOKENS_HANDLE;
-		}
-
-		wp_enqueue_style(
-			self::STYLE_HANDLE,
-			WCCS_PLUGIN_URL . $presentation,
-			$dependencies,
-			WCCS_VERSION
-		);
+		\WCCheckoutSuite\Checkout\Presentation::enqueue( self::STYLE_HANDLE, self::STYLE_FILE );
 	}
 
 	/**

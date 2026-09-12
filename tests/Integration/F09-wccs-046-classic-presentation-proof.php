@@ -248,7 +248,7 @@ wccs_proof_store( $wccs_slot, array( wccs_proof_def( 'wccs_note' ) ) );
 
 $wccs_assets  = 'WCCheckoutSuite\\Checkout\\Classic\\ClassicAssets';
 $wccs_style   = $wccs_assets::STYLE_HANDLE;
-$wccs_tokens  = $wccs_assets::TOKENS_HANDLE;
+$wccs_tokens  = \WCCheckoutSuite\Checkout\Presentation::TOKENS_HANDLE;
 
 // ---------------------------------------------------------------------------
 // 1. What the checkout page is given.

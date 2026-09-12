@@ -12,15 +12,17 @@
  *    `--brand`. Reusing those names would make this plugin's appearance depend
  *    on load order.
  *
- * 2. Nothing is declared on `:root`. The tokens live on the two scopes the
- *    plugin actually renders, so activating the plugin cannot change the
- *    appearance of any other admin screen.
+ * 2. Nothing is declared on `:root`. The tokens live on the three scopes the
+ *    plugin actually renders — the admin screen, the classic checkout and the
+ *    region this plugin occupies on the Blocks checkout — so activating the plugin
+ *    cannot change the appearance of any other screen or page.
  *
  * See ROADMAP.md sections 17 and 18.
  */
 
 .wccs-admin,
-.wccs-checkout {
+.wccs-checkout,
+.wccs-blocks-field {
 	/* Brand and action. */
 	--wccs-brand: #6d28d9;
 	--wccs-brand-hover: #5b21b6;

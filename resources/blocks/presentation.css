@@ -1,0 +1,176 @@
+/*
+ * The Blocks checkout, presented by this plugin.
+ *
+ * This file styles the region this plugin is given, and nothing else. That is a
+ * narrower job than the classic presentation's, and the scope says so: every
+ * selector here is qualified by `.wccs-blocks-field`, the wrapper the components
+ * built from `resources/blocks/` always render. The Blocks checkout decides the
+ * page, the field blocks WooCommerce draws itself and the whole payment area; what
+ * arrives inside our wrapper is ours to arrange.
+ *
+ * Two consequences, and both are the acceptance:
+ *
+ * 1. **A field is never cloned.** The bundle draws only the fields the native
+ *    adapter refused, so no field is rendered twice — once by WooCommerce and once
+ *    by us — and this file cannot style a WooCommerce field block even by accident,
+ *    because a rule that does not name our scope cannot reach one.
+ *
+ * 2. **A payment component is never cloned or restyled.** Nothing here imitates a
+ *    payment method, and nothing here touches the payment region: a checkout that
+ *    drew its own card inputs would be collecting data this plugin must never
+ *    collect. That is asserted by reading this file, not promised.
+ *
+ * The spacing rule is the one section 17 records: `gap` on the wrapper and no
+ * margin between siblings. The container is our wrapper rather than the page.
+ *
+ * The responsive rule is a container query and not a media query, which is the one
+ * decision that is genuinely different from the classic presentation. The width of
+ * the region the platform gives us is not the width of the window — the same
+ * checkout places these fields in a wide column or in a narrow order sidebar — so
+ * the question "how much room do I have" is asked of the region, the only element
+ * that can answer it.
+ */
+
+/* ------------------------------------------------------------------- Region */
+
+.wccs-blocks-field {
+	/* The wrapper is one column, spaced by a gap, and it is the unit the platform
+	   places. Its own width comes from the location WooCommerce chose and is never
+	   set here. */
+	display: grid;
+	gap: var(--wccs-checkout-field-gap);
+	margin-block: 0;
+
+	/* Asking the region rather than the window. */
+	container-type: inline-size;
+
+	/* The one spacing value this presentation decides for itself; every other
+	   value it reads is a token declared on this scope in tokens.css. */
+	--wccs-checkout-field-gap: var(--wccs-space-8);
+}
+
+/* The label, the description, the control and the message are siblings inside the
+   wrapper, and the gap above is what separates them. Nothing spaces them with a
+   margin — the shape of rule section 17 records as the defect. */
+.wccs-blocks-field > * {
+	margin-block: 0;
+}
+
+.wccs-blocks-field__label {
+	display: block;
+	color: var(--wccs-ink);
+	font-size: var(--wccs-text-label);
+	font-weight: var(--wccs-weight-medium);
+	line-height: var(--wccs-leading-body);
+}
+
+.wccs-blocks-field__description {
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+	line-height: var(--wccs-leading-body);
+}
+
+/* The message is text, not a colour: an error that says only "red" says nothing to
+   a customer who cannot see it. The wording and the `role="alert"` are the
+   component's; this is the one line that makes it legible. */
+.wccs-blocks-field__error {
+	color: var(--wccs-danger);
+	font-size: var(--wccs-text-help);
+	line-height: var(--wccs-leading-body);
+}
+
+/* ----------------------------------------------------------------- Controls */
+
+.wccs-blocks-field input[type="text"],
+.wccs-blocks-field input[type="email"],
+.wccs-blocks-field input[type="tel"],
+.wccs-blocks-field input[type="url"],
+.wccs-blocks-field input[type="number"],
+.wccs-blocks-field input[type="password"],
+.wccs-blocks-field input[type="date"],
+.wccs-blocks-field input[type="time"],
+.wccs-blocks-field select,
+.wccs-blocks-field textarea {
+	inline-size: 100%;
+	max-inline-size: 100%;
+	min-block-size: var(--wccs-size-field-height);
+	padding-inline: var(--wccs-space-12);
+	border: 1px solid var(--wccs-border-control);
+	border-radius: var(--wccs-radius-field);
+	background: var(--wccs-surface);
+	color: var(--wccs-ink);
+	font-size: var(--wccs-text-body-checkout);
+	line-height: var(--wccs-leading-body);
+}
+
+/* The focus ring is never removed and never replaced by a colour change alone. */
+.wccs-blocks-field input:focus-visible,
+.wccs-blocks-field select:focus-visible,
+.wccs-blocks-field textarea:focus-visible {
+	outline: var(--wccs-size-focus-outline-width) solid var(--wccs-focus-ring);
+	outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------ Choice groups */
+
+/* One column, always: a radio group whose options are reflowed into columns is a
+   group whose reading order stops matching its order, and the labels here are the
+   merchant's text, not this plugin's. The room the region has changes how much
+   space each option gets, never how many there are. */
+.wccs-blocks-field__choices {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: var(--wccs-checkout-field-gap);
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.wccs-blocks-field__choices label {
+	display: flex;
+	gap: var(--wccs-space-8);
+	align-items: center;
+	min-block-size: var(--wccs-size-touch-target);
+	font-size: var(--wccs-text-body-checkout);
+	line-height: var(--wccs-leading-body);
+}
+
+.wccs-blocks-field__choices input {
+	flex: none;
+	margin-block: 0;
+}
+
+/* -------------------------------------------------------------------- Narrow */
+
+/* A narrow region — the order sidebar is one — cannot afford the roomy spacing,
+   and a label that wraps needs its control at the top rather than centred against
+   three lines of text. A media query would tighten this on a wide desktop that
+   happens to give the field a narrow region, and leave it roomy on a phone whose
+   region is full width, which is the opposite of both answers. */
+@container (max-width: 360px) {
+	.wccs-blocks-field {
+		--wccs-checkout-field-gap: var(--wccs-space-4);
+	}
+
+	.wccs-blocks-field__choices label {
+		align-items: flex-start;
+	}
+
+	.wccs-blocks-field input[type="text"],
+	.wccs-blocks-field input[type="email"],
+	.wccs-blocks-field input[type="tel"],
+	.wccs-blocks-field input[type="url"],
+	.wccs-blocks-field input[type="number"],
+	.wccs-blocks-field input[type="password"],
+	.wccs-blocks-field input[type="date"],
+	.wccs-blocks-field input[type="time"],
+	.wccs-blocks-field select,
+	.wccs-blocks-field textarea {
+		padding-inline: var(--wccs-space-8);
+	}
+
+	.wccs-blocks-field__description,
+	.wccs-blocks-field__error {
+		font-size: var(--wccs-text-caption);
+	}
+}
