@@ -1310,16 +1310,17 @@ export default function FieldManagerView( { model } ) {
 			{ /* The dialogs the design opens from the bar and the panel. */ }
 			<Dialog
 				open={ pickerOpen }
-				title={ __( 'Adicionar campo', 'wc-checkoutsuite' ) }
+				size="picker"
+				eyebrow={ __( 'ADICIONAR CAMPO', 'wc-checkoutsuite' ) }
+				title={ __(
+					'O que seu checkout precisa?',
+					'wc-checkoutsuite'
+				) }
+				subtitle={ __(
+					'Escolha um tipo ou comece com um preset pronto.',
+					'wc-checkoutsuite'
+				) }
 				onClose={ () => setPickerOpen( false ) }
-				footer={
-					<Button
-						variant="secondary"
-						onClick={ () => setPickerOpen( false ) }
-					>
-						{ __( 'Fechar', 'wc-checkoutsuite' ) }
-					</Button>
-				}
 			>
 				<FieldPicker
 					catalog={ catalog }
@@ -1335,12 +1336,19 @@ export default function FieldManagerView( { model } ) {
 						setPickerOpen( false );
 						onAdoptCore( core );
 					} }
+					onClose={ () => setPickerOpen( false ) }
 				/>
 			</Dialog>
 
 			<Dialog
 				open={ publishOpen }
+				size="publish"
+				eyebrow={ __( 'PUBLICAR', 'wc-checkoutsuite' ) }
 				title={ __( 'Revisar publicação', 'wc-checkoutsuite' ) }
+				subtitle={ __(
+					'O rascunho vira a versão que a loja corre. Publicar cria uma revisão nova e mantém a anterior.',
+					'wc-checkoutsuite'
+				) }
 				onClose={ () => setPublishOpen( false ) }
 				footer={
 					<>
@@ -1372,7 +1380,12 @@ export default function FieldManagerView( { model } ) {
 
 			<Dialog
 				open={ historyOpen }
-				title={ __( 'Revisões', 'wc-checkoutsuite' ) }
+				size="publish"
+				title={ __( 'Histórico de publicação', 'wc-checkoutsuite' ) }
+				subtitle={ __(
+					'Voltar a uma versão anterior publica-a de novo como uma revisão nova. Nada é apagado.',
+					'wc-checkoutsuite'
+				) }
 				onClose={ () => setHistoryOpen( false ) }
 				footer={
 					<Button

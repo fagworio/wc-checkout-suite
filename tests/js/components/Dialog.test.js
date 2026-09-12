@@ -61,9 +61,7 @@ describe( 'Dialog', () => {
 			</Dialog>
 		);
 
-		await user.click(
-			screen.getByRole( 'button', { name: 'Close dialog' } )
-		);
+		await user.click( screen.getByRole( 'button', { name: 'Fechar' } ) );
 
 		expect( onClose ).toHaveBeenCalledTimes( 1 );
 	} );

@@ -12,9 +12,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import FieldPicker, {
-	normaliseSearch,
-} from '../../../resources/admin/app/components/FieldPicker';
+import FieldPicker from '../../../resources/admin/app/components/FieldPicker';
 
 /**
  * Builds a catalogue in the shape the server sends.
@@ -54,7 +52,10 @@ function catalog() {
 			{
 				key: 'address',
 				label: 'Address',
-				types: [ type( 'country', 'Country', 'address' ) ],
+				types: [
+					type( 'country', 'Country', 'address' ),
+					type( 'address_line', 'Endereço', 'address' ),
+				],
 			},
 			{
 				key: 'upload',
@@ -134,8 +135,14 @@ function renderPicker( overrides = {} ) {
 			catalog={ catalog() }
 			coreFields={ inventory() }
 			section="billing"
+			sections={ [
+				{ id: 'billing', label: 'Billing' },
+				{ id: 'shipping', label: 'Shipping' },
+			] }
+			onSectionChange={ () => {} }
 			onChooseType={ onChooseType }
 			onAdoptCore={ onAdoptCore }
+			onClose={ () => {} }
 			{ ...overrides }
 		/>
 	);
@@ -149,219 +156,297 @@ function renderPicker( overrides = {} ) {
  * @return {*} Input element.
  */
 function searchBox() {
-	return screen.getByLabelText( /search fields/i );
+	return screen.getByLabelText( 'Buscar um tipo de campo' );
 }
 
-describe( 'search normalisation', () => {
-	it( 'ignores case and accents', () => {
-		expect( normaliseSearch( 'Endereço' ) ).toBe( 'endereco' );
-		expect( normaliseSearch( '  CPF  ' ) ).toBe( 'cpf' );
-	} );
-} );
+/**
+ * Chooses one entry from the grid and confirms it.
+ *
+ * The design's picker has two steps — pick, then configure — so a test that wants the
+ * callback walks both, which is what a merchant does.
+ *
+ * @param {any}    user  user-event instance.
+ * @param {string} label Entry label.
+ * @return {Promise<void>} Resolves after the field was added.
+ */
+async function addField( user, label ) {
+	await openConfigure( user, label );
+	await user.click(
+		screen.getByRole( 'button', { name: 'Adicionar campo' } )
+	);
+}
 
+/**
+ * Opens the configure step for one entry without confirming it.
+ *
+ * @param {any}    user  user-event instance.
+ * @param {string} label Entry label.
+ * @return {Promise<void>} Resolves when the configure step is open.
+ */
+async function openConfigure( user, label ) {
+	await user.click(
+		within( grid() ).getByRole( 'button', {
+			name: new RegExp( `^${ label }` ),
+		} )
+	);
+}
+
+/**
+ * The category rail.
+ *
+ * The cards name their category too, so a query for a category has to be scoped: the
+ * rail and the grid are two lists that share a vocabulary.
+ *
+ * @return {*} Rail element.
+ */
+function rail() {
+	return screen.getByRole( 'navigation', {
+		name: 'Categorias de campos',
+	} );
+}
+
+/**
+ * The grid of entries.
+ *
+ * @return {*} Grid element.
+ */
+function grid() {
+	return document.querySelector( '.picker-grid' );
+}
 describe( 'what the picker offers', () => {
-	it( 'renders the categories the server sent', () => {
+	it( 'renders a category per group the server sent, plus all of them', () => {
 		renderPicker();
 
+		const categories = within( rail() );
+
 		expect(
-			screen.getByRole( 'heading', { name: 'Text and contact' } )
+			categories.getByRole( 'button', { name: /Todos os campos/ } )
 		).toBeInTheDocument();
 		expect(
-			screen.getByRole( 'heading', { name: 'Address' } )
+			categories.getByRole( 'button', { name: /Text and contact/ } )
 		).toBeInTheDocument();
 		expect(
-			screen.getByRole( 'heading', { name: 'Files' } )
+			categories.getByRole( 'button', { name: /Address/ } )
+		).toBeInTheDocument();
+		expect(
+			categories.getByRole( 'button', { name: /Files/ } )
 		).toBeInTheDocument();
 	} );
 
 	it( 'offers no category it was not given', () => {
-		renderPicker( {
-			catalog: { categories: [], types: {}, presets: [] },
-		} );
+		renderPicker( { catalog: { categories: [], types: {}, presets: [] } } );
 
 		expect(
-			screen.queryByRole( 'heading', { name: 'Text and contact' } )
+			within( rail() ).queryByRole( 'button', {
+				name: /Text and contact/,
+			} )
 		).not.toBeInTheDocument();
 	} );
 
-	it( 'offers ready-made fields before raw types', () => {
+	it( 'counts what each category holds', () => {
 		renderPicker();
 
-		const presetHeading = screen.getByRole( 'heading', {
-			name: 'Ready-made fields',
-		} );
-		const typeHeading = screen.getByRole( 'heading', {
-			name: 'Text and contact',
-		} );
-
-		// 4 is DOCUMENT_POSITION_FOLLOWING. The numeric constant is used because
-		// the test environment does not expose the DOM `Node` global to ESLint.
-		expect( presetHeading.compareDocumentPosition( typeHeading ) ).toBe(
-			4
-		);
+		expect(
+			within(
+				within( rail() ).getByRole( 'button', {
+					name: /Text and contact/,
+				} )
+			).getByText( '2' )
+		).toBeInTheDocument();
 	} );
 
-	it( 'offers the WooCommerce fields of the store', () => {
+	it( 'offers the WooCommerce fields of the store as their own category', () => {
 		renderPicker();
 
 		expect(
-			screen.getByRole( 'button', { name: /First name/ } )
+			within( rail() ).getByRole( 'button', {
+				name: /Campos da WooCommerce/,
+			} )
 		).toBeInTheDocument();
-		const woo = screen.getByRole( 'region', {
-			name: 'WooCommerce fields',
-		} );
+	} );
+
+	it( 'offers the presets the server sent as a category', () => {
+		renderPicker();
 
 		expect(
-			within( woo ).getByRole( 'button', { name: /Country \/ region/ } )
+			within( rail() ).getByRole( 'button', {
+				name: /Presets Brasil/,
+			} )
+		).toBeInTheDocument();
+	} );
+
+	it( 'shows every entry when nothing is filtered', () => {
+		renderPicker();
+
+		expect( within( grid() ).getAllByRole( 'button' ).length ).toBe( 9 );
+	} );
+} );
+
+describe( 'searching and filtering', () => {
+	it( 'narrows the list to what matches, ignoring case and accents', async () => {
+		const user = userEvent.setup();
+
+		renderPicker();
+
+		await user.type( searchBox(), 'endereco' );
+
+		expect(
+			within( grid() ).getByRole( 'button', { name: /Endereço/ } )
+		).toBeInTheDocument();
+		expect(
+			within( grid() ).queryByRole( 'button', { name: /Email/ } )
+		).not.toBeInTheDocument();
+	} );
+
+	it( 'finds an entry through its category name', async () => {
+		const user = userEvent.setup();
+
+		renderPicker();
+
+		await user.type( searchBox(), 'files' );
+
+		expect(
+			within( grid() ).getByRole( 'button', { name: /File/ } )
+		).toBeInTheDocument();
+	} );
+
+	it( 'explains itself when nothing matches', async () => {
+		const user = userEvent.setup();
+
+		renderPicker();
+
+		await user.type( searchBox(), 'zzzz' );
+
+		expect(
+			screen.getByText( 'Nenhum tipo encontrado.' )
+		).toBeInTheDocument();
+	} );
+
+	it( 'restricts the list to one category', async () => {
+		const user = userEvent.setup();
+
+		renderPicker();
+
+		await user.click(
+			within( rail() ).getByRole( 'button', { name: /Address/ } )
+		);
+
+		expect(
+			within( grid() ).getByRole( 'button', { name: /Country/ } )
+		).toBeInTheDocument();
+		expect(
+			within( grid() ).queryByRole( 'button', { name: /Email/ } )
+		).not.toBeInTheDocument();
+	} );
+
+	it( 'composes the category with the search term', async () => {
+		const user = userEvent.setup();
+
+		renderPicker();
+
+		await user.click(
+			within( rail() ).getByRole( 'button', { name: /Address/ } )
+		);
+		await user.type( searchBox(), 'email' );
+
+		expect(
+			screen.getByText( 'Nenhum tipo encontrado.' )
 		).toBeInTheDocument();
 	} );
 } );
 
 describe( 'choosing', () => {
-	it( 'hands back the type key of a plain type', async () => {
+	it( 'hands back the type key, with the key the merchant accepted', async () => {
 		const user = userEvent.setup();
 		const { onChooseType } = renderPicker();
 
-		await user.click( screen.getByRole( 'button', { name: /^Email/ } ) );
+		await addField( user, 'Text' );
 
-		expect( onChooseType ).toHaveBeenCalledWith(
-			expect.objectContaining( { type: 'email', preset: null } )
+		expect( onChooseType ).toHaveBeenCalledTimes( 1 );
+		expect( onChooseType.mock.calls[ 0 ][ 0 ] ).toMatchObject( {
+			type: 'text',
+			label: 'Text',
+			idHint: 'text',
+			section: 'billing',
+			layout: { desktop: 12 },
+		} );
+	} );
+
+	it( 'lets the name and the key be changed before adding', async () => {
+		const user = userEvent.setup();
+		const { onChooseType } = renderPicker();
+
+		await openConfigure( user, 'Text' );
+
+		const name = screen.getByLabelText( 'Nome do campo *' );
+		const key = screen.getByLabelText( 'Chave de integração *' );
+
+		await user.clear( name );
+		await user.type( name, 'Documento' );
+		await user.clear( key );
+		await user.type( key, 'documento' );
+
+		await user.click(
+			screen.getByRole( 'button', { name: 'Adicionar campo' } )
 		);
+
+		expect( onChooseType.mock.calls[ 0 ][ 0 ] ).toMatchObject( {
+			type: 'text',
+			label: 'Documento',
+			idHint: 'documento',
+		} );
 	} );
 
 	it( 'hands back the preset, its type and its settings', async () => {
 		const user = userEvent.setup();
 		const { onChooseType } = renderPicker();
 
-		await user.click( screen.getByRole( 'button', { name: /^CPF/ } ) );
+		await addField( user, 'CPF' );
 
-		expect( onChooseType ).toHaveBeenCalledWith(
-			expect.objectContaining( {
-				type: 'text',
-				preset: 'br.cpf',
-				settings: { placeholder: '000.000.000-00' },
-			} )
-		);
+		const choice = onChooseType.mock.calls[ 0 ][ 0 ];
+
+		expect( choice.type ).toBe( 'text' );
+		expect( choice.preset ).toBe( 'br.cpf' );
+		expect( choice.settings ).toEqual( {
+			placeholder: '000.000.000-00',
+		} );
 	} );
 
-	it( 'hands back the WooCommerce field that was chosen', async () => {
+	it( 'adopts a WooCommerce field without a configure step', async () => {
 		const user = userEvent.setup();
-		const { onAdoptCore } = renderPicker();
+		const { onAdoptCore, onChooseType } = renderPicker();
 
 		await user.click(
-			screen.getByRole( 'button', { name: /First name/ } )
+			within( rail() ).getByRole( 'button', {
+				name: /Campos da WooCommerce/,
+			} )
+		);
+		await user.click(
+			within( grid() ).getByRole( 'button', { name: /Country/ } )
 		);
 
 		expect( onAdoptCore ).toHaveBeenCalledWith(
-			expect.objectContaining( { id: 'billing_first_name' } )
+			expect.objectContaining( { id: 'billing_country' } )
 		);
+		expect( onChooseType ).not.toHaveBeenCalled();
 	} );
-} );
 
-describe( 'searching', () => {
-	it( 'narrows the list to what matches', async () => {
+	it( 'offers to go back from the configure step without adding anything', async () => {
 		const user = userEvent.setup();
-		renderPicker();
+		const { onChooseType } = renderPicker();
 
-		await user.type( searchBox(), 'coun' );
-
-		const address = screen.getByRole( 'region', { name: 'Address' } );
+		await openConfigure( user, 'Text' );
+		await user.click( screen.getByRole( 'button', { name: 'Voltar' } ) );
 
 		expect(
-			within( address ).getByRole( 'button', { name: /Country/ } )
+			within( rail() ).getByRole( 'button', { name: /Todos os campos/ } )
 		).toBeInTheDocument();
-		expect( screen.queryByRole( 'button', { name: /^Email/ } ) ).toBeNull();
-	} );
-
-	it( 'finds a type through its category name', async () => {
-		const user = userEvent.setup();
-		renderPicker();
-
-		await user.type( searchBox(), 'upload' );
-
-		expect(
-			screen.getByRole( 'button', { name: /^File/ } )
-		).toBeInTheDocument();
-	} );
-
-	it( 'explains itself when nothing matches', async () => {
-		const user = userEvent.setup();
-		renderPicker();
-
-		await user.type( searchBox(), 'zzzz' );
-
-		expect( screen.getByText( /Nothing matches/ ) ).toBeInTheDocument();
-	} );
-
-	it( 'can be cleared', async () => {
-		const user = userEvent.setup();
-		renderPicker();
-
-		await user.type( searchBox(), 'zzzz' );
-		await user.click(
-			screen.getByRole( 'button', { name: /clear search/i } )
-		);
-
-		expect(
-			screen.getByRole( 'button', { name: /^Email/ } )
-		).toBeInTheDocument();
-	} );
-} );
-
-describe( 'category filter', () => {
-	it( 'is offered with an option per category plus all', () => {
-		renderPicker();
-
-		const group = screen.getByRole( 'group', { name: 'Category' } );
-
-		expect(
-			within( group )
-				.getAllByRole( 'button' )
-				.map( ( button ) => button.textContent )
-		).toEqual( [ 'All', 'Text and contact', 'Address', 'Files' ] );
-	} );
-
-	it( 'restricts the list to one category', async () => {
-		const user = userEvent.setup();
-		renderPicker();
-
-		await user.click( screen.getByRole( 'button', { name: 'Address' } ) );
-
-		const address = screen.getByRole( 'region', { name: 'Address' } );
-
-		expect(
-			within( address ).getByRole( 'button', { name: /Country/ } )
-		).toBeInTheDocument();
-		expect( screen.queryByRole( 'button', { name: /^Email/ } ) ).toBeNull();
-	} );
-
-	it( 'composes with the search term', async () => {
-		const user = userEvent.setup();
-		renderPicker();
-
-		await user.click( screen.getByRole( 'button', { name: 'Address' } ) );
-		await user.type( searchBox(), 'email' );
-
-		expect( screen.getByText( /Nothing matches/ ) ).toBeInTheDocument();
-	} );
-
-	it( 'shows the category on each result when all are shown', async () => {
-		const user = userEvent.setup();
-		renderPicker();
-
-		await user.click( screen.getByRole( 'button', { name: 'Address' } ) );
-		await user.click( screen.getByRole( 'button', { name: 'All' } ) );
-
-		const address = screen.getByRole( 'region', { name: 'Address' } );
-
-		expect(
-			within( address ).getByRole( 'button', { name: /Country/ } )
-		).toHaveTextContent( 'address' );
+		expect( onChooseType ).not.toHaveBeenCalled();
 	} );
 } );
 
 describe( 'when the store fields cannot be read', () => {
-	it( 'says why instead of showing an empty list', () => {
+	it( 'says why instead of looking like a store with no fields', () => {
 		renderPicker( {
 			coreFields: {
 				available: false,
@@ -372,59 +457,12 @@ describe( 'when the store fields cannot be read', () => {
 		} );
 
 		expect(
-			screen.getByText( 'WooCommerce is not active.' )
+			screen.getByText( /WooCommerce is not active/ )
 		).toBeInTheDocument();
 		expect(
-			screen.queryByText( /No WooCommerce field matches/ )
+			within( rail() ).queryByRole( 'button', {
+				name: /Campos da WooCommerce/,
+			} )
 		).not.toBeInTheDocument();
-	} );
-} );
-
-describe( 'loading and failure', () => {
-	it( 'says it is loading and offers nothing yet', () => {
-		renderPicker( { busy: true } );
-
-		expect(
-			screen.getByText( /Loading the field list/ )
-		).toBeInTheDocument();
-		expect(
-			screen.queryByRole( 'group', { name: 'Category' } )
-		).toBeNull();
-	} );
-
-	it( 'reports a failure to load the catalogue', () => {
-		renderPicker( { error: 'The server refused the request.' } );
-
-		expect(
-			screen.getByText( 'The server refused the request.' )
-		).toBeInTheDocument();
-	} );
-} );
-
-describe( 'target section', () => {
-	it( 'offers the section selector only when sections are given', () => {
-		renderPicker();
-
-		expect( screen.queryByLabelText( /add to section/i ) ).toBeNull();
-	} );
-
-	it( 'reports a new target section', async () => {
-		const user = userEvent.setup();
-		const onSectionChange = jest.fn();
-
-		renderPicker( {
-			sections: [
-				{ key: 'billing', label: 'Billing' },
-				{ key: 'shipping', label: 'Shipping' },
-			],
-			onSectionChange,
-		} );
-
-		await user.selectOptions(
-			screen.getByLabelText( /add to section/i ),
-			'shipping'
-		);
-
-		expect( onSectionChange ).toHaveBeenCalledWith( 'shipping' );
 	} );
 } );

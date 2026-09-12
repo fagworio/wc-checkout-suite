@@ -1,423 +1,587 @@
 /**
- * Field picker.
+ * The picker: choosing a field to add, as the design draws it.
  *
- * The merchant's entry point to the schema: a searchable, categorised list of
- * everything that can be added, followed by the WooCommerce fields that can be
- * adopted for customisation.
+ * Two steps, in one dialog. The first is the catalogue — categories down the side, the
+ * types and presets in a grid, a search over both — and the second configures the one
+ * that was chosen: its name, its key, the section it belongs to, how wide it is and
+ * whether it is required, with a sample beside it.
  *
- * Three decisions shape it:
+ * The list is the server's, not this file's. Types come from the registry through the
+ * catalogue route, so a type another plugin registers appears here without this file
+ * knowing it exists; the marks beside them are the design's, and a type the design never
+ * drew gets a stable fallback rather than no glyph at all.
  *
- * 1. **The list comes from the server.** Field types are read from the
- *    `/field-types` route, which reads the registry, so a type a third-party
- *    plugin registered appears here with no change to this file. The only
- *    hard-coded list would be a list that is wrong.
+ * WooCommerce's own checkout fields are the design's missing half: the prototype's
+ * catalogue is entirely its own types, and this plugin lets a merchant customise a field
+ * WooCommerce already has. They are a category of their own here, drawn with the same
+ * card, so the capability is not lost to the port.
  *
- * 2. **Presets come before types.** A merchant wants "CPF", not "text with a
- *    mask". Presets are offered first and named for what they produce.
- *
- * 3. **Search and category filter compose.** Typing narrows within the chosen
- *    category and, when no category is chosen, across all of them, with the
- *    category name shown on each result so a mixed list stays readable.
- *
- * @see ROADMAP.md sections 6 and 19
+ * @package
  */
 
 import { useMemo, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 
-import Button from './Button';
-import Notice from './Notice';
-import Segmented from './Segmented';
-import { TextField, SelectField } from './controls';
-import { Badge } from './Badge';
+import { Icon } from '../design/icons';
+import { typeGlyph } from '../design/typeGlyph';
 
 /**
- * Identifier of the synthetic "everything" category.
+ * Glyph per server category, from the design's own set.
  *
- * @type {string}
+ * @type {Record<string, string>}
  */
-const ALL = 'all';
+const CATEGORY_GLYPHS = {
+	all: 'fields',
+	text: 'edit',
+	choice: 'sliders',
+	datetime: 'calendar',
+	number: 'barcode',
+	address: 'location',
+	upload: 'upload',
+	layout: 'layers',
+	general: 'code',
+	presets: 'location',
+	core: 'shield',
+};
 
 /**
- * Normalises text for case and accent insensitive matching.
+ * Turns a label into a key the schema accepts.
  *
- * A merchant typing "endereco" must find "Endereço".
+ * The server owns the rule and refuses a bad key; this only proposes something valid so
+ * the merchant is not asked to type a key before they have named the field.
  *
- * @param {string} value Source text.
- * @return {string} Normalised text.
+ * @param {string} label Label.
+ * @return {string} Suggested key.
  */
-export function normaliseSearch( value ) {
-	return ( value ?? '' )
+function suggestedKey( label ) {
+	const slug = label
 		.normalize( 'NFD' )
 		.replace( /[\u0300-\u036f]/g, '' )
 		.toLowerCase()
-		.trim();
-}
+		.replace( /[^a-z0-9]+/g, '_' )
+		.replace( /^_+|_+$/g, '' )
+		.slice( 0, 64 );
 
-/**
- * Whether an entry matches a search term.
- *
- * @param {{ label?: string, key?: string, type?: string }} entry Entry.
- * @param {string}                                          term  Normalised search term.
- * @return {boolean} True when it matches.
- */
-function matches( entry, term ) {
-	if ( '' === term ) {
-		return true;
+	if ( '' === slug ) {
+		return 'campo';
 	}
 
-	const haystack = normaliseSearch(
-		`${ entry.label ?? '' } ${ entry.key ?? '' } ${ entry.type ?? '' }`
-	);
-
-	return haystack.includes( term );
+	return /^[a-z]/.test( slug ) ? slug : `campo_${ slug }`;
 }
 
 /**
- * Groups filtered type entries by their category.
+ * The picker.
  *
- * @param {import('../schema/types').FieldTypeCategory[]} categories Categories with their types.
- * @param {string}                                        term       Normalised search term.
- * @return {import('../schema/types').FieldTypeCategory[]} Non-empty groups.
- */
-function filterGroups( categories, term ) {
-	return ( categories ?? [] )
-		.map( ( category ) => ( {
-			...category,
-			types: ( category.types ?? [] ).filter( ( type ) =>
-				matches( type, term )
-			),
-		} ) )
-		.filter( ( category ) => category.types.length > 0 );
-}
-
-/**
- * The WooCommerce-owned fields offered for adoption.
- *
- * Extracted from the picker because the three states it can be in — inventory
- * unavailable, nothing matched, and a list — read as a nested conditional
- * otherwise, and because "the store's own fields could not be listed" is a
- * different kind of message from "your search found nothing".
- *
- * @param {Object}                                                   props             Component properties.
- * @param {import('../schema/types').CoreFieldInventory|null}        props.inventory   Core field inventory.
- * @param {import('../schema/types').CoreFieldEntry[]}               props.fields      Fields to offer.
- * @param {(core: import('../schema/types').CoreFieldEntry) => void} props.onAdoptCore Called with the chosen field.
- * @return {*} Rendered element tree.
- */
-function CoreFieldChoices( { inventory, fields, onAdoptCore } ) {
-	if ( inventory?.available === false ) {
-		return <Notice status="warning">{ inventory.reason }</Notice>;
-	}
-
-	if ( fields.length === 0 ) {
-		return (
-			<p className="wccs-picker__empty">
-				{ __(
-					'No WooCommerce field matches the search.',
-					'wc-checkoutsuite'
-				) }
-			</p>
-		);
-	}
-
-	return (
-		<ul className="wccs-picker__list">
-			{ fields.map( ( field ) => (
-				<li key={ field.id }>
-					<button
-						type="button"
-						className="wccs-picker__item"
-						onClick={ () => onAdoptCore( field ) }
-					>
-						<span className="wccs-picker__item-label">
-							{ field.label }
-						</span>
-						<span className="wccs-picker__item-meta">
-							{ field.id } · { field.section }
-						</span>
-						<Badge tone="brand">
-							{ __( 'WooCommerce', 'wc-checkoutsuite' ) }
-						</Badge>
-					</button>
-				</li>
-			) ) }
-		</ul>
-	);
-}
-
-/**
- * Field picker.
- *
- * @param {Object}                                                   props                   Component properties.
- * @param {import('../schema/types').FieldCatalog|null}              props.catalog           Registered field types and presets.
- * @param {import('../schema/types').CoreFieldInventory|null}        props.coreFields        Core field inventory.
- * @param {string}                                                   props.section           Section new fields are created in.
- * @param {(choice: import('../schema/types').PickerChoice) => void} props.onChooseType      Called with the chosen type or preset.
- * @param {(core: import('../schema/types').CoreFieldEntry) => void} props.onAdoptCore       Called with the chosen WooCommerce field.
- * @param {Array<{key: string, label: string}>}                      [props.sections]        Sections offered for new fields.
- * @param {(section: string) => void}                                [props.onSectionChange] Called with a new target section.
- * @param {boolean}                                                  [props.busy]            Whether the catalogue is loading.
- * @param {string}                                                   [props.error]           Catalogue loading error.
+ * @param {Object}                                            props                 Component properties.
+ * @param {import('../schema/types').FieldCatalog|null}       props.catalog         Field catalogue.
+ * @param {import('../schema/types').CoreFieldInventory|null} props.coreFields      WooCommerce's own fields.
+ * @param {string}                                            props.section         Section a new field joins.
+ * @param {Array<{id: string, label: string}>}                props.sections        Sections to choose from.
+ * @param {Function}                                          props.onSectionChange Called with a section id.
+ * @param {Function}                                          props.onChooseType    Called with the choice to create.
+ * @param {Function}                                          props.onAdoptCore     Called with a core field to adopt.
+ * @param {Function}                                          props.onClose         Called to close the dialog.
  * @return {*} Rendered element tree.
  */
 export default function FieldPicker( {
 	catalog,
 	coreFields,
 	section,
+	sections,
+	onSectionChange,
 	onChooseType,
 	onAdoptCore,
-	sections = [],
-	onSectionChange,
-	busy = false,
-	error = '',
+	onClose,
 } ) {
-	const [ term, setTerm ] = useState( '' );
-	const [ category, setCategory ] = useState( ALL );
+	const [ category, setCategory ] = useState( 'all' );
+	const [ query, setQuery ] = useState( '' );
+	const [ chosen, setChosen ] = useState( /** @type {any} */ ( null ) );
+	const [ label, setLabel ] = useState( '' );
+	const [ key, setKey ] = useState( '' );
+	const [ required, setRequired ] = useState( false );
+	const [ width, setWidth ] = useState( 12 );
 
-	// Memoised: `?? []` would build a new array on every render and make every
-	// memo below recompute for a reason that has nothing to do with the data.
-	const categories = useMemo( () => catalog?.categories ?? [], [ catalog ] );
-	const presets = useMemo( () => catalog?.presets ?? [], [ catalog ] );
-	const normalised = normaliseSearch( term );
+	/** Every entry the catalogue offers: types, presets and WooCommerce's own fields. */
+	const entries = useMemo( () => {
+		const list = /** @type {Array<any>} */ ( [] );
 
-	const categoryOptions = useMemo(
-		() => [
-			{ id: ALL, label: __( 'All', 'wc-checkoutsuite' ) },
-			...categories.map( ( entry ) => ( {
-				id: entry.key,
-				label: entry.label,
-			} ) ),
-		],
-		[ categories ]
-	);
+		( catalog?.categories ?? [] ).forEach( ( /** @type {any} */ group ) => {
+			( group.types ?? [] ).forEach( ( /** @type {any} */ type ) => {
+				list.push( {
+					kind: 'type',
+					key: type.key,
+					label: type.label,
+					category: group.key,
+					categoryLabel: group.label,
+					glyph: typeGlyph( type.key ),
+				} );
+			} );
+		} );
 
-	const visibleCategories = useMemo( () => {
-		const scoped =
-			ALL === category
-				? categories
-				: categories.filter( ( entry ) => entry.key === category );
+		( catalog?.presets ?? [] ).forEach( ( /** @type {any} */ preset ) => {
+			list.push( {
+				kind: 'preset',
+				key: preset.key,
+				type: preset.type,
+				label: preset.label,
+				category: 'presets',
+				categoryLabel: __( 'Presets Brasil', 'wc-checkoutsuite' ),
+				glyph: typeGlyph( preset.type ),
+				preset,
+			} );
+		} );
 
-		return filterGroups( scoped, normalised );
-	}, [ categories, category, normalised ] );
+		( coreFields?.fields ?? [] ).forEach( ( /** @type {any} */ core ) => {
+			list.push( {
+				kind: 'core',
+				key: core.id,
+				label: core.label ?? core.id,
+				category: 'core',
+				categoryLabel: __(
+					'Campos da WooCommerce',
+					'wc-checkoutsuite'
+				),
+				glyph: typeGlyph( core.type ?? 'text' ),
+				core,
+			} );
+		} );
 
-	const visiblePresets = useMemo(
-		() =>
-			( presets ?? [] ).filter( ( preset ) =>
-				matches( preset, normalised )
-			),
-		[ presets, normalised ]
-	);
+		return list;
+	}, [ catalog, coreFields ] );
 
-	const visibleCore = useMemo(
-		() =>
-			( coreFields?.fields ?? [] ).filter( ( field ) =>
-				matches( field, normalised )
-			),
-		[ coreFields, normalised ]
-	);
+	/** The design's category rail, built from what the catalogue publishes. */
+	const categories = useMemo( () => {
+		const rail = /** @type {Array<any>} */ ( [
+			{
+				key: 'all',
+				label: __( 'Todos os campos', 'wc-checkoutsuite' ),
+				count: entries.length,
+			},
+		] );
 
-	const typeCount = visibleCategories.reduce(
-		( total, entry ) => total + entry.types.length,
-		0
-	);
-	const nothingFound =
-		! busy &&
-		'' === error &&
-		0 === typeCount &&
-		0 === visiblePresets.length &&
-		0 === visibleCore.length;
+		( catalog?.categories ?? [] ).forEach( ( /** @type {any} */ group ) => {
+			if ( 0 === ( group.types ?? [] ).length ) {
+				return;
+			}
+
+			rail.push( {
+				key: group.key,
+				label: group.label,
+				count: group.types.length,
+			} );
+		} );
+
+		if ( ( catalog?.presets ?? [] ).length > 0 ) {
+			rail.push( {
+				key: 'presets',
+				label: __( 'Presets Brasil', 'wc-checkoutsuite' ),
+				count: catalog?.presets?.length ?? 0,
+			} );
+		}
+
+		if ( ( coreFields?.fields ?? [] ).length > 0 ) {
+			rail.push( {
+				key: 'core',
+				label: __( 'Campos da WooCommerce', 'wc-checkoutsuite' ),
+				count: coreFields?.fields?.length ?? 0,
+			} );
+		}
+
+		return rail;
+	}, [ catalog, coreFields, entries ] );
+
+	const normalise = ( /** @type {string} */ value ) =>
+		value
+			.toLowerCase()
+			.normalize( 'NFD' )
+			.replace( /[\u0300-\u036f]/g, '' );
+
+	const visible = entries.filter( ( entry ) => {
+		const matchesCategory =
+			'all' === category || entry.category === category;
+		const haystack = normalise(
+			`${ entry.label } ${ entry.key } ${ entry.categoryLabel }`
+		);
+
+		return matchesCategory && haystack.includes( normalise( query ) );
+	} );
+
+	/**
+	 * Opens the configure step for one entry.
+	 *
+	 * A WooCommerce field is not created: it is adopted, so it goes straight back to
+	 * the caller and the second step never opens for it.
+	 *
+	 * @param {any} entry Chosen entry.
+	 * @return {void}
+	 */
+	const choose = ( entry ) => {
+		if ( 'core' === entry.kind ) {
+			onAdoptCore( entry.core );
+
+			return;
+		}
+
+		setChosen( entry );
+		setLabel( entry.label );
+		setKey( suggestedKey( entry.key ) );
+		setRequired( false );
+		setWidth( 12 );
+	};
+
+	if ( chosen ) {
+		return (
+			<>
+				<div className="create-body">
+					<div>
+						<div className="form-group">
+							<label htmlFor="wccs-new-label">
+								{ __( 'Nome do campo *', 'wc-checkoutsuite' ) }
+							</label>
+							<input
+								id="wccs-new-label"
+								className="input"
+								maxLength={ 100 }
+								value={ label }
+								onChange={ (
+									/** @type {{ target: { value: string } }} */ event
+								) => setLabel( event.target.value ) }
+							/>
+						</div>
+
+						<div className="form-group">
+							<label htmlFor="wccs-new-key">
+								{ __(
+									'Chave de integração *',
+									'wc-checkoutsuite'
+								) }
+							</label>
+							<input
+								id="wccs-new-key"
+								className="input"
+								maxLength={ 64 }
+								spellCheck={ false }
+								value={ key }
+								onChange={ (
+									/** @type {{ target: { value: string } }} */ event
+								) => setKey( event.target.value ) }
+							/>
+							<p className="form-help">
+								{ __(
+									'Única e permanente. Letras minúsculas, números e underscore; comece com uma letra.',
+									'wc-checkoutsuite'
+								) }
+							</p>
+						</div>
+
+						<div className="form-group">
+							<label htmlFor="wccs-new-section">
+								{ __( 'Seção', 'wc-checkoutsuite' ) }
+							</label>
+							<select
+								id="wccs-new-section"
+								className="input"
+								value={ section }
+								onChange={ (
+									/** @type {{ target: { value: string } }} */ event
+								) => onSectionChange( event.target.value ) }
+							>
+								{ sections.map(
+									( /** @type {any} */ entry ) => (
+										<option
+											key={ entry.id }
+											value={ entry.id }
+										>
+											{ entry.label ?? entry.id }
+										</option>
+									)
+								) }
+							</select>
+						</div>
+
+						<div className="form-row">
+							<div className="form-group">
+								<label htmlFor="wccs-new-width">
+									{ __(
+										'Largura no desktop',
+										'wc-checkoutsuite'
+									) }
+								</label>
+								<select
+									id="wccs-new-width"
+									className="input"
+									value={ String( width ) }
+									onChange={ (
+										/** @type {{ target: { value: string } }} */ event
+									) =>
+										setWidth( Number( event.target.value ) )
+									}
+								>
+									<option value="12">
+										{ __(
+											'100% · linha inteira',
+											'wc-checkoutsuite'
+										) }
+									</option>
+									<option value="6">
+										{ __(
+											'50% · meia linha',
+											'wc-checkoutsuite'
+										) }
+									</option>
+									<option value="4">
+										{ __(
+											'33% · um terço',
+											'wc-checkoutsuite'
+										) }
+									</option>
+								</select>
+							</div>
+
+							<div className="form-group">
+								<label htmlFor="wccs-new-required">
+									{ __(
+										'Obrigatoriedade',
+										'wc-checkoutsuite'
+									) }
+								</label>
+								<select
+									id="wccs-new-required"
+									className="input"
+									value={ required ? 'true' : 'false' }
+									onChange={ (
+										/** @type {{ target: { value: string } }} */ event
+									) =>
+										setRequired(
+											'true' === event.target.value
+										)
+									}
+								>
+									<option value="false">
+										{ __( 'Opcional', 'wc-checkoutsuite' ) }
+									</option>
+									<option value="true">
+										{ __(
+											'Obrigatório',
+											'wc-checkoutsuite'
+										) }
+									</option>
+								</select>
+							</div>
+						</div>
+					</div>
+
+					<aside className="create-aside">
+						<div className="field-glyph" aria-hidden="true">
+							{ chosen.glyph }
+						</div>
+						<h3>{ chosen.label }</h3>
+						<p>
+							{ __(
+								'O campo entra no rascunho. Nada chega ao checkout antes de publicar.',
+								'wc-checkoutsuite'
+							) }
+						</p>
+						<span className="badge purple">
+							{ chosen.categoryLabel }
+						</span>
+
+						<div className="sample-box">
+							<span className="sample-label">
+								{ label ||
+									__( 'Campo sem nome', 'wc-checkoutsuite' ) }
+								{ required ? (
+									<span className="required-star">*</span>
+								) : null }
+							</span>
+							<input
+								className="sample-input"
+								readOnly
+								tabIndex={ -1 }
+								placeholder={ __(
+									'Amostra do campo',
+									'wc-checkoutsuite'
+								) }
+							/>
+						</div>
+					</aside>
+				</div>
+
+				<div className="dialog-footer">
+					<p className="form-help">
+						{ __(
+							'Tipos são estruturas. Presets combinam tipo, máscara e regras.',
+							'wc-checkoutsuite'
+						) }
+					</p>
+					<button
+						type="button"
+						className="btn"
+						onClick={ () => setChosen( null ) }
+					>
+						{ __( 'Voltar', 'wc-checkoutsuite' ) }
+					</button>
+					<button
+						type="button"
+						className="btn btn-primary"
+						disabled={ '' === label.trim() || '' === key.trim() }
+						onClick={ () =>
+							onChooseType( {
+								type: chosen.preset?.type ?? chosen.key,
+								preset: chosen.preset?.key ?? null,
+								label: label.trim(),
+								idHint: key.trim(),
+								section,
+								required,
+								layout: { desktop: width },
+								// A preset carries its own settings and defaults, and
+								// the capabilities belong to the type it is built on:
+								// without them the field would be created with
+								// defaults the server refuses.
+								settings: chosen.preset
+									? chosen.preset.settings ?? {}
+									: undefined,
+								defaults: chosen.preset?.defaults ?? undefined,
+								supports: chosen.preset
+									? catalog?.types?.[ chosen.preset.type ]
+											?.supports ?? {}
+									: undefined,
+							} )
+						}
+					>
+						<Icon name="plus" />
+						{ __( 'Adicionar campo', 'wc-checkoutsuite' ) }
+					</button>
+				</div>
+			</>
+		);
+	}
 
 	return (
-		<div className="wccs-picker">
-			<div className="wccs-picker__controls">
-				<TextField
-					id="wccs-picker-search"
-					label={ __( 'Search fields', 'wc-checkoutsuite' ) }
-					value={ term }
-					onChange={ (
-						/** @type {{ target: { value: string } }} */ event
-					) => setTerm( event.target.value ) }
-					placeholder={ __(
-						'CPF, address, upload…',
+		<>
+			<div className="picker-main">
+				<nav
+					className="picker-categories"
+					aria-label={ __(
+						'Categorias de campos',
 						'wc-checkoutsuite'
 					) }
-				/>
+				>
+					{ categories.map( ( entry ) => (
+						<button
+							key={ entry.key }
+							type="button"
+							className={ entry.key === category ? 'active' : '' }
+							aria-pressed={ entry.key === category }
+							onClick={ () => setCategory( entry.key ) }
+						>
+							<Icon
+								name={
+									CATEGORY_GLYPHS[ entry.key ] ?? 'fields'
+								}
+							/>
+							{ entry.label }
+							<small>{ entry.count }</small>
+						</button>
+					) ) }
+				</nav>
 
-				{ sections.length > 0 && onSectionChange ? (
-					<SelectField
-						id="wccs-picker-section"
-						label={ __( 'Add to section', 'wc-checkoutsuite' ) }
-						value={ section }
-						onChange={ (
-							/** @type {{ target: { value: string } }} */ event
-						) => onSectionChange( event.target.value ) }
-						options={ sections.map( ( entry ) => ( {
-							value: entry.key,
-							label: entry.label,
-						} ) ) }
-					/>
-				) : null }
+				<div className="picker-content">
+					<label className="search" htmlFor="wccs-picker-search">
+						<Icon name="search" />
+						<input
+							id="wccs-picker-search"
+							value={ query }
+							placeholder={ __(
+								'Buscar texto, CPF, arquivo…',
+								'wc-checkoutsuite'
+							) }
+							aria-label={ __(
+								'Buscar um tipo de campo',
+								'wc-checkoutsuite'
+							) }
+							onChange={ (
+								/** @type {{ target: { value: string } }} */ event
+							) => setQuery( event.target.value ) }
+						/>
+					</label>
+
+					<div className="picker-caption">
+						{ sprintf(
+							/* translators: %d: number of entries. */
+							__(
+								'%d tipos e presets disponíveis',
+								'wc-checkoutsuite'
+							),
+							visible.length
+						) }
+					</div>
+
+					<div className="picker-grid">
+						{ 0 === visible.length ? (
+							<div className="empty-state">
+								<Icon name="search" />
+								<h3>
+									{ __(
+										'Nenhum tipo encontrado.',
+										'wc-checkoutsuite'
+									) }
+								</h3>
+								<p>
+									{ __(
+										'Tente outro termo ou outra categoria.',
+										'wc-checkoutsuite'
+									) }
+								</p>
+							</div>
+						) : (
+							visible.map( ( entry ) => (
+								<button
+									key={ `${ entry.kind }-${ entry.key }` }
+									type="button"
+									className="picker-card"
+									onClick={ () => choose( entry ) }
+								>
+									<span
+										className="field-glyph"
+										aria-hidden="true"
+									>
+										{ entry.glyph }
+									</span>
+									<Icon name="plus" />
+									<strong>{ entry.label }</strong>
+									<small>{ entry.categoryLabel }</small>
+								</button>
+							) )
+						) }
+					</div>
+				</div>
 			</div>
 
-			{ busy ? (
-				<Notice status="info">
-					{ __( 'Loading the field list…', 'wc-checkoutsuite' ) }
-				</Notice>
-			) : null }
-
-			{ error ? (
-				<Notice
-					status="error"
-					title={ __(
-						'The field list could not be loaded',
-						'wc-checkoutsuite'
-					) }
-				>
-					{ error }
-				</Notice>
-			) : null }
-
-			{ ! busy && ! error ? (
-				<Segmented
-					label={ __( 'Category', 'wc-checkoutsuite' ) }
-					options={ categoryOptions }
-					value={ category }
-					onChange={ setCategory }
-					compact
-				/>
-			) : null }
-
-			{ nothingFound ? (
-				<Notice status="info">
-					{ sprintf(
-						/* translators: %s: the search term. */
-						__(
-							'Nothing matches "%s". Try a shorter term or another category.',
-							'wc-checkoutsuite'
-						),
-						term
-					) }
-				</Notice>
-			) : null }
-
-			{ visiblePresets.length > 0 ? (
-				<section className="wccs-picker__group">
-					<h3 className="wccs-picker__group-title">
-						{ __( 'Ready-made fields', 'wc-checkoutsuite' ) }
-					</h3>
-					<ul className="wccs-picker__list">
-						{ visiblePresets.map( ( preset ) => (
-							<li key={ preset.key }>
-								<button
-									type="button"
-									className="wccs-picker__item"
-									onClick={ () =>
-										onChooseType( {
-											type: preset.type,
-											label: preset.label,
-											settings: preset.settings ?? {},
-											defaults: preset.defaults ?? {},
-											preset: preset.key,
-											// The capabilities belong to the type the preset
-											// is built on; without them the field would be
-											// created with defaults the server refuses.
-											supports:
-												catalog?.types?.[ preset.type ]
-													?.supports ?? {},
-										} )
-									}
-								>
-									<span className="wccs-picker__item-label">
-										{ preset.label }
-									</span>
-									<span className="wccs-picker__item-meta">
-										{ preset.type }
-										{ preset.group
-											? ` · ${ preset.group }`
-											: '' }
-									</span>
-								</button>
-							</li>
-						) ) }
-					</ul>
-				</section>
-			) : null }
-
-			{ visibleCategories.map( ( entry ) => (
-				<section
-					key={ entry.key }
-					className="wccs-picker__group"
-					aria-labelledby={ `wccs-picker-cat-${ entry.key }` }
-				>
-					<h3
-						className="wccs-picker__group-title"
-						id={ `wccs-picker-cat-${ entry.key }` }
-					>
-						{ entry.label }
-					</h3>
-					<ul
-						className="wccs-picker__list"
-						aria-labelledby={ `wccs-picker-cat-${ entry.key }` }
-					>
-						{ entry.types.map( ( type ) => (
-							<li key={ type.key }>
-								<button
-									type="button"
-									className="wccs-picker__item"
-									onClick={ () =>
-										onChooseType( {
-											type: type.key,
-											label: type.label,
-											settings: {},
-											preset: null,
-											supports: type.supports,
-										} )
-									}
-								>
-									<span className="wccs-picker__item-label">
-										{ type.label }
-									</span>
-									<span className="wccs-picker__item-meta">
-										{ type.key }
-										{ ALL === category
-											? ` · ${ type.category }`
-											: '' }
-									</span>
-								</button>
-							</li>
-						) ) }
-					</ul>
-				</section>
-			) ) }
-
-			<section
-				className="wccs-picker__group"
-				aria-labelledby="wccs-picker-core"
-			>
-				<h3 className="wccs-picker__group-title" id="wccs-picker-core">
-					{ __( 'WooCommerce fields', 'wc-checkoutsuite' ) }
-				</h3>
-
-				<CoreFieldChoices
-					inventory={ coreFields }
-					fields={ visibleCore }
-					onAdoptCore={ onAdoptCore }
-				/>
-
-				<p className="wccs-picker__hint">
-					{ __(
-						'WooCommerce fields of your store. Adding one lets you rename, describe and resize it; it cannot be archived or removed, because the checkout depends on it.',
-						'wc-checkoutsuite'
-					) }
+			<div className="dialog-footer">
+				<p className="form-help">
+					{ false === coreFields?.available
+						? sprintf(
+								/* translators: %s: reason the inventory could not be read. */
+								__(
+									'Os campos da WooCommerce não puderam ser listados: %s',
+									'wc-checkoutsuite'
+								),
+								coreFields?.reason ?? ''
+						  )
+						: __(
+								'Tipos são estruturas. Presets Brasil combinam tipo, máscara e regras. Senhas ficam no fluxo nativo.',
+								'wc-checkoutsuite'
+						  ) }
 				</p>
-			</section>
-
-			{ ! busy && ! error && '' !== term ? (
-				<Button variant="secondary" onClick={ () => setTerm( '' ) }>
-					{ __( 'Clear search', 'wc-checkoutsuite' ) }
-				</Button>
-			) : null }
-		</div>
+				<button
+					type="button"
+					className="btn"
+					onClick={ () => onClose?.() }
+				>
+					{ __( 'Cancelar', 'wc-checkoutsuite' ) }
+				</button>
+			</div>
+		</>
 	);
 }
