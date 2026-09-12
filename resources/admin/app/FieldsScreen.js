@@ -735,6 +735,10 @@ export default function FieldsScreen( { client } ) {
 					catalog,
 					coreFields,
 					sectionOptions,
+					sections: groups.map( ( /** @type {any} */ group ) => ( {
+						id: group.section.id,
+						label: group.section.title ?? group.section.id,
+					} ) ),
 					loading,
 					dirty,
 					saving,

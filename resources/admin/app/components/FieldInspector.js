@@ -386,13 +386,17 @@ function OptionListControl( { name, rules, value, onChange } ) {
 /**
  * Renders the settings a type declares.
  *
+ * Exported because the design's inspection panel is a different component and this is
+ * the half that knows how to read a type's declared settings. It moves to its own
+ * module when the previous panel is deleted; until then, one implementation serves both.
+ *
  * @param {Object}                              props          Component properties.
  * @param {Record<string, Record<string, any>>} [props.schema] Declared settings schema.
  * @param {Record<string, any>}                 props.value    Current settings.
  * @param {Function}                            props.onChange Called with the new settings.
  * @return {*} Rendered element tree.
  */
-function SettingsControls( { schema, value, onChange } ) {
+export function SettingsControls( { schema, value, onChange } ) {
 	const declared = schema ?? {};
 	const names = Object.keys( declared );
 

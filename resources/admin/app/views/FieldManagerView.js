@@ -25,7 +25,7 @@ import { __, sprintf } from '@wordpress/i18n';
 
 import Dialog from '../components/Dialog';
 import FieldPicker from '../components/FieldPicker';
-import FieldInspector from '../components/FieldInspector';
+import FieldProperties from './FieldProperties';
 import Notice from '../components/Notice';
 import PublishPanel from '../components/PublishPanel';
 import RevisionsList from '../components/RevisionsList';
@@ -93,6 +93,7 @@ export default function FieldManagerView( { model } ) {
 		catalog,
 		coreFields,
 		sectionOptions,
+		sections,
 		loading,
 		dirty,
 		saving,
@@ -1229,10 +1230,10 @@ export default function FieldManagerView( { model } ) {
 						) }
 					>
 						{ editingField ? (
-							<FieldInspector
+							<FieldProperties
 								field={ editingField }
 								catalog={ catalog }
-								hasConditions={ Boolean( catalog?.conditions ) }
+								sections={ sections }
 								fields={ ( doc?.fields ?? [] ).map(
 									( /** @type {any} */ entry ) => ( {
 										id: entry.id,
@@ -1240,6 +1241,13 @@ export default function FieldManagerView( { model } ) {
 									} )
 								) }
 								onChange={ model.onChangeField }
+								onDuplicate={ () =>
+									onDuplicate( editingField.id )
+								}
+								onArchive={ () =>
+									onToggleEnabled( editingField.id )
+								}
+								onProtect={ () => onProtect( editingField.id ) }
 							/>
 						) : (
 							<div className="inspector-head">
