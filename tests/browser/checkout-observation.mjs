@@ -55,6 +55,15 @@ for (const width of WIDTHS) {
 
 	const response = await page.goto(CHECKOUT, { waitUntil: 'networkidle', timeout: 45000 });
 	const status = response ? response.status() : 0;
+
+	// Where the browser actually ended up. Seven rounds of measurement read a page that had
+	// followed a redirect without ever asking where it landed: the checkout sends an empty cart
+	// to the cart, and the cart is not a checkout — which is why nothing of this plugin was ever
+	// on the page no matter what was changed.
+	const landed = page.url();
+	const redirected = !landed.startsWith(CHECKOUT);
+
+	record(`The browser is on the checkout at ${width}px`, !redirected, `landed=${landed}`);
 	const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
 	// Both surfaces: the store's checkout is served as the classic one (WooCommerce enqueues
 	// wc-checkout-js and not wc-blocks-checkout), so the region to look for is the classic scope
