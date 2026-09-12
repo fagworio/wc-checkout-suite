@@ -12,6 +12,7 @@ namespace WCCheckoutSuite\Admin;
 use WCCheckoutSuite\Http\Admin\CatalogController;
 use WCCheckoutSuite\Http\Admin\SchemaController;
 use WCCheckoutSuite\Http\Admin\SettingsController;
+use WCCheckoutSuite\Http\Integration\OrderFieldsController;
 
 /**
  * The route map the administration client is built from.
@@ -37,6 +38,7 @@ final class Routes {
 	public static function all(): array {
 		return SchemaController::routes()
 			+ CatalogController::routes()
-			+ SettingsController::routes();
+			+ SettingsController::routes()
+			+ OrderFieldsController::routes();
 	}
 }

@@ -34,6 +34,7 @@ use WCCheckoutSuite\Checkout\CustomerOrderFields;
 use WCCheckoutSuite\Checkout\OrderEmailFields;
 use WCCheckoutSuite\Http\Admin\SchemaController;
 use WCCheckoutSuite\Http\Admin\SettingsController;
+use WCCheckoutSuite\Http\Integration\OrderFieldsController;
 use WCCheckoutSuite\Http\Checkout\ValidationController;
 use WCCheckoutSuite\Support\Requirements;
 
@@ -132,6 +133,14 @@ final class Plugin {
 		// nothing else: the schema, its revision and its history are not reachable from
 		// here, which is what makes "turning it off preserves the editor" a property of
 		// the code rather than a promise about it.
+		// The integration API. A different audience from the administration: a caller
+		// authenticated by WordPress and authorized per order, reading only the fields the
+		// merchant chose to expose. Registered in the plugin's own namespace and never on
+		// the Store API's, which is what keeps personal data out of the public surface.
+		$integration_controller = new OrderFieldsController();
+
+		add_action( 'rest_api_init', array( $integration_controller, 'register_routes' ) );
+
 		$settings_controller = new SettingsController();
 
 		add_action( 'rest_api_init', array( $settings_controller, 'register_routes' ) );
