@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-12T13:04:18+00:00\n"
+"POT-Creation-Date: 2026-09-12T13:14:06+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.7.1\n"
 "X-Domain: wc-checkoutsuite\n"
@@ -1440,7 +1440,7 @@ msgid "Field Manager"
 msgstr ""
 
 #: resources/admin/app/AppShell.js:399
-#: resources/admin/app/views/PreviewView.js:194
+#: resources/admin/app/views/PreviewView.js:210
 msgid "Sua loja"
 msgstr ""
 
@@ -2639,7 +2639,7 @@ msgid "%1$d of %2$d gateways have a homologation record. %3$d have never been te
 msgstr ""
 
 #: resources/admin/app/SettingsScreen.js:181
-#: resources/admin/app/views/PreviewView.js:418
+#: resources/admin/app/views/PreviewView.js:452
 msgid "Gateway"
 msgstr ""
 
@@ -2676,7 +2676,7 @@ msgid "Restaure um campo personalizado sem trocar a chave nem recriar a definiç
 msgstr ""
 
 #: resources/admin/app/views/ArchiveView.js:82
-#: resources/admin/app/views/PreviewView.js:226
+#: resources/admin/app/views/PreviewView.js:242
 #: resources/admin/app/views/RulesView.js:120
 msgid "Voltar ao editor"
 msgstr ""
@@ -3315,183 +3315,193 @@ msgstr ""
 msgid "Nativo protegido"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:208
+#: resources/admin/app/views/PreviewView.js:224
 msgid "PRÉVIA CONECTADA"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:211
+#: resources/admin/app/views/PreviewView.js:227
 msgid "Do editor para o checkout"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:218
+#: resources/admin/app/views/PreviewView.js:234
 msgid "Os campos abaixo são gerados pela configuração. Sem dados reais ou cobranças."
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:233
+#: resources/admin/app/views/PreviewView.js:249
 msgid "Origem da prévia"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:239
+#: resources/admin/app/views/PreviewView.js:255
 msgid "Rascunho atual"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:244
+#: resources/admin/app/views/PreviewView.js:260
 msgid "A prévia mostra o rascunho. A versão publicada é o checkout da loja, e a administração não tem rota para ler o documento publicado."
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:249
+#: resources/admin/app/views/PreviewView.js:265
 msgid "Publicado"
 msgstr ""
 
 #. translators: %d: number of fields.
-#: resources/admin/app/views/PreviewView.js:256
+#: resources/admin/app/views/PreviewView.js:272
 msgid "%d campo(s) na prévia"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:265
+#: resources/admin/app/views/PreviewView.js:281
 msgid "Tamanho da prévia"
 msgstr ""
 
 #. translators: %s: device name.
-#: resources/admin/app/views/PreviewView.js:278
+#: resources/admin/app/views/PreviewView.js:294
 msgid "Prévia %s"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:291
+#: resources/admin/app/views/PreviewView.js:307
 msgid "Prévia do rascunho. Nada aqui altera a loja, e nenhum pedido é criado."
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:309
+#: resources/admin/app/views/PreviewView.js:325
 msgid "Prévia do rascunho"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:329
+#: resources/admin/app/views/PreviewView.js:345
 msgid "Nada para pré-visualizar ainda."
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:335
+#: resources/admin/app/views/PreviewView.js:351
 msgid "Adicione um campo no editor e habilite-o: a prévia mostra os campos habilitados do rascunho."
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:388
+#: resources/admin/app/views/PreviewView.js:422
 msgid "Pagamento"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:391
+#: resources/admin/app/views/PreviewView.js:425
 msgid "O layout acolhe os gateways. A Suite não coleta cartão ou CVV."
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:398
+#: resources/admin/app/views/PreviewView.js:432
 msgid "Forma de pagamento de demonstração"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:413
+#: resources/admin/app/views/PreviewView.js:447
 msgid "Cartão de crédito"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:427
+#: resources/admin/app/views/PreviewView.js:461
 msgid "Componente seguro do gateway"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:433
+#: resources/admin/app/views/PreviewView.js:467
 msgid "Espaço reservado. Nenhum dado de cartão é solicitado."
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:449
+#: resources/admin/app/views/PreviewView.js:483
 msgid "Pix"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:452
+#: resources/admin/app/views/PreviewView.js:486
 msgid "QR Code e confirmação pertencem ao gateway no produto real."
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:467
+#: resources/admin/app/views/PreviewView.js:501
 msgid "Boleto"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:473
+#: resources/admin/app/views/PreviewView.js:507
 msgid "Emissão e acompanhamento pertencem ao gateway no produto real."
 msgstr ""
 
 #. translators: %s: comma-separated field labels.
-#: resources/admin/app/views/PreviewView.js:495
+#: resources/admin/app/views/PreviewView.js:529
 msgid "Campos obrigatórios sem valor: %s"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:501
+#: resources/admin/app/views/PreviewView.js:535
 msgid "Os campos obrigatórios da prévia estão preenchidos. A validação é local e não verifica CPF, CNPJ ou qualquer documento."
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:512
+#: resources/admin/app/views/PreviewView.js:546
 msgid "Validar campos da prévia"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:519
+#: resources/admin/app/views/PreviewView.js:553
 msgid "Validação básica local. Sem verificação matemática de CPF/CNPJ, PHP ou upload remoto. Não use informações pessoais."
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:530
+#: resources/admin/app/views/PreviewView.js:564
 msgid "Seu pedido"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:536
+#: resources/admin/app/views/PreviewView.js:570
 msgid "1 item"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:576
+#: resources/admin/app/views/PreviewView.js:610
 msgid "Item de demonstração"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:582
+#: resources/admin/app/views/PreviewView.js:616
 msgid "Edição essencial · 1 unidade"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:593
+#: resources/admin/app/views/PreviewView.js:627
 msgid "Subtotal"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:602
+#: resources/admin/app/views/PreviewView.js:636
 msgid "Entrega ilustrativa"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:611
+#: resources/admin/app/views/PreviewView.js:645
 msgid "Total"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:625
+#: resources/admin/app/views/PreviewView.js:659
 msgid "Apenas uma prévia visual"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:631
+#: resources/admin/app/views/PreviewView.js:665
 msgid "Produtos, frete e total são fictícios. Nenhum pedido será criado."
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:640
+#: resources/admin/app/views/PreviewView.js:674
 msgid "Resumo na página, não Checkout Sidebar."
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:692
+#: resources/admin/app/views/PreviewView.js:728
 msgid "Escolha uma opção"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:739
+#: resources/admin/app/views/PreviewView.js:775
 msgid "Marque para confirmar."
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:749
+#: resources/admin/app/views/PreviewView.js:786
 msgid "Escolher arquivo"
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:752
-msgid "Nenhum upload é feito nesta prévia."
+#: resources/admin/app/views/PreviewView.js:789
+msgid "Seleção local. Nenhum arquivo será enviado."
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:792
-#: resources/admin/app/views/PreviewView.js:819
+#. translators: 1: file name, 2: size in kilobytes.
+#: resources/admin/app/views/PreviewView.js:824
+msgid "%1$s · %2$d KB · não enviado"
+msgstr ""
+
+#. translators: %s: file name.
+#: resources/admin/app/views/PreviewView.js:839
+msgid "Remover %s"
+msgstr ""
+
+#: resources/admin/app/views/PreviewView.js:890
+#: resources/admin/app/views/PreviewView.js:917
 msgid "Preencha este campo para continuar."
 msgstr ""
 
-#: resources/admin/app/views/PreviewView.js:812
+#: resources/admin/app/views/PreviewView.js:910
 msgid "opcional"
 msgstr ""
 

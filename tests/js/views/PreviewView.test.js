@@ -218,4 +218,40 @@ describe( 'the connected preview', () => {
 			screen.getByText( 'Preencha este campo para continuar.' )
 		).toBeInTheDocument();
 	} );
+
+	it( 'takes a file locally and says it was not sent', async () => {
+		const user = userEvent.setup();
+
+		render(
+			<PreviewView
+				document={ doc( [
+					field( { type: 'file', label: 'Documento' } ),
+				] ) }
+				onBack={ () => {} }
+			/>
+		);
+
+		await user.upload(
+			screen.getByLabelText( 'Escolher arquivo' ),
+			new File( [ 'conteudo' ], 'nota.pdf', {
+				type: 'application/pdf',
+			} )
+		);
+
+		// The design's own row says what happened to the file, and the only true
+		// thing to say is that nothing left the browser.
+		const row = await screen.findByText(
+			/nota\.pdf · \d+ KB · não enviado/
+		);
+
+		expect( row ).toBeInTheDocument();
+
+		await user.click(
+			screen.getByRole( 'button', { name: 'Remover nota.pdf' } )
+		);
+
+		expect(
+			screen.queryByText( /nota\.pdf · \d+ KB/ )
+		).not.toBeInTheDocument();
+	} );
 } );

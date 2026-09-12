@@ -102,6 +102,17 @@ export default function PreviewView( { document: doc, siteName, onBack } ) {
 	 * makes them search for it.
 	 */
 	const [ missing, setMissing ] = useState( /** @type {string[]} */ ( [] ) );
+
+	/**
+	 * The files chosen in the preview, by field.
+	 *
+	 * Kept in the browser and never sent anywhere — the design's own row says
+	 * "não enviado" — because a preview that uploaded a real file would be a
+	 * preview with consequences.
+	 *
+	 * @type {any}
+	 */
+	const [ files, setFiles ] = useState( {} );
 	const form = useRef( /** @type {any} */ ( null ) );
 
 	/** The sections the preview draws: those with at least one enabled field. */
@@ -170,7 +181,12 @@ export default function PreviewView( { document: doc, siteName, onBack } ) {
 				const control = element.elements.namedItem( field.id );
 				let value = '';
 
-				if ( control && 'value' in control ) {
+				// `files` exists on every input element, and is null for the ones that
+				// cannot hold a file: the type is what says whether a file answers
+				// this field.
+				if ( control && 'file' === control.type ) {
+					value = control.files?.length ? 'chosen' : '';
+				} else if ( control && 'value' in control ) {
 					value = String( control.value ?? '' ).trim();
 				}
 
@@ -373,6 +389,24 @@ export default function PreviewView( { document: doc, siteName, onBack } ) {
 															invalid={ missing.includes(
 																field.id
 															) }
+															files={
+																files[
+																	field.id
+																] ?? []
+															}
+															onPick={ (
+																/** @type {any[]} */ chosen
+															) =>
+																setFiles(
+																	(
+																		/** @type {any} */ current
+																	) => ( {
+																		...current,
+																		[ field.id ]:
+																			chosen,
+																	} )
+																)
+															}
 														/>
 													)
 												) }
@@ -654,12 +688,14 @@ export default function PreviewView( { document: doc, siteName, onBack } ) {
 /**
  * One field, drawn the way the design draws a public field.
  *
- * @param {Object}  props           Component properties.
- * @param {any}     props.field     Field definition.
- * @param {boolean} [props.invalid] Whether the last check found it empty.
+ * @param {Object}   props           Component properties.
+ * @param {any}      props.field     Field definition.
+ * @param {boolean}  [props.invalid] Whether the last check found it empty.
+ * @param {any[]}    [props.files]   Files chosen locally for this field.
+ * @param {Function} [props.onPick]  Called with the files the customer chose.
  * @return {*} Rendered element tree.
  */
-function PreviewField( { field, invalid = false } ) {
+function PreviewField( { field, invalid = false, files = [], onPick } ) {
 	const control = controlFor( field );
 	const columns = Number( field?.layout?.desktop ?? 12 );
 	const label = field.label || field.id;
@@ -743,19 +779,81 @@ function PreviewField( { field, invalid = false } ) {
 
 		if ( 'file' === control ) {
 			return (
-				<div className="upload-box">
-					<Icon name="upload" />
-					<label htmlFor={ inputId }>
-						{ __( 'Escolher arquivo', 'wc-checkoutsuite' ) }
-					</label>
-					<p>
-						{ __(
-							'Nenhum upload é feito nesta prévia.',
-							'wc-checkoutsuite'
-						) }
-					</p>
-					<input id={ inputId } type="file" name={ name } disabled />
-				</div>
+				<>
+					<div className="upload-box">
+						<Icon name="upload" />
+						<label htmlFor={ inputId }>
+							{ __( 'Escolher arquivo', 'wc-checkoutsuite' ) }
+						</label>
+						<p>
+							{ __(
+								'Seleção local. Nenhum arquivo será enviado.',
+								'wc-checkoutsuite'
+							) }
+						</p>
+						<input
+							id={ inputId }
+							type="file"
+							name={ name }
+							onChange={ (
+								/** @type {{target: {files: any}}} */ event
+							) =>
+								onPick?.(
+									Array.from( event.target.files ?? [] ).map(
+										( /** @type {any} */ file ) => ( {
+											name: file.name,
+											size: file.size,
+										} )
+									)
+								)
+							}
+						/>
+					</div>
+					{ files.map(
+						(
+							/** @type {{name: string, size: number}} */ file,
+							/** @type {number} */ index
+						) => (
+							<div
+								className="file-selected"
+								key={ `${ file.name }-${ index }` }
+							>
+								<span>
+									{ sprintf(
+										/* translators: 1: file name, 2: size in kilobytes. */
+										__(
+											'%1$s · %2$d KB · não enviado',
+											'wc-checkoutsuite'
+										),
+										file.name,
+										Math.max(
+											1,
+											Math.round( file.size / 1024 )
+										)
+									) }
+								</span>
+								<button
+									type="button"
+									aria-label={ sprintf(
+										/* translators: %s: file name. */
+										__( 'Remover %s', 'wc-checkoutsuite' ),
+										file.name
+									) }
+									onClick={ () =>
+										onPick?.(
+											files.filter(
+												( _entry, position ) =>
+													position !== index
+											)
+										)
+									}
+								>
+									<Icon name="close" />
+								</button>
+							</div>
+						)
+					) }
+				</>
 			);
 		}
 
