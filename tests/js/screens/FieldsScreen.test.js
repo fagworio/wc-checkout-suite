@@ -134,6 +134,28 @@ function client( overrides = {} ) {
 	};
 }
 
+/**
+ * Duplicates a field through the row menu the design draws.
+ *
+ * The action moved into the row's own menu when the screen took the design's shape,
+ * so reaching it is two clicks instead of one — which is the behaviour a merchant
+ * performs, and the reason the test follows it rather than calling the action.
+ *
+ * @param {any}    user  user-event instance.
+ * @param {string} label Field label.
+ * @return {Promise<void>} Resolves when the action has been clicked.
+ */
+async function duplicateField( user, label ) {
+	await user.click(
+		screen.getByRole( 'button', { name: `Ações de ${ label }` } )
+	);
+	await user.click(
+		screen.getByRole( 'button', {
+			name: 'Duplicar como personalizado',
+		} )
+	);
+}
+
 describe( 'loading', () => {
 	it( 'loads the schema once, not once per render', async () => {
 		const stub = client();
@@ -172,7 +194,7 @@ describe( 'loading', () => {
 
 		settle( doc( [] ) );
 
-		await screen.findByText( 'No fields yet' );
+		await screen.findByText( 'Esta seção está pronta para começar.' );
 	} );
 } );
 
@@ -192,16 +214,16 @@ describe( 'the schema', () => {
 		await screen.findByText( 'CPF' );
 
 		expect( screen.getByText( 'IE' ) ).toBeInTheDocument();
-		expect( screen.getByText( /2 active of 2/ ) ).toBeInTheDocument();
+		expect( screen.getByText( /2 de 2 ativos/ ) ).toBeInTheDocument();
 	} );
 
 	it( 'invites the merchant to start when there is nothing', async () => {
 		render( <FieldsScreen client={ client( { draft: doc( [] ) } ) } /> );
 
-		await screen.findByText( 'No fields yet' );
+		await screen.findByText( 'Esta seção está pronta para começar.' );
 
 		expect(
-			screen.getByText( /Pick a ready-made field/ )
+			screen.getByText( /Adicione campos complementares/ )
 		).toBeInTheDocument();
 	} );
 
@@ -217,7 +239,7 @@ describe( 'the schema', () => {
 		await screen.findByText( 'CPF' );
 
 		expect(
-			screen.getByRole( 'heading', { name: 'Shipping' } )
+			screen.getByRole( 'heading', { name: 'Endereço de entrega' } )
 		).toBeInTheDocument();
 	} );
 } );
@@ -230,14 +252,16 @@ describe( 'editing', () => {
 
 		await screen.findByText( 'CPF' );
 
-		const undo = screen.getByRole( 'button', { name: 'Undo edit' } );
+		const undo = screen.getByRole( 'button', {
+			name: 'Desfazer alteração',
+		} );
 
 		expect( undo ).toBeDisabled();
 
-		await user.click( screen.getByRole( 'button', { name: 'Duplicate' } ) );
+		await duplicateField( user, 'CPF' );
 
 		expect(
-			screen.getByRole( 'button', { name: 'Undo edit' } )
+			screen.getByRole( 'button', { name: 'Desfazer alteração' } )
 		).toBeEnabled();
 	} );
 
@@ -248,11 +272,13 @@ describe( 'editing', () => {
 
 		await screen.findByText( 'CPF' );
 
-		await user.click( screen.getByRole( 'button', { name: 'Duplicate' } ) );
+		await duplicateField( user, 'CPF' );
 
 		expect( screen.getByText( 'CPF (copy)' ) ).toBeInTheDocument();
 
-		await user.click( screen.getByRole( 'button', { name: 'Undo edit' } ) );
+		await user.click(
+			screen.getByRole( 'button', { name: 'Desfazer alteração' } )
+		);
 
 		expect( screen.queryByText( 'CPF (copy)' ) ).not.toBeInTheDocument();
 	} );
@@ -266,12 +292,14 @@ describe( 'editing', () => {
 		await screen.findByText( 'CPF' );
 
 		expect(
-			screen.queryByText( 'Unsaved changes' )
+			screen.queryByText( 'Alterações não salvas' )
 		).not.toBeInTheDocument();
 
-		await user.click( screen.getByRole( 'button', { name: 'Duplicate' } ) );
+		await duplicateField( user, 'CPF' );
 
-		expect( screen.getByText( 'Unsaved changes' ) ).toBeInTheDocument();
+		expect(
+			screen.getByText( 'Alterações não salvas' )
+		).toBeInTheDocument();
 		expect( stub.saveDraft ).not.toHaveBeenCalled();
 	} );
 
@@ -283,9 +311,9 @@ describe( 'editing', () => {
 
 		await screen.findByText( 'CPF' );
 
-		await user.click( screen.getByRole( 'button', { name: 'Duplicate' } ) );
+		await duplicateField( user, 'CPF' );
 		await user.click(
-			screen.getByRole( 'button', { name: 'Save draft' } )
+			screen.getByRole( 'button', { name: 'Salvar rascunho' } )
 		);
 
 		await waitFor( () =>
@@ -319,16 +347,18 @@ describe( 'a failure does not discard work', () => {
 
 		await screen.findByText( 'CPF' );
 
-		await user.click( screen.getByRole( 'button', { name: 'Duplicate' } ) );
+		await duplicateField( user, 'CPF' );
 		await user.click(
-			screen.getByRole( 'button', { name: 'Save draft' } )
+			screen.getByRole( 'button', { name: 'Salvar rascunho' } )
 		);
 
 		await screen.findByText( /could not be reached/ );
 
 		// The edit is still there, and the screen still says it is unsaved.
 		expect( screen.getByText( 'CPF (copy)' ) ).toBeInTheDocument();
-		expect( screen.getByText( 'Unsaved changes' ) ).toBeInTheDocument();
+		expect(
+			screen.getByText( 'Alterações não salvas' )
+		).toBeInTheDocument();
 	} );
 
 	it( 'explains a conflict as a conflict rather than as a generic failure', async () => {
@@ -350,9 +380,9 @@ describe( 'a failure does not discard work', () => {
 
 		await screen.findByText( 'CPF' );
 
-		await user.click( screen.getByRole( 'button', { name: 'Duplicate' } ) );
+		await duplicateField( user, 'CPF' );
 		await user.click(
-			screen.getByRole( 'button', { name: 'Save draft' } )
+			screen.getByRole( 'button', { name: 'Salvar rascunho' } )
 		);
 
 		await screen.findByText( /Someone else saved first/ );
@@ -406,7 +436,9 @@ describe( 'states the server reports', () => {
 
 		// Both, together: the empty state is truthful, and the explanation says
 		// why it is empty and that nothing was lost.
-		expect( screen.getByText( 'No fields yet' ) ).toBeInTheDocument();
+		expect(
+			screen.getByText( 'Esta seção está pronta para começar.' )
+		).toBeInTheDocument();
 		expect( screen.getByText( /schema version 9/ ) ).toBeInTheDocument();
 	} );
 

@@ -309,6 +309,10 @@ export function createClient( {
 				data: { expected_revision: expectedRevision },
 				signal,
 			} ),
+		// The schema as a file. A read, so it takes the retry rule: the merchant
+		// pressed a button and the answer is a document, not a change.
+		exportSchema: ( /** @type {AbortSignal} */ signal ) =>
+			send( routes.schemaExport, { method: 'GET', signal } ),
 		restore: (
 			/** @type {number} */ revision,
 			/** @type {AbortSignal} */ signal

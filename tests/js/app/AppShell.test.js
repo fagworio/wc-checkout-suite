@@ -36,6 +36,7 @@ const SECTIONS = [
  * @return {string} Accessible name.
  */
 function navName( section ) {
+	/** @type {Record<string, string>} */
 	const designed = {
 		fields: 'Editor de campos',
 		appearance: 'Prévia do checkout',
@@ -45,13 +46,19 @@ function navName( section ) {
 }
 
 /** @type {{id: string, label: string}} */
-const FIELDS = SECTIONS.find( ( section ) => 'fields' === section.id );
+const FIELDS = /** @type {any} */ (
+	SECTIONS.find( ( section ) => 'fields' === section.id )
+);
 
 /** @type {{id: string, label: string}} */
-const RULES = SECTIONS.find( ( section ) => 'rules' === section.id );
+const RULES = /** @type {any} */ (
+	SECTIONS.find( ( section ) => 'rules' === section.id )
+);
 
 /** @type {{id: string, label: string}} */
-const APPEARANCE = SECTIONS.find( ( section ) => 'appearance' === section.id );
+const APPEARANCE = /** @type {any} */ (
+	SECTIONS.find( ( section ) => 'appearance' === section.id )
+);
 
 /**
  * Puts a URL in place and returns a restore function.
@@ -283,9 +290,11 @@ describe( 'the shell itself', () => {
 
 			// A deep link to the field manager has to arrive at the field manager,
 			// not merely highlight its tab.
-			await screen.findByText( 'No fields yet' );
+			await screen.findByText( 'Esta seção está pronta para começar.' );
 
-			expect( screen.getByText( 'No fields yet' ) ).toBeInTheDocument();
+			expect(
+				screen.getByText( 'Esta seção está pronta para começar.' )
+			).toBeInTheDocument();
 		} finally {
 			restore();
 		}

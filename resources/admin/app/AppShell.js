@@ -221,6 +221,32 @@ export default function AppShell( { sections, version, siteName, client } ) {
 		}
 	}, [ items, current ] );
 
+	useEffect( () => {
+		/**
+		 * Moves to a section on a screen's request.
+		 *
+		 * The design puts links to other screens inside the editor — the tip card
+		 * to the preview, the footnote to the rules — and the active section belongs
+		 * to this frame, not to the screen that links. An event keeps the ownership
+		 * where it is and lets a screen ask, instead of the screen reaching into the
+		 * frame or the frame reaching into the screen's state.
+		 *
+		 * @param {any} event Custom event carrying the section identifier.
+		 * @return {void}
+		 */
+		const onNavigate = ( event ) => {
+			const id = event?.detail?.section;
+
+			if ( id && findSection( items, id ) ) {
+				selectSection( id );
+			}
+		};
+
+		window.addEventListener( 'wccs:navigate', onNavigate );
+
+		return () => window.removeEventListener( 'wccs:navigate', onNavigate );
+	} );
+
 	/**
 	 * Selects a section and keeps the address in step with it.
 	 *
