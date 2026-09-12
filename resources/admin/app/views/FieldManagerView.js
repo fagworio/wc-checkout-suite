@@ -409,6 +409,16 @@ export default function FieldManagerView( { model } ) {
 	const moveRow = ( field, index, direction ) => {
 		onMove( field.id, direction );
 		announceMove( field.label, 'up' === direction ? index : index + 2 );
+
+		// The row the merchant was holding is the row they are still holding: after the
+		// move, focus goes back to that field's handle. Without it the keyboard sends
+		// the next keypress to whatever the browser picked, which is how a second
+		// Alt+Arrow goes somewhere else entirely.
+		globalThis.requestAnimationFrame?.( () => {
+			globalThis.document
+				?.getElementById( `wccs-drag-${ field.id }` )
+				?.focus();
+		} );
 	};
 
 	/**
@@ -1213,6 +1223,7 @@ export default function FieldManagerView( { model } ) {
 
 												<button
 													type="button"
+													id={ `wccs-drag-${ field.id }` }
 													className="drag-handle"
 													draggable={ ! moveDisabled }
 													title={ __(

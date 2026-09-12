@@ -132,7 +132,13 @@ await step( 'a row moves with its handle and says where it landed', async () => 
 	await page.keyboard.press( 'Alt+ArrowDown' );
 	await page.waitForTimeout( 300 );
 
-	return { before, after: await rowOrder(), toast: await toast() };
+	return {
+		before,
+		after: await rowOrder(),
+		toast: await toast(),
+		// The row keeps the focus, so the next Alt+Arrow moves the same field.
+		focused: await page.evaluate( () => document.activeElement?.id ?? '' ),
+	};
 } );
 
 await step( 'the keyboard shortcut moves it back', async () => {

@@ -620,6 +620,18 @@ describe( 'reordering', () => {
 		expect(
 			await screen.findAllByText( 'IE movido para a posição 1.' )
 		).toHaveLength( 2 );
+
+		// The row keeps the focus, so the next Alt+Arrow moves the same field instead
+		// of starting over from wherever the browser decided to put it.
+		await waitFor( () =>
+			expect(
+				globalThis.document.getElementById( 'wccs-drag-billing_ie' )
+			).toHaveFocus()
+		);
+
+		await user.keyboard( '[AltLeft>][ArrowDown][/AltLeft]' );
+
+		expect( rowOrder() ).toEqual( [ 'CPF', 'IE' ] );
 	} );
 } );
 
