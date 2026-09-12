@@ -356,10 +356,19 @@ final class BlocksAdapter {
 		}
 
 		$registration = array(
-			'id'       => $this->integration_id( $definition ),
-			'label'    => isset( $definition['label'] ) ? (string) $definition['label'] : $id,
-			'location' => $location,
-			'type'     => $native_type,
+			'id'                         => $this->integration_id( $definition ),
+			'label'                      => isset( $definition['label'] ) ? (string) $definition['label'] : $id,
+			'location'                   => $location,
+			'type'                       => $native_type,
+			// WooCommerce prints an additional field it knows about on the order
+			// confirmation and on the order details in the account, with its own label,
+			// unless it is told not to. That display answers to nothing this plugin
+			// configured: a field the merchant linked to one area — or to none — would
+			// appear on both pages anyway, which is the silent insertion section 26
+			// forbids and the links tab promises cannot happen. Whether a value is shown,
+			// where, under which title and in which order is the merchant's decision per
+			// destination, and the Suite's own projections are what carry it out.
+			'show_in_order_confirmation' => false,
 		);
 
 		if ( 'select' === $native_type ) {

@@ -10,6 +10,8 @@ declare( strict_types = 1 );
 namespace WCCheckoutSuite\Checkout\Blocks;
 
 use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
+use WCCheckoutSuite\Domain\Fields\FieldDefinition;
+use WCCheckoutSuite\Domain\Sections\SectionDefinition;
 
 /**
  * Registers the published schema with the Blocks checkout.
@@ -72,6 +74,16 @@ final class BlocksCheckout {
 	/**
 	 * Registers the published fields the Blocks checkout can render.
 	 *
+	 * The document is handed to the adapter **through the model**, not as it was stored.
+	 * An omitted `storage` means "with the order" to `FieldDefinition` — and it is what
+	 * every other reader of the same document sees, the renderer and the Store API
+	 * extension included. Handing over the raw array instead made the adapter read an
+	 * absent scope as "not stored" and refuse the field, so the same configuration was
+	 * valid to one reader and invalid to another, which is the difference between a field
+	 * appearing at the checkout and disappearing from it. It is the mistake
+	 * {@see \WCCheckoutSuite\Domain\Sections\SectionValidator::validate_references()}
+	 * already records for the section key.
+	 *
 	 * @return array{registered: array<int, string>, refused: array<int, array{field: string, code: string, reason: string}>}
 	 */
 	public static function apply(): array {
@@ -82,13 +94,13 @@ final class BlocksCheckout {
 
 		foreach ( $document->fields() as $raw ) {
 			if ( is_array( $raw ) ) {
-				$definitions[] = $raw;
+				$definitions[] = FieldDefinition::from_array( $raw )->to_array();
 			}
 		}
 
 		foreach ( $document->sections() as $raw ) {
 			if ( is_array( $raw ) ) {
-				$sections[] = $raw;
+				$sections[] = SectionDefinition::from_array( $raw )->to_array();
 			}
 		}
 

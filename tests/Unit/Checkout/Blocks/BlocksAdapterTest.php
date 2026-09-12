@@ -184,6 +184,31 @@ final class BlocksAdapterTest extends TestCase {
 	}
 
 	/**
+	 * The platform is told not to print the field on its own.
+	 *
+	 * WooCommerce renders an additional field it knows about on the order confirmation and
+	 * on the order details in the account unless the registration says otherwise, and that
+	 * display answers to none of the destinations the merchant configured: the field would
+	 * appear on both pages even when it was linked to one of them, or to none. Which area
+	 * shows a value is the links tab's decision, and the Suite's projections are what carry
+	 * it out.
+	 *
+	 * @return void
+	 */
+	public function test_the_platform_is_told_not_to_print_the_field_itself(): void {
+		$translated = $this->adapter->apply(
+			array( $this->definition( array( 'section' => 'billing' ) ) ),
+			array( $this->section( 'billing', 'billing' ) )
+		);
+
+		self::assertCount( 1, $translated['registrations'] );
+		self::assertFalse(
+			$translated['registrations'][0]['show_in_order_confirmation'],
+			'the registration forbids the platform its own display'
+		);
+	}
+
+	/**
 	 * A field whose section is not published is refused, not defaulted.
 	 *
 	 * @return void
