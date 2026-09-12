@@ -660,7 +660,9 @@ describe( 'announcements', () => {
 		// The design's bar acts on click. The confirmation is where the impact is
 		// stated before anything changes — and where cancelling is possible.
 		expect(
-			await screen.findByText( '2 de 2 campo(s) selecionado(s) mudam.' )
+			await screen.findByText(
+				/2 de 2 campo\(s\) selecionado\(s\) mudam\./
+			)
 		).toBeInTheDocument();
 
 		await user.click( screen.getByRole( 'button', { name: 'Confirmar' } ) );
@@ -730,10 +732,9 @@ describe( 'announcements', () => {
 
 		// The confirmation names the selected field it will not touch before the
 		// action runs, rather than reporting it afterwards.
+		// The design names the field it will not touch, and why, in the impact list.
 		expect(
-			await screen.findByText(
-				'1 campo(s) ficam intocados porque a WooCommerce os possui.'
-			)
+			await screen.findByText( /fica intocado: é da WooCommerce\./ )
 		).toBeInTheDocument();
 
 		await user.click( screen.getByRole( 'button', { name: 'Confirmar' } ) );

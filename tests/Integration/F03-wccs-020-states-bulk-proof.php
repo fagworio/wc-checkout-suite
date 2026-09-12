@@ -454,7 +454,7 @@ wccs_proof_check(
 	false !== strpos( $wccs_built_js, 'campo(s) selecionado(s) mudam' )
 		&& false !== strpos(
 			$wccs_built_js,
-			'ficam intocados porque a WooCommerce os possui'
+			'fica intocado: é da WooCommerce'
 		),
 	'impact wording present'
 );

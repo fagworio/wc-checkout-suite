@@ -254,6 +254,17 @@ export default function FieldManagerView( { model } ) {
 
 	const filtered = '' !== search.trim() || 'all' !== origin;
 
+	/**
+	 * A field's label, for the places that name the selected fields.
+	 *
+	 * @param {string} id Field identifier.
+	 * @return {string} Label.
+	 */
+	const labelOf = ( id ) =>
+		( doc?.fields ?? [] ).find(
+			( /** @type {any} */ field ) => field.id === id
+		)?.label ?? id;
+
 	/** What the pending bulk action would change, and what it would not. */
 	const bulkReport = pendingBulk ? bulkImpactFor( pendingBulk ) : null;
 
@@ -1851,41 +1862,51 @@ export default function FieldManagerView( { model } ) {
 			>
 				{ bulkReport ? (
 					<>
-						<p>
+						{ /* The design states the impact as a list of the fields it
+						     applies to, each with the reason it does or does not
+						     change — not as three totals the merchant has to map
+						     back onto the rows themselves. */ }
+						<ul className="impact-list">
+							{ bulkReport.protected.map(
+								( /** @type {string} */ id ) => (
+									<li key={ `protected-${ id }` }>
+										<Icon name="shield" />
+										<span>
+											<strong>{ labelOf( id ) }</strong>{ ' ' }
+											{ __(
+												'fica intocado: é da WooCommerce.',
+												'wc-checkoutsuite'
+											) }
+										</span>
+									</li>
+								)
+							) }
+							{ bulkReport.unchanged.map(
+								( /** @type {string} */ id ) => (
+									<li key={ `unchanged-${ id }` }>
+										<Icon name="circle" />
+										<span>
+											<strong>{ labelOf( id ) }</strong>{ ' ' }
+											{ __(
+												'já está nesse estado.',
+												'wc-checkoutsuite'
+											) }
+										</span>
+									</li>
+								)
+							) }
+						</ul>
+						<p className="form-help">
 							{ sprintf(
 								/* translators: 1: fields the action changes, 2: selected fields. */
 								__(
-									'%1$d de %2$d campo(s) selecionado(s) mudam.',
+									'%1$d de %2$d campo(s) selecionado(s) mudam. Nada foi alterado ainda.',
 									'wc-checkoutsuite'
 								),
 								bulkReport.affected,
 								bulkReport.total
 							) }
 						</p>
-						{ bulkReport.protected.length > 0 ? (
-							<p>
-								{ sprintf(
-									/* translators: %d: number of fields. */
-									__(
-										'%d campo(s) ficam intocados porque a WooCommerce os possui.',
-										'wc-checkoutsuite'
-									),
-									bulkReport.protected.length
-								) }
-							</p>
-						) : null }
-						{ bulkReport.unchanged.length > 0 ? (
-							<p>
-								{ sprintf(
-									/* translators: %d: number of fields. */
-									__(
-										'%d campo(s) já estão nesse estado.',
-										'wc-checkoutsuite'
-									),
-									bulkReport.unchanged.length
-								) }
-							</p>
-						) : null }
 					</>
 				) : null }
 			</Dialog>
