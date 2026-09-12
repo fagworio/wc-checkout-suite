@@ -30,6 +30,7 @@ use WCCheckoutSuite\Checkout\Classic\ClassicOrderUploads;
 use WCCheckoutSuite\Checkout\Classic\ClassicValidation;
 use WCCheckoutSuite\Http\Admin\CatalogController;
 use WCCheckoutSuite\Admin\Orders\OrderFieldsPanel;
+use WCCheckoutSuite\Checkout\CustomerOrderFields;
 use WCCheckoutSuite\Http\Admin\SchemaController;
 use WCCheckoutSuite\Http\Admin\SettingsController;
 use WCCheckoutSuite\Http\Checkout\ValidationController;
@@ -240,6 +241,12 @@ final class Plugin {
 		// writes only through the order CRUD — which is what makes "identical on both
 		// backends" a property of the storage path rather than a promise about it.
 		OrderFieldsPanel::register();
+
+		// The customer's own view of the order. Registered on the template hook the
+		// thank-you page and My Account both fire, so the panel appears where the store
+		// has already decided this order may be seen by this person — the policy this
+		// plugin adds is per field, not a second access check.
+		CustomerOrderFields::register();
 		Assets::register();
 
 		/**
