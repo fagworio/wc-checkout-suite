@@ -9,7 +9,10 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Http\Checkout;
 
+use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
+use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Uploads\DownloadPolicy;
+use WCCheckoutSuite\Domain\Uploads\FilePermissions;
 use WCCheckoutSuite\Domain\Uploads\PrivateStorage;
 use WCCheckoutSuite\Domain\Uploads\UploadRepository;
 use WCCheckoutSuite\Domain\Uploads\UploadService;
@@ -39,6 +42,25 @@ final class DownloadController {
 	public const ROUTE_DOWNLOAD = '/uploads/(?P<token>[a-f0-9]{64})/download';
 
 	/**
+	 * The destinations only staff may ask from.
+	 *
+	 * @var array<int, string>
+	 */
+	private const STAFF_DESTINATIONS = array( 'admin_order', 'admin_email' );
+
+	/**
+	 * The destinations the customer of the order may ask from.
+	 *
+	 * @var array<int, string>
+	 */
+	private const CUSTOMER_DESTINATIONS = array(
+		'customer_order',
+		'customer_profile',
+		'order_received',
+		'customer_email',
+	);
+
+	/**
 	 * Registers the route.
 	 *
 	 * @return void
@@ -52,13 +74,93 @@ final class DownloadController {
 				'callback'            => array( $this, 'download' ),
 				'permission_callback' => '__return_true',
 				'args'                => array(
-					'token' => array(
+					'token'       => array(
 						'type'     => 'string',
 						'required' => true,
+					),
+					// The surface the link was drawn on. It restricts rather than
+					// grants: claiming a staff surface still requires being staff, and
+					// a surface whose link does not allow the action refuses the bytes
+					// however the request is dressed up.
+					'destination' => array(
+						'type'    => 'string',
+						'default' => 'customer_order',
 					),
 				),
 			)
 		);
+	}
+
+	/**
+	 * Whether the surface the request came from may hand this file over.
+	 *
+	 * The definition is read the way every other surface reads it — through the
+	 * published document — and the action asked for is `download`, which is the only
+	 * thing this route does. A destination that is not linked, or a link that does not
+	 * allow downloading, refuses the bytes.
+	 *
+	 * Two things are decided before the link is even consulted. The destination is an
+	 * argument the client sends, so it cannot be the authority on its own: a staff
+	 * surface is for staff, and a customer surface for the customer of that order. And
+	 * a field the store no longer declares has no link to consult — its files belong to
+	 * orders that were placed while it existed, and taking a field out of the
+	 * configuration does not make the history unreadable to the people who own it. The
+	 * identity policy above has already answered who may read.
+	 *
+	 * @param array<string, mixed> $record      Upload record.
+	 * @param string               $destination Destination key.
+	 * @param array<string, mixed> $context     Who is asking, as `context()` reads it.
+	 * @return bool
+	 */
+	private static function surface_allows( array $record, string $destination, array $context ): bool {
+		if ( ! self::claimable( $destination, $context ) ) {
+			return false;
+		}
+
+		$field_id = isset( $record['field_id'] ) ? (string) $record['field_id'] : '';
+
+		if ( '' === $field_id ) {
+			return false;
+		}
+
+		foreach ( PublishedDocument::read()->fields() as $raw ) {
+			if ( ! is_array( $raw ) ) {
+				continue;
+			}
+
+			$definition = FieldDefinition::from_array( $raw );
+
+			if ( $definition->id() !== $field_id ) {
+				continue;
+			}
+
+			return FilePermissions::allows( $definition, $destination, 'download' );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Whether this requester may speak for this destination at all.
+	 *
+	 * A field may offer a download on the order screen for staff and withhold it from
+	 * the customer; without this, the customer could name the staff surface and inherit
+	 * what it allows. One destination does not lend its permissions to another, so the
+	 * claim is checked against the role that is asking, not against the string alone.
+	 *
+	 * The integration surface is not a browser's to claim: it is answered by the REST
+	 * projections, with their own authentication, and never through this door.
+	 *
+	 * @param string               $destination Destination key.
+	 * @param array<string, mixed> $context     Who is asking.
+	 * @return bool
+	 */
+	private static function claimable( string $destination, array $context ): bool {
+		if ( in_array( $destination, self::STAFF_DESTINATIONS, true ) ) {
+			return ! empty( $context['can_manage'] );
+		}
+
+		return in_array( $destination, self::CUSTOMER_DESTINATIONS, true );
 	}
 
 	/**
@@ -68,12 +170,22 @@ final class DownloadController {
 	 * @return \WP_REST_Response
 	 */
 	public function download( \WP_REST_Request $request ): \WP_REST_Response {
-		$token   = (string) $request->get_param( 'token' );
-		$owner   = UploadService::owner();
-		$found   = ( new UploadRepository() )->find_any( $token );
-		$refusal = DownloadPolicy::refusal();
+		$token       = (string) $request->get_param( 'token' );
+		$destination = (string) $request->get_param( 'destination' );
+		$owner       = UploadService::owner();
+		$found       = ( new UploadRepository() )->find_any( $token );
+		$refusal     = DownloadPolicy::refusal();
 
-		$allowed = null !== $found && DownloadPolicy::allows( $found, self::context( $found, $owner ) );
+		$context = null === $found ? array() : self::context( $found, $owner );
+		$allowed = null !== $found && DownloadPolicy::allows( $found, $context );
+
+		// Who may read the file is one question; whether the surface it is asked from
+		// may hand it over is another. Hiding a link is not a permission: without this,
+		// a file the merchant chose not to offer for download would still be served to
+		// anyone holding the token.
+		if ( $allowed ) {
+			$allowed = self::surface_allows( $found, $destination, $context );
+		}
 
 		if ( ! $allowed ) {
 			return new \WP_REST_Response(

@@ -92,6 +92,7 @@ final class DefinitionValidator {
 		$id            = $definition->id();
 		$stores_value  = isset( $supports['value'] ) && true === $supports['value'];
 		$can_be_masked = isset( $supports['maskable'] ) && true === $supports['maskable'];
+		$stores_file   = isset( $supports['file'] ) && true === $supports['file'];
 
 		// One snapshot rather than five accessor calls: the definition exposes no
 		// accessor for these, and asking it repeatedly would build the same array
@@ -173,7 +174,7 @@ final class DefinitionValidator {
 		// Destinations. Each one decides its own section, title, order and actions, so
 		// each one is checked on its own: an unknown destination, an action it may not
 		// be allowed to perform, or a malformed entry is refused rather than dropped.
-		$result = $result->merge( $this->validate_destinations( $id, $destinations, $stores_value ) );
+		$result = $result->merge( $this->validate_destinations( $id, $destinations, $stores_value, $stores_file ) );
 
 		// The approval flow is separate from the destinations on purpose: a
 		// destination never enables it, and enabling it without the area it needs is
@@ -201,12 +202,18 @@ final class DefinitionValidator {
 	/**
 	 * Validates the destinations of a field.
 	 *
+	 * The actions are the file's: showing a name, opening it, taking a copy, approving
+	 * it and sending a new version are decisions about a document, so a type that
+	 * stores no file has none to declare. Refusing them keeps the tab honest — the
+	 * interface offers what the type supports, and the store accepts what it offers.
+	 *
 	 * @param string               $id            Field identifier.
 	 * @param array<string, mixed> $destinations  Destination map.
 	 * @param bool                 $stores_value  Whether the type stores a value.
+	 * @param bool                 $stores_file   Whether the type stores a file.
 	 * @return ValidationResult
 	 */
-	private function validate_destinations( string $id, array $destinations, bool $stores_value ): ValidationResult {
+	private function validate_destinations( string $id, array $destinations, bool $stores_value, bool $stores_file ): ValidationResult {
 		$result = ValidationResult::valid();
 
 		foreach ( $destinations as $key => $entry ) {
@@ -264,6 +271,21 @@ final class DefinitionValidator {
 			if ( isset( $entry['actions'] ) ) {
 				$allowed = DefinitionVocabulary::actions_for_destination( $key );
 				$actions = is_array( $entry['actions'] ) ? $entry['actions'] : array( $entry['actions'] );
+
+				if ( ! $stores_file && array() !== $actions ) {
+					$result = $result->merge(
+						ValidationResult::invalid(
+							'actions_not_supported',
+							sprintf(
+								/* translators: 1: destination key, 2: field id */
+								__( 'The destination "%1$s" cannot be given file actions, because the field "%2$s" stores no file.', 'wc-checkoutsuite' ),
+								$key,
+								$id
+							),
+							array( 'field' => $id )
+						)
+					);
+				}
 
 				foreach ( $actions as $action ) {
 					if ( ! in_array( (string) $action, $allowed, true ) ) {
@@ -440,11 +462,13 @@ final class DefinitionValidator {
 		$type     = $this->types->get( $definition->type() );
 		$supports = null !== $type ? $type->supports() : array();
 		$stores   = isset( $supports['value'] ) && true === $supports['value'];
+		$files    = isset( $supports['file'] ) && true === $supports['file'];
 
 		return $this->validate_destinations(
 			$definition->id(),
 			is_array( $raw['destinations'] ) ? $raw['destinations'] : array(),
-			$stores
+			$stores,
+			$files
 		)->merge(
 			$this->validate_approval(
 				$definition->id(),

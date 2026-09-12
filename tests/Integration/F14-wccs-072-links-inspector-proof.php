@@ -81,10 +81,16 @@ function wccs_proof_validate( array $data ): array {
 	$validator = \WCCheckoutSuite\Domain\Registries::instance()->definition_validator();
 	$full      = array_merge(
 		array(
-			'id'     => 'wccs_authorisation',
-			'origin' => 'custom',
-			'type'   => 'text',
-			'label'  => 'Autorização',
+			'id'       => 'wccs_authorisation',
+			'origin'   => 'custom',
+			// A document: the links this harness validates carry the file actions,
+			// and a type that stores no file has none to declare.
+			'type'     => 'file',
+			'label'    => 'Autorização',
+			'settings' => array(
+				'maxFiles'          => 1,
+				'allowedExtensions' => array( 'pdf', 'jpg' ),
+			),
 		),
 		$data
 	);
@@ -219,12 +225,16 @@ $wccs_request->set_body(
 						'id'             => 'wccs_authorisation',
 						'integration_id' => 'wc-checkoutsuite/wccs_authorisation',
 						'origin'         => 'custom',
-						'type'           => 'text',
+						'type'           => 'file',
 						'label'          => 'Autorização',
 						'section'        => 'billing',
 						'enabled'        => true,
 						'required'       => false,
 						'position'       => 10,
+						'settings'       => array(
+							'maxFiles'          => 1,
+							'allowedExtensions' => array( 'pdf' ),
+						),
 						'destinations'   => array(
 							'admin_order'    => array(
 								'enabled'  => true,

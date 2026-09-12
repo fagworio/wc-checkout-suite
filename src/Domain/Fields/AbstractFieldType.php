@@ -52,11 +52,16 @@ abstract class AbstractFieldType implements FieldTypeInterface {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * @return array{value: bool, multiple: bool, maskable: bool, conditional: bool, control: string}
+	 * @return array{value: bool, file: bool, multiple: bool, maskable: bool, conditional: bool, control: string}
 	 */
 	public function supports(): array {
 		return array(
 			'value'       => true,
+			// Whether what this type stores is a file. A destination's actions are
+			// decisions about a document — showing its name, opening it, taking a
+			// copy, approving it, sending a new version — so a type that stores no
+			// file has none to declare, and the inspector offers none.
+			'file'        => false,
 			'multiple'    => false,
 			'maskable'    => false,
 			'conditional' => true,

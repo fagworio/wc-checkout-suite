@@ -106,6 +106,10 @@ final class FileFieldType extends AbstractFieldType {
 	public function supports(): array {
 		return array(
 			'value'       => true,
+			// What this type stores is a file, which is what the per-destination
+			// permissions need to know: showing a name, opening it, taking a copy and
+			// replacing it are decisions about a file, not about a string.
+			'file'        => true,
 			'multiple'    => true,
 			'maskable'    => false,
 			'conditional' => true,

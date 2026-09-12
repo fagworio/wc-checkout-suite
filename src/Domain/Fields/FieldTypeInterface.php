@@ -76,7 +76,7 @@ interface FieldTypeInterface {
 	public function settingsSchema(): array; // phpcs:ignore WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid -- Contract name from ROADMAP.md section 6.
 
 	/**
-	 * Capabilities this type declares, e.g. `value`, `multiple`, `maskable`.
+	 * Capabilities this type declares, e.g. `value`, `file`, `multiple`, `maskable`.
 	 *
 	 * Declared capabilities are what the compatibility matrix reads. A type must
 	 * never claim a capability it does not actually implement.

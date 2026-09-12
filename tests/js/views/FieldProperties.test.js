@@ -106,7 +106,7 @@ function field( overrides = {} ) {
 		conditions: {},
 		hidden_value_policy: 'discard',
 		storage: { scope: 'order', sensitivity: 'personal' },
-		visibility: { admin_order: true, public_api: false },
+		destinations: {},
 		...overrides,
 	};
 }
@@ -305,6 +305,7 @@ describe( 'the links and display tab', () => {
 		const user = userEvent.setup();
 
 		renderInspector( {
+			catalog: catalog( { value: true, maskable: true, file: true } ),
 			field: field( {
 				destinations: { customer_order: { enabled: true } },
 			} ),
@@ -318,6 +319,33 @@ describe( 'the links and display tab', () => {
 		).toBeInTheDocument();
 		expect(
 			screen.queryByRole( 'checkbox', { name: 'Review and approve' } )
+		).not.toBeInTheDocument();
+	} );
+
+	it( 'offers no file actions to a type that stores no file', async () => {
+		const user = userEvent.setup();
+
+		renderInspector( {
+			field: field( {
+				destinations: { admin_order: { enabled: true } },
+			} ),
+		} );
+
+		await user.click( screen.getByRole( 'button', { name: 'Vínculos' } ) );
+
+		// The link itself is a text field's business — where it is shown, in which
+		// section and in what order. The actions are the file's, and this type has no
+		// file to show, open, download, approve or replace.
+		expect(
+			screen.getByRole( 'group', { name: 'Order screen, for staff' } )
+		).toBeInTheDocument();
+		expect( screen.getByLabelText( 'Seção neste destino' ) ).toBeInTheDocument();
+		expect( screen.queryByText( 'Ações permitidas' ) ).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole( 'checkbox', { name: 'Open it' } )
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole( 'checkbox', { name: 'Download it' } )
 		).not.toBeInTheDocument();
 	} );
 

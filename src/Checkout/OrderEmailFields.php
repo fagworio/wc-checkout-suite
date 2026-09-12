@@ -13,6 +13,7 @@ use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Orders\OrderFieldEntry;
 use WCCheckoutSuite\Domain\Orders\OrderFieldsService;
+use WCCheckoutSuite\Domain\Uploads\FilePermissions;
 use WCCheckoutSuite\Http\Admin\SchemaController;
 use WCCheckoutSuite\Http\Checkout\DownloadController;
 use WC_Order;
@@ -122,6 +123,15 @@ final class OrderEmailFields {
 			$stored = $definition->to_array();
 
 			if ( ! $definition->shows_in( $key ) ) {
+				continue;
+			}
+
+			// A file's name is metadata: a destination that may not show the name may
+			// not list the document either.
+			if (
+				FilePermissions::is_file( $definition )
+				&& ! FilePermissions::allows( $definition, $key, 'show_metadata' )
+			) {
 				continue;
 			}
 

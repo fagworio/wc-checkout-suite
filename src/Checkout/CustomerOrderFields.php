@@ -13,6 +13,7 @@ use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Orders\OrderFieldEntry;
 use WCCheckoutSuite\Domain\Orders\OrderFieldsService;
+use WCCheckoutSuite\Domain\Uploads\FilePermissions;
 use WC_Order;
 
 /**
@@ -87,6 +88,16 @@ final class CustomerOrderFields {
 			// The link, not a copy of it: a destination is enabled per field, and the
 			// model is the only place that knows.
 			if ( ! $definition->shows_in( 'customer_order' ) ) {
+				continue;
+			}
+
+			// A file's name is metadata: a destination that may not show the name may
+			// not list the document either. The row this panel prints *is* the name,
+			// so there is nothing left to print when the link withholds it.
+			if (
+				FilePermissions::is_file( $definition )
+				&& ! FilePermissions::allows( $definition, 'customer_order', 'show_metadata' )
+			) {
 				continue;
 			}
 

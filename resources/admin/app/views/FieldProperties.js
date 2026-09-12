@@ -151,6 +151,10 @@ export default function FieldProperties( {
 	);
 	const storesValue = false !== type?.supports?.value;
 	const maskable = true === type?.supports?.maskable;
+	// The file actions are the file's: showing a name, opening it, taking a copy,
+	// approving it and sending a new version are decisions about a document, so a
+	// type that stores no file is offered none of them.
+	const storesFile = true === type?.supports?.file;
 	const protectedField = isProtected( field );
 	const mask = field.mask ?? null;
 	const desktop = Number( field.layout?.desktop ?? 12 );
@@ -843,78 +847,82 @@ export default function FieldProperties( {
 													/>
 												</Group>
 
-												<div className="form-label">
-													{ __(
-														'Ações permitidas',
-														'wc-checkoutsuite'
-													) }
-												</div>
-												{ (
-													vocabulary.destinationActions ??
-													[]
-												)
-													.filter(
-														(
-															/** @type {any} */ action
-														) =>
-															(
-																entry.actions ??
-																[]
-															).includes(
-																action.value
-															)
-													)
-													.map(
-														(
-															/** @type {any} */ action
-														) => (
-															<SwitchRow
-																key={
-																	action.value
-																}
-																id={ `wccs-link-action-${ entry.value }-${ action.value }` }
-																label={
-																	action.label
-																}
-																help={
-																	action.description ??
-																	''
-																}
-																checked={ (
-																	link.actions ??
-																	[]
-																).includes(
-																	action.value
-																) }
-																onToggle={ (
-																	/** @type {boolean} */ next
-																) => {
-																	const current =
-																		link.actions ??
-																		[];
-
-																	changeLink(
-																		entry.value,
-																		{
-																			actions:
-																				next
-																					? [
-																							...current,
-																							action.value,
-																					  ]
-																					: current.filter(
-																							(
-																								/** @type {string} */ key
-																							) =>
-																								key !==
-																								action.value
-																					  ),
-																		}
-																	);
-																} }
-															/>
+												{ storesFile ? (
+													<>
+														<div className="form-label">
+															{ __(
+																'Ações permitidas',
+																'wc-checkoutsuite'
+															) }
+														</div>
+														{ (
+															vocabulary.destinationActions ??
+															[]
 														)
-													) }
+															.filter(
+																(
+																	/** @type {any} */ action
+																) =>
+																	(
+																		entry.actions ??
+																		[]
+																	).includes(
+																		action.value
+																	)
+															)
+															.map(
+																(
+																	/** @type {any} */ action
+																) => (
+																	<SwitchRow
+																		key={
+																			action.value
+																		}
+																		id={ `wccs-link-action-${ entry.value }-${ action.value }` }
+																		label={
+																			action.label
+																		}
+																		help={
+																			action.description ??
+																			''
+																		}
+																		checked={ (
+																			link.actions ??
+																			[]
+																		).includes(
+																			action.value
+																		) }
+																		onToggle={ (
+																			/** @type {boolean} */ next
+																		) => {
+																			const current =
+																				link.actions ??
+																				[];
+
+																			changeLink(
+																				entry.value,
+																				{
+																					actions:
+																						next
+																							? [
+																									...current,
+																									action.value,
+																							  ]
+																							: current.filter(
+																									(
+																										/** @type {string} */ key
+																									) =>
+																										key !==
+																										action.value
+																							  ),
+																				}
+																			);
+																		} }
+																	/>
+																)
+															) }
+													</>
+												) : null }
 											</>
 										) : null }
 									</div>

@@ -88,12 +88,18 @@ function wccs_proof_field( array $changes = array() ): array {
 			'id'             => 'wccs_authorisation',
 			'integration_id' => 'wc-checkoutsuite/wccs_authorisation',
 			'origin'         => 'custom',
-			'type'           => 'text',
+			// A document, because the links this harness writes carry the file
+			// actions: the store refuses those on a type that stores no file.
+			'type'           => 'file',
 			'label'          => 'Autorização',
 			'section'        => 'billing',
 			'enabled'        => true,
 			'required'       => false,
 			'position'       => 10,
+			'settings'       => array(
+				'maxFiles'          => 1,
+				'allowedExtensions' => array( 'pdf', 'jpg' ),
+			),
 			'layout'         => array(
 				'desktop' => 12,
 				'tablet'  => 12,

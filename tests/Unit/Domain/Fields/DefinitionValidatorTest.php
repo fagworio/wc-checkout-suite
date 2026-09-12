@@ -394,8 +394,12 @@ final class DefinitionValidatorTest extends TestCase {
 			array(
 				'id'           => 'billing_document',
 				'origin'       => 'custom',
-				'type'         => 'text',
-				'label'        => 'CPF',
+				'type'         => 'file',
+				'label'        => 'Documento',
+				'settings'     => array(
+					'maxFiles'          => 1,
+					'allowedExtensions' => array( 'pdf' ),
+				),
 				'destinations' => array(
 					'customer_order' => array(
 						'enabled' => true,
@@ -406,6 +410,52 @@ final class DefinitionValidatorTest extends TestCase {
 		);
 
 		self::assertContains( 'invalid_destination_action', $result->error_codes() );
+	}
+
+	/**
+	 * The actions are decisions about a file, so a type that stores no file has none
+	 * to declare: the inspector offers none, and the store accepts none.
+	 *
+	 * @return void
+	 */
+	public function test_file_actions_belong_to_a_type_that_stores_a_file(): void {
+		$result = $this->validator()->validate_array(
+			array(
+				'id'           => 'billing_document',
+				'origin'       => 'custom',
+				'type'         => 'text',
+				'label'        => 'CPF',
+				'destinations' => array(
+					'admin_order' => array(
+						'enabled' => true,
+						'actions' => array( 'show_metadata', 'download' ),
+					),
+				),
+			)
+		);
+
+		self::assertContains( 'actions_not_supported', $result->error_codes() );
+
+		$with_file = $this->validator()->validate_array(
+			array(
+				'id'           => 'billing_document',
+				'origin'       => 'custom',
+				'type'         => 'file',
+				'label'        => 'Documento',
+				'settings'     => array(
+					'maxFiles'          => 1,
+					'allowedExtensions' => array( 'pdf' ),
+				),
+				'destinations' => array(
+					'admin_order' => array(
+						'enabled' => true,
+						'actions' => array( 'show_metadata', 'download' ),
+					),
+				),
+			)
+		);
+
+		self::assertNotContains( 'actions_not_supported', $with_file->error_codes() );
 	}
 
 	/**
