@@ -614,7 +614,7 @@ wccs_proof_check(
 wccs_proof_check(
 	'The three kinds of answer are worded apart in the shipped code',
 	false !== strpos( $wccs_built_js, 'do not block publication' )
-		&& false !== strpos( $wccs_built_js, 'cannot be published yet' ),
+		&& false !== strpos( $wccs_built_js, 'Corrija antes de publicar' ),
 	'wording present'
 );
 
