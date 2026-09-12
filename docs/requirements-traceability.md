@@ -64,7 +64,7 @@ WC CheckoutSuite · Planejamento 1.0 · artefato da tarefa **WCCS-001** (F00).
 | WCCS-014 | F02 | Implementar client REST | 1, 14, 20, 21, 23, 24 | Nonce, erro 403/409/422, retry seguro e estado não salvo tratados. |
 | WCCS-015 | F02 | Criar preview visual | 1, 14, 20, 21, 23, 24 | Desktop/tablet/mobile identificados como prévia; nenhum dado real necessário. |
 | WCCS-016 | F03 | Criar Field Picker e CRUD | 1, 4, 5, 6, 14, 20, 21, 27 | Criar/editar/duplicar/arquivar; campos core protegidos; busca por categorias. |
-| WCCS-017 | F03 | Criar inspector por tipo | 1, 4, 5, 6, 14, 20, 21, 27 | Máscaras, opções, descrição, largura, storage e visibilidade somente onde suportados. |
+| WCCS-017 | F03 | Criar inspector por tipo | 1, 4, 5, 6, 14, 20, 21, 27 | Máscaras, opções, descrição, largura, storage e destinos somente onde suportados. |
 | WCCS-018 | F03 | Criar seções e ordenação | 1, 4, 5, 6, 14, 20, 21, 27 | Ordem por seção salva; mover por teclado e botões preserva foco. |
 | WCCS-019 | F03 | Implementar draft e PublishDiff | 1, 4, 5, 6, 14, 20, 21, 27 | Salvar draft não afeta a loja; publicação mostra diferenças e incompatibilidades. |
 | WCCS-020 | F03 | Criar estados e ações em lote | 1, 4, 5, 6, 14, 20, 21, 27 | Vazio, erro, rede, conflito e permissão tratados; desfazer local e revisão separados. |
@@ -118,14 +118,22 @@ WC CheckoutSuite · Planejamento 1.0 · artefato da tarefa **WCCS-001** (F00).
 | WCCS-068 | F13 | Preparar manual e release notes | 20, 21, 25 | Limitações, privacy, uninstall, backup e suporte claramente documentados. |
 | WCCS-069 | F13 | Executar smoke de instalação/upgrade | 20, 21, 25 | Instalação limpa e upgrade/rollback com pedidos existentes aprovados. |
 | WCCS-070 | F13 | Publicar versão e registro de homologação | 20, 21, 25 | Checksums, versões testadas, resultados, changelog e plano de hotfix presentes. |
+| WCCS-071 | F14 | Modelar vínculos e exibição no schema | 4, 13, 14 | Coleta, vinculação e exibição separadas; `destinations` substitui o mapa booleano; destinos começam desativados; migração testada. |
+| WCCS-072 | F14 | Criar a aba "Vínculos e exibição" no inspetor | 16 | Por destino: habilitar, seção, título, ordem e ações; somente propriedades suportadas. |
+| WCCS-073 | F14 | Seções por área | 4, 16 | Seção escolhida por destino; mesma seção em mais de uma área sem cópia de dados; área sem vínculo não recebe painel. |
+| WCCS-074 | F14 | Permissões de arquivo por destino | 12 | Matriz mostrar/ver/baixar/aprovar/reenviar independente por destino; cliente vê apenas o próprio pedido; nada vira público. |
+| WCCS-075 | F14 | Fluxo de aprovação opcional | 12 | Desligado por padrão; não altera status nem bloqueia sem estar habilitado; configuração incompleta é apontada. |
+| WCCS-076 | F14 | Provar a ausência de inserção automática | 14, 26 | Em cada área, campo sem vínculo não aparece; com vínculo, aparece na seção, título e ordem configurados. |
 
 ---
 
 ## 3. Verificação de cobertura
 
-- Tarefas no `BACKLOG.json`: 70
-- Tarefas listadas nesta página: 70
+- Tarefas no `BACKLOG.json`: 76
+- Tarefas listadas nesta página: 76
 - Tarefas sem fonte de requisito: **0**
 - Divergência entre `MATRIZ-REQUISITOS.md` e `BACKLOG.json` detectada nesta derivação: **nenhuma**
 
-> Limite: este artefato verifica **cobertura documental**, não implementação. Todas as 70 tarefas permanecem com `status: planned` no backlog.
+> Limite: este artefato verifica **cobertura documental**, não implementação. Todas as tarefas permanecem com `status: planned` no backlog; o estado real de execução vive em `docs/compatibility.json`.
+>
+> **F14 (WCCS-071…076)** entrou com a revisão de vínculos e exibição por destino: coleta, vinculação e exibição passam a ser três decisões separadas, os destinos começam desativados e nenhuma área recebe painel sem configuração explícita.

@@ -25,8 +25,10 @@ Três lacunas reais foram encontradas ao implementar:
 
 **1. Todo conjunto fechado vive numa única classe, e é dela que o validador e o catálogo leem.**
 
-`DefinitionVocabulary` é a única fonte dos escopos de storage, dos níveis de sensibilidade, dos públicos de
-visibilidade e das políticas de valor oculto. Os valores aceitos são **derivados** das listas rotuladas, nunca
+`DefinitionVocabulary` é a única fonte dos escopos de storage, dos níveis de sensibilidade, dos destinos de
+exibição e das políticas de valor oculto. (O conjunto que este ADR chamava de "públicos de visibilidade" passou a
+ser a lista de **destinos**, cada um com seção, título, ordem e ações próprias — ver `ROADMAP.md` §4. Continua a ser
+um conjunto fechado lido de um só lugar.) Os valores aceitos são **derivados** das listas rotuladas, nunca
 escritos uma segunda vez:
 
 ```php

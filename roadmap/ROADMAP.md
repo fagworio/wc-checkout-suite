@@ -37,10 +37,13 @@ Criar um plugin modular para editar e estender os campos do checkout e, opcional
 2. Gerenciamento de campos nativos e personalizados, seções, regras, máscaras e layout responsivo.
 3. Classic Checkout e Checkout Blocks, com matriz explícita de suporte.
 4. Upload privado e persistência compatível com HPOS.
-5. Pedidos, administração, Minha Conta, e-mails e APIs com visibilidade por público.
+5. Pedidos, administração, Minha Conta, e-mails e APIs com **vínculos e exibição configurados por campo e por destino**, nunca por omissão.
 6. Página de checkout customizada opcional, preservando carrinho, frete, impostos, cupons e gateways.
 7. Admin moderno, prévia, rascunho, publicação, histórico, importação/exportação e diagnóstico.
 8. SDK mínimo documentado para novos tipos, testes e pacote comercial instalável.
+9. Fluxo de aprovação opcional, com status configurável, para campos que exigem análise.
+
+**Garantia que atravessa o produto:** o plugin disponibiliza os recursos; o lojista escolhe quais utilizar, onde inserir cada campo e quem poderá consultar ou agir sobre a informação. **Sem configuração explícita, não há inserção adicional** — nenhuma exibição é ativada automaticamente.
 
 ### Fora desta versão
 
@@ -136,22 +139,60 @@ Cada campo possui identificador permanente, chave de integração estável e ver
   },
   "hidden_value_policy": "discard",
   "storage": { "scope": "order", "sensitivity": "personal" },
-  "visibility": {
-    "admin_order": true,
-    "customer_order": false,
-    "customer_email": false,
-    "admin_email": false,
-    "public_api": false
+  "destinations": {
+    "admin_order": {
+      "enabled": true,
+      "section": "documentos_para_analise",
+      "title": "Documentos para análise",
+      "position": 10,
+      "actions": {
+        "show_metadata": true,
+        "view": true,
+        "download": true,
+        "approve": true,
+        "resubmit": false
+      }
+    },
+    "customer_order": {
+      "enabled": true,
+      "section": "documentos_enviados",
+      "title": "Documentos enviados",
+      "position": 10,
+      "actions": {
+        "show_metadata": true,
+        "view": true,
+        "download": true,
+        "resubmit": true
+      }
+    },
+    "order_received": { "enabled": false },
+    "customer_email": { "enabled": false },
+    "admin_email": { "enabled": false },
+    "customer_profile": { "enabled": false },
+    "public_api": { "enabled": false }
   },
+  "approval": null,
   "schema_version": 1
 }
 ```
+
+**Três decisões separadas, nunca uma só.** Coleta é onde o campo é preenchido; vinculação de dados é a que entidade a resposta pertence; exibição é onde essa resposta pode aparecer depois. Salvar no pedido e mostrar na tela são configurações diferentes: um campo pode estar armazenado no pedido e aparecer só para a equipe, só para o cliente, ou para ambos.
+
+**Os destinos adicionais começam desativados.** `destinations` é a única fonte da verdade da exibição, e cada destino carrega o que só ele decide: se está habilitado, em que seção, com que título, em que ordem e que ações permite. O mapa booleano `visibility` que a versão anterior deste documento descrevia (`admin_order`, `customer_order`, `customer_email`, `admin_email`, `public_api`) **está substituído**: ele não conseguia expressar seção, título, ordem nem ações por destino, e tratava públicos diferentes como se fossem a mesma decisão.
+
+**Regra central.** Publicar um campo no checkout não o exibe automaticamente em nenhuma outra área — pedido administrativo, pedido do cliente, página "Pedido recebido", e-mails ou perfil. Sem configuração explícita, **nenhum painel adicional da Suite é inserido** e os elementos originais do WooCommerce permanecem como estão.
+
+**É o mesmo pedido e a mesma resposta.** A Suite não cria cópias independentes dos dados por tela: cada destino apresenta a mesma resposta, com o título, a seção e a ordem que lhe foram configurados. Um campo pode estar vinculado ao checkout e ao pedido administrativo e não estar vinculado ao pedido do cliente — e nesse caso o cliente não o vê.
+
+`approval` é `null` por padrão e **nunca é ativado por um vínculo de exibição**: o fluxo de aprovação é a configuração opcional da seção 12.1, e o tipo `File Upload` não habilita área de documentos nem fluxo de aprovação por conta própria.
 
 Esse exemplo é conceitual; `storage` será compilado conforme o adapter. Um registro nativo que persiste automaticamente no cliente não pode apresentar no admin a opção “somente pedido” como se fosse equivalente. Se a política não for representável nativamente, o compilador deverá escolher a implementação própria ou impedir a publicação.
 
 Além disso: label traduzível, descrição, placeholder, opções de valor/label, default, classes permitidas, atributos HTML permitidos, min/max/step, comprimento, nome acessível, política de visibilidade, capacidades por adapter e origem do campo.
 
-`SectionDefinition`: ID estável, título, descrição, posição, localização lógica, regras e mapeamento de inserção. Billing, Shipping, Contact, Account e Order são conceitos do domínio; não correspondem automaticamente a slots idênticos em todos os checkouts.
+`SectionDefinition`: ID estável, título, descrição, posição, áreas em que pode ser escolhida, regras e mapeamento de inserção. Billing, Shipping, Contact, Account e Order são conceitos do domínio; não correspondem automaticamente a slots idênticos em todos os checkouts.
+
+**Seções também são configuráveis por área.** O lojista cria as seções que quiser para cada área — por exemplo "Documentação da compra" no checkout, "Documentos para análise" no pedido administrativo e "Documentos enviados" no pedido do cliente — e cada destino escolhe a sua. A mesma seção pode ser escolhida por mais de um destino: o que muda entre áreas é onde a resposta é apresentada, não o dado. Se nenhuma seção ou campo estiver configurado para uma área, nenhum painel adicional é inserido nela.
 
 ---
 
@@ -317,7 +358,19 @@ Campo customizado oculto por regra: padrão `discard`, sem erro required e sem p
 
 Tratar como subsistema: `UploadService`, `UploadRepository`, `StorageProvider`, `DownloadPolicy`, `CleanupJob` e renderers de upload.
 
-Configuração: extensões, MIME, bytes máximos, quantidade, único/múltiplo, required, visibilidade, retenção, descrição da finalidade e permissão de acesso.
+Configuração: extensões, MIME, bytes máximos, quantidade, único/múltiplo, required, retenção, descrição da finalidade e **permissões por destino**.
+
+O tipo `File Upload` não habilita área de documentos nem fluxo de aprovação por conta própria. As ações são independentes em cada destino em que o arquivo aparece:
+
+| Ação | Pedido administrativo | Pedido do cliente |
+|---|---|---|
+| Mostrar nome e informações do arquivo | Configurável | Configurável |
+| Permitir visualizar | Configurável | Configurável |
+| Permitir baixar | Configurável | Configurável |
+| Permitir analisar/aprovar | Configurável, para equipe autorizada | Não |
+| Permitir enviar nova versão | Conforme política administrativa | Configurável, por exemplo só após pedido de correção |
+
+Habilitar a exibição para o cliente significa **exibir ao dono daquele pedido**, nunca tornar o arquivo público. Um documento pode ser coletado no checkout, guardado no pedido e acessível apenas à equipe; ou o comprador pode também consultar e baixar o que enviou, conforme a configuração.
 
 Fluxo: selecionar → pré-validação → enviar ao endpoint → validar conteúdo → área temporária privada → token opaco → submit → vínculo idempotente com pedido → acesso autorizado. Upload ainda não vinculado não é dado definitivo do pedido.
 
@@ -336,6 +389,28 @@ Downloads: administrador autorizado ou dono autenticado do pedido; visitante usa
 Retenção inicial proposta: temporários não vinculados expiram em 24h, configurável. Pedidos rascunho, pagamentos falhos e pedidos efetivos têm políticas distintas. Retry do pagamento deve reutilizar o vínculo no mesmo pedido; token não pode servir a outro pedido. Limpeza idempotente, agendada e com exclusão segura de objetos/metadados.
 
 E-mails: mostrar informação ou link de acesso controlado apenas se configurado. Não anexar documentos pessoais por padrão.
+
+## 12.1 Fluxo de aprovação e status customizado (opcional)
+
+Aprovação é uma configuração **separada** do vínculo de exibição e começa desligada.
+
+```text
+Fluxo de aprovação
+
+Exigir análise manual: ativado
+Regra aplicável: produtos que exigem autorização
+Área de análise: pedido administrativo
+Seção: Documentos para análise
+Status durante a análise: Pendente de aprovação
+
+Permitir solicitação de correção: ativado
+Permitir reenvio pelo cliente: ativado
+Mostrar situação da análise ao cliente: ativado
+```
+
+Sem esse fluxo habilitado, um upload é **apenas uma informação vinculada ao pedido**: não muda o status e não bloqueia o processamento por conta própria.
+
+Se a aprovação manual estiver habilitada sem área de análise ou sem responsáveis autorizados configurados, o plugin **aponta a configuração incompleta**. Não cria vínculos nem ativa permissões em silêncio.
 
 ---
 
@@ -373,9 +448,11 @@ Não modificar os pedidos históricos em massa para apenas trocar label. Exclus�
 
 # 14. Integração com pedidos, clientes e e-mails
 
-Administradores: bloco “Campos do checkout” na edição do pedido, origem, label, valor formatado, edição autorizada e trilha de alterações sem logs desnecessários do conteúdo pessoal.
+Cada área apresenta o que os **destinos** daquele campo autorizam: pedido administrativo, pedido do cliente, página "Pedido recebido", e-mail do cliente, e-mail administrativo e perfil do cliente. Nenhuma dessas áreas é preenchida por omissão — só pelos campos explicitamente vinculados a ela, na seção, com o título e na ordem configurados, e com as ações que aquele destino permite.
 
-Cliente: detalhe do pedido, thank-you e Minha Conta somente conforme política do campo. Separar valor do pedido de preferência atual do perfil; editar perfil não reescreve pedido passado.
+Administradores: bloco na edição do pedido, origem, label, valor formatado, edição autorizada e trilha de alterações sem logs desnecessários do conteúdo pessoal.
+
+Cliente: detalhe do pedido, thank-you e Minha Conta conforme os destinos habilitados. Separar valor do pedido de preferência atual do perfil; editar perfil não reescreve pedido passado.
 
 E-mail: configuração independente para lojista/cliente e HTML/texto puro. Arquivos e documentos são privados inicialmente. Heading/HTML não são valores de pedido; sanitizar em cada contexto.
 
@@ -425,7 +502,7 @@ Campo na lista: handle, label, chave técnica, tipo/preset, required, ativo, se�
 
 Criar campo: modal com busca e categorias; presets Brasil não ficam misturados aleatoriamente com primitivas. Um novo tipo de extensão aparece automaticamente.
 
-Inspetor: Geral; Aparência; Máscara/validação; Condições; Armazenamento/visibilidade; Avançado. Exibir somente propriedades suportadas. Configuração de arquivo mostra limites e política de privacidade, não opções de campo textual.
+Inspetor: Geral; Aparência; Máscara/validação; Condições; **Vínculos e exibição**; Avançado. A aba "Vínculos e exibição" separa as três decisões — coleta, vinculação dos dados e exibição — e, para cada destino, permite habilitar, escolher seção, título, ordem e ações permitidas. Exibir somente propriedades suportadas. Configuração de arquivo mostra limites e as permissões por destino, não opções de campo textual.
 
 Prévia: desktop/tablet/mobile, PF/PJ, logado/convidado e comparação Classic/Blocks quando representável. Selo “Prévia” e dados sintéticos; testes de pedido são outra etapa. Limites do adapter não podem desaparecer na prévia.
 
@@ -433,7 +510,7 @@ Drag-and-drop tem alternativa “Mover para cima/baixo”, anúncio da posição
 
 Estados obrigatórios: vazio; carregando; salvo; alterado; erro inline; conflito 409; falha de rede; permissão insuficiente; recurso incompatível; extensão ausente; versão não suportada; restauração de rascunho. Falha não descarta trabalho.
 
-Operações em lote: habilitar/desabilitar, seção, visibilidade e arquivamento de customizados, com confirmação de impacto. Undo local de edição e histórico de publicação são mecanismos separados.
+Operações em lote: habilitar/desabilitar, seção, destinos e arquivamento de customizados, com confirmação de impacto. Undo local de edição e histórico de publicação são mecanismos separados.
 
 ---
 
@@ -682,7 +759,7 @@ Cada fase inclui entregáveis, dependências, riscos e gate. Esforço é relativ
 | ID | Entrega | Componentes | Aceite da tarefa |
 |---|---|---|---|
 | WCCS-016 | Criar Field Picker e CRUD | Admin, FieldDefinition | Criar/editar/duplicar/arquivar; campos core protegidos; busca por categorias. |
-| WCCS-017 | Criar inspector por tipo | SettingsSchema | Máscaras, opções, descrição, largura, storage e visibilidade somente onde suportados. |
+| WCCS-017 | Criar inspector por tipo | SettingsSchema | Máscaras, opções, descrição, largura, storage e destinos somente onde suportados. |
 | WCCS-018 | Criar seções e ordenação | Sections, SortableList | Ordem por seção salva; mover por teclado e botões preserva foco. |
 | WCCS-019 | Implementar draft e PublishDiff | Revisions, Preview | Salvar draft não afeta a loja; publicação mostra diferenças e incompatibilidades. |
 | WCCS-020 | Criar estados e ações em lote | Admin state | Vazio, erro, rede, conflito e permissão tratados; desfazer local e revisão separados. |
@@ -808,8 +885,8 @@ Cada fase inclui entregáveis, dependências, riscos e gate. Esforço é relativ
 | ID | Entrega | Componentes | Aceite da tarefa |
 |---|---|---|---|
 | WCCS-051 | Criar editor de dados do pedido | Order admin | CRUD, edição autorizada e validação idêntica nos dois backends de pedidos. |
-| WCCS-052 | Criar exibição ao cliente | My Account, thank-you | Visibilidade por campo respeitada; conta atual não reescreve pedido passado. |
-| WCCS-053 | Criar e-mails HTML/texto | Email projections | Públicos distintos; documentos sem anexos por padrão; links autorizados. |
+| WCCS-052 | Criar exibição ao cliente | My Account, thank-you | Destinos por campo respeitados; área sem vínculo não recebe painel; conta atual não reescreve pedido passado. |
+| WCCS-053 | Criar e-mails HTML/texto | Email projections | Destinos de e-mail independentes do resto; documentos sem anexos por padrão; links autorizados. |
 | WCCS-054 | Criar API pública de integração | REST, OrderFieldsService | Contrato autenticado; nenhum dado pessoal aparece em Store API pública. |
 | WCCS-055 | Implementar exportação/eliminação de dados | Privacy, retention | Fluxos por titular e política da loja testados, com retenção explicável. |
 
@@ -870,6 +947,31 @@ Cada fase inclui entregáveis, dependências, riscos e gate. Esforço é relativ
 **Risco principal:** Update quebrado, licença bloqueando checkout e claim comercial não demonstrado.
 
 **Gate de conclusão:** Release 1.0 distribuível; Sidebar ausente; cobrança continua independente de servidor de licença.
+
+## Fluxo de configuração do lojista
+
+**Criar campo → configurar coleta → definir armazenamento → selecionar destinos e seções → definir permissões → habilitar aprovação, quando necessária → salvar rascunho → revisar → publicar.**
+
+Depois da compra, a Suite consulta esses vínculos para decidir o que apresentar em cada área. Nada é inferido: o que não foi configurado não é inserido.
+
+## F14 · Vínculos e exibição por destino
+
+**Objetivo:** Tornar explícito, por campo e por destino, onde a resposta é coletada, a que entidade pertence e onde pode aparecer — sem nenhuma exibição automática.
+
+**Responsáveis:** Backend, Frontend e Produto. **Dependências:** F03, F04, F08, F10. **Complexidade:** Alta.
+
+| ID | Entrega | Componentes | Aceite da tarefa |
+|---|---|---|---|
+| WCCS-071 | Modelar vínculos e exibição no schema | Schema, validadores | Coleta, vinculação e exibição separadas; `destinations` substitui o mapa booleano; destinos começam desativados; migração de documento antigo testada. |
+| WCCS-072 | Criar a aba "Vínculos e exibição" no inspetor | Admin, design do protótipo | Por destino: habilitar, seção, título, ordem e ações; somente propriedades suportadas; a mesma linguagem do resto do inspetor. |
+| WCCS-073 | Seções por área | SectionDefinition, admin | Seção escolhida por destino; mesma seção em mais de uma área sem cópia de dados; área sem vínculo não recebe painel. |
+| WCCS-074 | Permissões de arquivo por destino | Upload, DownloadPolicy | Matriz mostrar/ver/baixar/aprovar/reenviar independente por destino; cliente vê apenas o próprio pedido; nada vira público. |
+| WCCS-075 | Fluxo de aprovação opcional | Approval, status | Desligado por padrão; não altera status nem bloqueia sem estar habilitado; configuração incompleta é apontada, não completada em silêncio. |
+| WCCS-076 | Provar a ausência de inserção automática | QA, integração | Em cada área, um campo sem vínculo não aparece; com vínculo, aparece na seção, título e ordem configurados. |
+
+**Risco principal:** Exibição silenciosa (um campo aparecer onde não foi vinculado), permissão herdada entre destinos e status alterado sem configuração.
+
+**Gate de conclusão:** Auditoria por área confirma que só aparece o que foi vinculado, que um destino não herda permissões de outro e que nenhuma área recebe painel sem configuração explícita.
 
 
 # 24. Testes automatizados e evidências
@@ -932,6 +1034,11 @@ Cada fase inclui entregáveis, dependências, riscos e gate. Esforço é relativ
 20. Novo tipo registrado por plugin externo funciona sem alterar o core, nos adapters declarados.
 21. Pacote final tem documentação, matriz de versões, changelog, build, checksum e rollback.
 22. Nenhum Checkout Sidebar é incluído na versão 1.0, nem como funcionalidade incompleta.
+23. Nenhuma exibição adicional é ativada automaticamente: cada destino é habilitado explicitamente e uma área sem vínculos configurados não recebe painel algum da Suite.
+24. Coleta, vinculação dos dados e exibição são decisões independentes: um campo pode estar armazenado no pedido e visível apenas à equipe, e um destino não habilitado não mostra o campo em lugar nenhum.
+25. O tipo `File Upload` não habilita área de documentos nem fluxo de aprovação por conta própria; as ações por destino (mostrar, visualizar, baixar, aprovar, reenviar) são independentes, e exibir ao cliente significa exibir ao dono daquele pedido.
+26. Aprovação manual é opcional e não altera status nem bloqueia processamento sem estar habilitada; configuração incompleta é apontada, nunca completada em silêncio.
+27. Seções são configuráveis por área e a mesma resposta pode aparecer em áreas diferentes sem cópias independentes dos dados.
 
 # 27. Governança, releases e evolução futura
 

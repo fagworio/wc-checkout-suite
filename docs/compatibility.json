@@ -1369,6 +1369,20 @@
         "no_licence_server": "WCCS-067: there is no licence check anywhere in src/ or resources/ — the licence header text is the only occurrence of the word — so nothing can expire and block a purchase. The only remote call (PrivateStorage) asks this store whether its own private directory is served over HTTP.",
         "documentation": "WCCS-068: docs/operations/merchant-guide.md covers limitations (§8), privacy (§6), uninstall (§9), backup (§10) and support (§11); CHANGELOG.md and readme.txt carry the release notes; docs/operations/release-1.0.0-rc.1.md is the release record."
       }
+    },
+    "F14": {
+      "title": "Vínculos e exibição por destino",
+      "gate": "Auditoria por área confirma que só aparece o que foi vinculado, que um destino não herda permissões de outro e que nenhuma área recebe painel sem configuração explícita.",
+      "gate_met": false,
+      "tasks": {
+        "WCCS-071": "planned",
+        "WCCS-072": "planned",
+        "WCCS-073": "planned",
+        "WCCS-074": "planned",
+        "WCCS-075": "planned",
+        "WCCS-076": "planned"
+      },
+      "detail": "F14 entrou com a revisão de vínculos e exibição por destino, pedida depois do fecho das fases F00–F13. Coleta, vinculação de dados e exibição passam a ser três decisões separadas, por campo e por destino; `destinations` substitui o mapa booleano `visibility`; os destinos adicionais começam desativados; e uma área sem vínculos configurados não recebe painel algum da Suite. Nada disto foi implementado ainda: o modelo de exibição que existe hoje no código é o mapa booleano, e a migração é a primeira entrega da fase (WCCS-071)."
     }
   },
   "compatibility_targets": {

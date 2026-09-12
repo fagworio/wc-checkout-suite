@@ -284,7 +284,7 @@
           "components": [
             "SettingsSchema"
           ],
-          "acceptance": "Máscaras, opções, descrição, largura, storage e visibilidade somente onde suportados.",
+          "acceptance": "Máscaras, opções, descrição, largura, storage e destinos somente onde suportados.",
           "status": "planned",
           "priority": "required_v1",
           "phase_dependencies": [
@@ -901,7 +901,7 @@
             "My Account",
             "thank-you"
           ],
-          "acceptance": "Visibilidade por campo respeitada; conta atual não reescreve pedido passado.",
+          "acceptance": "Destinos por campo respeitados; área sem vínculo não recebe painel; conta atual não reescreve pedido passado.",
           "status": "planned",
           "priority": "required_v1",
           "phase_dependencies": [
@@ -916,7 +916,7 @@
           "components": [
             "Email projections"
           ],
-          "acceptance": "Públicos distintos; documentos sem anexos por padrão; links autorizados.",
+          "acceptance": "Destinos de e-mail independentes do resto; documentos sem anexos por padrão; links autorizados.",
           "status": "planned",
           "priority": "required_v1",
           "phase_dependencies": [
@@ -1224,6 +1224,110 @@
           "priority": "required_v1",
           "phase_dependencies": [
             "F12"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F14",
+      "title": "Vínculos e exibição por destino",
+      "owner_role": "Backend, Frontend e Produto",
+      "depends_on": [
+        "F03",
+        "F04",
+        "F08",
+        "F10"
+      ],
+      "relative_effort": "Alta",
+      "objective": "Tornar explícito, por campo e por destino, onde a resposta é coletada, a que entidade pertence e onde pode aparecer — sem nenhuma exibição automática.",
+      "main_risk": "Exibição silenciosa (um campo aparecer onde não foi vinculado), permissão herdada entre destinos e status alterado sem configuração.",
+      "gate": "Auditoria por área confirma que só aparece o que foi vinculado, que um destino não herda permissões de outro e que nenhuma área recebe painel sem configuração explícita.",
+      "status": "planned",
+      "tasks": [
+        {
+          "id": "WCCS-071",
+          "title": "Modelar vínculos e exibição no schema",
+          "components": [
+            "Schema",
+            "validadores"
+          ],
+          "acceptance": "Coleta, vinculação e exibição separadas; destinations substitui o mapa booleano; destinos começam desativados; migração de documento antigo testada.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03"
+          ]
+        },
+        {
+          "id": "WCCS-072",
+          "title": "Criar a aba \"Vínculos e exibição\" no inspetor",
+          "components": [
+            "Admin",
+            "design do protótipo"
+          ],
+          "acceptance": "Por destino: habilitar, seção, título, ordem e ações; somente propriedades suportadas; mesma linguagem do resto do inspetor.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03"
+          ]
+        },
+        {
+          "id": "WCCS-073",
+          "title": "Seções por área",
+          "components": [
+            "SectionDefinition",
+            "admin"
+          ],
+          "acceptance": "Seção escolhida por destino; mesma seção em mais de uma área sem cópia de dados; área sem vínculo não recebe painel.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F03"
+          ]
+        },
+        {
+          "id": "WCCS-074",
+          "title": "Permissões de arquivo por destino",
+          "components": [
+            "Upload",
+            "DownloadPolicy"
+          ],
+          "acceptance": "Matriz mostrar/ver/baixar/aprovar/reenviar independente por destino; cliente vê apenas o próprio pedido; nada vira público.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F08"
+          ]
+        },
+        {
+          "id": "WCCS-075",
+          "title": "Fluxo de aprovação opcional",
+          "components": [
+            "Approval",
+            "status"
+          ],
+          "acceptance": "Desligado por padrão; não altera status nem bloqueia sem estar habilitado; configuração incompleta é apontada, não completada em silêncio.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F08",
+            "F10"
+          ]
+        },
+        {
+          "id": "WCCS-076",
+          "title": "Provar a ausência de inserção automática",
+          "components": [
+            "QA",
+            "integração"
+          ],
+          "acceptance": "Em cada área, um campo sem vínculo não aparece; com vínculo, aparece na seção, título e ordem configurados.",
+          "status": "planned",
+          "priority": "required_v1",
+          "phase_dependencies": [
+            "F10",
+            "F14"
           ]
         }
       ]
