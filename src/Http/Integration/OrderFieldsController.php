@@ -303,12 +303,9 @@ final class OrderFieldsController {
 				continue;
 			}
 
-			$stored     = $definition->to_array();
-			$visibility = isset( $stored['visibility'] ) && is_array( $stored['visibility'] ) ? $stored['visibility'] : array();
-
-			// Off unless the merchant said otherwise, which is the vocabulary's own
-			// default: a field is private until somebody decides it is not.
-			if ( empty( $visibility['public_api'] ) ) {
+			// Off unless the merchant said otherwise: a field is private until somebody
+			// links it to the public API, which is one destination among the others.
+			if ( ! $definition->shows_in( 'public_api' ) ) {
 				continue;
 			}
 

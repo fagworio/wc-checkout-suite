@@ -45,7 +45,8 @@ export interface FieldDefinition {
 	conditions: Record< string, unknown >;
 	hidden_value_policy: string;
 	storage: { scope: string; sensitivity: string };
-	visibility: Record< string, boolean >;
+	destinations: Record< string, DestinationLink >;
+	approval?: ApprovalFlow | null;
 	validators?: unknown[];
 	schema_version?: number;
 }
@@ -202,8 +203,48 @@ export interface VocabularyEntry {
 export interface DefinitionVocabulary {
 	storageScopes: VocabularyEntry[];
 	storageSensitivities: VocabularyEntry[];
-	visibilityKeys: VocabularyEntry[];
+	destinations: DestinationEntry[];
+	destinationActions: VocabularyEntry[];
 	hiddenValuePolicies: VocabularyEntry[];
+}
+
+/**
+ * One destination a field's answer may be shown in.
+ *
+ * `actions` is what that destination is allowed to do with the answer — approving is
+ * a staff action and a customer destination does not carry it — and the server
+ * refuses an action outside the list it publishes here.
+ */
+export interface DestinationEntry extends VocabularyEntry {
+	actions: string[];
+}
+
+/**
+ * What one field configured for one destination.
+ *
+ * Only `enabled` is required: a destination the merchant has not configured carries
+ * nothing, and starts disabled.
+ */
+export interface DestinationLink {
+	enabled: boolean;
+	section?: string;
+	title?: string;
+	position?: number;
+	actions?: string[];
+}
+
+/**
+ * The optional approval flow, separate from every destination link.
+ */
+export interface ApprovalFlow {
+	require_review?: boolean;
+	rule?: string;
+	area?: string;
+	section?: string;
+	status?: string;
+	allow_correction?: boolean;
+	allow_resubmit?: boolean;
+	show_status?: boolean;
 }
 
 /**

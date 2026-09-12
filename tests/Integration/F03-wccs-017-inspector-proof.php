@@ -247,20 +247,21 @@ foreach ( \WCCheckoutSuite\Domain\Fields\DefinitionVocabulary::hidden_value_poli
 	}
 }
 
-foreach ( \WCCheckoutSuite\Domain\Fields\DefinitionVocabulary::visibility_key_values() as $wccs_audience ) {
+// The audience map became the destination map (F14): the values the inspector offers
+// now are the destinations, and each one is offered with the actions it may perform.
+foreach ( \WCCheckoutSuite\Domain\Fields\DefinitionVocabulary::destination_values() as $wccs_destination ) {
 	$wccs_outcome = wccs_proof_validate(
 		wccs_proof_def(
 			array(
-				'visibility' => array(
-					'admin_order' => true,
-					$wccs_audience => true,
+				'destinations' => array(
+					$wccs_destination => array( 'enabled' => true ),
 				),
 			)
 		)
 	);
 
 	if ( ! $wccs_outcome['valid'] ) {
-		$wccs_rejected_published[] = 'audience:' . $wccs_audience . '(' . implode( '|', $wccs_outcome['codes'] ) . ')';
+		$wccs_rejected_published[] = 'destination:' . $wccs_destination . '(' . implode( '|', $wccs_outcome['codes'] ) . ')';
 	}
 }
 

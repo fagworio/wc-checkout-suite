@@ -205,12 +205,11 @@ final class OrderFieldsPanel {
 				continue;
 			}
 
-			$stored     = $definition->to_array();
-			$visibility = isset( $stored['visibility'] ) && is_array( $stored['visibility'] ) ? $stored['visibility'] : array();
-			$storage    = isset( $stored['storage'] ) && is_array( $stored['storage'] ) ? $stored['storage'] : array();
-			$scope      = isset( $storage['scope'] ) ? (string) $storage['scope'] : '';
+			$stored  = $definition->to_array();
+			$storage = isset( $stored['storage'] ) && is_array( $stored['storage'] ) ? $stored['storage'] : array();
+			$scope   = isset( $storage['scope'] ) ? (string) $storage['scope'] : '';
 
-			if ( empty( $visibility['admin_order'] ) ) {
+			if ( ! $definition->shows_in( 'admin_order' ) ) {
 				continue;
 			}
 
@@ -261,12 +260,7 @@ final class OrderFieldsPanel {
 				continue;
 			}
 
-			$stored_definition = $definition->to_array();
-			$visibility        = isset( $stored_definition['visibility'] ) && is_array( $stored_definition['visibility'] )
-				? $stored_definition['visibility']
-				: array();
-
-			if ( empty( $visibility['admin_order'] ) ) {
+			if ( ! $definition->shows_in( 'admin_order' ) ) {
 				continue;
 			}
 

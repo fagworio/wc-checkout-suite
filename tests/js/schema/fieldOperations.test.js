@@ -36,7 +36,7 @@ import {
 	setFieldEnabled,
 	setFieldSection,
 	setFieldsEnabled,
-	setFieldsVisibility,
+	setFieldsDestinations,
 	uniqueIdentifier,
 	updateField,
 	updateSection,
@@ -291,7 +291,10 @@ describe( 'creating', () => {
 				section: 'shipping',
 				enabled: false,
 				storage: { scope: 'none', sensitivity: 'personal' },
-				visibility: { admin_order: false, customer_order: true },
+				destinations: {
+					admin_order: { enabled: true },
+					customer_order: { enabled: true },
+				},
 				hidden_value_policy: 'preserve',
 				type: 'number',
 			},
@@ -306,9 +309,9 @@ describe( 'creating', () => {
 		expect( field.enabled ).toBe( true );
 		expect( field.type ).toBe( 'text' );
 		expect( field.storage.scope ).toBe( 'order' );
-		expect( field.visibility.admin_order ).toBe( true );
-		expect( field.visibility.customer_order ).toBe( false );
-		expect( field.visibility.public_api ).toBe( false );
+		// A preset chooses how the value is typed, never who sees it: the destinations
+		// it asks for are not obeyed, and a new field starts with none.
+		expect( field.destinations ).toEqual( {} );
 		expect( field.hidden_value_policy ).toBe( 'discard' );
 	} );
 
@@ -1094,28 +1097,34 @@ describe( 'bulk operations', () => {
 		const document = doc( [
 			custom( {
 				id: 'a',
-				visibility: { admin_order: true, public_api: false },
+				destinations: {
+					admin_order: { enabled: true },
+					public_api: { enabled: false },
+				},
 			} ),
 			custom( {
 				id: 'b',
-				visibility: { admin_order: true, public_api: false },
+				destinations: {
+					admin_order: { enabled: true },
+					public_api: { enabled: false },
+				},
 			} ),
 		] );
 
-		const result = setFieldsVisibility(
+		const result = setFieldsDestinations(
 			document,
 			[ 'a', 'b' ],
 			'public_api',
 			true
 		);
 
-		expect( result.document.fields[ 0 ].visibility ).toEqual( {
-			admin_order: true,
-			public_api: true,
+		expect( result.document.fields[ 0 ].destinations ).toEqual( {
+			admin_order: { enabled: true },
+			public_api: { enabled: true },
 		} );
-		expect( result.document.fields[ 1 ].visibility ).toEqual( {
-			admin_order: true,
-			public_api: true,
+		expect( result.document.fields[ 1 ].destinations ).toEqual( {
+			admin_order: { enabled: true },
+			public_api: { enabled: true },
 		} );
 	} );
 
@@ -1162,7 +1171,7 @@ describe( 'bulk operations', () => {
 
 		archiveFields( document, [ 'a', 'b' ] );
 		moveFieldsToSection( document, [ 'a' ], 'shipping' );
-		setFieldsVisibility( document, [ 'a' ], 'public_api', true );
+		setFieldsDestinations( document, [ 'a' ], 'public_api', true );
 		bulkImpact( document, [ 'a' ], 'archive' );
 
 		expect( JSON.stringify( document ) ).toBe( before );

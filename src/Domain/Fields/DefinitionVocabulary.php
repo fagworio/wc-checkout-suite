@@ -103,55 +103,6 @@ final class DefinitionVocabulary {
 		);
 	}
 
-	/**
-	 * Where a stored value may be shown, from ROADMAP.md section 4.
-	 *
-	 * @return array<int, array{value: string, label: string, description: string}>
-	 */
-	public static function visibility_keys(): array {
-		return array(
-			array(
-				'value'       => 'admin_order',
-				'label'       => __( 'Order screen, for staff', 'wc-checkoutsuite' ),
-				'description' => __(
-					'Shown to staff when they open the order.',
-					'wc-checkoutsuite'
-				),
-			),
-			array(
-				'value'       => 'customer_order',
-				'label'       => __( 'Order screen, for the customer', 'wc-checkoutsuite' ),
-				'description' => __(
-					'Shown to the customer in their account.',
-					'wc-checkoutsuite'
-				),
-			),
-			array(
-				'value'       => 'customer_email',
-				'label'       => __( 'Emails to the customer', 'wc-checkoutsuite' ),
-				'description' => __(
-					'Included in the order emails the customer receives.',
-					'wc-checkoutsuite'
-				),
-			),
-			array(
-				'value'       => 'admin_email',
-				'label'       => __( 'Emails to the store', 'wc-checkoutsuite' ),
-				'description' => __(
-					'Included in the order emails the store receives.',
-					'wc-checkoutsuite'
-				),
-			),
-			array(
-				'value'       => 'public_api',
-				'label'       => __( 'Store API and webhooks', 'wc-checkoutsuite' ),
-				'description' => __(
-					'Exposed outside the site. Off unless something else needs it.',
-					'wc-checkoutsuite'
-				),
-			),
-		);
-	}
 
 	/**
 	 * Where a stored answer may be shown, from ROADMAP.md section 4.
@@ -349,25 +300,6 @@ final class DefinitionVocabulary {
 		return $destinations;
 	}
 
-	/**
-	 * The flat audience map, derived from the destinations.
-	 *
-	 * Compatibility projection for the surfaces that still read the old map — the
-	 * inspector tab and the integration controller. WCCS-072 moves them to
-	 * `destinations`, and this method goes with them.
-	 *
-	 * @param array<string, mixed> $destinations Destination map.
-	 * @return array<string, bool>
-	 */
-	public static function visibility_from_destinations( array $destinations ): array {
-		$visibility = array();
-
-		foreach ( self::visibility_key_values() as $key ) {
-			$visibility[ $key ] = ! empty( $destinations[ $key ]['enabled'] );
-		}
-
-		return $visibility;
-	}
 
 	/**
 	 * What happens to a value when a condition hides its field.
@@ -426,14 +358,6 @@ final class DefinitionVocabulary {
 		return self::values( self::storage_sensitivities() );
 	}
 
-	/**
-	 * Valid visibility keys.
-	 *
-	 * @return array<int, string>
-	 */
-	public static function visibility_key_values(): array {
-		return self::values( self::visibility_keys() );
-	}
 
 	/**
 	 * Valid hidden value policies.
@@ -461,21 +385,6 @@ final class DefinitionVocabulary {
 		);
 	}
 
-	/**
-	 * Default visibility for a field of a given type.
-	 *
-	 * @param bool $stores_value Whether the type stores a value.
-	 * @return array<string, bool>
-	 */
-	public static function default_visibility( bool $stores_value ): array {
-		return array(
-			'admin_order'    => $stores_value,
-			'customer_order' => false,
-			'customer_email' => false,
-			'admin_email'    => false,
-			'public_api'     => false,
-		);
-	}
 
 	/**
 	 * Everything the admin needs to draw the inspector's choices.
@@ -486,7 +395,6 @@ final class DefinitionVocabulary {
 		return array(
 			'storageScopes'        => self::storage_scopes(),
 			'storageSensitivities' => self::storage_sensitivities(),
-			'visibilityKeys'       => self::visibility_keys(),
 			'destinations'         => self::destinations(),
 			'destinationActions'   => self::destination_actions(),
 			'hiddenValuePolicies'  => self::hidden_value_policies(),

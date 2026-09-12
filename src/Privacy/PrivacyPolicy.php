@@ -95,7 +95,7 @@ final class PrivacyPolicy {
 
 		$visibilities = array();
 
-		foreach ( DefinitionVocabulary::visibility_keys() as $visibility ) {
+		foreach ( DefinitionVocabulary::destinations() as $visibility ) {
 			$visibilities[] = sprintf(
 				'<strong>%s</strong>: %s',
 				esc_html( $visibility['label'] ),

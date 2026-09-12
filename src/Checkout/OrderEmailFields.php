@@ -119,10 +119,9 @@ final class OrderEmailFields {
 				continue;
 			}
 
-			$stored     = $definition->to_array();
-			$visibility = isset( $stored['visibility'] ) && is_array( $stored['visibility'] ) ? $stored['visibility'] : array();
+			$stored = $definition->to_array();
 
-			if ( empty( $visibility[ $key ] ) ) {
+			if ( ! $definition->shows_in( $key ) ) {
 				continue;
 			}
 

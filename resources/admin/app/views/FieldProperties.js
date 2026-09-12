@@ -158,8 +158,50 @@ export default function FieldProperties( {
 	const tabs = [
 		{ id: 'general', label: __( 'Geral', 'wc-checkoutsuite' ) },
 		{ id: 'rules', label: __( 'Regras', 'wc-checkoutsuite' ) },
+		{ id: 'links', label: __( 'Vínculos', 'wc-checkoutsuite' ) },
 		{ id: 'advanced', label: __( 'Exibição', 'wc-checkoutsuite' ) },
 	];
+
+	/**
+	 * Everything the field knows about one destination, or nothing.
+	 *
+	 * @param {string} destination Destination key.
+	 * @return {any} The link, or a disabled one.
+	 */
+	const linkFor = ( destination ) =>
+		field.destinations?.[ destination ] ?? { enabled: false };
+
+	/**
+	 * Writes one destination, keeping the others as they were.
+	 *
+	 * @param {string} destination Destination key.
+	 * @param {any}    changes     What changed for it.
+	 * @return {void}
+	 */
+	const changeLink = ( destination, changes ) =>
+		onChange( {
+			destinations: {
+				...( field.destinations ?? {} ),
+				[ destination ]: {
+					...linkFor( destination ),
+					...changes,
+				},
+			},
+		} );
+
+	/** The approval flow, or the empty one. */
+	const approval = field.approval ?? {};
+
+	/**
+	 * Writes the approval flow, or clears it.
+	 *
+	 * @param {any} changes What changed.
+	 * @return {void}
+	 */
+	const changeApproval = ( changes ) =>
+		onChange( {
+			approval: { ...approval, ...changes },
+		} );
 
 	return (
 		<>
@@ -614,6 +656,426 @@ export default function FieldProperties( {
 					</>
 				) : null }
 
+				{ 'links' === tab ? (
+					<>
+						<div className="form-label">
+							{ __( 'Vínculos e exibição', 'wc-checkoutsuite' ) }
+						</div>
+						<p className="form-help">
+							{ __(
+								'Cada destino decide por si. Publicar o campo não o mostra em lugar nenhum: só aparece onde for vinculado aqui.',
+								'wc-checkoutsuite'
+							) }
+						</p>
+
+						{ ( vocabulary.destinations ?? [] ).map(
+							( /** @type {any} */ entry ) => {
+								const link = linkFor( entry.value );
+
+								return (
+									<div
+										className="condition-row"
+										key={ entry.value }
+										role="group"
+										aria-label={ entry.label }
+									>
+										<div className="condition-row-head">
+											<span>{ entry.label }</span>
+										</div>
+
+										<SwitchRow
+											id={ `wccs-link-${ entry.value }` }
+											label={ sprintf(
+												/* translators: %s: destination name. */
+												__(
+													'Mostrar em %s',
+													'wc-checkoutsuite'
+												),
+												entry.label
+											) }
+											help={ entry.description ?? '' }
+											checked={ Boolean( link.enabled ) }
+											onToggle={ (
+												/** @type {boolean} */ next
+											) =>
+												changeLink( entry.value, {
+													enabled: next,
+												} )
+											}
+										/>
+
+										{ link.enabled ? (
+											<>
+												<Group
+													id={ `wccs-link-section-${ entry.value }` }
+													label={ __(
+														'Seção neste destino',
+														'wc-checkoutsuite'
+													) }
+												>
+													<select
+														id={ `wccs-link-section-${ entry.value }` }
+														className="input"
+														value={
+															link.section ?? ''
+														}
+														onChange={ (
+															/** @type {{target: {value: string}}} */ event
+														) =>
+															changeLink(
+																entry.value,
+																{
+																	section:
+																		event
+																			.target
+																			.value,
+																}
+															)
+														}
+													>
+														<option value="">
+															{ __(
+																'Seção do campo',
+																'wc-checkoutsuite'
+															) }
+														</option>
+														{ sections.map(
+															(
+																/** @type {any} */ option
+															) => (
+																<option
+																	key={
+																		option.id
+																	}
+																	value={
+																		option.id
+																	}
+																>
+																	{ option.label ??
+																		option.id }
+																</option>
+															)
+														) }
+													</select>
+												</Group>
+
+												<Group
+													id={ `wccs-link-title-${ entry.value }` }
+													label={ __(
+														'Título apresentado',
+														'wc-checkoutsuite'
+													) }
+													help={ __(
+														'Como o campo é chamado neste destino.',
+														'wc-checkoutsuite'
+													) }
+												>
+													<input
+														id={ `wccs-link-title-${ entry.value }` }
+														className="input"
+														type="text"
+														value={
+															link.title ?? ''
+														}
+														onChange={ (
+															/** @type {{target: {value: string}}} */ event
+														) =>
+															changeLink(
+																entry.value,
+																{
+																	title: event
+																		.target
+																		.value,
+																}
+															)
+														}
+													/>
+												</Group>
+
+												<Group
+													id={ `wccs-link-position-${ entry.value }` }
+													label={ __(
+														'Ordem de exibição',
+														'wc-checkoutsuite'
+													) }
+												>
+													<input
+														id={ `wccs-link-position-${ entry.value }` }
+														className="input"
+														type="number"
+														min={ 0 }
+														step={ 10 }
+														value={
+															link.position ?? 0
+														}
+														onChange={ (
+															/** @type {{target: {value: string}}} */ event
+														) =>
+															changeLink(
+																entry.value,
+																{
+																	position:
+																		Number(
+																			event
+																				.target
+																				.value
+																		),
+																}
+															)
+														}
+													/>
+												</Group>
+
+												<div className="form-label">
+													{ __(
+														'Ações permitidas',
+														'wc-checkoutsuite'
+													) }
+												</div>
+												{ (
+													vocabulary.destinationActions ??
+													[]
+												)
+													.filter(
+														(
+															/** @type {any} */ action
+														) =>
+															(
+																entry.actions ??
+																[]
+															).includes(
+																action.value
+															)
+													)
+													.map(
+														(
+															/** @type {any} */ action
+														) => (
+															<SwitchRow
+																key={
+																	action.value
+																}
+																id={ `wccs-link-action-${ entry.value }-${ action.value }` }
+																label={
+																	action.label
+																}
+																help={
+																	action.description ??
+																	''
+																}
+																checked={ (
+																	link.actions ??
+																	[]
+																).includes(
+																	action.value
+																) }
+																onToggle={ (
+																	/** @type {boolean} */ next
+																) => {
+																	const current =
+																		link.actions ??
+																		[];
+
+																	changeLink(
+																		entry.value,
+																		{
+																			actions:
+																				next
+																					? [
+																							...current,
+																							action.value,
+																					  ]
+																					: current.filter(
+																							(
+																								/** @type {string} */ key
+																							) =>
+																								key !==
+																								action.value
+																					  ),
+																		}
+																	);
+																} }
+															/>
+														)
+													) }
+											</>
+										) : null }
+									</div>
+								);
+							}
+						) }
+
+						<div className="divider" />
+
+						<div className="form-label">
+							{ __( 'Fluxo de aprovação', 'wc-checkoutsuite' ) }
+						</div>
+						<p className="form-help">
+							{ __(
+								'Desligado, isto é apenas uma informação vinculada ao pedido: não muda estado nem bloqueia o processamento.',
+								'wc-checkoutsuite'
+							) }
+						</p>
+						<SwitchRow
+							id="wccs-approval-required"
+							label={ __(
+								'Exigir análise manual',
+								'wc-checkoutsuite'
+							) }
+							help=""
+							checked={ Boolean( approval.require_review ) }
+							onToggle={ ( /** @type {boolean} */ next ) =>
+								changeApproval( {
+									require_review: next,
+								} )
+							}
+						/>
+
+						{ approval.require_review ? (
+							<>
+								<Group
+									id="wccs-approval-area"
+									label={ __(
+										'Área de análise',
+										'wc-checkoutsuite'
+									) }
+									help={ __(
+										'Obrigatória: sem ela o servidor recusa a configuração em vez de a completar por ti.',
+										'wc-checkoutsuite'
+									) }
+								>
+									<select
+										id="wccs-approval-area"
+										className="input"
+										value={ approval.area ?? '' }
+										onChange={ (
+											/** @type {{target: {value: string}}} */ event
+										) =>
+											changeApproval( {
+												area: event.target.value,
+											} )
+										}
+									>
+										<option value="">
+											{ __(
+												'Escolha uma área',
+												'wc-checkoutsuite'
+											) }
+										</option>
+										{ ( vocabulary.destinations ?? [] ).map(
+											( /** @type {any} */ entry ) => (
+												<option
+													key={ entry.value }
+													value={ entry.value }
+												>
+													{ entry.label }
+												</option>
+											)
+										) }
+									</select>
+								</Group>
+
+								<Group
+									id="wccs-approval-section"
+									label={ __(
+										'Seção da análise',
+										'wc-checkoutsuite'
+									) }
+								>
+									<input
+										id="wccs-approval-section"
+										className="input"
+										type="text"
+										value={ approval.section ?? '' }
+										onChange={ (
+											/** @type {{target: {value: string}}} */ event
+										) =>
+											changeApproval( {
+												section: event.target.value,
+											} )
+										}
+									/>
+								</Group>
+
+								<Group
+									id="wccs-approval-status"
+									label={ __(
+										'Estado durante a análise',
+										'wc-checkoutsuite'
+									) }
+								>
+									<input
+										id="wccs-approval-status"
+										className="input"
+										type="text"
+										value={ approval.status ?? '' }
+										onChange={ (
+											/** @type {{target: {value: string}}} */ event
+										) =>
+											changeApproval( {
+												status: event.target.value,
+											} )
+										}
+									/>
+								</Group>
+
+								<SwitchRow
+									id="wccs-approval-correction"
+									label={ __(
+										'Permitir pedido de correção',
+										'wc-checkoutsuite'
+									) }
+									help=""
+									checked={ Boolean(
+										approval.allow_correction
+									) }
+									onToggle={ (
+										/** @type {boolean} */ next
+									) =>
+										changeApproval( {
+											allow_correction: next,
+										} )
+									}
+								/>
+								<SwitchRow
+									id="wccs-approval-resubmit"
+									label={ __(
+										'Permitir reenvio pelo cliente',
+										'wc-checkoutsuite'
+									) }
+									help=""
+									checked={ Boolean(
+										approval.allow_resubmit
+									) }
+									onToggle={ (
+										/** @type {boolean} */ next
+									) =>
+										changeApproval( {
+											allow_resubmit: next,
+										} )
+									}
+								/>
+								<SwitchRow
+									id="wccs-approval-show"
+									label={ __(
+										'Mostrar a situação ao cliente',
+										'wc-checkoutsuite'
+									) }
+									help=""
+									checked={ Boolean( approval.show_status ) }
+									onToggle={ (
+										/** @type {boolean} */ next
+									) =>
+										changeApproval( {
+											show_status: next,
+										} )
+									}
+								/>
+							</>
+						) : null }
+					</>
+				) : null }
+
 				{ 'advanced' === tab ? (
 					<>
 						<div className="inspector-note">
@@ -738,42 +1200,6 @@ export default function FieldProperties( {
 										) ) }
 									</select>
 								</Group>
-
-								<div className="divider" />
-
-								<span className="form-label">
-									{ __(
-										'Onde o valor pode aparecer',
-										'wc-checkoutsuite'
-									) }
-								</span>
-
-								{ ( vocabulary.visibilityKeys ?? [] ).map(
-									( /** @type {any} */ entry ) => (
-										<SwitchRow
-											key={ entry.value }
-											id={ `wccs-field-visibility-${ entry.value }` }
-											label={ entry.label }
-											help={ entry.description ?? '' }
-											checked={ Boolean(
-												field.visibility?.[
-													entry.value
-												]
-											) }
-											onToggle={ (
-												/** @type {boolean} */ next
-											) =>
-												onChange( {
-													visibility: {
-														...( field.visibility ??
-															{} ),
-														[ entry.value ]: next,
-													},
-												} )
-											}
-										/>
-									)
-								) }
 
 								<div className="inspector-note">
 									{ __(

@@ -422,12 +422,13 @@ wccs_proof_check(
 	'body=' . wp_json_encode( $wccs_without_value_body )
 );
 
-$wccs_defaults = \WCCheckoutSuite\Domain\Fields\DefinitionVocabulary::default_visibility( true );
+$wccs_defaults = \WCCheckoutSuite\Domain\Fields\DefinitionVocabulary::default_destinations();
 
 wccs_proof_check(
 	'The default is the one that exposes nothing',
-	false === $wccs_defaults['public_api'],
-	'a field is private until a merchant decides otherwise: ' . wp_json_encode( $wccs_defaults )
+	false === ( $wccs_defaults['public_api']['enabled'] ?? null )
+		&& array() === array_filter( wp_list_pluck( $wccs_defaults, 'enabled' ) ),
+	'a field is private until a merchant links it: ' . wp_json_encode( $wccs_defaults )
 );
 
 $wccs_unmarked = wccs_proof_order( array( 'wccs_private_note' => 'Only on the order screen.' ), $wccs_definitions );

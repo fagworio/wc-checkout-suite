@@ -364,10 +364,6 @@ final class FieldDefinition {
 			'storage'             => $this->storage,
 			'destinations'        => $this->destinations,
 			'approval'            => $this->approval,
-			// Compatibility projection: the inspector tab and the integration
-			// controller still read the flat map. WCCS-072 moves them to
-			// `destinations`, and this key goes with it.
-			'visibility'          => DefinitionVocabulary::visibility_from_destinations( $this->destinations ),
 			'schema_version'      => $this->schema_version,
 		);
 	}

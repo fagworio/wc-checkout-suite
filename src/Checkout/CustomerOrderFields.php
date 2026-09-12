@@ -82,10 +82,11 @@ final class CustomerOrderFields {
 				continue;
 			}
 
-			$stored     = $definition->to_array();
-			$visibility = isset( $stored['visibility'] ) && is_array( $stored['visibility'] ) ? $stored['visibility'] : array();
+			$stored = $definition->to_array();
 
-			if ( empty( $visibility['customer_order'] ) ) {
+			// The link, not a copy of it: a destination is enabled per field, and the
+			// model is the only place that knows.
+			if ( ! $definition->shows_in( 'customer_order' ) ) {
 				continue;
 			}
 

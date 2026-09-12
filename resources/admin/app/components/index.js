@@ -29,4 +29,3 @@ export { default as ConditionBuilder } from './ConditionBuilder';
 export { default as SortableList } from './SortableList';
 export { default as PublishPanel } from './PublishPanel';
 export { default as RevisionsList } from './RevisionsList';
-export { default as BulkActions } from './BulkActions';

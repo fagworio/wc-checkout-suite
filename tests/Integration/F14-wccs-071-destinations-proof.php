@@ -296,10 +296,9 @@ wccs_proof_check(
 );
 
 wccs_proof_check(
-	'The compatibility projection says the same as the destinations',
-	is_array( $wccs_bare_field['visibility'] ?? null )
-		&& ! in_array( true, array_map( 'boolval', $wccs_bare_field['visibility'] ), true ),
-	'visibility=' . wp_json_encode( $wccs_bare_field['visibility'] ?? null )
+	'The superseded audience map is no longer published',
+	! array_key_exists( 'visibility', $wccs_bare_field ),
+	'keys=' . implode( ',', array_keys( $wccs_bare_field ) )
 );
 
 // ---------------------------------------------------------------------------
@@ -364,11 +363,12 @@ wccs_proof_check(
 );
 
 wccs_proof_check(
-	'The compatibility projection follows the destinations',
-	true === ( $wccs_field['visibility']['admin_order'] ?? null )
-		&& true === ( $wccs_field['visibility']['customer_order'] ?? null )
-		&& false === ( $wccs_field['visibility']['customer_email'] ?? null ),
-	'visibility=' . wp_json_encode( $wccs_field['visibility'] ?? null )
+	'The destinations are the only source of who sees what',
+	true === ( $wccs_dest['admin_order']['enabled'] ?? null )
+		&& true === ( $wccs_dest['customer_order']['enabled'] ?? null )
+		&& false === ( $wccs_dest['customer_email']['enabled'] ?? null )
+		&& ! array_key_exists( 'visibility', $wccs_field ),
+	'keys=' . implode( ',', array_keys( $wccs_dest ) )
 );
 
 // ---------------------------------------------------------------------------

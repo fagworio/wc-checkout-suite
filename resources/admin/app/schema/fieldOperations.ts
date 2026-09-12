@@ -49,13 +49,11 @@ function surfacesFor( supports?: Record< string, boolean > ) {
 			scope: storesValue ? 'order' : 'none',
 			sensitivity: 'personal',
 		},
-		visibility: {
-			admin_order: storesValue,
-			customer_order: false,
-			customer_email: false,
-			admin_email: false,
-			public_api: false,
-		},
+		// No destination, which is what "disabled" means once the server fills the
+		// closed set: publishing a field to the checkout does not put its answer on the
+		// order screen, in an e-mail or anywhere else. The merchant enables each one in
+		// "Vínculos e exibição".
+		destinations: {},
 	};
 }
 
@@ -1407,29 +1405,35 @@ export function moveFieldsToSection(
 }
 
 /**
- * Shows or hides many fields for one audience.
+ * Shows or hides many fields in one destination.
  *
- * @param document Document.
- * @param ids      Identifiers.
- * @param audience Audience key.
- * @param allowed  Target state.
+ * @param document    Document.
+ * @param ids         Identifiers.
+ * @param destination Destination key.
+ * @param allowed     Target state.
  * @return Result.
  */
-export function setFieldsVisibility(
+export function setFieldsDestinations(
 	document: SchemaDocument,
 	ids: string[],
-	audience: string,
+	destination: string,
 	allowed: boolean
 ): BulkResult {
 	return bulk( document, ids, ( field ) => {
-		if ( field.visibility?.[ audience ] === allowed ) {
+		if (
+			( field.destinations?.[ destination ]?.enabled ?? false ) ===
+			allowed
+		) {
 			return __( 'It is already set that way.', 'wc-checkoutsuite' );
 		}
 
 		return {
-			visibility: {
-				...( field.visibility ?? {} ),
-				[ audience ]: allowed,
+			destinations: {
+				...( field.destinations ?? {} ),
+				[ destination ]: {
+					...( field.destinations?.[ destination ] ?? {} ),
+					enabled: allowed,
+				},
 			},
 		};
 	} );
@@ -1451,7 +1455,7 @@ export function setFieldsVisibility(
 export function bulkImpact(
 	document: SchemaDocument,
 	ids: string[],
-	action: 'enable' | 'disable' | 'archive' | 'section' | 'visibility'
+	action: 'enable' | 'disable' | 'archive' | 'section' | 'destinations'
 ): {
 	total: number;
 	affected: number;

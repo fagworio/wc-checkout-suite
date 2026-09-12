@@ -442,7 +442,7 @@ wccs_proof_check(
 wccs_proof_check(
 	'It states where a value is shown, from the vocabulary rather than from a list',
 	str_contains( $wccs_text, 'Where a value is shown is a separate decision' )
-		&& str_contains( $wccs_text, esc_html( \WCCheckoutSuite\Domain\Fields\DefinitionVocabulary::visibility_keys()[0]['description'] ) ),
+		&& str_contains( $wccs_text, esc_html( \WCCheckoutSuite\Domain\Fields\DefinitionVocabulary::destinations()[0]['description'] ) ),
 	'bytes=' . strlen( $wccs_text )
 );
 

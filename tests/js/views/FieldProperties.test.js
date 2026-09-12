@@ -39,6 +39,34 @@ function catalog( supports = { value: true, maskable: true } ) {
 			{ key: 'br.cep', label: 'CEP', version: 1 },
 		],
 		vocabulary: {
+			destinations: [
+				{
+					value: 'admin_order',
+					label: 'Order screen, for staff',
+					description: 'Shown to staff when they open the order.',
+					actions: [ 'show_metadata', 'view', 'download', 'approve' ],
+				},
+				{
+					value: 'customer_order',
+					label: 'Order screen, for the customer',
+					description: 'Shown to the customer who placed the order.',
+					actions: [ 'show_metadata', 'view' ],
+				},
+			],
+			destinationActions: [
+				{
+					value: 'show_metadata',
+					label: 'Show the file name and details',
+					description: '',
+				},
+				{ value: 'view', label: 'Open it', description: '' },
+				{ value: 'download', label: 'Download it', description: '' },
+				{
+					value: 'approve',
+					label: 'Review and approve',
+					description: 'Only for staff.',
+				},
+			],
 			storageScopes: [ { value: 'order', label: 'Order' } ],
 			storageSensitivities: [ { value: 'personal', label: 'Personal' } ],
 			visibilityKeys: [ { value: 'admin_order', label: 'Admin order' } ],
@@ -235,5 +263,80 @@ describe( 'the field properties', () => {
 		await user.click( screen.getByRole( 'button', { name: 'Duplicar' } ) );
 
 		expect( onDuplicate ).toHaveBeenCalledTimes( 1 );
+	} );
+} );
+
+describe( 'the links and display tab', () => {
+	it( 'offers every destination the catalogue publishes, disabled', async () => {
+		const user = userEvent.setup();
+
+		renderInspector();
+
+		await user.click( screen.getByRole( 'button', { name: 'Vínculos' } ) );
+
+		expect(
+			screen.getByRole( 'group', { name: 'Order screen, for staff' } )
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole( 'checkbox', {
+				name: 'Mostrar em Order screen, for staff',
+			} )
+		).not.toBeChecked();
+	} );
+
+	it( 'reports one destination without touching the others', async () => {
+		const user = userEvent.setup();
+		const { onChange } = renderInspector();
+
+		await user.click( screen.getByRole( 'button', { name: 'Vínculos' } ) );
+
+		const [ first ] = screen.getAllByRole( 'checkbox', {
+			name: /^Mostrar em /,
+		} );
+
+		await user.click( first );
+
+		expect( onChange ).toHaveBeenCalledWith( {
+			destinations: { admin_order: { enabled: true } },
+		} );
+	} );
+
+	it( 'offers only the actions the destination may perform', async () => {
+		const user = userEvent.setup();
+
+		renderInspector( {
+			field: field( {
+				destinations: { customer_order: { enabled: true } },
+			} ),
+		} );
+
+		await user.click( screen.getByRole( 'button', { name: 'Vínculos' } ) );
+
+		// Approving is a staff action: a customer destination does not offer it.
+		expect(
+			screen.getByRole( 'checkbox', { name: 'Open it' } )
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole( 'checkbox', { name: 'Review and approve' } )
+		).not.toBeInTheDocument();
+	} );
+
+	it( 'keeps an approval flow off until it is asked for', async () => {
+		const user = userEvent.setup();
+		const { onChange } = renderInspector();
+
+		await user.click( screen.getByRole( 'button', { name: 'Vínculos' } ) );
+
+		expect(
+			screen.queryByLabelText( 'Área de análise' )
+		).not.toBeInTheDocument();
+
+		await user.click(
+			screen.getByRole( 'checkbox', { name: 'Exigir análise manual' } )
+		);
+
+		expect( onChange ).toHaveBeenCalledWith( {
+			approval: { require_review: true },
+		} );
 	} );
 } );
