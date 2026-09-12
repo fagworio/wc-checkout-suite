@@ -5,9 +5,9 @@
   "phase": "F00",
   "planning_version": "1.0",
   "product": "WC CheckoutSuite",
-  "captured_at": "2026-09-11T12:16:18-03:00",
+  "captured_at": "2026-09-11T23:59:00-03:00",
   "captured_by": "agent session on the Devilbox host, via read-only queries",
-  "status": "verified_in_local_environment",
+  "status": "released_candidate_in_local_environment",
   "scope_note": "This file records the REAL capabilities of the local development environment and the target gateways. It is NOT gateway homologation, NOT a support declaration and NOT a test report. Every entry carries its provenance. Anything not exercised is listed under 'not_verified' and must never be read as a positive result.",
   "identifier_policy": {
     "decision": "follow_roadmap_proposal",
@@ -1340,6 +1340,34 @@
         "performance_and_stability": "WCCS-064: tests/Integration/F12-wccs-064-performance-proof.php (16 assertions) reports the budgets, proves no hook is registered twice and that a second boot adds none, and measures the 50-field/100-rule benchmark; tests/browser/performance-observation.mjs (11 assertions) proves a keystroke starts no request, nothing reaches the plugin's routes, and the DOM and heap are stable across six reloads, with a control run that had nothing published as the comparison.",
         "recovery": "WCCS-065: tests/Integration/F12-wccs-065-recovery-proof.php (28 assertions) executes rollback, a document from a newer build, a checkout left open on an older revision, the retention job with its batch, its idempotence and its deactivation, and a deactivated extension whose type the registry no longer has — asserting in each case that the store keeps running and that nothing the merchant configured is lost."
       }
+    },
+    "F13": {
+      "title": "Release 1.0 e operação comercial",
+      "gate": "Release 1.0 distribuível; Sidebar ausente; cobrança continua independente de servidor de licença.",
+      "gate_met": true,
+      "tasks": {
+        "WCCS-066": "completed",
+        "WCCS-067": "completed",
+        "WCCS-068": "completed",
+        "WCCS-069": "completed",
+        "WCCS-070": "completed"
+      },
+      "why_gate_is_open": "",
+      "way_forward": "Nothing in this phase remains. The version published is 1.0.0-rc.1 and not 1.0.0 for one recorded reason: the payment rows of the functional matrix are untested (SANDBOX-PAYMENT). Closing that is a credential and a sandbox run, not work inside this plugin's root.",
+      "detail": " WCCS-066 built the package from the tree rather than from the repository, because the compiled bundles are not versioned: bin/build-release.php carries an explicit list of what ships, refuses to build when a runtime file is missing, reads the version from the plugin header and checks it against WCCS_VERSION, and prints the manifest and the SHA-256. The rule that keeps the ZIP clean is by kind rather than by hand: resources/ ships its assets — the stylesheets PHP serves, the design tokens, the gateway homologation record and binaries — and not its sources, which are the input to a build that already happened. bin/check-release.php verifies a built archive from the outside: completeness by name, no development file, the autoloader mapping of every class, and the syntax of every PHP file read through PHP's own tokenizer. WCCS-067 inventoried the licences from the lock files instead of from memory and found the answer that matters: zero runtime dependencies, so the package carries no third-party code and needs no notices file; the 1507 build-time and 41 test-time packages never ship. It also verified the gate's third clause by looking for what is not there — no licence check exists anywhere in the plugin, and the only remote call asks this store whether its own private directory is served over HTTP — and the second clause the same way: the word sidebar appears in the administration's own navigation tokens and in two comments about WooCommerce's order summary, and nowhere as a feature. WCCS-068 extended the manual with the four operational sections the acceptance names — limitations, uninstall, backup and support — each written as a table of what happens rather than as advice, and the release notes live in CHANGELOG.md and in the readme. WCCS-069 exercised the artefact that is actually distributed: the ZIP is extracted, checked, and then loaded by a bare PHP process with no Composer autoloader and no WordPress, which resolves 120 of 120 classes through the autoloader the plugin carries in its own main file; the upgrade and the rollback run over a real order created through wc_create_order(), and in both directions the order keeps reading exactly what the customer answered, with the field added by the upgrade holding no invented value. WCCS-070 published the record: checksum, versions tested, every gate with its numbers, the homologation record that names the five things this release does not approve, the rollback plan and the hotfix plan — including the rule that a database migration is never part of a hotfix. The release is a candidate rather than 1.0.0 for one reason, and the record states it: every gateway row of the matrix is untested.",
+      "quality_state": {
+        "php_unit": "402 tests, 1453 assertions",
+        "javascript": "612 tests across 38 suites",
+        "integration_assertions": "1357 across 58 proof harnesses, 0 failures",
+        "release_package": "dist/wc-checkoutsuite-1.0.0-rc.1.zip — 150 files, 395.1 KB, SHA-256 aa2afb9a537e17672f26dbc3a0002b4c0cc969f594c3df3e54ffc1ad00b8d737; 125 PHP files parsing, 120/120 classes resolving with a bare PHP process, no vendor/ and no node_modules/",
+        "defects_found_and_fixed": []
+      },
+      "gate_evidence": {
+        "distributable": "WCCS-066/WCCS-069: the ZIP builds from the tree, is verified by bin/check-release.php and loads in a bare PHP process; the install/upgrade smoke asserts the artefact, the activation and the upgrade/rollback over a live order (22 assertions).",
+        "no_sidebar": "WCCS-067: grep -rni sidebar src/ resources/ returns the administration's own navigation tokens (--wccs-sidebar-surface, --wccs-on-sidebar) and two comments in the Blocks stylesheet about WooCommerce's order-summary column. No Checkout Sidebar: no task, component, route or setting.",
+        "no_licence_server": "WCCS-067: there is no licence check anywhere in src/ or resources/ — the licence header text is the only occurrence of the word — so nothing can expire and block a purchase. The only remote call (PrivateStorage) asks this store whether its own private directory is served over HTTP.",
+        "documentation": "WCCS-068: docs/operations/merchant-guide.md covers limitations (§8), privacy (§6), uninstall (§9), backup (§10) and support (§11); CHANGELOG.md and readme.txt carry the release notes; docs/operations/release-1.0.0-rc.1.md is the release record."
+      }
     }
   },
   "compatibility_targets": {
@@ -1422,6 +1450,24 @@
       "why_not_settled_here": "Both options change a contract rather than a branch, and no rule currently in the store depends on the answer: nothing is published and no condition has been evaluated. Settling it inside WCCS-032 would have been an implementation decision taken while proving something else.",
       "evidence": "Recorded in docs/validation/WCCS-032.md section 6, and observed by inspecting the two declarations rather than by a failing test, which is why no assertion was written for either answer.",
       "recommendation": "Decide it in WCCS-033, where the evaluators have to agree with the validator about what a value is — a parity task cannot be completed while the two sides disagree about the type of a list."
+    },
+    {
+      "id": "DISTRIBUTION-IDENTITY",
+      "question": "Which WordPress.org slug and contributor account, and which Author, Author URI and Plugin URI headers, does the distributed package carry?",
+      "why_it_blocks": "Nothing in the release. The plugin installs and runs without them; they were left out on purpose instead of being invented, and they belong to the product owner.",
+      "owner": "Produto"
+    },
+    {
+      "id": "SUPPORT-CHANNEL",
+      "question": "Who supports the plugin, in which language, through which channel and with what response time?",
+      "why_it_blocks": "Nothing in the release: the manual already lists everything a support conversation needs (diagnostics screen, versions, functional matrix, compatibility record, schema export).",
+      "owner": "Produto"
+    },
+    {
+      "id": "RELEASE-CHANNEL",
+      "question": "How is an update delivered to a store — a ZIP the merchant installs, or an update server?",
+      "why_it_blocks": "Nothing in the release, and ROADMAP section 27 forbids building a SaaS licensing service for the MVP. The hotfix plan in the release record assumes the ZIP for now.",
+      "owner": "Produto"
     }
   ],
   "not_verified": [
