@@ -72,7 +72,12 @@ const publish = await page.evaluate( () => ( {
 	subtitle: document.querySelector( '.publish-subtitle' )?.textContent ?? '',
 } ) );
 
-await page.keyboard.press( 'Escape' );
+// Closed through its own button: the browser's Escape reaches the native dialog
+// before React sees it, and the probe needs the surface gone, not just cancelled.
+await page
+	.locator( '.wccs-dialog.publish-dialog .dialog-footer button' )
+	.first()
+	.click();
 await page.waitForTimeout( 300 );
 
 // The history, from the editor's footer. Clicked through the DOM because wp-admin's
@@ -89,6 +94,30 @@ await page.screenshot( { path: `${OUT}/admin-history.png`, fullPage: false } );
 const history = await page.evaluate( () =>
 	Array.from( document.querySelectorAll( '.history-row' ) ).map( ( r ) => r.textContent )
 );
+
+// The conditions, which are the controls the design's own markup styles: the shared
+// control library now carries `.form-group`, `.input` and `.form-help`, and the row
+// carries `.condition-row`.
+await page.locator( '.wccs-admin .field-info' ).first().click();
+await page.waitForTimeout( 300 );
+await page.getByRole( 'button', { name: 'Regras' } ).first().click();
+await page.waitForTimeout( 300 );
+await page.screenshot( { path: `${OUT}/admin-conditions.png`, fullPage: false } );
+const conditions = await page.evaluate( () => {
+	const row = document.querySelector( '.condition-row' );
+	const select = row?.querySelector( 'select' );
+	const label = row?.querySelector( 'label' );
+
+	return {
+		rows: document.querySelectorAll( '.condition-row' ).length,
+		rowClass: row?.className ?? '',
+		selectClass: select?.className ?? '',
+		selectHeight: select ? getComputedStyle( select ).height : '',
+		selectBorder: select ? getComputedStyle( select ).borderTopColor : '',
+		labelSize: label ? getComputedStyle( label ).fontSize : '',
+		result: document.querySelector( '.condition-result' )?.textContent ?? '',
+	};
+} );
 
 // The inspector below the design's 870px breakpoint: the column is hidden by the
 // stylesheet and the same properties open over the list, in both documents.
@@ -127,6 +156,7 @@ console.log(
 		{
 			publish,
 			history,
+			conditions,
 			mobileInspector: { prototype: prototypeMobile, admin: adminMobile },
 			errs,
 		},

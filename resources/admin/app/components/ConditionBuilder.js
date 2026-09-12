@@ -592,8 +592,8 @@ export default function ConditionBuilder( {
 		}
 
 		return (
-			<div className="wccs-conditions__leaf" key={ key }>
-				<div className="wccs-conditions__leaf-head">
+			<div className="condition-row wccs-conditions__leaf" key={ key }>
+				<div className="condition-row-head wccs-conditions__leaf-head">
 					{ /* A leaf at the root is already the sentence shown above it, and
 					   printing it twice would be two answers to the same question.
 					   Inside a group, the sentence runs the whole rule together, so
@@ -702,7 +702,9 @@ export default function ConditionBuilder( {
 				</div>
 			) : (
 				<>
-					<p className="wccs-conditions__sentence">
+					{ /* The design prints the rule the way it reads, in its own
+					   result box, above the controls that compose it. */ }
+					<p className="condition-result wccs-conditions__sentence">
 						{ describe( rule, vocabulary, fieldLabel ) }
 					</p>
 

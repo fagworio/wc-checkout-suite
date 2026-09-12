@@ -39,8 +39,10 @@ export default function Field( {
 		[ helpId, errorId ].filter( Boolean ).join( ' ' ) || undefined;
 
 	return (
-		<div className={ `wccs-field${ error ? ' has-error' : '' }` }>
-			<label className="wccs-field__label" htmlFor={ id }>
+		<div
+			className={ `form-group wccs-field${ error ? ' has-error' : '' }` }
+		>
+			<label className="form-label wccs-field__label" htmlFor={ id }>
 				{ label }
 				{ required ? (
 					<>
@@ -65,13 +67,13 @@ export default function Field( {
 			} ) }
 
 			{ help ? (
-				<p className="wccs-field__help" id={ helpId }>
+				<p className="form-help wccs-field__help" id={ helpId }>
 					{ help }
 				</p>
 			) : null }
 
 			{ error ? (
-				<p className="wccs-field__error" id={ errorId }>
+				<p className="form-error wccs-field__error" id={ errorId }>
 					{ error }
 				</p>
 			) : null }

@@ -38,7 +38,7 @@ export function TextField( {
 			required={ rest.required }
 		>
 			<input
-				className="wccs-input"
+				className="input wccs-input"
 				type={ type }
 				value={ value ?? '' }
 				{ ...rest }
@@ -71,7 +71,7 @@ export function TextareaField( {
 			required={ rest.required }
 		>
 			<textarea
-				className="wccs-input wccs-input--textarea"
+				className="input wccs-input wccs-input--textarea"
 				rows={ rows }
 				value={ value ?? '' }
 				{ ...rest }
@@ -104,7 +104,7 @@ export function SelectField( {
 			required={ rest.required }
 		>
 			<select
-				className="wccs-input wccs-input--select"
+				className="input wccs-input wccs-input--select"
 				value={ value ?? '' }
 				{ ...rest }
 			>

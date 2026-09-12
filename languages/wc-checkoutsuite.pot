@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-12T12:52:46+00:00\n"
+"POT-Creation-Date: 2026-09-12T13:04:18+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.7.1\n"
 "X-Domain: wc-checkoutsuite\n"
@@ -99,7 +99,7 @@ msgstr ""
 #: src/Checkout/OrderEmailFields.php:343
 #: src/Privacy/OrderFieldsExporter.php:176
 #: resources/admin/app/components/ConditionBuilder.js:552
-#: resources/admin/app/components/ConditionBuilder.js:801
+#: resources/admin/app/components/ConditionBuilder.js:803
 #: resources/admin/app/SettingsScreen.js:203
 msgid "Yes"
 msgstr ""
@@ -109,7 +109,7 @@ msgstr ""
 #: src/Checkout/OrderEmailFields.php:343
 #: src/Privacy/OrderFieldsExporter.php:176
 #: resources/admin/app/components/ConditionBuilder.js:556
-#: resources/admin/app/components/ConditionBuilder.js:808
+#: resources/admin/app/components/ConditionBuilder.js:810
 #: resources/admin/app/SettingsScreen.js:204
 msgid "No"
 msgstr ""
@@ -1623,7 +1623,7 @@ msgstr ""
 
 #: resources/admin/app/components/ConditionBuilder.js:455
 #: resources/admin/app/components/ConditionBuilder.js:692
-#: resources/admin/app/components/ConditionBuilder.js:722
+#: resources/admin/app/components/ConditionBuilder.js:724
 msgid "Add a condition"
 msgstr ""
 
@@ -1655,7 +1655,7 @@ msgid "Choose a value…"
 msgstr ""
 
 #: resources/admin/app/components/ConditionBuilder.js:575
-#: resources/admin/app/components/ConditionBuilder.js:847
+#: resources/admin/app/components/ConditionBuilder.js:849
 msgid "Separate values with commas."
 msgstr ""
 
@@ -1679,40 +1679,40 @@ msgstr ""
 msgid "The list of sources and operators has not been loaded yet."
 msgstr ""
 
-#: resources/admin/app/components/ConditionBuilder.js:730
+#: resources/admin/app/components/ConditionBuilder.js:732
 msgid "Always show this field"
 msgstr ""
 
-#: resources/admin/app/components/ConditionBuilder.js:742
+#: resources/admin/app/components/ConditionBuilder.js:744
 msgid "This rule cannot be saved as it is"
 msgstr ""
 
-#: resources/admin/app/components/ConditionBuilder.js:758
+#: resources/admin/app/components/ConditionBuilder.js:760
 msgid "Try it"
 msgstr ""
 
-#: resources/admin/app/components/ConditionBuilder.js:761
+#: resources/admin/app/components/ConditionBuilder.js:763
 msgid "Fill in the values below to see what this rule decides. Nothing here is saved, and nothing is guessed for you."
 msgstr ""
 
-#: resources/admin/app/components/ConditionBuilder.js:770
+#: resources/admin/app/components/ConditionBuilder.js:772
 msgid "This rule does not read anything yet."
 msgstr ""
 
-#: resources/admin/app/components/ConditionBuilder.js:794
+#: resources/admin/app/components/ConditionBuilder.js:796
 msgid "Not answered"
 msgstr ""
 
 #. translators: %s: field label.
-#: resources/admin/app/components/ConditionBuilder.js:878
+#: resources/admin/app/components/ConditionBuilder.js:880
 msgid "Value of %s"
 msgstr ""
 
-#: resources/admin/app/components/ConditionBuilder.js:896
+#: resources/admin/app/components/ConditionBuilder.js:898
 msgid "With these values the rule matches, so the field is shown."
 msgstr ""
 
-#: resources/admin/app/components/ConditionBuilder.js:900
+#: resources/admin/app/components/ConditionBuilder.js:902
 msgid "With these values the rule does not match, so the field is hidden."
 msgstr ""
 
@@ -1733,7 +1733,7 @@ msgid_plural "%d problems prevent saving."
 msgstr[0] ""
 msgstr[1] ""
 
-#: resources/admin/app/components/Field.js:54
+#: resources/admin/app/components/Field.js:56
 msgid "(required)"
 msgstr ""
 
