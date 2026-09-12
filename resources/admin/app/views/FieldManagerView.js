@@ -27,6 +27,7 @@ import Dialog from '../components/Dialog';
 import FieldPicker from '../components/FieldPicker';
 import ArchiveView from './ArchiveView';
 import FieldProperties from './FieldProperties';
+import PreviewView from './PreviewView';
 import RulesView from './RulesView';
 import Notice from '../components/Notice';
 import PublishPanel from '../components/PublishPanel';
@@ -401,49 +402,120 @@ export default function FieldManagerView( { model } ) {
 		announceMove( field.label, to + 1 );
 	};
 
-	// Three of the frame's destinations are views of this one document — the editor, the
-	// archive and the rules — so they are rendered here, where the document lives, and
-	// switching between them does not reload anything. The branch sits after every hook
-	// on purpose: a component that returns before its hooks changes the order they run
-	// in, which React refuses.
+	// The design's topbar carries the same two actions on every view, and the four views
+	// are views of one document: the archive, the rules and the preview have nothing of
+	// their own to save, and publishing from any of them reviews the same draft. So the
+	// bar and the dialog it opens are built once, here, and every branch renders them.
+	const topbarActions = (
+		<TopbarActions>
+			<button
+				type="button"
+				className="btn"
+				disabled={ ! dirty || saving }
+				onClick={ onSave }
+			>
+				<Icon name="save" />
+				<span>{ __( 'Salvar rascunho', 'wc-checkoutsuite' ) }</span>
+			</button>
+			<button
+				type="button"
+				className="btn btn-primary"
+				onClick={ () => setPublishOpen( true ) }
+			>
+				<span>{ __( 'Revisar publicação', 'wc-checkoutsuite' ) }</span>
+				<Icon name="arrow" />
+			</button>
+		</TopbarActions>
+	);
+
+	/** The publication review, reachable from every view of the document. */
+	const publishDialog = (
+		<Dialog
+			open={ publishOpen }
+			size="publish"
+			eyebrow={ __( 'PUBLICAR', 'wc-checkoutsuite' ) }
+			title={ __( 'Revisar publicação', 'wc-checkoutsuite' ) }
+			subtitle={ __(
+				'O rascunho vira a versão que a loja corre. Publicar cria uma revisão nova e mantém a anterior.',
+				'wc-checkoutsuite'
+			) }
+			onClose={ () => setPublishOpen( false ) }
+			footer={
+				<>
+					<Button
+						variant="secondary"
+						onClick={ () => setPublishOpen( false ) }
+					>
+						{ __( 'Fechar', 'wc-checkoutsuite' ) }
+					</Button>
+					<Button
+						variant="primary"
+						busy={ publishing }
+						disabled={ publishing }
+						onClick={ onPublish }
+					>
+						{ __( 'Publicar alterações', 'wc-checkoutsuite' ) }
+					</Button>
+				</>
+			}
+		>
+			<PublishPanel
+				report={ report }
+				dirty={ dirty }
+				publishing={ publishing }
+				error={ publishError }
+				onPublish={ onPublish }
+			/>
+		</Dialog>
+	);
+
+	// Four of the frame's destinations are views of this one document — the editor, the
+	// preview, the archive and the rules — so they are rendered here, where the document
+	// lives, and switching between them does not reload anything. The branch sits after
+	// every hook on purpose: a component that returns before its hooks changes the order
+	// they run in, which React refuses.
 	if ( 'archive' === model.view ) {
 		return (
-			<ArchiveView
-				fields={ doc?.fields ?? [] }
-				catalog={ catalog }
-				onRestore={ model.onRestoreField }
-				onBack={ model.onBackToEditor }
-			/>
+			<>
+				{ topbarActions }
+				{ publishDialog }
+				<ArchiveView
+					fields={ doc?.fields ?? [] }
+					catalog={ catalog }
+					onRestore={ model.onRestoreField }
+					onBack={ model.onBackToEditor }
+				/>
+			</>
 		);
 	}
 
 	if ( 'rules' === model.view ) {
-		return <RulesView onBack={ model.onBackToEditor } />;
+		return (
+			<>
+				{ topbarActions }
+				{ publishDialog }
+				<RulesView onBack={ model.onBackToEditor } />
+			</>
+		);
+	}
+
+	if ( 'appearance' === model.view ) {
+		return (
+			<>
+				{ topbarActions }
+				{ publishDialog }
+				<PreviewView
+					document={ doc }
+					siteName={ model.siteName }
+					onBack={ model.onBackToEditor }
+				/>
+			</>
+		);
 	}
 
 	return (
 		<>
-			<TopbarActions>
-				<button
-					type="button"
-					className="btn"
-					disabled={ ! dirty || saving }
-					onClick={ onSave }
-				>
-					<Icon name="save" />
-					<span>{ __( 'Salvar rascunho', 'wc-checkoutsuite' ) }</span>
-				</button>
-				<button
-					type="button"
-					className="btn btn-primary"
-					onClick={ () => setPublishOpen( true ) }
-				>
-					<span>
-						{ __( 'Revisar publicação', 'wc-checkoutsuite' ) }
-					</span>
-					<Icon name="arrow" />
-				</button>
-			</TopbarActions>
+			{ topbarActions }
 
 			<section
 				className="view active"
@@ -1685,43 +1757,7 @@ export default function FieldManagerView( { model } ) {
 				/>
 			</Dialog>
 
-			<Dialog
-				open={ publishOpen }
-				size="publish"
-				eyebrow={ __( 'PUBLICAR', 'wc-checkoutsuite' ) }
-				title={ __( 'Revisar publicação', 'wc-checkoutsuite' ) }
-				subtitle={ __(
-					'O rascunho vira a versão que a loja corre. Publicar cria uma revisão nova e mantém a anterior.',
-					'wc-checkoutsuite'
-				) }
-				onClose={ () => setPublishOpen( false ) }
-				footer={
-					<>
-						<Button
-							variant="secondary"
-							onClick={ () => setPublishOpen( false ) }
-						>
-							{ __( 'Fechar', 'wc-checkoutsuite' ) }
-						</Button>
-						<Button
-							variant="primary"
-							busy={ publishing }
-							disabled={ publishing }
-							onClick={ onPublish }
-						>
-							{ __( 'Publicar alterações', 'wc-checkoutsuite' ) }
-						</Button>
-					</>
-				}
-			>
-				<PublishPanel
-					report={ report }
-					dirty={ dirty }
-					publishing={ publishing }
-					error={ publishError }
-					onPublish={ onPublish }
-				/>
-			</Dialog>
+			{ publishDialog }
 
 			<Dialog
 				open={ historyOpen }

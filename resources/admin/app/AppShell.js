@@ -143,17 +143,24 @@ function navigation( serverSections ) {
 /**
  * Renders the content of the active section.
  *
- * @param {Object} props          Component properties.
- * @param {string} props.section  Active section identifier.
- * @param {Object} [props.client] REST client, when the section needs one.
+ * @param {Object} props            Component properties.
+ * @param {string} props.section    Active section identifier.
+ * @param {Object} [props.client]   REST client, when the section needs one.
+ * @param {string} [props.siteName] Store name, for the screens that draw it.
  * @return {*} Rendered element tree.
  */
-function SectionContent( { section, client } ) {
+function SectionContent( { section, client, siteName } ) {
 	// The design's four destinations are views of one document: the editor, the checkout
 	// preview, the archive and the rules. They share the screen that owns the draft, so
 	// switching between them keeps the work in progress and reloads nothing.
 	if ( MANAGER_VIEWS.includes( section ) && client ) {
-		return <FieldsScreen client={ client } view={ section } />;
+		return (
+			<FieldsScreen
+				client={ client }
+				view={ section }
+				siteName={ siteName }
+			/>
+		);
 	}
 
 	if ( MANAGER_VIEWS.includes( section ) ) {
@@ -460,7 +467,11 @@ export default function AppShell( { sections, version, siteName, client } ) {
 						id="wccs-shell-content"
 						tabIndex={ -1 }
 					>
-						<SectionContent section={ current } client={ client } />
+						<SectionContent
+							section={ current }
+							client={ client }
+							siteName={ siteName }
+						/>
 					</main>
 				</div>
 			</div>

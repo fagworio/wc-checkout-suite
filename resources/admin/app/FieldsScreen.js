@@ -74,13 +74,18 @@ const FALLBACK_SECTION = 'order';
 /**
  * Fields screen.
  *
- * @param {Object} props        Component properties.
- * @param {any}    props.client REST client.
- * @param {string} [props.view] View the frame is showing: `fields`, `appearance`,
- *                              `archive` or `rules`.
+ * @param {Object} props            Component properties.
+ * @param {any}    props.client     REST client.
+ * @param {string} [props.view]     View the frame is showing: `fields`,
+ *                                  `appearance`, `archive` or `rules`.
+ * @param {string} [props.siteName] Store name, for the preview's mock header.
  * @return {*} Rendered element tree.
  */
-export default function FieldsScreen( { client, view = 'fields' } ) {
+export default function FieldsScreen( {
+	client,
+	view = 'fields',
+	siteName = '',
+} ) {
 	/**
 	 * The document and its local edit history.
 	 *
@@ -833,6 +838,7 @@ export default function FieldsScreen( { client, view = 'fields' } ) {
 					onBackToEditor: () => goTo( 'fields' ),
 					onRestoreField: ( /** @type {string} */ id ) =>
 						apply( setFieldEnabled( document, id, true ) ),
+					siteName,
 					reference: mode,
 					onReferenceChange: setMode,
 					onPreview,

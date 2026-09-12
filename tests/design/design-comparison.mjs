@@ -71,12 +71,11 @@ const said = await page.evaluate( () => ( {
 // The toast, from the same interaction in both documents: moving the first row down.
 // What this compares is the toast itself — where it sits, how it is shaped, how long
 // it stays — so the sentence differs only because the fields do.
-// The keyboard route, not the row's arrow buttons: in the real screen those sit at the
-// far right of the row and a click refuses to scroll to them, which the keyboard does
-// not need. It is also the shortcut the handle's own label advertises.
-const prototypeHandle = prototype.locator( '[data-drag]' ).first();
-await prototypeHandle.focus();
-await prototype.keyboard.press( 'Alt+ArrowDown' );
+// Switching to Blocks is the announcement that does not depend on what the store
+// happens to hold: it is offered on every document, and both screens answer it the
+// same way. (Dragging a row needs two rows in one section, which a store is free not
+// to have.)
+await prototype.locator( '[data-mode="blocks"]' ).first().click();
 await prototype.waitForTimeout( 300 );
 await prototype.screenshot( {
 	path: `${OUT}/prototype-toast.png`,
@@ -84,18 +83,48 @@ await prototype.screenshot( {
 } );
 const prototypeToast = await prototype.locator( '#toast' ).textContent();
 
-const adminHandle = page.locator( '.wccs-admin .field-row .drag-handle' ).first();
-await adminHandle.focus();
-await page.keyboard.press( 'Alt+ArrowDown' );
+await page
+	.locator( '.wccs-admin .contextbar .segmented button' )
+	.nth( 1 )
+	.click();
 await page.waitForTimeout( 300 );
 await page.screenshot( { path: `${OUT}/admin-toast.png`, fullPage: false } );
 const adminToast = await page.locator( '.wccs-admin .toast' ).textContent();
+
+// The preview, which is the screen where the two documents differ most: the prototype
+// fills it from its demo document and this one from the draft.
+await prototype.locator( '[data-view="preview"]' ).first().click();
+await prototype.waitForTimeout( 400 );
+await prototype.screenshot( { path: `${OUT}/prototype-preview.png`, fullPage: false } );
+const prototypePreview = await prototype.evaluate( () => ( {
+	fields: document.querySelectorAll( '#previewFields .public-field' ).length,
+	sections: document.querySelectorAll( '#previewFields .store-section' ).length,
+	caption: document.querySelector( '#previewCaption' )?.textContent ?? '',
+} ) );
+
+const preview = await browser.newPage( { viewport: { width: 1440, height: 950 } } );
+await preview.context().addCookies( await page.context().cookies() );
+preview.on( 'pageerror', ( error ) => errors.push( String( error.message ).slice( 0, 160 ) ) );
+await preview.goto( ADMIN.replace( 'section=fields', 'section=appearance' ), {
+	waitUntil: 'networkidle',
+	timeout: 45000,
+} );
+await preview.waitForTimeout( 900 );
+await preview.screenshot( { path: `${OUT}/admin-preview.png`, fullPage: false } );
+const adminPreview = await preview.evaluate( () => ( {
+	fields: document.querySelectorAll( '#previewView .public-field' ).length,
+	sections: document.querySelectorAll( '#previewView .store-section' ).length,
+	caption: document.querySelector( '#previewView .preview-caption' )?.textContent ?? '',
+	brand: document.querySelector( '#previewView .store-brand' )?.textContent ?? '',
+	device: document.querySelector( '#previewView .preview-shell' )?.className ?? '',
+} ) );
 
 console.log(
 	JSON.stringify(
 		{
 			...said,
 			toast: { prototype: prototypeToast, admin: adminToast },
+			preview: { prototype: prototypePreview, admin: adminPreview },
 			errors,
 		},
 		null,
