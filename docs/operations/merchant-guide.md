@@ -115,3 +115,79 @@ o pedido diz que existe, e a loja decide como entregar.
 2. **Nenhuma compatibilidade é prometida com "todos os gateways".** A matriz diz o que foi observado.
 3. **Nenhuma conformidade legal é prometida.** A política sugerida descreve o que o plugin faz; o que a
    loja deve dizer e guardar é decisão dela.
+
+## 8. Limitações conhecidas desta versão
+
+Cada linha diz o que **não** funciona, para que ninguém descubra isso num pedido perdido. A matriz
+funcional (`docs/operations/functional-matrix.md`) diz, linha a linha, o que foi executado e o que não foi.
+
+| limitação | o que ela significa na loja |
+|---|---|
+| **O Checkout Sidebar não existe** | por decisão de âmbito (ROADMAP §27). Não há tela, rota, opção nem componente incompleto dele |
+| **Homologação de pagamento vazia** | nenhum gateway foi corrido em sandbox, então todos aparecem `undecided` e a apresentação personalizada **recusa-se a assumir** o checkout enquanto houver um gateway não homologado: nesse caso a loja segue com o checkout da WooCommerce, inteiro, com os campos deste plugin |
+| **O checkout clássico não foi observado num browser** | esta loja serve o checkout de blocos; as linhas Classic da matriz estão cobertas na costura e pelos testes unitários |
+| **Um tipo de campo de uma extensão desativada não é desenhado** | o campo e o valor guardado continuam lá, e o adaptador diz que o saltou; reativar a extensão volta a desenhá-lo |
+| **Um campo controlado colocado na página do checkout não se liga sozinho à loja de valores** | o registo por omissão constrói o componente uma vez; a colocação por omissão é a costura documentada em `docs/api/extension-contracts.md` e está registada em `docs/compatibility.json` |
+| **Sem JavaScript, quatro coisas degradam** | máscaras, visibilidade condicional, upload de ficheiro e validação remota. Os campos simples e a validação no servidor continuam |
+| **Nenhuma conformidade legal é prometida** | ver §7 |
+| **O diretório privado pode não estar protegido pelo servidor** | o plugin verifica-o e, quando o ficheiro é servido por HTTP, **recusa uploads** em vez de os aceitar sem proteção |
+
+## 9. Desinstalação — o que sai e o que fica
+
+**Onde:** `Plugins → Desativar`, e depois `Eliminar`.
+
+**Desativar** faz duas coisas e mais nada: tira o trabalho agendado do plugin do calendário do WordPress
+e para de carregar o plugin. A **loja continua a funcionar** com o checkout da WooCommerce, os campos
+deixam de aparecer, e nada é apagado.
+
+**Eliminar** (`uninstall.php`) remove apenas o que só faz sentido com o plugin instalado:
+
+| removido | mantido, de propósito |
+|---|---|
+| o evento agendado da retenção | o **esquema** (rascunho, publicado e o histórico de revisões) |
+| o veredicto em cache sobre o diretório privado | a **escolha da apresentação** personalizada |
+| os *transients* do próprio plugin | os **valores nos pedidos** (ficam onde sempre estiveram: no pedido) |
+| | os **ficheiros privados** registados em `wccs_uploads` |
+
+Ou seja: **eliminar o plugin não apaga pedidos nem configuração**, e a razão é a de ROADMAP §27 — um
+pedido histórico não é apagado por uma desinstalação. Quem quiser mesmo remover a configuração tem um
+caminho deliberado: exportar o esquema em `WooCommerce → CheckoutSuite → Exportar` **antes** de eliminar,
+e só depois remover as opções `wccs_schema_*` e `wccs_custom_checkout` à mão, sabendo o que está a fazer.
+
+## 10. Backup e restauração
+
+**O que guardar, e por quê:**
+
+| o quê | onde vive | por quê |
+|---|---|---|
+| Esquema publicado e histórico | opções `wccs_schema_published` e `wccs_schema_revisions` | é o trabalho de configuração do lojista; um backup da base de dados leva-o |
+| Escolha da apresentação | opção `wccs_custom_checkout` | decide se a Suite apresenta o checkout |
+| Valores que os clientes responderam | meta do pedido | viajam com o pedido no backup normal da loja |
+| Ficheiros entregues | `wp-content/wc-checkoutsuite-private/` | **não** estão na base de dados: um backup só da base perde-os |
+| Exportação do esquema | ficheiro JSON, em `Exportar` | é a única cópia independente da base de dados, e é o que se importa numa loja nova |
+
+**Restauração de um backup:** repor a base de dados e o diretório de ficheiros repõe o plugin no estado
+em que estava. Se a base for reposta mas os ficheiros privados não, os pedidos continuam legíveis e os
+documentos entregues aparecem como em falta — nada mais quebra.
+
+**Voltar atrás numa alteração de esquema não precisa de backup:** `WooCommerce → CheckoutSuite →
+Histórico` restaura qualquer revisão publicada, e a restauração publica o conteúdo antigo como uma
+revisão **nova** (o histórico nunca é reescrito). Ver `docs/validation/WCCS-065.md`.
+
+## 11. Suporte — o que juntar antes de pedir ajuda
+
+O plugin não tem canal de suporte definido nesta versão (é uma decisão comercial do produto). O que ele
+tem é o material que qualquer conversa de suporte precisa, todo ele obtido sem editar código:
+
+1. **A tela de diagnóstico** (`WooCommerce → CheckoutSuite → Diagnóstico`): o que o store suporta por
+   tipo de campo, o que cada adaptador não conseguiu desenhar e por quê, e o estado de homologação de
+   cada gateway.
+2. **A versão exata** — `Plugins` mostra a versão do plugin; as versões de WordPress, WooCommerce e PHP
+   estão em `Ferramentas → Saúde do site → Informação`.
+3. **A matriz funcional** (`docs/operations/functional-matrix.md`): diz o que foi testado nesta versão,
+   para que ninguém investigue como defeito algo que está registado como não executado.
+4. **O registo de compatibilidade** (`docs/compatibility.json`): o que foi verificado contra qual versão.
+5. **A exportação do esquema**, quando o problema é de configuração: reproduz o estado exato sem acesso
+   à loja.
+
+Nunca inclua num pedido de suporte valores que clientes escreveram, ficheiros entregues ou credenciais.
