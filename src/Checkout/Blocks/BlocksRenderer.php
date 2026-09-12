@@ -87,6 +87,17 @@ final class BlocksRenderer {
 			return false;
 		}
 
+		// WooCommerce's own answer first. It knows whether the store's checkout is the
+		// blocks one — including when the block comes from the block theme's template
+		// rather than from the page content, which is the case this gate got wrong: it
+		// parsed the page's content, found no block comment, and refused to deliver the
+		// fields to a checkout that was genuinely a Blocks checkout.
+		if ( class_exists( '\Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils' )
+			&& method_exists( '\Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils', 'is_checkout_block_default' )
+			&& \Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils::is_checkout_block_default() ) {
+			return true;
+		}
+
 		$page = get_post( wc_get_page_id( 'checkout' ) );
 
 		return $page instanceof \WP_Post && has_block( 'woocommerce/checkout', $page );
