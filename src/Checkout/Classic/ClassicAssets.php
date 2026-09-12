@@ -50,10 +50,19 @@ final class ClassicAssets {
 	/**
 	 * Registers the hooks.
 	 *
+	 * `enqueue` is hooked with zero accepted arguments, and that is not a detail.
+	 * WordPress dispatches an action fired without arguments by appending a single
+	 * empty string — `do_action()` does it in core — so a callback that declared
+	 * `?bool $is_checkout = null` received `false` under PHP's coercive mode and
+	 * returned before enqueueing anything. The action's argument is not this
+	 * plugin's contract; the gate asks the request instead, which is what the
+	 * optional parameter is for. Kept as a callback of the class and not wrapped in
+	 * a closure so the storefront hook audit can still name it.
+	 *
 	 * @return void
 	 */
 	public static function register(): void {
-		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
+		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue' ), 10, 0 );
 		add_filter( 'body_class', array( __CLASS__, 'body_class' ) );
 	}
 

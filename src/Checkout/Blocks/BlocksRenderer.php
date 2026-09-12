@@ -61,10 +61,16 @@ final class BlocksRenderer {
 	/**
 	 * Registers the hook.
 	 *
+	 * Zero accepted arguments, for the reason spelled out on the classic half:
+	 * WordPress appends an empty string to an action fired without arguments, so a
+	 * callback declaring `?bool $is_blocks = null` was handed `false` and returned
+	 * before it enqueued anything. The gate asks the request; it does not read an
+	 * argument that belongs to whoever fired the action.
+	 *
 	 * @return void
 	 */
 	public static function register(): void {
-		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
+		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue' ), 10, 0 );
 	}
 
 	/**
