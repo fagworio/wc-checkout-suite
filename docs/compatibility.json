@@ -1288,6 +1288,40 @@
         "the_store_can_be_configured_without_editing_code": "WCCS-060: the merchant guide walks the five tasks the acceptance names — PF/PJ through the Brazilian presets and the rule editor, uploads with their privacy and their three retention rules, the layout through the opt-in switch and the token file, restore through the three paths that are not the same thing, and diagnostics that read the mode, its reason, the gateway homologation state and the per-type support",
         "the_guide_says_what_does_not_exist_yet": "WCCS-060: where a screen is still a placeholder the guide says so and gives the route that is reachable — the Import/Export section among them — because an instruction for a button that is not there is worse than no instruction"
       }
+    },
+    "F12": {
+      "title": "Hardening, acessibilidade e matriz final",
+      "gate": "Nenhum defeito crítico de pagamento, exposição de dados ou perda de configuração; matriz publicada.",
+      "gate_met": false,
+      "tasks": {
+        "WCCS-061": "completed",
+        "WCCS-062": "planned",
+        "WCCS-063": "planned",
+        "WCCS-064": "planned",
+        "WCCS-065": "planned"
+      },
+      "why_gate_is_open": "One of the phase's five tasks is complete. The gate is a statement about defects and a published matrix: no critical defect in payment, in data exposure or in configuration loss, and the final matrix published. The security suite exercised the seven classes and found no defect of its own, but the gate cannot be met by one class of testing: the functional matrix (062), the browser and accessibility review (063, which is where every observation gap the earlier phases recorded converges), performance (064) and recovery (065) are still planned, and the payment half of the matrix needs a gateway with sandbox credentials — SANDBOX-PAYMENT.",
+      "way_forward": "WCCS-062 runs the functional matrix across Classic and Blocks, HPOS on and off, cart types, customers and the registered gateways by version — and its payment rows need the sandbox blocker resolved. WCCS-063 then opens the browser, which is the observation every phase since F04 has recorded as missing. WCCS-064 measures and WCCS-065 exercises recovery; the two together are the second half of the gate's first clause.",
+      "detail": " WCCS-061 assembled the seven security classes into one suite, and the value of that is the framing rather than the individual assertions: IDOR, XSS, CSRF, token replay, payloads, MIME and concurrency were each exercised where the feature that owns them was built, and a class asserted on its own is an assertion about a feature while the seven together are an assertion about the product. The suite asserts that a store user without permission on a particular order is refused with the same answer a missing order gets, because two different answers would be an enumeration oracle; that one stored value containing a script tag is escaped on all three surfaces that can show it — the customer's page, the staff screen and the e-mail body; that a submission with no nonce and one with a wrong nonce write nothing and that a write route without a session is refused; that binding a token that is not the owner's binds nothing and that repeating the submission is idempotent; that an oversized payload is refused before it is parsed and one from a newer format version is refused rather than partly read; that the MIME rule decides by what the file is rather than by what its name claims; and that a writer holding a revision that is no longer current is refused rather than allowed to overwrite. What the suite could not produce is stated rather than simulated: no multipart upload was performed, so the MIME class is asserted on the rule that decides it and the refusal of a shell script named document.txt remains where it was exercised, in WCCS-042; no concurrent PHP process was used, so concurrency is the compare-and-swap the writes actually take with two writers in one request; and the download refusal is named with a pointer to WCCS-044 because repeating it needs a stored upload and this store accepts none. Four of the suite's own assertions were wrong before it passed and all four are the same family: a request described as anonymous still carried the administrator session, so the 200 was right and the assertion was wrong; the harness did not clear the slots it owns before measuring, which is the fifth proof in this session to need that correction; the concurrency assertion required the first writer to win, which depends on the starting state rather than on what the store guarantees; and two assertions used methods that do not exist, invented from outside — the first died silently, the sixth time in this session that a harness died without a word.",
+      "quality_state": {
+        "phpcs_wordpress": "clean (exit 0)",
+        "phpstan_level_5": "no errors",
+        "php_unit": "396 tests, 1413 assertions",
+        "javascript": "607 tests across 37 suites",
+        "integration_assertions": "1277 across 54 proof harnesses, 0 failures",
+        "defects_found_and_fixed": [
+          "No product defect was found by the security suite. Four of its own assertions were wrong before it passed: a request described as anonymous still carried the administrator session, so the 200 it received was correct; the harness did not clear the schema slots it owns before measuring, the fifth proof in this session to need that correction; the concurrency assertion required the first writer to win, which is a property of the starting state rather than of the store, and now asserts the guarantee that a writer holding a stale revision is refused; and two assertions called methods that do not exist (DownloadPolicy::refusal_status, UploadRules::ALLOWED_MIMES), invented from outside the code — the first died silently, the sixth silent harness death of the session."
+        ]
+      },
+      "gate_evidence": {
+        "idor": "WCCS-061: a store user without permission on a particular order is refused with the same status and the same code a missing order gets, so the endpoint is not an enumeration oracle",
+        "xss": "WCCS-061: one stored value containing a script tag is escaped on all three surfaces that can show it — the customer's order page, the staff order screen and the e-mail body",
+        "csrf": "WCCS-061: a submission with no nonce and one with a wrong nonce write nothing on the order screen, and a write route reachable without a session is refused",
+        "token_replay": "WCCS-061: binding a token that is not the owner's binds zero rows and repeating the same submission is idempotent; the download refusal is proven where it was built, in WCCS-044, because repeating it needs a stored upload this store cannot accept",
+        "payloads_and_mime": "WCCS-061: an oversized payload is refused before it is parsed, a file from a newer format version is refused rather than partly read, and the MIME rule refuses an application/x-php by what the file is rather than by what its name claims",
+        "concurrency": "WCCS-061: a writer holding a revision that is no longer current is refused instead of allowed to overwrite",
+        "not_observed": "No multipart upload and no concurrent process: the MIME class is asserted on the rule that decides it rather than through a real file, and concurrency is two writers in one request taking the compare-and-swap the store actually uses. No browser, no gateway with sandbox credentials and no second store, which are the gaps the earlier phases recorded and which F12's remaining tasks and F13 address"
+      }
     }
   },
   "compatibility_targets": {
