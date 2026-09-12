@@ -44,6 +44,25 @@
 	padding-bottom: 0;
 }
 
+/* Names the host also uses.
+ *
+ * Twenty of the design's class names are also described by wp-admin's own
+ * stylesheets — measured by reading the loaded sheets, not guessed: active, avatar,
+ * badge, content, devices, disabled, drag-over, error, green, icon, mobile, notice,
+ * purple, red, row-actions, search, select-all, selected, success and wrap. A host
+ * rule that describes the same name applies to our elements too.
+ *
+ * Only one of them needed an override to stay reachable — `.row-actions`, below.
+ * `tests/design/collision-check.mjs` measures the rest: every element of every
+ * colliding name, on four views, and reports the ones a merchant could not click.
+ * Today it reports none. It is worth re-running after a design change, and worth
+ * re-running after a WordPress upgrade, because the rule that moved `.row-actions`
+ * was not written by this plugin and can appear for another name without notice.
+ *
+ * A host rule can also change how a shared name looks without hiding it, and this
+ * check does not measure that: the screenshots do.
+ */
+
 /* `.row-actions` is wp-admin's own class. Its stylesheet parks the element far off
  * to the left — measured at -129 987px — until a wp-admin list row is hovered, and
  * our rows are not wp-admin list rows: the row menu and the move arrows were
