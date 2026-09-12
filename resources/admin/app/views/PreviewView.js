@@ -93,6 +93,15 @@ export default function PreviewView( { document: doc, siteName, onBack } ) {
 	const [ findings, setFindings ] = useState(
 		/** @type {{missing: string[]}|null} */ ( null )
 	);
+
+	/**
+	 * The identifiers of the required fields that came back empty.
+	 *
+	 * Held apart from the summary because the design marks the field itself as well:
+	 * a sentence at the foot of the form telling the customer which field is wrong
+	 * makes them search for it.
+	 */
+	const [ missing, setMissing ] = useState( /** @type {string[]} */ ( [] ) );
 	const form = useRef( /** @type {any} */ ( null ) );
 
 	/** The sections the preview draws: those with at least one enabled field. */
@@ -150,7 +159,7 @@ export default function PreviewView( { document: doc, siteName, onBack } ) {
 		}
 
 		/** @type {string[]} */
-		const missing = [];
+		const blank = [];
 
 		sections.forEach( ( /** @type {any} */ group ) => {
 			group.fields.forEach( ( /** @type {any} */ field ) => {
@@ -166,12 +175,20 @@ export default function PreviewView( { document: doc, siteName, onBack } ) {
 				}
 
 				if ( '' === value ) {
-					missing.push( field.label || field.id );
+					blank.push( field.id );
 				}
 			} );
 		} );
 
-		setFindings( { missing } );
+		setMissing( blank );
+		setFindings( {
+			missing: sections
+				.flatMap( ( /** @type {any} */ group ) => group.fields )
+				.filter( ( /** @type {any} */ field ) =>
+					blank.includes( field.id )
+				)
+				.map( ( /** @type {any} */ field ) => field.label || field.id ),
+		} );
 	};
 
 	const name = siteName || __( 'Sua loja', 'wc-checkoutsuite' );
@@ -353,6 +370,9 @@ export default function PreviewView( { document: doc, siteName, onBack } ) {
 														<PreviewField
 															key={ field.id }
 															field={ field }
+															invalid={ missing.includes(
+																field.id
+															) }
 														/>
 													)
 												) }
@@ -634,11 +654,12 @@ export default function PreviewView( { document: doc, siteName, onBack } ) {
 /**
  * One field, drawn the way the design draws a public field.
  *
- * @param {Object} props       Component properties.
- * @param {any}    props.field Field definition.
+ * @param {Object}  props           Component properties.
+ * @param {any}     props.field     Field definition.
+ * @param {boolean} [props.invalid] Whether the last check found it empty.
  * @return {*} Rendered element tree.
  */
-function PreviewField( { field } ) {
+function PreviewField( { field, invalid = false } ) {
 	const control = controlFor( field );
 	const columns = Number( field?.layout?.desktop ?? 12 );
 	const label = field.label || field.id;
@@ -762,10 +783,18 @@ function PreviewField( { field } ) {
 	if ( 'checkbox' === control ) {
 		return (
 			<div
-				className="public-field"
+				className={ 'public-field' + ( invalid ? ' has-error' : '' ) }
 				style={ { gridColumn: `span ${ columns }` } }
 			>
 				{ input() }
+				{ invalid ? (
+					<p className="field-error">
+						{ __(
+							'Preencha este campo para continuar.',
+							'wc-checkoutsuite'
+						) }
+					</p>
+				) : null }
 				{ help }
 			</div>
 		);
@@ -773,7 +802,7 @@ function PreviewField( { field } ) {
 
 	return (
 		<div
-			className="public-field"
+			className={ 'public-field' + ( invalid ? ' has-error' : '' ) }
 			style={ { gridColumn: `span ${ columns }` } }
 		>
 			<label htmlFor={ inputId }>
@@ -785,6 +814,14 @@ function PreviewField( { field } ) {
 				) }
 			</label>
 			{ input() }
+			{ invalid ? (
+				<p className="field-error">
+					{ __(
+						'Preencha este campo para continuar.',
+						'wc-checkoutsuite'
+					) }
+				</p>
+			) : null }
 			{ help }
 		</div>
 	);

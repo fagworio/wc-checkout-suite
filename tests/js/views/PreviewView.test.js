@@ -152,6 +152,11 @@ describe( 'the connected preview', () => {
 		expect( screen.getByRole( 'status' ) ).toHaveTextContent(
 			'Os campos obrigatórios da prévia estão preenchidos'
 		);
+
+		// And clears the mark once the field has a value.
+		expect(
+			screen.queryByText( 'Preencha este campo para continuar.' )
+		).not.toBeInTheDocument();
 	} );
 
 	it( 'says there is nothing to preview when no field is enabled', () => {
@@ -184,5 +189,33 @@ describe( 'the connected preview', () => {
 		expect(
 			globalThis.document.querySelectorAll( 'input[name*="cvv"]' )
 		).toHaveLength( 0 );
+	} );
+
+	it( 'marks the field itself, not only the summary', async () => {
+		const user = userEvent.setup();
+
+		render(
+			<PreviewView
+				document={ doc( [
+					field( { label: 'CPF', required: true } ),
+				] ) }
+				onBack={ () => {} }
+			/>
+		);
+
+		await user.click(
+			screen.getByRole( 'button', {
+				name: /Validar campos da prévia/,
+			} )
+		);
+
+		// A sentence at the foot of the form telling the customer which field is
+		// wrong makes them search for it; the design marks the field.
+		expect(
+			screen.getByLabelText( /CPF/ ).closest( '.public-field' )
+		).toHaveClass( 'has-error' );
+		expect(
+			screen.getByText( 'Preencha este campo para continuar.' )
+		).toBeInTheDocument();
 	} );
 } );
