@@ -31,6 +31,7 @@ use WCCheckoutSuite\Checkout\Classic\ClassicValidation;
 use WCCheckoutSuite\Http\Admin\CatalogController;
 use WCCheckoutSuite\Admin\Orders\OrderFieldsPanel;
 use WCCheckoutSuite\Checkout\CustomerOrderFields;
+use WCCheckoutSuite\Checkout\OrderEmailFields;
 use WCCheckoutSuite\Http\Admin\SchemaController;
 use WCCheckoutSuite\Http\Admin\SettingsController;
 use WCCheckoutSuite\Http\Checkout\ValidationController;
@@ -247,6 +248,12 @@ final class Plugin {
 		// has already decided this order may be seen by this person — the policy this
 		// plugin adds is per field, not a second access check.
 		CustomerOrderFields::register();
+
+		// The order e-mails. The hook every order e-mail template fires carries which
+		// audience the message is for and which format part is being rendered, so the two
+		// projections — customer or store, HTML or text — are decided from what the
+		// platform hands over rather than from a setting that could disagree with it.
+		OrderEmailFields::register();
 		Assets::register();
 
 		/**
