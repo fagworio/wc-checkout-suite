@@ -56,13 +56,22 @@ for (const width of WIDTHS) {
 	const response = await page.goto(CHECKOUT, { waitUntil: 'networkidle', timeout: 45000 });
 	const status = response ? response.status() : 0;
 	const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+	// Both surfaces: the store's checkout is served as the classic one (WooCommerce enqueues
+	// wc-checkout-js and not wc-blocks-checkout), so the region to look for is the classic scope
+	// this plugin puts on the body, and the Blocks region is counted too in case the store
+	// switches. Reading one and calling it the other is what the last six rounds did.
 	const region = await page.locator('.wccs-blocks-field').count();
+	const classic = await page.evaluate(() => ({
+		scope: document.body.classList.contains('wccs-checkout'),
+		fields: document.querySelectorAll('.wccs-checkout .form-row').length,
+		stylesheet: Array.from(document.querySelectorAll('link[rel=stylesheet]')).some((link) => (link.getAttribute('href') || '').includes('presentation.css')),
+	}));
 	const scope = await page.evaluate(() => document.body.className.includes('woocommerce-checkout'));
 
 	record(`The checkout answers at ${width}px`, 200 === status, `status=${status}`);
 	record(`No horizontal overflow at ${width}px`, overflow <= 1, `overflow=${overflow}px`);
 	record(`The page is a checkout at ${width}px`, scope);
-	record(`The plugin region is on the page at ${width}px`, region > 0, `regions=${region}`);
+	record(`The plugin region is on the page at ${width}px`, region > 0 || classic.fields > 0, `blocks=${region} classic=${classic.fields} scope=${classic.scope} css=${classic.stylesheet}`);
 	record(`No uncaught script error at ${width}px`, 0 === errors.length, errors.join(' | '));
 
 	await page.close();
@@ -72,7 +81,7 @@ for (const width of WIDTHS) {
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce', storageState: state });
 await page.goto(CHECKOUT, { waitUntil: 'networkidle', timeout: 45000 });
 
-const control = page.locator('.wccs-blocks-field input, .wccs-blocks-field textarea, .wccs-blocks-field select').first();
+const control = page.locator('.wccs-blocks-field input, .wccs-blocks-field textarea, .wccs-blocks-field select, .wccs-checkout .form-row input, .wccs-checkout .form-row textarea, .wccs-checkout .form-row select').first();
 
 if (await control.count()) {
 	await control.focus();
