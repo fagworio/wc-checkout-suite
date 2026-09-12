@@ -80,15 +80,10 @@ await page
 	.click();
 await page.waitForTimeout( 300 );
 
-// The history, from the editor's footer. Clicked through the DOM because wp-admin's
-// own footer overlaps that strip of the screen — which is itself worth knowing.
-await page.evaluate( () => {
-	const button = Array.from( document.querySelectorAll( 'button' ) ).find(
-		( candidate ) => 'Revisões' === candidate.textContent.trim()
-	);
-
-	button?.click();
-} );
+// The history, from the editor's footer, with a real click: the footer used to sit
+// over this strip, and a click that only works through the DOM is a click a merchant
+// cannot make.
+await page.getByRole( 'button', { name: 'Revisões' } ).click();
 await page.waitForTimeout( 500 );
 await page.screenshot( { path: `${OUT}/admin-history.png`, fullPage: false } );
 const history = await page.evaluate( () =>
@@ -98,17 +93,72 @@ const history = await page.evaluate( () =>
 // The conditions, which are the controls the design's own markup styles: the shared
 // control library now carries `.form-group`, `.input` and `.form-help`, and the row
 // carries `.condition-row`.
-await page.locator( '.wccs-admin .field-info' ).first().click();
+// Reloaded rather than reused: the dialogs above leave focus and scroll where they
+// were, and a fresh document is what the merchant would be looking at anyway.
+await page.goto( ADMIN, { waitUntil: 'networkidle', timeout: 45000 } );
+await page.waitForTimeout( 900 );
+// The field that carries the rule, in its own section: the editor opens on the first
+// section, which is not where the probe's rule lives.
+await page
+	.locator( '.wccs-admin .section-tabs button', { hasText: 'Cobrança' } )
+	.first()
+	.click();
 await page.waitForTimeout( 300 );
-await page.getByRole( 'button', { name: 'Regras' } ).first().click();
+await page
+	.locator( '.wccs-admin .field-info', { hasText: 'Telefone' } )
+	.first()
+	.click();
 await page.waitForTimeout( 300 );
+await page
+	.locator( '.wccs-admin .inspector-tabs button' )
+	.nth( 1 )
+	.click();
+await page.waitForTimeout( 300 );
+// A rule the real vocabulary accepts: the builder's own button, not a document
+// written by hand, because a source key the vocabulary does not know renders nothing.
+// The builder is still worded in English inside the design's Portuguese inspector,
+// which is why the probe matches either: the copy is a separate finding.
+const addCondition = page.getByRole( 'button', {
+	name: /Adicionar condição|Add a condition/,
+} );
+
+if ( await addCondition.count() ) {
+	await addCondition.first().click();
+	await page.waitForTimeout( 300 );
+}
+
 await page.screenshot( { path: `${OUT}/admin-conditions.png`, fullPage: false } );
+// Is the wp-admin footer really over the screen's last strip, or was the click just
+// below the fold? Measured, because a workaround that hides a defect is worse than the
+// defect.
+const footer = await page.evaluate( () => {
+	const node = document.getElementById( 'wpfooter' );
+	const style = node ? getComputedStyle( node ) : null;
+	const strip = document.querySelector( '.wccs-admin .bottom-status' );
+
+	return {
+		position: style?.position ?? '',
+		bottom: style?.bottom ?? '',
+		height: style ? Math.round( node.getBoundingClientRect().height ) : 0,
+		stripBottom: strip
+			? Math.round( strip.getBoundingClientRect().bottom )
+			: 0,
+		footerTop: node ? Math.round( node.getBoundingClientRect().top ) : 0,
+	};
+} );
+
 const conditions = await page.evaluate( () => {
 	const row = document.querySelector( '.condition-row' );
 	const select = row?.querySelector( 'select' );
 	const label = row?.querySelector( 'label' );
 
 	return {
+		tabs: Array.from(
+			document.querySelectorAll( '.wccs-admin .inspector-tabs button' )
+		).map( ( b ) => b.textContent ),
+		panel: document.querySelector( '.wccs-admin .inspector-body' )
+			?.textContent.slice( 0, 120 ) ?? '',
+		builder: Boolean( document.querySelector( '.wccs-conditions' ) ),
 		rows: document.querySelectorAll( '.condition-row' ).length,
 		rowClass: row?.className ?? '',
 		selectClass: select?.className ?? '',
@@ -156,6 +206,7 @@ console.log(
 		{
 			publish,
 			history,
+			footer,
 			conditions,
 			mobileInspector: { prototype: prototypeMobile, admin: adminMobile },
 			errs,

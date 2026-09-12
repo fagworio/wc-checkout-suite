@@ -44,6 +44,16 @@
 	padding-bottom: 0;
 }
 
+/* wp-admin keeps its own footer absolutely positioned over the bottom of the
+ * content, which lands on the design's last strip — measured at 16px over the
+ * status line, and enough to make its buttons unclickable. The footer goes back into
+ * the flow, below the screen, instead of on top of it.
+ */
+#wpfooter:has(+ * .wccs-admin),
+body:has(.wccs-admin) #wpfooter {
+	position: static;
+}
+
 /* --- The design, as the prototype states it ---------------------------------
  * The prototype's own custom properties, aliased to the design tokens. Nothing
  * on `:root`: the alias lives on the element the application renders, which is
