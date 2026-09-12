@@ -99,7 +99,8 @@ final class DefinitionValidator {
 		$raw           = $definition->to_array();
 		$mask          = is_array( $raw['mask'] ) ? $raw['mask'] : null;
 		$storage       = $raw['storage'];
-		$visibility    = $raw['visibility'];
+		$destinations  = is_array( $raw['destinations'] ) ? $raw['destinations'] : array();
+		$approval      = is_array( $raw['approval'] ) ? $raw['approval'] : null;
 		$hidden_policy = (string) $raw['hidden_value_policy'];
 
 		// The mask.
@@ -169,49 +170,124 @@ final class DefinitionValidator {
 			);
 		}
 
-		// Visibility. Unknown keys are refused rather than ignored: silently
-		// dropping one would let a client believe it had configured an exposure it
-		// never configured.
-		if ( ! is_array( $visibility ) ) {
+		// Destinations. Each one decides its own section, title, order and actions, so
+		// each one is checked on its own: an unknown destination, an action it may not
+		// be allowed to perform, or a malformed entry is refused rather than dropped.
+		$result = $result->merge( $this->validate_destinations( $id, $destinations, $stores_value ) );
+
+		// The approval flow is separate from the destinations on purpose: a
+		// destination never enables it, and enabling it without the area it needs is
+		// configuration the plugin reports instead of completing in silence.
+		$result = $result->merge( $this->validate_approval( $id, $approval ) );
+
+		if ( ! in_array( $hidden_policy, DefinitionVocabulary::hidden_value_policy_values(), true ) ) {
 			$result = $result->merge(
 				ValidationResult::invalid(
-					'invalid_visibility',
-					__( 'The visibility of a field must be a map of audience to true or false.', 'wc-checkoutsuite' ),
+					'unknown_hidden_value_policy',
+					sprintf(
+						/* translators: 1: field id, 2: comma separated list of policies */
+						__( 'What happens to a hidden value of "%1$s" must be one of: %2$s.', 'wc-checkoutsuite' ),
+						$id,
+						implode( ', ', DefinitionVocabulary::hidden_value_policy_values() )
+					),
 					array( 'field' => $id )
 				)
 			);
-		} else {
-			foreach ( $visibility as $audience => $allowed ) {
-				if ( ! in_array( (string) $audience, DefinitionVocabulary::visibility_key_values(), true ) ) {
-					$result = $result->merge(
-						ValidationResult::invalid(
-							'unknown_visibility_audience',
-							sprintf(
-								/* translators: 1: audience key, 2: field id */
-								__( 'The audience "%1$s" is not one a field can be exposed to (field "%2$s").', 'wc-checkoutsuite' ),
-								(string) $audience,
-								$id
-							),
-							array( 'field' => $id )
-						)
-					);
-				} elseif ( ! is_bool( $allowed ) ) {
-					$result = $result->merge(
-						ValidationResult::invalid(
-							'invalid_visibility_value',
-							sprintf(
-								/* translators: 1: audience key, 2: field id */
-								__( 'The audience "%1$s" must be true or false (field "%2$s").', 'wc-checkoutsuite' ),
-								(string) $audience,
-								$id
-							),
-							array( 'field' => $id )
-						)
-					);
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Validates the destinations of a field.
+	 *
+	 * @param string               $id            Field identifier.
+	 * @param array<string, mixed> $destinations  Destination map.
+	 * @param bool                 $stores_value  Whether the type stores a value.
+	 * @return ValidationResult
+	 */
+	private function validate_destinations( string $id, array $destinations, bool $stores_value ): ValidationResult {
+		$result = ValidationResult::valid();
+
+		foreach ( $destinations as $key => $entry ) {
+			$key = (string) $key;
+
+			if ( ! in_array( $key, DefinitionVocabulary::destination_values(), true ) ) {
+				$result = $result->merge(
+					ValidationResult::invalid(
+						'unknown_destination',
+						sprintf(
+							/* translators: 1: destination key, 2: field id */
+							__( 'The destination "%1$s" is not one a field can be shown in (field "%2$s").', 'wc-checkoutsuite' ),
+							$key,
+							$id
+						),
+						array( 'field' => $id )
+					)
+				);
+
+				continue;
+			}
+
+			if ( ! is_array( $entry ) ) {
+				$result = $result->merge(
+					ValidationResult::invalid(
+						'invalid_destination',
+						sprintf(
+							/* translators: 1: destination key, 2: field id */
+							__( 'The destination "%1$s" must be a map (field "%2$s").', 'wc-checkoutsuite' ),
+							$key,
+							$id
+						),
+						array( 'field' => $id )
+					)
+				);
+
+				continue;
+			}
+
+			if ( isset( $entry['enabled'] ) && ! is_bool( $entry['enabled'] ) ) {
+				$result = $result->merge(
+					ValidationResult::invalid(
+						'invalid_destination',
+						sprintf(
+							/* translators: 1: destination key, 2: field id */
+							__( 'Whether "%1$s" shows the field must be true or false (field "%2$s").', 'wc-checkoutsuite' ),
+							$key,
+							$id
+						),
+						array( 'field' => $id )
+					)
+				);
+			}
+
+			if ( isset( $entry['actions'] ) ) {
+				$allowed = DefinitionVocabulary::actions_for_destination( $key );
+				$actions = is_array( $entry['actions'] ) ? $entry['actions'] : array( $entry['actions'] );
+
+				foreach ( $actions as $action ) {
+					if ( ! in_array( (string) $action, $allowed, true ) ) {
+						$result = $result->merge(
+							ValidationResult::invalid(
+								'invalid_destination_action',
+								sprintf(
+									/* translators: 1: action key, 2: destination key, 3: field id */
+									__( 'The action "%1$s" is not one "%2$s" can perform (field "%3$s").', 'wc-checkoutsuite' ),
+									(string) $action,
+									$key,
+									$id
+								),
+								array( 'field' => $id )
+							)
+						);
+					}
 				}
 			}
 
-			if ( ! $stores_value && ! empty( $visibility['public_api'] ) ) {
+			// A field that stores nothing cannot be shown outside the site: there is
+			// no value to expose, and saying it is exposed would be a promise the
+			// store cannot keep.
+			if ( ! $stores_value && 'public_api' === $key && ! empty( $entry['enabled'] ) ) {
 				$result = $result->merge(
 					ValidationResult::invalid(
 						'visibility_exposes_missing_value',
@@ -226,17 +302,51 @@ final class DefinitionValidator {
 			}
 		}
 
-		if ( ! in_array( $hidden_policy, DefinitionVocabulary::hidden_value_policy_values(), true ) ) {
+		return $result;
+	}
+
+	/**
+	 * Validates the optional approval flow.
+	 *
+	 * Approving means holding an order back, so the flow is only complete when it
+	 * says where the review happens. An incomplete flow is refused: the plugin points
+	 * at what is missing instead of creating links or permissions in silence.
+	 *
+	 * @param string                    $id       Field identifier.
+	 * @param array<string, mixed>|null $approval Approval configuration, or null.
+	 * @return ValidationResult
+	 */
+	private function validate_approval( string $id, ?array $approval ): ValidationResult {
+		$result = ValidationResult::valid();
+
+		if ( null === $approval || empty( $approval['require_review'] ) ) {
+			return $result;
+		}
+
+		$missing = array();
+
+		if ( empty( $approval['area'] ) ) {
+			$missing[] = 'area';
+		}
+
+		if ( empty( $approval['section'] ) ) {
+			$missing[] = 'section';
+		}
+
+		if ( array() !== $missing ) {
 			$result = $result->merge(
 				ValidationResult::invalid(
-					'unknown_hidden_value_policy',
+					'approval_incomplete',
 					sprintf(
-						/* translators: 1: field id, 2: comma separated list of policies */
-						__( 'What happens to a hidden value of "%1$s" must be one of: %2$s.', 'wc-checkoutsuite' ),
+						/* translators: 1: field id, 2: comma separated list of missing keys */
+						__( 'The approval flow of "%1$s" needs: %2$s.', 'wc-checkoutsuite' ),
 						$id,
-						implode( ', ', DefinitionVocabulary::hidden_value_policy_values() )
+						implode( ', ', $missing )
 					),
-					array( 'field' => $id )
+					array(
+						'field'   => $id,
+						'missing' => $missing,
+					)
 				)
 			);
 		}
@@ -321,6 +431,30 @@ final class DefinitionValidator {
 	 * claimed a WooCommerce identifier as a custom field of its own would be a way
 	 * around the guard — and being able to park that in a draft and publish it
 	 * later is the same hole one step removed.
+	 *
+	 * @param FieldDefinition $definition Definition.
+	 * @return ValidationResult
+	 */
+	public function validate_links( FieldDefinition $definition ): ValidationResult {
+		$raw      = $definition->to_array();
+		$type     = $this->types->get( $definition->type() );
+		$supports = null !== $type ? $type->supports() : array();
+		$stores   = isset( $supports['value'] ) && true === $supports['value'];
+
+		return $this->validate_destinations(
+			$definition->id(),
+			is_array( $raw['destinations'] ) ? $raw['destinations'] : array(),
+			$stores
+		)->merge(
+			$this->validate_approval(
+				$definition->id(),
+				is_array( $raw['approval'] ) ? $raw['approval'] : null
+			)
+		);
+	}
+
+	/**
+	 * Validates the origin rule of a definition.
 	 *
 	 * @param FieldDefinition $definition Definition.
 	 * @return ValidationResult

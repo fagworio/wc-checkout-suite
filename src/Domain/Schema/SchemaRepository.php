@@ -175,6 +175,18 @@ final class SchemaRepository {
 			return WriteResult::invalid( $sections->errors() );
 		}
 
+		// And the destination rules, for the same reason the origin rule is here: a
+		// link to a destination that does not exist, an action a destination may not
+		// perform, or an approval flow that does not say where the review happens is
+		// not work in progress — it is a configuration the merchant believes is in
+		// place. The alternative is refusing it at publication, which is a moment
+		// where the reason is already three screens away.
+		$destinations = $this->check_destinations( $document );
+
+		if ( ! $destinations->is_valid() ) {
+			return WriteResult::invalid( $destinations->errors() );
+		}
+
 		$new_raw = (string) wp_json_encode( $document->to_array() );
 
 		if ( $this->cas_write( $option, $new_raw, $current_raw ) ) {
@@ -184,6 +196,30 @@ final class SchemaRepository {
 		$fresh = $this->raw( $option );
 
 		return WriteResult::conflict( null === $fresh ? 0 : $this->decode( $fresh )->revision() );
+	}
+
+	/**
+	 * Applies the destination and approval rules to a document.
+	 *
+	 * @param SchemaDocument $document Document to check.
+	 * @return ValidationResult
+	 */
+	private function check_destinations( SchemaDocument $document ): ValidationResult {
+		$result = ValidationResult::valid();
+
+		foreach ( $document->fields() as $raw_field ) {
+			if ( ! is_array( $raw_field ) ) {
+				continue;
+			}
+
+			$result = $result->merge(
+				$this->validator->validate_links(
+					FieldDefinition::from_array( $raw_field )
+				)
+			);
+		}
+
+		return $result;
 	}
 
 	/**

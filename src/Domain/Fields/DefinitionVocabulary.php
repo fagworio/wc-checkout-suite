@@ -154,6 +154,222 @@ final class DefinitionVocabulary {
 	}
 
 	/**
+	 * Where a stored answer may be shown, from ROADMAP.md section 4.
+	 *
+	 * This replaces the flat audience map the definition used to carry: a destination
+	 * decides its own section, title, order and actions, and starts disabled.
+	 *
+	 * @return array<int, array{value: string, label: string, description: string, actions: array<int, string>}>
+	 */
+	public static function destinations(): array {
+		return array(
+			array(
+				'value'       => 'admin_order',
+				'label'       => __( 'Order screen, for staff', 'wc-checkoutsuite' ),
+				'description' => __(
+					'Shown to staff when they open the order.',
+					'wc-checkoutsuite'
+				),
+				'actions'     => array( 'show_metadata', 'view', 'download', 'approve', 'resubmit' ),
+			),
+			array(
+				'value'       => 'customer_order',
+				'label'       => __( 'Order screen, for the customer', 'wc-checkoutsuite' ),
+				'description' => __(
+					'Shown to the customer who placed the order.',
+					'wc-checkoutsuite'
+				),
+				'actions'     => array( 'show_metadata', 'view', 'download', 'resubmit' ),
+			),
+			array(
+				'value'       => 'order_received',
+				'label'       => __( 'Order received page', 'wc-checkoutsuite' ),
+				'description' => __(
+					'Shown on the page the customer sees right after paying.',
+					'wc-checkoutsuite'
+				),
+				'actions'     => array( 'show_metadata', 'view', 'download' ),
+			),
+			array(
+				'value'       => 'customer_email',
+				'label'       => __( 'Emails to the customer', 'wc-checkoutsuite' ),
+				'description' => __(
+					'Included in the order emails the customer receives.',
+					'wc-checkoutsuite'
+				),
+				'actions'     => array( 'show_metadata', 'view', 'download' ),
+			),
+			array(
+				'value'       => 'admin_email',
+				'label'       => __( 'Emails to the store', 'wc-checkoutsuite' ),
+				'description' => __(
+					'Included in the order emails the store receives.',
+					'wc-checkoutsuite'
+				),
+				'actions'     => array( 'show_metadata', 'view', 'download' ),
+			),
+			array(
+				'value'       => 'customer_profile',
+				'label'       => __( 'Customer profile', 'wc-checkoutsuite' ),
+				'description' => __(
+					'Shown in the customer account, outside one order.',
+					'wc-checkoutsuite'
+				),
+				'actions'     => array( 'show_metadata', 'view' ),
+			),
+			array(
+				'value'       => 'public_api',
+				'label'       => __( 'Store API and webhooks', 'wc-checkoutsuite' ),
+				'description' => __(
+					'Exposed outside the site. Off unless something else needs it.',
+					'wc-checkoutsuite'
+				),
+				'actions'     => array( 'show_metadata', 'view' ),
+			),
+		);
+	}
+
+	/**
+	 * Valid destination keys.
+	 *
+	 * @return array<int, string>
+	 */
+	public static function destination_values(): array {
+		return self::values( self::destinations() );
+	}
+
+	/**
+	 * What a destination may be allowed to do with the answer.
+	 *
+	 * @return array<int, array{value: string, label: string, description: string}>
+	 */
+	public static function destination_actions(): array {
+		return array(
+			array(
+				'value'       => 'show_metadata',
+				'label'       => __( 'Show the file name and details', 'wc-checkoutsuite' ),
+				'description' => __( 'Name, size and when it was sent.', 'wc-checkoutsuite' ),
+			),
+			array(
+				'value'       => 'view',
+				'label'       => __( 'Open it', 'wc-checkoutsuite' ),
+				'description' => __( 'Read the file without taking a copy.', 'wc-checkoutsuite' ),
+			),
+			array(
+				'value'       => 'download',
+				'label'       => __( 'Download it', 'wc-checkoutsuite' ),
+				'description' => __( 'Take a copy of the file.', 'wc-checkoutsuite' ),
+			),
+			array(
+				'value'       => 'approve',
+				'label'       => __( 'Review and approve', 'wc-checkoutsuite' ),
+				'description' => __(
+					'Only for staff: decide whether the document is accepted.',
+					'wc-checkoutsuite'
+				),
+			),
+			array(
+				'value'       => 'resubmit',
+				'label'       => __( 'Send a new version', 'wc-checkoutsuite' ),
+				'description' => __(
+					'Replace the file that was sent before.',
+					'wc-checkoutsuite'
+				),
+			),
+		);
+	}
+
+	/**
+	 * Valid action keys.
+	 *
+	 * @return array<int, string>
+	 */
+	public static function destination_action_values(): array {
+		return self::values( self::destination_actions() );
+	}
+
+	/**
+	 * The actions one destination may be allowed to perform.
+	 *
+	 * @param string $destination Destination key.
+	 * @return array<int, string> Allowed actions, or an empty array for an unknown key.
+	 */
+	public static function actions_for_destination( string $destination ): array {
+		foreach ( self::destinations() as $entry ) {
+			if ( $entry['value'] === $destination ) {
+				return $entry['actions'];
+			}
+		}
+
+		return array();
+	}
+
+	/**
+	 * Every destination, disabled.
+	 *
+	 * Destinations start disabled on purpose: publishing a field to the checkout does
+	 * not put it on the order screen, in an e-mail or anywhere else. Without explicit
+	 * configuration there is no additional output.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	public static function default_destinations(): array {
+		$destinations = array();
+
+		foreach ( self::destination_values() as $key ) {
+			$destinations[ $key ] = array( 'enabled' => false );
+		}
+
+		return $destinations;
+	}
+
+	/**
+	 * Migrates the flat audience map a stored document may still carry.
+	 *
+	 * An audience that was on becomes an enabled destination with no section, title,
+	 * order or action of its own; an audience that was off stays disabled. Only the
+	 * legacy map is migrated — a definition carrying neither map has no destination
+	 * enabled, which is the rule the roadmap states.
+	 *
+	 * @param array<string, mixed> $visibility Legacy map.
+	 * @return array<string, array<string, mixed>>
+	 */
+	public static function destinations_from_visibility( array $visibility ): array {
+		$destinations = self::default_destinations();
+
+		foreach ( $visibility as $key => $allowed ) {
+			// What the legacy map held is carried through as it is, not interpreted:
+			// an audience the closed list does not know, and a value that is not
+			// true or false, both reach the validator, which refuses them. A
+			// migration that coerced them would turn a malformed stored document
+			// into a valid one and hide the defect that produced it.
+			$destinations[ (string) $key ] = array( 'enabled' => $allowed );
+		}
+
+		return $destinations;
+	}
+
+	/**
+	 * The flat audience map, derived from the destinations.
+	 *
+	 * Compatibility projection for the surfaces that still read the old map — the
+	 * inspector tab and the integration controller. WCCS-072 moves them to
+	 * `destinations`, and this method goes with them.
+	 *
+	 * @param array<string, mixed> $destinations Destination map.
+	 * @return array<string, bool>
+	 */
+	public static function visibility_from_destinations( array $destinations ): array {
+		$visibility = array();
+
+		foreach ( self::visibility_key_values() as $key ) {
+			$visibility[ $key ] = ! empty( $destinations[ $key ]['enabled'] );
+		}
+
+		return $visibility;
+	}
+
+	/**
 	 * What happens to a value when a condition hides its field.
 	 *
 	 * @return array<int, array{value: string, label: string, description: string}>
@@ -271,6 +487,8 @@ final class DefinitionVocabulary {
 			'storageScopes'        => self::storage_scopes(),
 			'storageSensitivities' => self::storage_sensitivities(),
 			'visibilityKeys'       => self::visibility_keys(),
+			'destinations'         => self::destinations(),
+			'destinationActions'   => self::destination_actions(),
 			'hiddenValuePolicies'  => self::hidden_value_policies(),
 		);
 	}

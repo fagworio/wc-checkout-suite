@@ -301,27 +301,166 @@ final class DefinitionValidatorTest extends TestCase {
 	}
 
 	/**
-	 * An audience that is not one a field can be shown to is refused rather than
+	 * A destination that is not one a field can be shown in is refused rather than
 	 * dropped, because dropping it would let a caller believe it had configured an
 	 * exposure it never configured.
 	 *
 	 * @return void
 	 */
-	public function test_an_unknown_audience_is_refused(): void {
+	public function test_an_unknown_destination_is_refused(): void {
 		$result = $this->validator()->validate_array(
+			array(
+				'id'           => 'billing_document',
+				'origin'       => 'custom',
+				'type'         => 'text',
+				'label'        => 'CPF',
+				'destinations' => array(
+					'admin_order' => array( 'enabled' => true ),
+					'twitter'     => array( 'enabled' => true ),
+				),
+			)
+		);
+
+		self::assertContains( 'unknown_destination', $result->error_codes() );
+	}
+
+	/**
+	 * A stored document carrying the legacy audience map is migrated, and an audience
+	 * the closed list does not know survives the migration so that it can be refused.
+	 *
+	 * @return void
+	 */
+	public function test_the_legacy_audience_map_is_migrated_and_not_silently_dropped(): void {
+		$definition = \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array(
 			array(
 				'id'         => 'billing_document',
 				'origin'     => 'custom',
 				'type'       => 'text',
 				'label'      => 'CPF',
 				'visibility' => array(
-					'admin_order' => true,
-					'twitter'     => true,
+					'admin_order'    => true,
+					'customer_order' => false,
+					'twitter'        => true,
 				),
 			)
 		);
 
-		self::assertContains( 'unknown_visibility_audience', $result->error_codes() );
+		self::assertTrue( $definition->shows_in( 'admin_order' ) );
+		self::assertFalse( $definition->shows_in( 'customer_order' ) );
+		self::assertFalse( $definition->shows_in( 'order_received' ) );
+
+		$result = $this->validator()->validate_array(
+			array(
+				'id'         => 'billing_document',
+				'origin'     => 'custom',
+				'type'       => 'text',
+				'label'      => 'CPF',
+				'visibility' => array( 'twitter' => true ),
+			)
+		);
+
+		self::assertContains( 'unknown_destination', $result->error_codes() );
+	}
+
+	/**
+	 * A field that carries no destination map shows nowhere: publishing to the
+	 * checkout does not put the answer on the order screen or in an e-mail.
+	 *
+	 * @return void
+	 */
+	public function test_no_destination_is_enabled_without_configuration(): void {
+		$definition = \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array(
+			array(
+				'id'     => 'billing_document',
+				'origin' => 'custom',
+				'type'   => 'text',
+				'label'  => 'CPF',
+			)
+		);
+
+		foreach ( \WCCheckoutSuite\Domain\Fields\DefinitionVocabulary::destination_values() as $key ) {
+			self::assertFalse( $definition->shows_in( $key ), $key );
+		}
+	}
+
+	/**
+	 * Approving is a staff action: a customer destination may not be allowed to
+	 * perform it.
+	 *
+	 * @return void
+	 */
+	public function test_a_destination_cannot_be_given_an_action_it_cannot_perform(): void {
+		$result = $this->validator()->validate_array(
+			array(
+				'id'           => 'billing_document',
+				'origin'       => 'custom',
+				'type'         => 'text',
+				'label'        => 'CPF',
+				'destinations' => array(
+					'customer_order' => array(
+						'enabled' => true,
+						'actions' => array( 'view', 'approve' ),
+					),
+				),
+			)
+		);
+
+		self::assertContains( 'invalid_destination_action', $result->error_codes() );
+	}
+
+	/**
+	 * An approval flow that says it holds orders back but not where the review
+	 * happens is incomplete, and the plugin points at it instead of completing it.
+	 *
+	 * @return void
+	 */
+	public function test_an_incomplete_approval_flow_is_refused(): void {
+		$result = $this->validator()->validate_array(
+			array(
+				'id'       => 'authorisation',
+				'origin'   => 'custom',
+				'type'     => 'file',
+				'label'    => 'Autorização',
+				'approval' => array( 'require_review' => true ),
+			)
+		);
+
+		self::assertContains( 'approval_incomplete', $result->error_codes() );
+	}
+
+	/**
+	 * A complete approval flow is accepted, and stays off when it is not asked for.
+	 *
+	 * @return void
+	 */
+	public function test_a_complete_approval_flow_is_accepted(): void {
+		$complete = $this->validator()->validate_array(
+			array(
+				'id'       => 'authorisation',
+				'origin'   => 'custom',
+				'type'     => 'file',
+				'label'    => 'Autorização',
+				'approval' => array(
+					'require_review' => true,
+					'area'           => 'admin_order',
+					'section'        => 'documentos_para_analise',
+				),
+			)
+		);
+
+		self::assertNotContains( 'approval_incomplete', $complete->error_codes() );
+
+		$off = $this->validator()->validate_array(
+			array(
+				'id'       => 'authorisation',
+				'origin'   => 'custom',
+				'type'     => 'file',
+				'label'    => 'Autorização',
+				'approval' => array( 'require_review' => false ),
+			)
+		);
+
+		self::assertNotContains( 'approval_incomplete', $off->error_codes() );
 	}
 
 	/**

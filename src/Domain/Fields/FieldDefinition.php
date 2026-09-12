@@ -42,8 +42,9 @@ final class FieldDefinition {
 	 * @param array<string, mixed>             $conditions         Visibility and requirement rules.
 	 * @param string                           $hidden_value_policy `discard` or `preserve`.
 	 * @param array<string, mixed>             $storage            Storage scope and sensitivity.
-	 * @param array<string, bool>              $visibility         Exposure per audience.
 	 * @param int                              $schema_version     Definition schema version.
+	 * @param array<string, mixed>             $destinations       Where the answer may be shown, per destination.
+	 * @param array<string, mixed>|null        $approval           Optional approval flow, or null.
 	 */
 	public function __construct(
 		private string $id,
@@ -65,9 +66,34 @@ final class FieldDefinition {
 		private array $conditions,
 		private string $hidden_value_policy,
 		private array $storage,
-		private array $visibility,
-		private int $schema_version
+		private int $schema_version,
+		private array $destinations = array(),
+		private ?array $approval = null
 	) {
+	}
+
+	/**
+	 * Where the answer may be shown, from the raw definition.
+	 *
+	 * Three cases, in order: a document that carries `destinations` is taken as it
+	 * is; a document carrying the legacy flat map is migrated, so a store upgrading
+	 * does not lose what it had configured; a document carrying neither has **no
+	 * destination enabled**, which is the rule ROADMAP.md section 4 states — nothing
+	 * appears anywhere without explicit configuration.
+	 *
+	 * @param array<string, mixed> $data Raw definition.
+	 * @return array<string, mixed>
+	 */
+	private static function destinations_from( array $data ): array {
+		if ( isset( $data['destinations'] ) && is_array( $data['destinations'] ) ) {
+			return $data['destinations'];
+		}
+
+		if ( isset( $data['visibility'] ) && is_array( $data['visibility'] ) ) {
+			return DefinitionVocabulary::destinations_from_visibility( $data['visibility'] );
+		}
+
+		return DefinitionVocabulary::default_destinations();
 	}
 
 	/**
@@ -109,11 +135,38 @@ final class FieldDefinition {
 			isset( $data['storage'] ) && is_array( $data['storage'] )
 				? $data['storage']
 				: DefinitionVocabulary::default_storage( true ),
-			isset( $data['visibility'] ) && is_array( $data['visibility'] )
-				? $data['visibility']
-				: DefinitionVocabulary::default_visibility( true ),
-			isset( $data['schema_version'] ) ? (int) $data['schema_version'] : 1
+			isset( $data['schema_version'] ) ? (int) $data['schema_version'] : 1,
+			self::destinations_from( $data ),
+			isset( $data['approval'] ) && is_array( $data['approval'] ) ? $data['approval'] : null
 		);
+	}
+
+	/**
+	 * Where this answer may be shown, per destination.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function destinations(): array {
+		return $this->destinations;
+	}
+
+	/**
+	 * Whether one destination is enabled for this field.
+	 *
+	 * @param string $destination Destination key.
+	 * @return bool
+	 */
+	public function shows_in( string $destination ): bool {
+		return ! empty( $this->destinations[ $destination ]['enabled'] );
+	}
+
+	/**
+	 * The optional approval flow, or null when there is none.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	public function approval(): ?array {
+		return $this->approval;
 	}
 
 	/**
@@ -309,7 +362,12 @@ final class FieldDefinition {
 			'conditions'          => $this->conditions,
 			'hidden_value_policy' => $this->hidden_value_policy,
 			'storage'             => $this->storage,
-			'visibility'          => $this->visibility,
+			'destinations'        => $this->destinations,
+			'approval'            => $this->approval,
+			// Compatibility projection: the inspector tab and the integration
+			// controller still read the flat map. WCCS-072 moves them to
+			// `destinations`, and this key goes with it.
+			'visibility'          => DefinitionVocabulary::visibility_from_destinations( $this->destinations ),
 			'schema_version'      => $this->schema_version,
 		);
 	}

@@ -487,9 +487,13 @@ $wccs_audience_type = wccs_proof_validate(
 	)
 );
 
+// The audience map became the destination map (ROADMAP.md section 4, F14): a stored
+// document carrying the old map is migrated, and what it held reaches the validator
+// as it was, so a value that is not true or false is still refused — now as a
+// malformed destination rather than as a malformed audience.
 wccs_proof_check(
-	'An audience has to be true or false, not a word',
-	in_array( 'invalid_visibility_value', $wccs_audience_type['codes'], true ),
+	'A destination has to be true or false, not a word',
+	in_array( 'invalid_destination', $wccs_audience_type['codes'], true ),
 	implode( ', ', $wccs_audience_type['codes'] )
 );
 
