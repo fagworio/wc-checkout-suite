@@ -9,6 +9,8 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Domain\Checkout;
 
+use WCCheckoutSuite\Checkout\Classic\ClassicAdapter;
+
 /**
  * The capability matrix of ROADMAP.md section 8, as data.
  *
@@ -24,9 +26,12 @@ namespace WCCheckoutSuite\Domain\Checkout;
  * among them. Everything else therefore needs a Suite component, which is what
  * section 8 calls "Blocks próprio" and what F07 provides.
  *
- * The Classic answer is "everything", and that is also a verified position rather
- * than a shrug: the classic checkout renders through PHP hooks this plugin owns,
- * so any registered type can be rendered there.
+ * The Classic answer is "anything this plugin has a rendering for", and the
+ * qualifier is the behavioural one rather than a shrug: the classic checkout
+ * renders through PHP hooks this plugin owns, so a type with a rendering is
+ * rendered there — and a type with none is skipped and said so, both by the
+ * adapter when it draws the form and by this class when the merchant is told what
+ * to expect.
  *
  * @see ROADMAP.md section 8
  */
@@ -111,11 +116,32 @@ final class AdapterCapabilities {
 	 */
 	public static function for_type( string $type, string $adapter ): array {
 		if ( self::CLASSIC === $adapter ) {
+			// The classic adapter renders through this plugin's own hooks, which is a
+			// capability of the adapter and not a promise about every type: a type for
+			// which no extension registers a control has no rendering there, and the
+			// adapter says so when it draws the form. Asking the adapter the same
+			// question here is what keeps this matrix from telling a merchant that a
+			// field will be rendered while the checkout silently skips it — the
+			// disagreement was found by the recovery run for a deactivated extension.
+			if ( ClassicAdapter::can_render( $type ) ) {
+				return array(
+					'level'  => self::NATIVE,
+					'reason' => __(
+						'The classic checkout renders this through the plugin\'s own hooks.',
+						'wc-checkoutsuite'
+					),
+				);
+			}
+
 			return array(
-				'level'  => self::NATIVE,
-				'reason' => __(
-					'The classic checkout renders this through the plugin\'s own hooks.',
-					'wc-checkoutsuite'
+				'level'  => self::UNSUPPORTED,
+				'reason' => sprintf(
+					/* translators: %s: field type key */
+					__(
+						'The classic checkout has no rendering for the type "%s", so the field is skipped rather than shown as something else.',
+						'wc-checkoutsuite'
+					),
+					$type
 				),
 			);
 		}
