@@ -12,7 +12,9 @@
  */
 import { chromium } from 'playwright';
 
-const URL = process.env.WCCS_URL || 'http://wpagf.dvl.to:8080/finalizar-compra/';
+const CHECKOUT = process.env.WCCS_URL || 'http://wpagf.dvl.to:8080/finalizar-compra/';
+const ORIGIN = new globalThis.URL( CHECKOUT ).origin;
+const PRODUCT = process.env.WCCS_PRODUCT || '';
 const WIDTHS = [320, 375, 768, 1280, 1440];
 const findings = [];
 const notes = [];
@@ -21,12 +23,27 @@ const record = (label, ok, detail = '') => findings.push({ label, ok: Boolean(ok
 
 const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox'] });
 
+// The checkout block renders only when there is something to check out. The first run of this
+// script opened the page with an empty cart and found that out: a page answering 200 is not the
+// same thing as a checkout rendering. The product is added through the storefront's own route,
+// which is what a customer does.
+const seed = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+
+if (PRODUCT) {
+	await seed.goto(`${ORIGIN}/?add-to-cart=${PRODUCT}`, { waitUntil: 'networkidle', timeout: 45000 });
+	notes.push(`Cart seeded with product ${PRODUCT}`);
+} else {
+	notes.push('No product was given, so the checkout was opened with an empty cart.');
+}
+
+const state = await seed.context().storageState();
+
 for (const width of WIDTHS) {
-	const page = await browser.newPage({ viewport: { width, height: 900 } });
+	const page = await browser.newPage({ viewport: { width, height: 900 }, storageState: state });
 	const errors = [];
 	page.on('pageerror', (error) => errors.push(String(error.message).slice(0, 120)));
 
-	const response = await page.goto(URL, { waitUntil: 'networkidle', timeout: 45000 });
+	const response = await page.goto(CHECKOUT, { waitUntil: 'networkidle', timeout: 45000 });
 	const status = response ? response.status() : 0;
 	const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
 	const region = await page.locator('.wccs-blocks-field').count();
@@ -42,8 +59,8 @@ for (const width of WIDTHS) {
 }
 
 // Focus and reduced motion, read once: the same page, one control focused.
-const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
-await page.goto(URL, { waitUntil: 'networkidle', timeout: 45000 });
+const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce', storageState: state });
+await page.goto(CHECKOUT, { waitUntil: 'networkidle', timeout: 45000 });
 
 const control = page.locator('.wccs-blocks-field input, .wccs-blocks-field textarea, .wccs-blocks-field select').first();
 
@@ -68,6 +85,7 @@ record('Reduced motion: no long transition survives the preference', 0 === trans
 const widths = await page.evaluate(() => Array.from(document.querySelectorAll('.wccs-blocks-field')).slice(0, 3).map((element) => Math.round(element.getBoundingClientRect().width)));
 notes.push(`Region widths at 1280px: ${JSON.stringify(widths)}`);
 
+await seed.close();
 await browser.close();
 
 for (const finding of findings) {
