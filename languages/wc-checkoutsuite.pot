@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-12T03:16:46+00:00\n"
+"POT-Creation-Date: 2026-09-12T10:54:02+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.7.1\n"
 "X-Domain: wc-checkoutsuite\n"
@@ -18,6 +18,7 @@ msgstr ""
 #: src/Admin/AdminMenu.php:55
 #: src/Admin/AdminMenu.php:56
 #: src/Privacy/PrivacyPolicy.php:57
+#: resources/admin/app/AppShell.js:138
 msgid "WC CheckoutSuite"
 msgstr ""
 
@@ -26,6 +27,7 @@ msgid "Advanced checkout field management for WooCommerce: field types, Brazilia
 msgstr ""
 
 #: src/Admin/AdminMenu.php:89
+#: resources/admin/app/FieldsScreen.js:587
 msgid "Fields"
 msgstr ""
 
@@ -38,6 +40,7 @@ msgid "Rules"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:101
+#: resources/admin/app/components/FieldInspector.js:515
 msgid "Appearance"
 msgstr ""
 
@@ -54,6 +57,7 @@ msgid "Diagnostics"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:117
+#: resources/admin/app/SettingsScreen.js:95
 msgid "Settings"
 msgstr ""
 
@@ -95,6 +99,9 @@ msgstr ""
 #: src/Checkout/CustomerOrderFields.php:181
 #: src/Checkout/OrderEmailFields.php:343
 #: src/Privacy/OrderFieldsExporter.php:176
+#: resources/admin/app/components/ConditionBuilder.js:552
+#: resources/admin/app/components/ConditionBuilder.js:801
+#: resources/admin/app/SettingsScreen.js:203
 msgid "Yes"
 msgstr ""
 
@@ -102,6 +109,9 @@ msgstr ""
 #: src/Checkout/CustomerOrderFields.php:181
 #: src/Checkout/OrderEmailFields.php:343
 #: src/Privacy/OrderFieldsExporter.php:176
+#: resources/admin/app/components/ConditionBuilder.js:556
+#: resources/admin/app/components/ConditionBuilder.js:808
+#: resources/admin/app/SettingsScreen.js:204
 msgid "No"
 msgstr ""
 
@@ -419,10 +429,12 @@ msgid "Cart total"
 msgstr ""
 
 #: src/Domain/Fields/BrazilianPresets.php:52
+#: resources/admin/app/components/PreviewFrame.js:176
 msgid "CPF"
 msgstr ""
 
 #: src/Domain/Fields/BrazilianPresets.php:53
+#: resources/admin/app/components/PreviewFrame.js:175
 msgid "CNPJ"
 msgstr ""
 
@@ -454,14 +466,17 @@ msgid "Person type (PF/PJ)"
 msgstr ""
 
 #: src/Domain/Fields/BrazilianPresets.php:108
+#: resources/admin/app/components/PreviewFrame.js:356
 msgid "Person type"
 msgstr ""
 
 #: src/Domain/Fields/BrazilianPresets.php:113
+#: resources/admin/app/components/PreviewFrame.js:102
 msgid "Individual"
 msgstr ""
 
 #: src/Domain/Fields/BrazilianPresets.php:117
+#: resources/admin/app/components/PreviewFrame.js:107
 msgid "Company"
 msgstr ""
 
@@ -487,6 +502,7 @@ msgid "Complement"
 msgstr ""
 
 #: src/Domain/Fields/BrazilianPresets.php:133
+#: resources/admin/app/components/PreviewFrame.js:192
 msgid "State registration"
 msgstr ""
 
@@ -1370,4 +1386,1167 @@ msgstr ""
 #. translators: 1: required PHP version, 2: current PHP version
 #: wc-checkoutsuite.php:89
 msgid "WC CheckoutSuite requires PHP %1$s or higher. This server runs PHP %2$s, so the plugin is inactive."
+msgstr ""
+
+#: resources/admin/app/AppShell.js:73
+msgid "Not built yet"
+msgstr ""
+
+#: resources/admin/app/AppShell.js:75
+msgid "Fields, Appearance, Settings and Diagnostics are the sections that work today. The remaining sections are built in later stages of the roadmap."
+msgstr ""
+
+#: resources/admin/app/AppShell.js:143
+msgid "Skip to content"
+msgstr ""
+
+#: resources/admin/app/AppShell.js:148
+msgid "Checkout suite sections"
+msgstr ""
+
+#: resources/admin/app/AppShell.js:154
+msgid "Your checkout"
+msgstr ""
+
+#. translators: %s: plugin version.
+#: resources/admin/app/AppShell.js:188
+msgid "Version %s"
+msgstr ""
+
+#: resources/admin/app/components/Badge.js:33
+msgid "Active"
+msgstr ""
+
+#: resources/admin/app/components/Badge.js:34
+msgid "Inactive"
+msgstr ""
+
+#: resources/admin/app/components/Badge.js:35
+msgid "Draft"
+msgstr ""
+
+#: resources/admin/app/components/Badge.js:36
+msgid "Published"
+msgstr ""
+
+#: resources/admin/app/components/Badge.js:37
+#: resources/admin/app/FieldsScreen.js:605
+msgid "Unsaved changes"
+msgstr ""
+
+#: resources/admin/app/components/Badge.js:38
+#: resources/admin/app/FieldsScreen.js:952
+msgid "Archived"
+msgstr ""
+
+#: resources/admin/app/components/Badge.js:39
+msgid "Error"
+msgstr ""
+
+#: resources/admin/app/components/Badge.js:77
+msgid "Native"
+msgstr ""
+
+#: resources/admin/app/components/Badge.js:78
+msgid "Suite component"
+msgstr ""
+
+#: resources/admin/app/components/Badge.js:79
+msgid "Limited"
+msgstr ""
+
+#: resources/admin/app/components/Badge.js:80
+msgid "Unsupported"
+msgstr ""
+
+#: resources/admin/app/components/BulkActions.js:93
+msgid "Archive the selected fields"
+msgstr ""
+
+#: resources/admin/app/components/BulkActions.js:96
+#: resources/admin/app/components/BulkActions.js:212
+#: resources/admin/app/FieldsScreen.js:1009
+msgid "Archive"
+msgstr ""
+
+#: resources/admin/app/components/BulkActions.js:109
+msgid "Enable the selected fields"
+msgstr ""
+
+#: resources/admin/app/components/BulkActions.js:112
+#: resources/admin/app/components/BulkActions.js:209
+msgid "Enable"
+msgstr ""
+
+#. translators: %s: section title.
+#: resources/admin/app/components/BulkActions.js:131
+msgid "Move the selected fields to %s"
+msgstr ""
+
+#: resources/admin/app/components/BulkActions.js:141
+#: resources/admin/app/components/BulkActions.js:234
+msgid "Move"
+msgstr ""
+
+#. translators: 1: show or hide, 2: audience name.
+#: resources/admin/app/components/BulkActions.js:175
+msgid "%1$s the selected fields for %2$s"
+msgstr ""
+
+#: resources/admin/app/components/BulkActions.js:177
+#: resources/admin/app/components/BulkActions.js:184
+#: resources/admin/app/components/BulkActions.js:257
+msgid "Show"
+msgstr ""
+
+#: resources/admin/app/components/BulkActions.js:178
+#: resources/admin/app/components/BulkActions.js:185
+#: resources/admin/app/components/BulkActions.js:263
+msgid "Hide"
+msgstr ""
+
+#: resources/admin/app/components/BulkActions.js:197
+msgid "Bulk actions"
+msgstr ""
+
+#. translators: %d: number of selected fields.
+#: resources/admin/app/components/BulkActions.js:202
+msgid "%d field(s) selected"
+msgstr ""
+
+#: resources/admin/app/components/BulkActions.js:215
+msgid "Clear selection"
+msgstr ""
+
+#: resources/admin/app/components/BulkActions.js:223
+msgid "Move to section"
+msgstr ""
+
+#: resources/admin/app/components/BulkActions.js:243
+msgid "Visibility"
+msgstr ""
+
+#: resources/admin/app/components/BulkActions.js:275
+msgid "Cancel"
+msgstr ""
+
+#: resources/admin/app/components/BulkActions.js:285
+msgid "Apply"
+msgstr ""
+
+#. translators: 1: number that will change, 2: number selected.
+#: resources/admin/app/components/BulkActions.js:293
+msgid "%1$d of %2$d selected field(s) will change."
+msgstr ""
+
+#: resources/admin/app/components/BulkActions.js:305
+msgid "Left alone because WooCommerce owns them"
+msgstr ""
+
+#: resources/admin/app/components/BulkActions.js:325
+msgid "Already in that state"
+msgstr ""
+
+#: resources/admin/app/components/Button.js:58
+msgid "(working…)"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:395
+msgid "Remove this condition"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:409
+msgid "Match"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:415
+msgid "All of"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:419
+msgid "Any of"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:436
+msgid "This group has nothing in it yet."
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:455
+#: resources/admin/app/components/ConditionBuilder.js:692
+#: resources/admin/app/components/ConditionBuilder.js:722
+msgid "Add a condition"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:464
+msgid "Add a group"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:488
+#: resources/admin/app/components/ConditionBuilder.js:515
+msgid "Field"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:493
+msgid "Choose a field…"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:516
+msgid "Identifier of the field this rule reads."
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:540
+#: resources/admin/app/components/ConditionBuilder.js:571
+#: resources/admin/app/components/FieldInspector.js:342
+msgid "Value"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:545
+msgid "Choose a value…"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:575
+#: resources/admin/app/components/ConditionBuilder.js:847
+msgid "Separate values with commas."
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:611
+msgid "Reads"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:638
+msgid "Comparison"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:673
+msgid "Choose the values that make this field appear on the checkout."
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:682
+msgid "This field is always shown."
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:696
+msgid "The list of sources and operators has not been loaded yet."
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:730
+msgid "Always show this field"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:742
+msgid "This rule cannot be saved as it is"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:758
+msgid "Try it"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:761
+msgid "Fill in the values below to see what this rule decides. Nothing here is saved, and nothing is guessed for you."
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:770
+msgid "This rule does not read anything yet."
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:794
+msgid "Not answered"
+msgstr ""
+
+#. translators: %s: field label.
+#: resources/admin/app/components/ConditionBuilder.js:878
+msgid "Value of %s"
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:896
+msgid "With these values the rule matches, so the field is shown."
+msgstr ""
+
+#: resources/admin/app/components/ConditionBuilder.js:900
+msgid "With these values the rule does not match, so the field is hidden."
+msgstr ""
+
+#: resources/admin/app/components/Dialog.js:68
+msgid "Close dialog"
+msgstr ""
+
+#. translators: %d: number of problems found.
+#: resources/admin/app/components/ErrorSummary.js:44
+msgid "%d problem prevents saving."
+msgid_plural "%d problems prevent saving."
+msgstr[0] ""
+msgstr[1] ""
+
+#: resources/admin/app/components/Field.js:54
+msgid "(required)"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:50
+#: resources/admin/app/components/PreviewFrame.js:46
+msgid "Desktop"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:51
+#: resources/admin/app/components/PreviewFrame.js:54
+msgid "Tablet"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:52
+#: resources/admin/app/components/PreviewFrame.js:62
+msgid "Mobile"
+msgstr ""
+
+#. translators: 1: minimum length, 2: maximum length.
+#: resources/admin/app/components/FieldInspector.js:104
+msgid "Between %1$d and %2$d characters."
+msgstr ""
+
+#. translators: 1: minimum value, 2: maximum value.
+#: resources/admin/app/components/FieldInspector.js:115
+msgid "From %1$s to %2$s."
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:231
+msgid "None yet."
+msgstr ""
+
+#. translators: 1: setting name, 2: position.
+#: resources/admin/app/components/FieldInspector.js:245
+msgid "%1$s %2$d"
+msgstr ""
+
+#. translators: 1: setting name, 2: position.
+#: resources/admin/app/components/FieldInspector.js:257
+msgid "Remove %1$s %2$d"
+msgstr ""
+
+#. translators: %s: setting name.
+#: resources/admin/app/components/FieldInspector.js:279
+msgid "Add %s"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:322
+msgid "Options"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:327
+msgid "A field with choices needs at least one option before it can be published."
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:350
+#: resources/admin/app/components/FieldInspector.js:555
+msgid "Label"
+msgstr ""
+
+#. translators: %d: position of the option.
+#: resources/admin/app/components/FieldInspector.js:359
+msgid "Remove option %d"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:380
+msgid "Add option"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:402
+msgid "This type declares no settings of its own."
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:514
+msgid "General"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:518
+msgid "Mask and validation"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:522
+msgid "Storage and visibility"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:524
+msgid "Advanced"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:533
+msgid "Conditions"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:548
+#: resources/admin/app/FieldsScreen.js:1215
+msgid "Field properties"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:569
+#: resources/admin/app/FieldsScreen.js:1170
+msgid "Description"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:573
+msgid "Shown under the field, to explain what is expected."
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:591
+#: resources/admin/app/FieldsScreen.js:944
+msgid "Required"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:610
+msgid "WooCommerce requires this field. Making it optional needs an impact assessment and is refused by the server."
+msgstr ""
+
+#. translators: %s: device name.
+#: resources/admin/app/components/FieldInspector.js:627
+msgid "Width on %s"
+msgstr ""
+
+#. translators: %d: number of columns.
+#: resources/admin/app/components/FieldInspector.js:641
+msgid "%d of 12 columns"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:670
+msgid "Mask"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:674
+msgid "A mask shapes what is typed. It never replaces validation."
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:682
+msgid "No mask"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:717
+msgid "This type cannot be masked, so no mask is offered."
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:734
+msgid "Uploads are stored privately and reached through a token on the order, never through a public URL."
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:759
+msgid "WooCommerce persists this field through its own flow, so where its value is kept is not a choice here."
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:768
+msgid "Where the value is kept"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:797
+msgid "This type stores no value, so nothing is kept."
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:806
+msgid "How sensitive the value is"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:837
+msgid "Where the value may be shown"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:874
+msgid "This type stores no value, so there is nothing to show anywhere."
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:884
+msgid "When a rule hides the field"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:914
+msgid "Identifier"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:918
+msgid "Integration key"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:924
+msgid "Type"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:926
+msgid "Preset"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:928
+msgid "Origin"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:931
+#: resources/admin/app/components/FieldPicker.js:140
+#: resources/admin/app/FieldsScreen.js:936
+msgid "WooCommerce"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:935
+msgid "Created here"
+msgstr ""
+
+#: resources/admin/app/components/FieldInspector.js:949
+msgid "WooCommerce field"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:116
+msgid "No WooCommerce field matches the search."
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:186
+msgid "All"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:236
+msgid "Search fields"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:241
+msgid "CPF, address, upload…"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:250
+msgid "Add to section"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:265
+msgid "Loading the field list…"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:272
+msgid "The field list could not be loaded"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:283
+msgid "Category"
+msgstr ""
+
+#. translators: %s: the search term.
+#: resources/admin/app/components/FieldPicker.js:295
+msgid "Nothing matches \"%s\". Try a shorter term or another category."
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:307
+msgid "Ready-made fields"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:399
+msgid "WooCommerce fields"
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:409
+msgid "WooCommerce fields of your store. Adding one lets you rename, describe and resize it; it cannot be archived or removed, because the checkout depends on it."
+msgstr ""
+
+#: resources/admin/app/components/FieldPicker.js:418
+msgid "Clear search"
+msgstr ""
+
+#: resources/admin/app/components/Notice.js:62
+msgid "Dismiss notice"
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:47
+msgid "Wide layout, as on a full-size screen."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:55
+msgid "Narrow layout, as on a tablet in portrait."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:63
+msgid "Single-column layout, as on a phone."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:78
+msgid "Classic"
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:79
+msgid "Shortcode checkout, the classic WooCommerce template."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:86
+msgid "Blocks"
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:87
+msgid "Block checkout, the WooCommerce Blocks experience."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:103
+msgid "Pessoa física: CPF."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:108
+msgid "Pessoa jurídica: CNPJ."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:120
+msgid "Guest"
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:121
+msgid "Not signed in."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:125
+msgid "Signed in"
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:126
+msgid "Existing customer."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:147
+msgid "Sample content with placeholder values. Nothing here is real, saved or submitted."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:155
+msgid "Signed in as Ana Example."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:161
+msgid "Email address"
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:204
+msgid "Country / region"
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:214
+msgid "Brazil"
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:222
+msgid "I accept the terms."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:229
+msgid "Rendered as the Block checkout would present it."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:233
+msgid "Rendered as the shortcode checkout would present it."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:258
+msgid "No compatibility information was provided for this adapter. Treat the result below as unverified."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:269
+msgid "This adapter declares no limitations. That is unusual; confirm it against the compatibility matrix before relying on it."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:308
+msgid "Checkout preview"
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:330
+msgid "Preview"
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:335
+msgid "This is a simulation. It uses placeholder values, does not read your orders or customers, and never touches the live checkout."
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:343
+msgid "Device"
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:349
+msgid "Checkout type"
+msgstr ""
+
+#: resources/admin/app/components/PreviewFrame.js:363
+msgid "Customer"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:42
+msgid "Nothing to publish"
+msgstr ""
+
+#. translators: %d: number of changes.
+#: resources/admin/app/components/PublishPanel.js:47
+msgid "%d change(s) ready"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:61
+msgid "not set"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:65
+msgid "empty"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:169
+msgid "Save the draft first."
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:171
+msgid "Fix the problems above first."
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:178
+msgid "Publish"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:189
+msgid "Your changes are in the draft. The store keeps running the published version until you publish, and publishing is a new revision you can go back to."
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:199
+msgid "Save the draft before publishing, so the published version is the one you are looking at."
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:209
+msgid "This draft cannot be published yet"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:231
+msgid "The draft is identical to the published version."
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:241
+msgid "Fields added"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:250
+msgid "Fields removed"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:259
+msgid "Fields changed"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:269
+msgid "Sections added"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:278
+msgid "Sections removed"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:287
+msgid "Sections changed"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:297
+msgid "Order changed"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:317
+msgid "What each checkout does with these fields"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:359
+msgid "Some fields need work before every checkout can show them"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:365
+msgid "These do not block publication. They mean a checkout will not honour the configuration as written."
+msgstr ""
+
+#. translators: %s: adapter name.
+#: resources/admin/app/components/PublishPanel.js:385
+msgid "No incompatibilities with the %s."
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:426
+msgid "This store"
+msgstr ""
+
+#: resources/admin/app/components/PublishPanel.js:450
+msgid "Publish changes"
+msgstr ""
+
+#: resources/admin/app/components/RevisionsList.js:35
+msgid "date unknown"
+msgstr ""
+
+#: resources/admin/app/components/RevisionsList.js:75
+msgid "Publication history"
+msgstr ""
+
+#: resources/admin/app/components/RevisionsList.js:79
+msgid "Going back to an earlier version publishes it again as a new revision. Nothing is erased."
+msgstr ""
+
+#: resources/admin/app/components/RevisionsList.js:90
+msgid "Nothing has been published yet. The store is running without a configured checkout."
+msgstr ""
+
+#. translators: %d: revision number.
+#: resources/admin/app/components/RevisionsList.js:114
+msgid "Revision %d"
+msgstr ""
+
+#: resources/admin/app/components/RevisionsList.js:128
+msgid "In the store"
+msgstr ""
+
+#: resources/admin/app/components/RevisionsList.js:144
+#: resources/admin/app/FieldsScreen.js:1013
+msgid "Restore"
+msgstr ""
+
+#: resources/admin/app/components/SortableList.js:78
+msgid "Nothing here yet."
+msgstr ""
+
+#. translators: 1: item name, 2: new position, 3: total number of items.
+#: resources/admin/app/components/SortableList.js:115
+msgid "%1$s moved to position %2$d of %3$d."
+msgstr ""
+
+#. translators: %s: item name.
+#: resources/admin/app/components/SortableList.js:188
+msgid "Move %s up"
+msgstr ""
+
+#. translators: %s: item name.
+#: resources/admin/app/components/SortableList.js:210
+msgid "Move %s down"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:204
+msgid "You have unsaved checkout field changes."
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:452
+msgid "Draft saved."
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:497
+msgid "Published."
+msgstr ""
+
+#. translators: %d: revision number.
+#: resources/admin/app/FieldsScreen.js:532
+msgid "Revision %d was published again as a new revision."
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:557
+msgid "Loading the schema…"
+msgstr ""
+
+#. translators: 1: active field count, 2: total field count.
+#: resources/admin/app/FieldsScreen.js:592
+msgid "%1$d active of %2$d. Changes are saved to the draft and never reach the checkout until you publish."
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:617
+msgid "Undo edit"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:624
+msgid "Redo edit"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:633
+msgid "Save draft"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:667
+msgid "This schema was written by a newer version"
+msgstr ""
+
+#. translators: 1: revision version, 2: supported version.
+#: resources/admin/app/FieldsScreen.js:674
+msgid "The stored %1$s document uses schema version %2$d, which this build cannot read. Its fields are not lost; they are invisible until the plugin is updated."
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:687
+msgid "Some field types are no longer available"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:693
+msgid "A plugin that provided these field types is not active. The fields and their stored values are intact; only the code that renders them is missing."
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:738
+msgid "No fields yet"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:739
+msgid "Pick a ready-made field, a field type, or one of the fields WooCommerce already has, to start building the checkout."
+msgstr ""
+
+#. translators: %s: section title.
+#: resources/admin/app/FieldsScreen.js:783
+msgid "Move section %s earlier"
+msgstr ""
+
+#. translators: %s: section title.
+#: resources/admin/app/FieldsScreen.js:804
+msgid "Move section %s later"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:835
+msgid "Rename"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:852
+#: resources/admin/app/FieldsScreen.js:1030
+msgid "Remove"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:860
+msgid "A WooCommerce location. Declare a section to rename it."
+msgstr ""
+
+#. translators: %s: section title.
+#: resources/admin/app/FieldsScreen.js:871
+msgid "Fields in %s"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:881
+msgid "No fields in this section yet."
+msgstr ""
+
+#. translators: %s: field label.
+#: resources/admin/app/FieldsScreen.js:912
+msgid "Select %s"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:967
+msgid "Edit"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:983
+msgid "Duplicate"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:1055
+msgid "Add a section"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:1059
+msgid "A section groups fields and says where they belong. The five locations are the concepts the checkout already has."
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:1068
+#: resources/admin/app/FieldsScreen.js:1153
+msgid "Title"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:1077
+#: resources/admin/app/FieldsScreen.js:1189
+msgid "Location"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:1103
+msgid "Add section"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:1110
+msgid "Add a field"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:1138
+msgid "Section"
+msgstr ""
+
+#: resources/admin/app/FieldsScreen.js:1145
+#: resources/admin/app/FieldsScreen.js:1222
+msgid "Done"
+msgstr ""
+
+#: resources/admin/app/previewCapabilities.js:27
+msgid "Suite field types"
+msgstr ""
+
+#: resources/admin/app/previewCapabilities.js:28
+msgid "Rendered through the official checkout field filter."
+msgstr ""
+
+#: resources/admin/app/previewCapabilities.js:35
+#: resources/admin/app/previewCapabilities.js:77
+msgid "File upload"
+msgstr ""
+
+#: resources/admin/app/previewCapabilities.js:36
+msgid "A Suite component stores the file privately and keeps a token on the order."
+msgstr ""
+
+#: resources/admin/app/previewCapabilities.js:43
+msgid "Core field reordering"
+msgstr ""
+
+#: resources/admin/app/previewCapabilities.js:44
+msgid "Dependencies of shipping, tax and payment must be assessed before a core field moves."
+msgstr ""
+
+#: resources/admin/app/previewCapabilities.js:53
+msgid "Text, select and checkbox"
+msgstr ""
+
+#: resources/admin/app/previewCapabilities.js:54
+msgid "Offered by the additional-fields API in WooCommerce 11.1.0."
+msgstr ""
+
+#: resources/admin/app/previewCapabilities.js:61
+msgid "Date field"
+msgstr ""
+
+#: resources/admin/app/previewCapabilities.js:62
+msgid "The planning lists a date type, but WooCommerce 11.1.0 registers only text, select and checkbox."
+msgstr ""
+
+#: resources/admin/app/previewCapabilities.js:69
+msgid "Document masks"
+msgstr ""
+
+#: resources/admin/app/previewCapabilities.js:70
+msgid "Validation is possible; masking depends on a supported extension point."
+msgstr ""
+
+#: resources/admin/app/previewCapabilities.js:78
+msgid "The additional-fields API is not a binary upload channel."
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:61
+msgid "You are not allowed to do this"
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:62
+msgid "Your account does not have permission to manage the checkout, or the session has expired."
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:66
+msgid "Reload the page. If it happens again, ask an administrator for the permission."
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:80
+msgid "Someone else saved first"
+msgstr ""
+
+#. translators: %d: revision number.
+#: resources/admin/app/schema/failureState.js:85
+msgid "This schema moved to revision %d while you were editing. Your changes were not saved and were not lost."
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:91
+msgid "This schema changed while you were editing. Your changes were not saved and were not lost."
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:95
+msgid "Reload to see the version that won, or save again to overwrite it with yours."
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:108
+msgid "Some fields are not valid yet"
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:109
+msgid "The draft was not saved because of the problems listed below. Nothing was changed."
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:113
+msgid "Fix the problems and save again."
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:126
+msgid "The site could not be reached"
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:127
+msgid "The request did not get an answer. Your changes are still here and nothing was saved."
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:131
+msgid "Check the connection and save again."
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:143
+msgid "A newer answer already arrived"
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:144
+msgid "This answer was for an older request and was ignored, so what you see is the newer state."
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:148
+msgid "Carry on; nothing needs doing."
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:159
+msgid "Something went wrong"
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:162
+msgid "The request failed for an unknown reason."
+msgstr ""
+
+#: resources/admin/app/schema/failureState.js:166
+msgid "Try again. If it keeps failing, the diagnostics section reports what this site supports."
+msgstr ""
+
+#: resources/admin/app/SettingsScreen.js:97
+msgid "The settings could not be read. Reload the page to try again."
+msgstr ""
+
+#: resources/admin/app/SettingsScreen.js:108
+msgid "Reading the checkout settings…"
+msgstr ""
+
+#: resources/admin/app/SettingsScreen.js:121
+msgid "Custom checkout"
+msgstr ""
+
+#: resources/admin/app/SettingsScreen.js:122
+msgid "Presents the checkout this plugin designed. Turning it off restores the store’s own checkout and keeps every field you configured."
+msgstr ""
+
+#. translators: %s: the checkout mode the store is in.
+#: resources/admin/app/SettingsScreen.js:137
+msgid "Checkout mode: %s"
+msgstr ""
+
+#: resources/admin/app/SettingsScreen.js:147
+msgid "Compatibility"
+msgstr ""
+
+#. translators: %s: comma separated list of payment gateway identifiers.
+#: resources/admin/app/SettingsScreen.js:151
+msgid "The custom checkout is stepping aside for: %s."
+msgstr ""
+
+#: resources/admin/app/SettingsScreen.js:161
+msgid "Payment gateways"
+msgstr ""
+
+#. translators: 1: homologated gateways, 2: total gateways, 3: gateways never tested.
+#: resources/admin/app/SettingsScreen.js:167
+msgid "%1$d of %2$d gateways have a homologation record. %3$d have never been tested, so nothing is promised about them."
+msgstr ""
+
+#: resources/admin/app/SettingsScreen.js:181
+msgid "Gateway"
+msgstr ""
+
+#: resources/admin/app/SettingsScreen.js:184
+msgid "Mode"
+msgstr ""
+
+#: resources/admin/app/SettingsScreen.js:187
+msgid "Enabled"
+msgstr ""
+
+#: resources/admin/app/SettingsScreen.js:214
+msgid "Not saved"
+msgstr ""
+
+#: resources/admin/app/SettingsScreen.js:216
+msgid "The change was not saved."
+msgstr ""
+
+#: resources/admin/app/SettingsScreen.js:221
+msgid "Reload"
+msgstr ""
+
+#: resources/blocks/fields.js:484
+msgid "A field"
+msgstr ""
+
+#. translators: %s: field type.
+#: resources/blocks/fields.js:496
+msgid "The field type \"%s\" has no component in this build, so the field is not shown. Update the plugin."
 msgstr ""
