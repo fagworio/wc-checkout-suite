@@ -85,6 +85,18 @@ declare global {
 				maxBytes?: number;
 			};
 			/**
+			 * Whether the merchant asked for the custom checkout, and why not when not.
+			 *
+			 * The switch governs the presentation and not the fields: with `store`, the
+			 * payload still carries everything the field engine needs.
+			 */
+			presentation?: {
+				mode?: string;
+				reason?: string;
+				blocked_by?: string[];
+			};
+
+			/**
 			 * What the homologation matrix allows for each gateway the store offers.
 			 *
 			 * `undecided` is a published answer and not a gap: it is the difference

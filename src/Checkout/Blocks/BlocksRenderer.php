@@ -233,7 +233,11 @@ final class BlocksRenderer {
 		// The presentation first, and for the same reason the classic checkout gets
 		// it first: the stylesheet is what makes the region line up, and the bundle is
 		// an improvement on a checkout that already works without it.
-		\WCCheckoutSuite\Checkout\Presentation::enqueue( self::STYLE_HANDLE, self::STYLE_FILE );
+		$wccs_settings = 'WCCheckoutSuite\\Domain\\Settings\\CheckoutSettings';
+
+		if ( $wccs_settings::presents( $wccs_settings::offered_gateways() ) ) {
+			\WCCheckoutSuite\Checkout\Presentation::enqueue( self::STYLE_HANDLE, self::STYLE_FILE );
+		}
 
 		$bundle = 'build/blocks/index.js';
 

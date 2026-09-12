@@ -30,6 +30,7 @@ use WCCheckoutSuite\Checkout\Classic\ClassicOrderUploads;
 use WCCheckoutSuite\Checkout\Classic\ClassicValidation;
 use WCCheckoutSuite\Http\Admin\CatalogController;
 use WCCheckoutSuite\Http\Admin\SchemaController;
+use WCCheckoutSuite\Http\Admin\SettingsController;
 use WCCheckoutSuite\Http\Checkout\ValidationController;
 use WCCheckoutSuite\Support\Requirements;
 
@@ -123,6 +124,14 @@ final class Plugin {
 		$catalog_controller = new CatalogController();
 
 		add_action( 'rest_api_init', array( $catalog_controller, 'register_routes' ) );
+
+		// The opt-in and the compatibility state. The route can change one boolean and
+		// nothing else: the schema, its revision and its history are not reachable from
+		// here, which is what makes "turning it off preserves the editor" a property of
+		// the code rather than a promise about it.
+		$settings_controller = new SettingsController();
+
+		add_action( 'rest_api_init', array( $settings_controller, 'register_routes' ) );
 
 		// Storefront side: the published schema applied to the classic checkout.
 		//

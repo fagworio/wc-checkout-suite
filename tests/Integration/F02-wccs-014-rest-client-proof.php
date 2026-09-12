@@ -156,11 +156,13 @@ wccs_proof_out( '3. Route map' );
 
 $wccs_published = (array) ( $wccs_rest['routes'] ?? array() );
 
-// Every route the page receives has to come from a controller's own map. F03
-// added a second controller for the picker catalogue, so the expected map is the
-// union of both; what the assertion protects is unchanged, and still the thing
-// that matters: the client is never handed a path a controller did not declare.
-$wccs_expected = SchemaController::routes() + CatalogController::routes();
+// Every route the page receives has to come from a controller's own map, and the union
+// of those maps now lives in `Admin\Routes` — read here rather than rebuilt. This
+// assertion was written when there were two controllers and broke when WCCS-050 added
+// a third; reading the composition is what stops the next controller from breaking it
+// again, and what it protects is unchanged: the client is never handed a path a
+// controller did not declare.
+$wccs_expected = \WCCheckoutSuite\Admin\Routes::all();
 
 wccs_proof_check(
 	'The bootstrap publishes the controller route maps verbatim',

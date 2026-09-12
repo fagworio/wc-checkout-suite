@@ -242,6 +242,13 @@ wccs_proof_out( '===============================================================
 
 wp_set_current_user( 1 );
 
+// WCCS-050: the custom presentation is opt-in and off by default, and these proofs
+// exercise the positive path. They ask for it, and restore the store to off at the end,
+// so a run leaves the environment as it found it. The switch itself — that turning it
+// on and off changes no engine and erases no field — is what WCCS-050's own proof is
+// about.
+\WCCheckoutSuite\Domain\Settings\CheckoutSettings::set_enabled( true );
+
 $wccs_slot = \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED;
 
 wccs_proof_store( $wccs_slot, array( wccs_proof_def( 'wccs_note' ) ) );
@@ -451,6 +458,9 @@ wccs_proof_out( '5. Environment' );
 
 delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( $wccs_slot ) );
 
+// The store is left opted out, which is where it started.
+delete_option( \WCCheckoutSuite\Domain\Settings\CheckoutSettings::OPTION );
+
 $wccs_options_after = wccs_proof_option_count();
 
 wccs_proof_check(
@@ -473,6 +483,7 @@ wccs_proof_note(
 	'What this harness cannot observe',
 	'This store has no classic checkout page, so the positive path is exercised by handing the gate its two booleans — the same substitution WCCS-025 uses. The rendered arrangement of the form is not observed here; it needs a browser, and it is recorded as unobserved rather than claimed.'
 );
+
 
 // ---------------------------------------------------------------------------
 // Summary.

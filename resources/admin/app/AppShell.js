@@ -16,6 +16,7 @@ import { __, sprintf } from '@wordpress/i18n';
 
 import { Notice, PreviewFrame } from './components';
 import FieldsScreen from './FieldsScreen';
+import SettingsScreen from './SettingsScreen';
 import { readSection, sectionHref } from './sectionUrl';
 import previewCapabilities from './previewCapabilities';
 
@@ -55,13 +56,24 @@ function SectionContent( { section, client } ) {
 		return <PreviewFrame capabilities={ previewCapabilities } />;
 	}
 
+	// Settings is where the merchant turns the custom checkout on; Diagnostics is the
+	// same state without the switch. One component, two sections, because they answer
+	// one question between them.
+	if ( 'settings' === section && client ) {
+		return <SettingsScreen client={ client } />;
+	}
+
+	if ( 'diagnostics' === section && client ) {
+		return <SettingsScreen client={ client } editable={ false } />;
+	}
+
 	return (
 		<Notice
 			status="info"
 			title={ __( 'Not built yet', 'wc-checkoutsuite' ) }
 		>
 			{ __(
-				'Fields and Appearance are the sections that work today. The remaining sections are built in later stages of the roadmap.',
+				'Fields, Appearance, Settings and Diagnostics are the sections that work today. The remaining sections are built in later stages of the roadmap.',
 				'wc-checkoutsuite'
 			) }
 		</Notice>

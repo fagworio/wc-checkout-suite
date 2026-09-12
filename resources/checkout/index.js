@@ -68,6 +68,12 @@ const errors = createFieldErrors( { attribute: keeper.attribute } );
 // lifecycle for the same reason the fields are: the checkout replaces the payment box
 // and the order review over AJAX, and a component that ran twice over the same element
 // would add a second control to a summary that already has one.
+const presentation = bootstrap.presentation || {};
+const presents = 'custom' === presentation.mode;
+
+// The two presentation components exist only when the merchant asked for the custom
+// checkout. The fields below do not depend on this: they are the product, and the
+// switch governs the presentation.
 const payment = createPaymentFrame( {
 	decisions: ( bootstrap.payments || {} ).decisions || {},
 } );
@@ -116,19 +122,21 @@ lifecycle.register( 'suite-masks', {
 	start: ( element ) => masked.apply( element ),
 } );
 
-// The payment box: the accordion follows the radios the checkout rendered, and the
-// module creates none of them.
-lifecycle.register( 'suite-payment-frame', {
-	selector: '.wc_payment_methods',
-	start: ( element ) => payment.run( element ),
-} );
+if ( presents ) {
+	// The payment box: the accordion follows the radios the checkout rendered, and the
+	// module creates none of them.
+	lifecycle.register( 'suite-payment-frame', {
+		selector: '.wc_payment_methods',
+		start: ( element ) => payment.run( element ),
+	} );
 
-// The order review: the numbers inside it are WooCommerce's and are never touched,
-// only revealed or hidden.
-lifecycle.register( 'suite-summary', {
-	selector: '.woocommerce-checkout-review-order',
-	start: ( element ) => summary.run( element ),
-} );
+	// The order review: the numbers inside it are WooCommerce's and are never touched,
+	// only revealed or hidden.
+	lifecycle.register( 'suite-summary', {
+		selector: '.woocommerce-checkout-review-order',
+		start: ( element ) => summary.run( element ),
+	} );
+}
 
 // The first pass marks every field already on the page, so a later refresh is
 // only ever offered the elements it actually replaced.
@@ -149,11 +157,13 @@ $( document.body ).on( 'updated_checkout', () => {
 	lifecycle.run( document.body );
 	conditional.run();
 
-	// A refresh can change which method is selected — a gateway that becomes
-	// unavailable on a shipping choice, for instance — and which panel is open is a
-	// question the frame answers by reading the form again.
-	payment.run( document.body );
-	summary.run( document.body );
+	if ( presents ) {
+		// A refresh can change which method is selected — a gateway that becomes
+		// unavailable on a shipping choice, for instance — and which panel is open is a
+		// question the frame answers by reading the form again.
+		payment.run( document.body );
+		summary.run( document.body );
+	}
 } );
 
 // A rule is re-decided while the form is being filled in: the country the

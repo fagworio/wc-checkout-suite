@@ -147,10 +147,13 @@ final class ClassicAssets {
 			return;
 		}
 
-		// The presentation first, so a request that has both gets the layout before
-		// the behaviour: the stylesheet is what makes the fields line up, and the
-		// bundle is an improvement on a checkout that already works without it.
-		self::enqueue_presentation();
+		// The presentation is the merchant's decision and the fields are not: the
+		// opt-in governs the stylesheet and the two presentation components, never the
+		// editor, the schema or the validation. A store that has not opted in still
+		// gets every field it configured, on WooCommerce's own checkout.
+		if ( \WCCheckoutSuite\Domain\Settings\CheckoutSettings::presents( \WCCheckoutSuite\Domain\Settings\CheckoutSettings::offered_gateways() ) ) {
+			self::enqueue_presentation();
+		}
 
 		$bundle = 'build/checkout/index.js';
 
@@ -226,7 +229,7 @@ final class ClassicAssets {
 	 * renamed and the revision changes, and a bundle that hardcoded either would
 	 * be wrong the first time one of them moved.
 	 *
-	 * @return array{masks: array<string, array{key: string, version: int, definition: string|array<mixed>}>, payments: array{decisions: array<string, array{mode: string, withheld: array<int, string>}>, undecided: int, reason: string}, summary: array{label: string, show: string, hide: string}, validation: array{url: string, nonce: string, revision: int}}
+	 * @return array{masks: array<string, array{key: string, version: int, definition: string|array<mixed>}>, presentation: array{mode: string, reason: string, blocked_by: array<int, string>}, payments: array{decisions: array<string, array{mode: string, withheld: array<int, string>}>, undecided: int, reason: string}, summary: array{label: string, show: string, hide: string}, validation: array{url: string, nonce: string, revision: int}}
 	 */
 	public static function bootstrap_data(): array {
 		$masks      = \WCCheckoutSuite\Domain\Registries::instance()->masks();
@@ -262,17 +265,18 @@ final class ClassicAssets {
 		}
 
 		return array(
-			'masks'      => $registered,
-			'rules'      => self::rules(),
-			'conditions' => self::conditions(),
-			'uploads'    => self::uploads(),
-			'payments'   => self::payments(),
-			'summary'    => array(
+			'masks'        => $registered,
+			'rules'        => self::rules(),
+			'conditions'   => self::conditions(),
+			'uploads'      => self::uploads(),
+			'payments'     => self::payments(),
+			'presentation' => \WCCheckoutSuite\Domain\Settings\CheckoutSettings::decision( \WCCheckoutSuite\Domain\Settings\CheckoutSettings::offered_gateways() ),
+			'summary'      => array(
 				'label' => __( 'Order summary', 'wc-checkoutsuite' ),
 				'show'  => __( 'Show order summary', 'wc-checkoutsuite' ),
 				'hide'  => __( 'Hide order summary', 'wc-checkoutsuite' ),
 			),
-			'validation' => array(
+			'validation'   => array(
 				'url'      => rest_url(
 					\WCCheckoutSuite\Http\Admin\SchemaController::rest_namespace()
 						. \WCCheckoutSuite\Http\Checkout\ValidationController::ROUTE_VALIDATE

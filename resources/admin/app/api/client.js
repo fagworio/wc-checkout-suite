@@ -273,6 +273,20 @@ export function createClient( {
 			send( routes.coreFields, { method: 'GET', signal } ),
 		revisions: ( /** @type {AbortSignal} */ signal ) =>
 			send( routes.revisions, { method: 'GET', signal } ),
+		// The opt-in and the compatibility state. The read is a read; the write changes
+		// one boolean and answers with the state it produced, so the screen never has to
+		// guess what its own write did.
+		settings: ( /** @type {AbortSignal} */ signal ) =>
+			send( routes.settings, { method: 'GET', signal } ),
+		saveSettings: (
+			/** @type {boolean} */ enabled,
+			/** @type {AbortSignal} */ signal
+		) =>
+			send( routes.settings, {
+				method: 'POST',
+				data: { custom_checkout: enabled },
+				signal,
+			} ),
 		// What publishing would change. A read, so the retry rule applies.
 		diff: ( /** @type {AbortSignal} */ signal ) =>
 			send( routes.diff, { method: 'GET', signal } ),

@@ -9,8 +9,7 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Admin;
 
-use WCCheckoutSuite\Http\Admin\CatalogController;
-use WCCheckoutSuite\Http\Admin\SchemaController;
+use WCCheckoutSuite\Admin\Routes;
 
 /**
  * Loads the admin bundle on the suite screen and nowhere else.
@@ -173,7 +172,7 @@ final class Assets {
 				'root'      => esc_url_raw( rest_url() ),
 				'namespace' => WCCS_REST_NAMESPACE,
 				'nonce'     => wp_create_nonce( 'wp_rest' ),
-				'routes'    => SchemaController::routes() + CatalogController::routes(),
+				'routes'    => Routes::all(),
 			),
 		);
 	}

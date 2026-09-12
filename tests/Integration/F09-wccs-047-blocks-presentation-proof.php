@@ -243,6 +243,13 @@ wccs_proof_out( '===============================================================
 
 wp_set_current_user( 1 );
 
+// WCCS-050: the custom presentation is opt-in and off by default, and these proofs
+// exercise the positive path. They ask for it, and restore the store to off at the end,
+// so a run leaves the environment as it found it. The switch itself — that turning it
+// on and off changes no engine and erases no field — is what WCCS-050's own proof is
+// about.
+\WCCheckoutSuite\Domain\Settings\CheckoutSettings::set_enabled( true );
+
 // The published slot is cleared before anything is measured, so a run that died before
 // its cleanup cannot make the next one fail — the correction WCCS-008's proof needed.
 // The empty state is this file's decision, not the environment's.
@@ -612,6 +619,9 @@ wccs_proof_note(
 	'What this harness cannot observe',
 	'This store has no Blocks checkout page, so the positive path is exercised by handing the gate its two booleans, and no field has been seen inside a live region — the placement depends on where the platform lets a third-party field be inserted, which belongs to the browser review in WCCS-063. What is proven is the delivery, the partition of every type, and the absence of any payment coupling.'
 );
+
+// The store is left opted out, which is where it started.
+delete_option( \WCCheckoutSuite\Domain\Settings\CheckoutSettings::OPTION );
 
 // ---------------------------------------------------------------------------
 // Summary.

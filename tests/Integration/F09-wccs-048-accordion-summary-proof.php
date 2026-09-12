@@ -127,6 +127,13 @@ wccs_proof_out( '===============================================================
 
 wp_set_current_user( 1 );
 
+// WCCS-050: the custom presentation is opt-in and off by default, and these proofs
+// exercise the positive path. They ask for it, and restore the store to off at the end,
+// so a run leaves the environment as it found it. The switch itself — that turning it
+// on and off changes no engine and erases no field — is what WCCS-050's own proof is
+// about.
+\WCCheckoutSuite\Domain\Settings\CheckoutSettings::set_enabled( true );
+
 // ---------------------------------------------------------------------------
 // 1. The selectors are the platform's own markup.
 // ---------------------------------------------------------------------------
@@ -412,6 +419,9 @@ wccs_proof_note(
 	'What this harness cannot observe',
 	'This store has no classic checkout page and no gateway is enabled (SANDBOX-PAYMENT), so the accordion has been exercised against WooCommerce\'s own markup in jsdom and against its templates on disk, never in a browser with a real gateway. Keyboard operation is the platform\'s radio group and a real button; the browser review is WCCS-063.'
 );
+
+// The store is left opted out, which is where it started.
+delete_option( \WCCheckoutSuite\Domain\Settings\CheckoutSettings::OPTION );
 
 // ---------------------------------------------------------------------------
 // Summary.
