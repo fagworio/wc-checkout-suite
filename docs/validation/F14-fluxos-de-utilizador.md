@@ -16,6 +16,7 @@ resultado. Quatro instrumentos, todos reproduzíveis:
 | `tests/browser/f14-customer-flow.mjs` (`WCCS_MODE=observe`) | Abre a página de agradecimento e o detalhe do pedido na conta, para o mesmo pedido | **10 passaram, 0 falharam** |
 | `tests/Integration/support/f14-observe-order.php` | Desenha o painel do pedido e as duas projeções de e-mail do pedido real, e pergunta a cada área se mostrou o que lhe pertence | **tudo passou** |
 | `tests/browser/f14-admin-order-screen.mjs` | Abre o ecrã do pedido no admin (HPOS) como equipa | **falhou — achado F-3** |
+| `curl` com sessão autenticada (cookie + nonce) | A **porta de download** e a **projeção de integração** por HTTP, como um cliente ou uma integração as pede | 200 na superfície que o vínculo permite (anexo, `nosniff`, `private`), 404 recusado nas outras, **401** sem autenticação |
 
 Sementes usadas: `tests/Integration/support/seed-f14-links.php` (documento com vínculos por
 destino, seções por área e um fluxo de aprovação). A prova reprodutível do achado F-4 ficou em
@@ -49,6 +50,14 @@ foram apagados.
   loja) mostraram o seu campo com o título que a loja deu, e mais nada.
 - **A situação da análise chega ao cliente** na página que ele vê, e o pedido espera no
   estado que o lojista nomeou, com uma nota.
+- **A porta que serve bytes obedece ao vínculo, por HTTP.** Com sessão de equipa e o
+  documento publicado: `destination=admin_order` devolveu **200** com o ficheiro como anexo,
+  `X-Content-Type-Options: nosniff` e `Cache-Control: … private`; `destination=customer_order`
+  (o vínculo daquele destino não permite baixar) devolveu **404 `not_allowed`**; sem sessão,
+  **404**; e `destination=public_api`, que um browser não pode reclamar, **404**.
+- **A projeção de integração respeita o seu destino.** Autenticada, devolveu **200** com um
+  só campo — o que declara `public_api` — e o valor veio da meta do WooCommerce, o que prova
+  o leitor do F-4 também nesta superfície; sem autenticação, **401 `wccs_unauthenticated`**.
 
 ## 3. Achados
 
