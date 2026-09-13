@@ -88,7 +88,7 @@ final class OrderFieldsEraser {
 		$touched   = array();
 
 		foreach ( $orders as $order ) {
-			$values = $service->read( $order );
+			$values = $service->read( $order, $definitions );
 			$kept   = array();
 
 			foreach ( $values->ids() as $id ) {

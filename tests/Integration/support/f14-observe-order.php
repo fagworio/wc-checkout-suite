@@ -64,6 +64,30 @@ echo '=====================================================================' . P
 echo 'F14 user-level observation — the surfaces of order #' . $wccs_order_id . PHP_EOL;
 echo '=====================================================================' . PHP_EOL;
 
+$wccs_definitions = \WCCheckoutSuite\Checkout\Classic\PublishedDocument::read()->fields();
+$wccs_service     = new \WCCheckoutSuite\Domain\Orders\OrderFieldsService();
+
+echo PHP_EOL . 'TWO AUTHORITIES (what is stored, and by whom)' . PHP_EOL;
+echo '  suite payload: ' . wp_json_encode( $wccs_service->read( $wccs_order )->all() ) . PHP_EOL;
+echo '  woocommerce meta: ' . wp_json_encode( \WCCheckoutSuite\Domain\Orders\NativeOrderValues::all( $wccs_order, $wccs_definitions ) ) . PHP_EOL;
+echo '  read with the document: ' . wp_json_encode( $wccs_service->read( $wccs_order, $wccs_definitions )->all() ) . PHP_EOL;
+
+$wccs_ok = wccs_observe_check(
+	'The Suite keeps no copy of the values the platform stored',
+	! array_intersect_key(
+		$wccs_service->read( $wccs_order )->all(),
+		\WCCheckoutSuite\Domain\Orders\NativeOrderValues::all( $wccs_order, $wccs_definitions )
+	),
+	'one authority per field, read where it lives'
+) && $wccs_ok;
+
+$wccs_ok = wccs_observe_check(
+	'And the projections read them through the same door as everything else',
+	array() !== \WCCheckoutSuite\Domain\Orders\NativeOrderValues::all( $wccs_order, $wccs_definitions )
+		&& array() !== $wccs_service->read( $wccs_order, $wccs_definitions )->all(),
+	'no fixture, no second meta'
+) && $wccs_ok;
+
 echo PHP_EOL . 'ORDER SCREEN (admin_order)' . PHP_EOL;
 $wccs_ok = wccs_observe_check(
 	'The configured section titles the panel, with the configured titles in order',

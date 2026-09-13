@@ -174,6 +174,34 @@ final class OrderFieldValues {
 	}
 
 	/**
+	 * Whether a stored value is an answer at all.
+	 *
+	 * The one rule for "the customer answered something", kept here because two readers need
+	 * it and neither should own it: the approval flow, which holds an order only when the
+	 * field it reviews has an answer, and the reader of the values the platform stored, which
+	 * fills in only where the Suite's own payload has none. An empty list is how a file field
+	 * says "nothing attached", and an empty string is how a text field says the same.
+	 *
+	 * @param mixed $value Stored value.
+	 * @return bool
+	 */
+	public static function is_answer( mixed $value ): bool {
+		if ( null === $value || false === $value ) {
+			return false;
+		}
+
+		if ( is_string( $value ) ) {
+			return '' !== trim( $value );
+		}
+
+		if ( is_array( $value ) ) {
+			return array() !== $value;
+		}
+
+		return true;
+	}
+
+	/**
 	 * Whether one value is something a field can hold.
 	 *
 	 * @param mixed $value Candidate value.

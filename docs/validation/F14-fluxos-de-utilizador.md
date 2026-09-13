@@ -17,9 +17,9 @@ resultado. Quatro instrumentos, todos reproduzíveis:
 | `tests/Integration/support/f14-observe-order.php` | Desenha o painel do pedido e as duas projeções de e-mail do pedido real, e pergunta a cada área se mostrou o que lhe pertence | **tudo passou** |
 | `tests/browser/f14-admin-order-screen.mjs` | Abre o ecrã do pedido no admin (HPOS) como equipa | **falhou — achado F-3** |
 
-Sementes e fixtures usados: `tests/Integration/support/seed-f14-links.php` (documento com
-vínculos por destino, seções por área e um fluxo de aprovação) e
-`tests/Integration/support/f14-place-suite-values.php` (ver F-4).
+Sementes usadas: `tests/Integration/support/seed-f14-links.php` (documento com vínculos por
+destino, seções por área e um fluxo de aprovação). A prova reprodutível do achado F-4 ficou em
+`tests/Integration/F14-native-values-proof.php`, dentro da varredura.
 
 O que a loja teve de ceder para o cliente poder comprar, e que ficou reposto: o modo
 "em breve" (`woocommerce_coming_soon`) foi desligado durante a corrida e voltou a `yes`;
@@ -114,13 +114,14 @@ equipa. Não foi introduzido pela F14 (o painel é da WCCS-051) e o conteúdo do
 provado — `f14-observe-order.php` desenha o callback e lê o resultado certo. O que falta é
 a plataforma desenhá-lo.
 
-### F-4 — os valores captados nativamente nunca chegam às projeções (aberto)
+### F-4 — os valores captados nativamente nunca chegavam às projeções (corrigido)
 
 O adaptador regista os campos nativos pela API de additional fields do WooCommerce, e é o
 **WooCommerce** que os persiste — na meta `_wc_billing/wc-checkoutsuite/<campo>`, como a
-tabela da secção 13 manda. O armazenamento da Suite (`_wccs_fields`), que é o que todas as
-projeções leem, nunca recebe esses valores: a extensão da Store API só carrega os campos
-que o plugin desenha. Medido no pedido real, com os quatro valores que o cliente escreveu:
+tabela da secção 13 manda. O armazenamento da Suite (`_wccs_fields`), que era o único que
+todas as projeções liam, nunca recebia esses valores: a extensão da Store API só carrega os
+campos que o plugin desenha. Medido no pedido real, com os quatro valores que o cliente
+escreveu:
 
 ```
 suite payload before = {"observacoes_entrega":""}
@@ -129,39 +130,64 @@ woocommerce native meta = {"documento_fiscal":"123.456.789-09","codigo_retirada"
 ```
 
 Consequência: num store cujos campos sejam captados nativamente pelo checkout Blocks,
-**nenhuma superfície da Suite mostra o valor** (a página do cliente, a conta, os e-mails e
-o painel ficam vazios) e **o fluxo de aprovação não retém o pedido**, porque também ele lê
-o armazenamento da Suite. Foi por isso que a observação das áreas precisou da fixture:
-`f14-place-suite-values.php` lê a meta nativa e escreve-a pelo **mesmo caminho que o ecrã
-do pedido usa** (`OrderFieldsService::write`), e diz no cabeçalho que é uma fixture e não
-uma correção.
+nenhuma superfície da Suite mostrava o valor, e o fluxo de aprovação não retinha o pedido —
+porque também ele lia o armazenamento da Suite.
+
+**Correção: ler, não copiar.** `NativeOrderValues` é o leitor dos valores que a plataforma
+guardou (as três chaves de prefixo do WooCommerce, com o identificador de integração do
+campo), e `OrderFieldsService::read()` e `history()` passam a receber as definições e a
+fundir esse resultado **onde o armazenamento da Suite não tem resposta** — uma autoridade por
+campo continua a ser uma, e o valor não ganha uma segunda meta. A regra de "isto é uma
+resposta" (string vazia, lista vazia, `null` e `false` não são) ficou num sítio só,
+`OrderFieldValues::is_answer()`, que o fluxo de aprovação passou a usar em vez de repetir. Os
+quatro sítios que liam valores passaram a passar o documento: o painel do pedido, o fluxo de
+aprovação, o exportador de privacidade e a projeção de integração.
+
+**Provado sem fixture nenhuma**, no pedido #6197, feito pelo checkout real do cliente depois
+da correção:
+
+```
+suite payload only = {"observacoes_entrega":""}                     ← nada foi copiado
+with definitions   = {… os quatro valores …}                        ← lidos onde vivem
+history ids        = observacoes_entrega, documento_fiscal, codigo_retirada, sem_vinculo, preferencia_perfil
+status             = wccs-db244f28f8                                ← retido pela aprovação, no checkout
+```
+
+E no browser, na mesma corrida: a página de agradecimento mostrou o campo de `order_received`,
+a conta mostrou o de `customer_order`, nenhum mostrou o campo sem vínculo nem o do perfil, e a
+situação da análise apareceu nas duas — **10 passaram, 0 falharam**. A prova reprodutível
+ficou em `tests/Integration/F14-native-values-proof.php` (**12 passaram, 0 falharam**), que
+escreve a meta como a plataforma escreve, confirma que o armazenamento da Suite continua
+vazio, e lê tudo de volta pelas projeções.
+
+A fixture que existia para contornar isto (`f14-place-suite-values.php`) foi **removida**: com
+o leitor no sítio certo, escrever uma cópia seria exatamente a segunda meta que a correção
+evita. O observador de superfícies passou a mostrar as duas autoridades lado a lado.
 
 ## 4. O estado da fase, corrigido
 
 O gate da F14 foi dado como cumprido na passagem anterior, com base nos harnesses. Esta
-passagem mostrou que dois dos seus termos não valiam para a loja real: um campo vinculado
-não aparecia no checkout (F-1) e o WooCommerce mostrava campos não vinculados (F-2). Ambos
-foram corrigidos e reobservados. Restam dois achados que **não** foram corrigidos aqui:
+passagem mostrou que três dos seus termos não valiam para a loja real: um campo vinculado
+não aparecia no checkout (F-1), o WooCommerce mostrava campos não vinculados (F-2) e, num
+store com campos nativos, os valores captados não chegavam a superfície nenhuma (F-4). Os
+três foram corrigidos e reobservados na loja. Resta um achado:
 
-- **F-4** quebra a segunda metade do aceite da WCCS-076 ("com vínculo, aparece") para um
-  campo captado nativamente — a primeira metade ("um campo sem vínculo não aparece") vale.
-  Corrigi-lo é fazer as projeções lerem o valor da autoridade que o guardou (a API do
-  WooCommerce), sem criar uma segunda meta, e cobrir isso com harness.
-- **F-3** deixa a área `admin_order` sem superfície no ecrã de pedido desta plataforma.
+- **F-3** deixa a área `admin_order` sem superfície no ecrã de pedido desta plataforma,
+  embora o plugin registe o painel. Não foi introduzido por esta fase e não foi corrigido
+  aqui.
 
-Por isso `docs/compatibility.json` passa a registar a F14 com `gate_met: false`, com os
-dois motivos escritos. Não é uma regressão do que foi entregue: é a diferença entre o que
-os harnesses provam e o que a loja faz.
+Por isso `docs/compatibility.json` mantém a F14 com `gate_met: false`, agora com um só
+motivo escrito. Não é uma regressão do que foi entregue: é a diferença entre o que os
+harnesses provam e o que a loja faz.
 
 ## 5. Reprogramação
 
 Os dois caminhos a seguir, na ordem em que fazem diferença:
 
-1. **F-4** — um leitor único para os campos nativos nas projeções (ler `_wc_billing/`,
-   `_wc_shipping/`, `_wc_other/` com o identificador de integração, pela localização da
-   seção), sem escrever segunda meta; e a retenção da aprovação a passar a ver esses
-   valores. Aceite: o pedido do instrumento do cliente mostra o valor nas áreas em que foi
-   vinculado sem nenhuma fixture, e a aprovação retém o pedido.
-2. **F-3** — descobrir como o WooCommerce 11.1 desenha caixas de terceiros no ecrã de
+1. **F-3** — descobrir como o WooCommerce 11.1 desenha caixas de terceiros no ecrã de
    pedido (HPOS) e registar o painel por esse caminho, mantendo o registo de metabox para o
-   ecrã clássico. Aceite: `tests/browser/f14-admin-order-screen.mjs` passa.
+   ecrã clássico. Aceite: `tests/browser/f14-admin-order-screen.mjs` passa. O que já se sabe
+   está no achado: o registo chega, o callback não é chamado, e duas caixas de depuração
+   registadas da mesma forma também não foram desenhadas, enquanto as do WooCommerce foram.
+2. **`customer_profile`** continua sem superfície e sem dados (escopo `customer` declarado e
+   nada o escreve) — registado desde a WCCS-076 e ainda sem dono no roadmap.

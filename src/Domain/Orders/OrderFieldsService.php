@@ -84,21 +84,52 @@ final class OrderFieldsService {
 	private const READABLE_FORMATS = array( 1, 2 );
 
 	/**
+	 * This storage's values for one order, plus the ones the platform stored.
+	 *
+	 * @param WC_Order                         $order       Order.
+	 * @param array<string, mixed>             $payload     Decoded payload, as `decode()` returns it.
+	 * @param array<int, array<string, mixed>> $definitions Published definitions.
+	 * @return array<string, mixed> Values, keyed by field identifier.
+	 */
+	private function own_values( WC_Order $order, array $payload, array $definitions ): array {
+		$own = 'readable' === $payload['state'] && is_array( $payload['values'] ) ? $payload['values'] : array();
+
+		if ( array() === $definitions ) {
+			return $own;
+		}
+
+		return NativeOrderValues::merge( $own, NativeOrderValues::all( $order, $definitions ) );
+	}
+
+	/**
 	 * Reads the values stored on an order.
 	 *
 	 * A payload this build cannot read returns an empty set, which is the same
 	 * answer {@see self::read_status()} exists to distinguish. Callers that have
 	 * to tell "no values" from "values I do not understand" ask for the status.
 	 *
-	 * @param WC_Order $order Order.
+	 * **Two authorities, one answer.** A field the platform renders itself — an additional
+	 * checkout field — is persisted by WooCommerce, not here, and the order carries it under
+	 * WooCommerce's own meta keys. Hand the published definitions in and those values are
+	 * read as well, in the one place every projection goes through, so a store whose fields
+	 * are captured natively shows them exactly like a store whose fields are captured by this
+	 * plugin. Nothing is copied: the value keeps the authority that stored it, and
+	 * {@see NativeOrderValues::merge()} lets this storage win wherever it has an answer.
+	 *
+	 * @param WC_Order                         $order       Order.
+	 * @param array<int, array<string, mixed>> $definitions Published definitions, when the caller has them.
 	 * @return OrderFieldValues
 	 */
-	public function read( WC_Order $order ): OrderFieldValues {
+	public function read( WC_Order $order, array $definitions = array() ): OrderFieldValues {
 		$payload = $this->decode( $order );
 
-		return 'readable' === $payload['state']
-			? OrderFieldValues::from_array( $payload['values'] )
-			: OrderFieldValues::none();
+		if ( ! in_array( $payload['state'], array( 'readable', 'absent' ), true ) ) {
+			return OrderFieldValues::none();
+		}
+
+		$values = $this->own_values( $order, $payload, $definitions );
+
+		return array() === $values ? OrderFieldValues::none() : OrderFieldValues::from_array( $values );
 	}
 
 	/**
@@ -198,16 +229,17 @@ final class OrderFieldsService {
 	public function history( WC_Order $order, array $definitions = array() ): array {
 		$payload = $this->decode( $order );
 
-		if ( 'readable' !== $payload['state'] ) {
+		if ( ! in_array( $payload['state'], array( 'readable', 'absent' ), true ) ) {
 			return array();
 		}
 
-		$snapshot = OrderFieldSnapshot::from_array( $payload['snapshot'] );
+		$snapshot = OrderFieldSnapshot::from_array( is_array( $payload['snapshot'] ) ? $payload['snapshot'] : array() );
 		$current  = $this->current_definitions( $definitions );
+		$values   = $this->own_values( $order, $payload, $definitions );
 
 		$entries = array();
 
-		foreach ( $payload['values'] as $id => $value ) {
+		foreach ( $values as $id => $value ) {
 			$id       = (string) $id;
 			$recorded = $snapshot->entry( $id );
 			$now      = $current[ $id ] ?? null;

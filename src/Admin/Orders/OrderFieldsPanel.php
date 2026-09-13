@@ -246,7 +246,7 @@ final class OrderFieldsPanel {
 		$document    = PublishedDocument::read();
 		$definitions = $document->fields();
 		$editable    = self::editable( $definitions );
-		$stored      = self::service()->read( $order );
+		$stored      = self::service()->read( $order, $definitions );
 		$status      = self::service()->read_status( $order );
 		$entries     = array();
 

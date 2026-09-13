@@ -322,7 +322,7 @@ final class OrderFieldsController {
 			);
 		}
 
-		$values = ( new OrderFieldsService() )->read( $order );
+		$values = ( new OrderFieldsService() )->read( $order, $definitions );
 		$fields = array();
 
 		foreach ( $exposed as $id => $meta ) {

@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace WCCheckoutSuite\Domain\Approval;
 
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
+use WCCheckoutSuite\Domain\Orders\OrderFieldValues;
 
 /**
  * What one field's approval configuration means.
@@ -229,24 +230,15 @@ final class ApprovalFlow {
 	 *
 	 * Presence is not the question: a file field stores a list of tokens, and a list
 	 * with nothing in it is an untouched field, not a document to review. An empty
-	 * string, `null` and `false` are the same absence; `0` and `'0'` are answers.
+	 * string, `null` and `false` are the same absence; `0` and `'0'` are answers. The
+	 * rule lives in {@see OrderFieldValues::is_answer()} because the reader of the values
+	 * the platform stored needs the same one, and one rule in two places is how two
+	 * readers end up disagreeing about the same order.
 	 *
 	 * @param mixed $value Stored value.
 	 * @return bool
 	 */
 	public static function answered( mixed $value ): bool {
-		if ( null === $value || false === $value ) {
-			return false;
-		}
-
-		if ( is_string( $value ) ) {
-			return '' !== trim( $value );
-		}
-
-		if ( is_array( $value ) ) {
-			return array() !== $value;
-		}
-
-		return true;
+		return OrderFieldValues::is_answer( $value );
 	}
 }

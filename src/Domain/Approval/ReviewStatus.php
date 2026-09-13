@@ -170,13 +170,14 @@ final class ReviewStatus {
 	 * @return bool Whether the order was held.
 	 */
 	public static function apply( WC_Order $order ): bool {
-		$flows = ApprovalFlow::enabled_in( PublishedDocument::read()->fields() );
+		$definitions = PublishedDocument::read()->fields();
+		$flows       = ApprovalFlow::enabled_in( $definitions );
 
 		if ( array() === $flows ) {
 			return false;
 		}
 
-		$values = ( new OrderFieldsService() )->read( $order );
+		$values = ( new OrderFieldsService() )->read( $order, $definitions );
 
 		foreach ( $flows as $entry ) {
 			if ( ! $entry['flow']->complete() ) {
