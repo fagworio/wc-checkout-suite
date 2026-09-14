@@ -20,7 +20,8 @@
 		"test:unit-js": "jest",
 		"check-types": "tsc --noEmit",
 		"format": "wp-scripts format resources tests/js",
-		"build:blocks": "wp-scripts build --webpack-src-dir=resources/blocks --output-path=build/blocks"
+		"build:blocks": "wp-scripts build --webpack-src-dir=resources/blocks --output-path=build/blocks",
+		"test:e2e:woocommerce": "node tests/browser/full-woocommerce-flow.mjs"
 	},
 	"devDependencies": {
 		"@testing-library/dom": "^10.4.1",

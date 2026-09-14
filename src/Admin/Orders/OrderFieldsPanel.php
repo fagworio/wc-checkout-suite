@@ -61,6 +61,13 @@ use WC_Order;
 final class OrderFieldsPanel {
 
 	/**
+	 * Orders already rendered by an inline compatibility hook in this request.
+	 *
+	 * @var array<int, bool>
+	 */
+	private static array $inline_rendered = array();
+
+	/**
 	 * Screen identifier of the legacy posts-based orders screen.
 	 */
 	public const SCREEN_LEGACY = 'shop_order';
@@ -92,7 +99,75 @@ final class OrderFieldsPanel {
 	 */
 	public static function register(): void {
 		add_action( 'add_meta_boxes', array( self::class, 'add' ), 10, 2 );
+		// WooCommerce's HPOS editor is a list-table screen, not a post editor. On
+		// current WooCommerce versions its screen-specific hook is the reliable seam;
+		// the generic hook is retained for older HPOS builds and the legacy editor.
+		add_action( 'add_meta_boxes_' . self::SCREEN_HPOS, array( self::class, 'add_hpos' ), 10, 1 );
+		// HPOS 11.x can render the order form without running the meta-box
+		// registration action. This WooCommerce order-data hook is the stable inline
+		// seam for that screen, while the meta box remains available to legacy and
+		// older HPOS screens.
+		add_action( 'woocommerce_admin_order_data_after_order_details', array( self::class, 'render_inline' ), 20, 1 );
+		add_action( 'woocommerce_admin_order_data_after_billing_address', array( self::class, 'render_inline' ), 20, 1 );
 		add_action( 'woocommerce_process_shop_order_meta', array( self::class, 'save' ), 50, 2 );
+	}
+
+	/**
+	 * Renders the panel inline when the HPOS editor skips meta boxes.
+	 *
+	 * @param mixed $order WooCommerce order.
+	 * @return void
+	 */
+	public static function render_inline( $order ): void {
+		if ( ! $order instanceof WC_Order || ! self::may_edit( $order ) ) {
+			return;
+		}
+
+		if ( isset( self::$inline_rendered[ $order->get_id() ] ) ) {
+			return;
+		}
+
+		self::$inline_rendered[ $order->get_id() ] = true;
+
+		self::render( $order, array( 'args' => array( 'order' => $order ) ) );
+	}
+
+	/**
+	 * Registers the panel on the current HPOS order screen.
+	 *
+	 * The HPOS screen does not pass a post object to the generic meta-box action;
+	 * resolve the order from the explicit query argument instead of silently
+	 * skipping the panel when WooCommerce changes that screen's dispatch path.
+	 *
+	 * @param mixed $screen Current screen object or identifier.
+	 * @return void
+	 */
+	public static function add_hpos( $screen = null ): void {
+		unset( $screen );
+
+		// The ID is a read-only screen route parameter; this screen's save action
+		// has its own nonce check in `save()` below.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only order screen identifier.
+		if ( ! function_exists( 'wc_get_order' ) || ! isset( $_GET['id'] ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only order screen identifier.
+		$order = wc_get_order( absint( wp_unslash( $_GET['id'] ) ) );
+
+		if ( ! $order instanceof WC_Order || ! self::may_edit( $order ) ) {
+			return;
+		}
+
+		add_meta_box(
+			self::BOX_ID,
+			__( 'Checkout fields', 'wc-checkoutsuite' ),
+			array( self::class, 'render' ),
+			self::SCREEN_HPOS,
+			'normal',
+			'default',
+			array( 'order' => $order )
+		);
 	}
 
 	/**
