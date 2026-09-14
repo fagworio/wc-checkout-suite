@@ -39,12 +39,31 @@
 .wccs-checkout .woocommerce {
 	--wccs-checkout-gap: var(--wccs-space-16);
 	--wccs-checkout-field-gap: var(--wccs-space-8);
+	box-sizing: border-box;
+	inline-size: 100%;
+	max-inline-size: 100%;
 }
 
 .wccs-checkout form.checkout {
 	display: grid;
+	box-sizing: border-box;
+	inline-size: 100%;
+	max-inline-size: 100%;
 	gap: var(--wccs-checkout-gap);
 	align-items: start;
+}
+
+/* Themes commonly keep the old Classic widths and floats on these nodes. Once
+   the checkout itself owns the two-column grid, those widths would make each
+   grid item occupy only half of its already allocated track. */
+.wccs-checkout form.checkout > #customer_details,
+.wccs-checkout form.checkout > #order_review,
+.wccs-checkout form.checkout > .woocommerce-checkout-review-order {
+	box-sizing: border-box;
+	inline-size: 100%;
+	min-inline-size: 0;
+	max-inline-size: 100%;
+	float: none;
 }
 
 /* The two columns of the classic checkout: the form and the order review. */
@@ -81,6 +100,9 @@
  */
 .wccs-checkout .form-row {
 	grid-column: span 12;
+	box-sizing: border-box;
+	inline-size: 100%;
+	max-inline-size: 100%;
 	margin: 0;
 	padding: 0;
 }
@@ -100,6 +122,14 @@
 
 .wccs-checkout .wccs-col-3 {
 	grid-column: span 3;
+}
+
+.wccs-checkout .wccs-upload__unavailable {
+	display: block;
+	inline-size: 100%;
+	max-inline-size: 100%;
+	white-space: normal;
+	overflow-wrap: anywhere;
 }
 
 /* Inside a row, the label, the control and the message are spaced by the same

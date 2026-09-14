@@ -115,12 +115,24 @@ export default function SettingsScreen( { client, editable = true } ) {
 
 	return (
 		<div className="wccs-settings">
+			<h1 className="wccs-settings__title">
+				{ __( 'Qual checkout a loja deve usar?', 'wc-checkoutsuite' ) }
+			</h1>
+			<p className="wccs-settings__intro">
+				{ __(
+					'Essa escolha controla somente a apresentação do checkout ao cliente. Os campos e configurações continuam preservados nos dois modos.',
+					'wc-checkoutsuite'
+				) }
+			</p>
 			{ editable ? (
 				<CheckboxField
 					id="wccs-custom-checkout"
-					label={ __( 'Custom checkout', 'wc-checkoutsuite' ) }
+					label={ __(
+						'Usar checkout modificado pelo WCCS (Custom checkout)',
+						'wc-checkoutsuite'
+					) }
 					help={ __(
-						'Presents the checkout this plugin designed. Turning it off restores the store’s own checkout and keeps every field you configured.',
+						'Ligado: o cliente vê o checkout modificado pelo WCCS. Desligado: o cliente vê o checkout padrão do WooCommerce. Desligar não remove nem despublica seus campos.',
 						'wc-checkoutsuite'
 					) }
 					checked={ Boolean( state.custom_checkout ) }
@@ -130,6 +142,17 @@ export default function SettingsScreen( { client, editable = true } ) {
 					}
 				/>
 			) : null }
+
+			<div className="wccs-settings__modes" aria-label={ __( 'Modos de checkout', 'wc-checkoutsuite' ) }>
+				<div className={ `wccs-settings__mode-card${ ! state.custom_checkout ? ' is-active' : '' }` }>
+					<strong>{ __( 'Checkout padrão do WooCommerce', 'wc-checkoutsuite' ) }</strong>
+					<span>{ __( 'A loja mantém a apresentação nativa do WooCommerce.', 'wc-checkoutsuite' ) }</span>
+				</div>
+				<div className={ `wccs-settings__mode-card${ state.custom_checkout ? ' is-active' : '' }` }>
+					<strong>{ __( 'Checkout modificado pelo WCCS', 'wc-checkoutsuite' ) }</strong>
+					<span>{ __( 'A loja aplica a apresentação personalizada do plugin, quando compatível.', 'wc-checkoutsuite' ) }</span>
+				</div>
+			</div>
 
 			<p className="wccs-settings__mode">
 				{ sprintf(

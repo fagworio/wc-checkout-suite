@@ -89,7 +89,7 @@ final class ClassicUploads {
 
 		if ( ! UploadsEnvironment::enabled() ) {
 			$notice = sprintf(
-				'<p class="wccs-upload__unavailable" role="alert">%s</p>',
+				'<span class="wccs-upload__unavailable" role="alert">%s</span>',
 				esc_html( UploadsEnvironment::reason() )
 			);
 		}

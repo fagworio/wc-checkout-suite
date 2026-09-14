@@ -76,7 +76,7 @@ function suggestedKey( label ) {
  * @param {import('../schema/types').FieldCatalog|null}       props.catalog         Field catalogue.
  * @param {import('../schema/types').CoreFieldInventory|null} props.coreFields      WooCommerce's own fields.
  * @param {string}                                            props.section         Section a new field joins.
- * @param {Array<{id: string, label: string}>}                props.sections        Sections to choose from.
+	 * @param {Array<{id: string, label: string}>}                props.sections        Sections to choose from.
  * @param {Function}                                          props.onSectionChange Called with a section id.
  * @param {Function}                                          props.onChooseType    Called with the choice to create.
  * @param {Function}                                          props.onAdoptCore     Called with a core field to adopt.

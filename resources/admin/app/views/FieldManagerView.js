@@ -543,22 +543,12 @@ export default function FieldManagerView( { model } ) {
 			) }
 			onClose={ () => setPublishOpen( false ) }
 			footer={
-				<>
-					<Button
-						variant="secondary"
-						onClick={ () => setPublishOpen( false ) }
-					>
-						{ __( 'Fechar', 'wc-checkoutsuite' ) }
-					</Button>
-					<Button
-						variant="primary"
-						busy={ publishing }
-						disabled={ publishing }
-						onClick={ onPublish }
-					>
-						{ __( 'Publicar alterações', 'wc-checkoutsuite' ) }
-					</Button>
-				</>
+				<Button
+					variant="secondary"
+					onClick={ () => setPublishOpen( false ) }
+				>
+					{ __( 'Fechar', 'wc-checkoutsuite' ) }
+				</Button>
 			}
 		>
 			<PublishPanel

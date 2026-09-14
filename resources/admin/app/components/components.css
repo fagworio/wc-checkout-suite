@@ -574,6 +574,66 @@
 	padding: var(--wccs-space-24);
 }
 
+.wccs-admin .preview-mode-notice {
+	display: grid;
+	gap: var(--wccs-space-4);
+	margin: var(--wccs-space-12) 0;
+	padding: var(--wccs-space-12) var(--wccs-space-16);
+	border: 1px solid #ead49a;
+	border-radius: var(--wccs-radius-control);
+	background: #fff9e8;
+	color: var(--wccs-ink);
+	font-size: var(--wccs-text-help);
+}
+
+.wccs-admin .preview-mode-notice span {
+	color: var(--wccs-ink-muted);
+}
+
+.wccs-admin .wccs-settings__title {
+	margin: 0;
+	font-size: var(--wccs-text-heading-large);
+}
+
+.wccs-admin .wccs-settings__intro {
+	max-width: 70ch;
+	margin: var(--wccs-space-8) 0 var(--wccs-space-16);
+	color: var(--wccs-ink-muted);
+}
+
+.wccs-admin .wccs-settings__modes {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--wccs-space-12);
+	margin: var(--wccs-space-16) 0 var(--wccs-space-24);
+}
+
+.wccs-admin .wccs-settings__mode-card {
+	display: grid;
+	gap: var(--wccs-space-4);
+	padding: var(--wccs-space-16);
+	border: 1px solid var(--wccs-border-decorative);
+	border-radius: var(--wccs-radius-panel);
+	background: var(--wccs-app-background);
+}
+
+.wccs-admin .wccs-settings__mode-card.is-active {
+	border-color: var(--wccs-brand);
+	background: var(--wccs-brand-subtle);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--wccs-brand) 16%, transparent);
+}
+
+.wccs-admin .wccs-settings__mode-card span {
+	color: var(--wccs-ink-muted);
+	font-size: var(--wccs-text-help);
+}
+
+@media (max-width: 700px) {
+	.wccs-admin .wccs-settings__modes {
+		grid-template-columns: 1fr;
+	}
+}
+
 /*
  * The synthetic sample, laid out through container queries so the three device
  * classes produce three visibly different arrangements.

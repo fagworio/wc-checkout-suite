@@ -79,6 +79,19 @@ const SECTION_ICONS = {
 };
 
 /**
+ * Server menu entries that do not have a working screen yet. They are kept in
+ * the server contract for the roadmap, but must not be advertised as clickable
+ * destinations until their flows exist.
+ *
+ * @type {Set<string>}
+ */
+const UNAVAILABLE_SECTIONS = new Set( [
+	'sections',
+	'checkout-page',
+	'import-export',
+] );
+
+/**
  * The logo the design draws in the column.
  *
  * @return {*} Rendered mark.
@@ -129,6 +142,7 @@ function navigation( serverSections ) {
 	const extra = serverSections
 		.filter(
 			( section ) =>
+				! UNAVAILABLE_SECTIONS.has( section.id ) &&
 				! DESIGNED_SECTIONS.some( ( item ) => item.id === section.id )
 		)
 		.map( ( section ) => ( {

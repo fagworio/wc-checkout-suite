@@ -72,6 +72,9 @@ import {
  */
 const FALLBACK_SECTION = 'order';
 
+/** Local draft handoff used when the shell swaps the editor for another screen. */
+const LOCAL_DRAFT_KEY = 'wccs-local-draft';
+
 /**
  * Fields screen.
  *
@@ -301,7 +304,22 @@ export default function FieldsScreen( {
 				return;
 			}
 
-			resetDocument( draft );
+			let local = null;
+			try {
+				const handoffEnabled = window.location.search.includes( 'wccs-checkoutsuite' ) || document.body?.classList.contains( 'wccs-admin' );
+				const stored = handoffEnabled ? window.sessionStorage?.getItem( LOCAL_DRAFT_KEY ) : null;
+				local = stored ? JSON.parse( stored ) : null;
+			} catch ( error ) {
+				local = null;
+			}
+
+			if ( local?.baseRevision === draft.revision && local.document ) {
+				resetDocument( local.document );
+				setSaved( __( 'Há uma edição local não salva preservada nesta sessão.', 'wc-checkoutsuite' ) );
+			} else {
+				window.sessionStorage?.removeItem( LOCAL_DRAFT_KEY );
+				resetDocument( draft );
+			}
 			setSavedDocument( draft );
 			setCatalog( types );
 			setCoreFields( core );
@@ -317,6 +335,31 @@ export default function FieldsScreen( {
 			}
 		}
 	}, [ client, resetDocument ] );
+
+	useEffect( () => {
+		if (
+			! document ||
+			! savedDocument ||
+			document === savedDocument ||
+			( ! window.location.search.includes( 'wccs-checkoutsuite' ) &&
+				! window.document.body?.classList.contains( 'wccs-admin' ) )
+		) {
+			return;
+		}
+
+		try {
+			window.sessionStorage?.setItem(
+				LOCAL_DRAFT_KEY,
+				JSON.stringify( {
+					baseRevision: savedDocument.revision,
+					document,
+				} )
+			);
+		} catch ( error ) {
+			// Storage is an enhancement for an internal navigation; the editor still
+			// works when the browser blocks sessionStorage.
+		}
+	}, [ document, savedDocument ] );
 
 	useEffect( () => {
 		mounted.current = true;
@@ -407,10 +450,10 @@ export default function FieldsScreen( {
 	 * always usable: ROADMAP.md section 4 fixes them as domain concepts, and an
 	 * adopted WooCommerce field already belongs to one.
 	 *
-	 * @type {Array<{key: string, label: string}>}
+	 * @type {Array<{id: string, label: string}>}
 	 */
 	const sectionOptions = useMemo( () => {
-		/** @type {Array<{key: string, label: string}>} */
+		/** @type {Array<{id: string, label: string}>} */
 		const options = [];
 		/** @type {Set<string>} */
 		const seen = new Set();
@@ -422,7 +465,7 @@ export default function FieldsScreen( {
 
 			seen.add( group.section.id );
 			options.push( {
-				key: group.section.id,
+				id: group.section.id,
 				label: group.section.title,
 			} );
 		}
@@ -433,7 +476,7 @@ export default function FieldsScreen( {
 			}
 
 			seen.add( location.value );
-			options.push( { key: location.value, label: location.label } );
+			options.push( { id: location.value, label: location.label } );
 		}
 
 		return options;
@@ -445,12 +488,12 @@ export default function FieldsScreen( {
 	 * @return {void}
 	 */
 	useEffect( () => {
-		if ( sectionOptions.some( ( entry ) => entry.key === section ) ) {
+		if ( sectionOptions.some( ( entry ) => entry.id === section ) ) {
 			return;
 		}
 
 		if ( sectionOptions.length > 0 ) {
-			setSection( sectionOptions[ 0 ].key );
+			setSection( sectionOptions[ 0 ].id );
 		}
 	}, [ sectionOptions, section ] );
 
@@ -511,6 +554,7 @@ export default function FieldsScreen( {
 			// server never had would be a lie.
 			resetDocument( result );
 			setSavedDocument( result );
+			window.sessionStorage?.removeItem( LOCAL_DRAFT_KEY );
 			setSaved( __( 'Draft saved.', 'wc-checkoutsuite' ) );
 
 			// The report compares the draft with the published document, so a save
@@ -541,7 +585,7 @@ export default function FieldsScreen( {
 	 * @return {Promise<void>} Resolves when publication settles.
 	 */
 	const publish = useCallback( async () => {
-		if ( ! document ) {
+		if ( ! document || dirty ) {
 			return;
 		}
 
@@ -567,7 +611,7 @@ export default function FieldsScreen( {
 				setPublishing( false );
 			}
 		}
-	}, [ client, document, refreshPublication ] );
+	}, [ client, document, dirty, refreshPublication ] );
 
 	/**
 	 * Publishes an earlier revision again.
