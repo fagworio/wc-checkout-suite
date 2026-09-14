@@ -265,6 +265,8 @@ export function createClient( {
 		request: send,
 		getDraft: ( /** @type {AbortSignal} */ signal ) =>
 			send( routes.draft, { method: 'GET', signal } ),
+		getActive: ( /** @type {AbortSignal} */ signal ) =>
+			send( routes.active, { method: 'GET', signal } ),
 		// Catalogue reads. They are reads, so the retry rule applies to them and
 		// not to the writes below.
 		fieldTypes: ( /** @type {AbortSignal} */ signal ) =>
@@ -296,6 +298,16 @@ export function createClient( {
 			/** @type {AbortSignal} */ signal
 		) =>
 			send( routes.draft, {
+				method: 'PUT',
+				data: { schema, expected_revision: expectedRevision },
+				signal,
+			} ),
+		updateActive: (
+			/** @type {any} */ schema,
+			/** @type {number} */ expectedRevision,
+			/** @type {AbortSignal} */ signal
+		) =>
+			send( routes.update, {
 				method: 'PUT',
 				data: { schema, expected_revision: expectedRevision },
 				signal,

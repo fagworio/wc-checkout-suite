@@ -293,7 +293,7 @@ export default function FieldsScreen( {
 		try {
 			const [ draft, types, core, publication, history ] =
 				await Promise.all( [
-					client.getDraft(),
+					( client.getActive ?? client.getDraft )(),
 					client.fieldTypes(),
 					client.coreFields(),
 					client.diff(),
@@ -526,7 +526,7 @@ export default function FieldsScreen( {
 	}, [ client ] );
 
 	/**
-	 * Saves the draft, keeping the revision the server owns.
+	 * Applies the current editor document to the active checkout configuration.
 	 *
 	 * @return {Promise<void>} Resolves when saving settles.
 	 */
@@ -540,7 +540,7 @@ export default function FieldsScreen( {
 		setSaved( '' );
 
 		try {
-			const result = await client.saveDraft(
+			const result = await ( client.updateActive ?? client.saveDraft )(
 				document,
 				document.revision
 			);
@@ -549,13 +549,19 @@ export default function FieldsScreen( {
 				return;
 			}
 
-			// The server answered with its own revision, so it is the authority
-			// now: the edit is no longer local, and undoing into a state the
-			// server never had would be a lie.
-			resetDocument( result );
-			setSavedDocument( result );
+			// The server is authoritative after the write. Read the active document
+			// because the update route assigns the next revision on the server.
+			const active = result?.fields
+				? result
+				: await ( client.getActive ?? client.getDraft )();
+			resetDocument( active );
+			setSavedDocument( active );
 			window.sessionStorage?.removeItem( LOCAL_DRAFT_KEY );
-			setSaved( __( 'Draft saved.', 'wc-checkoutsuite' ) );
+			setSaved(
+				document.revision > 0
+					? __( 'Campos atualizados com sucesso.', 'wc-checkoutsuite' )
+					: __( 'Campos salvos com sucesso.', 'wc-checkoutsuite' )
+			);
 
 			// The report compares the draft with the published document, so a save
 			// makes the one on screen stale.

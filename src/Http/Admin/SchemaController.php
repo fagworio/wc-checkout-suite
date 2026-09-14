@@ -39,6 +39,16 @@ final class SchemaController {
 	public const ROUTE_DRAFT = '/schema/draft';
 
 	/**
+	 * Active schema route used by the normal editor flow.
+	 */
+	public const ROUTE_ACTIVE = '/schema/active';
+
+	/**
+	 * Atomic active-schema update route used by the normal editor flow.
+	 */
+	public const ROUTE_UPDATE = '/schema/update';
+
+	/**
 	 * Publication route.
 	 */
 	public const ROUTE_PUBLISH = '/schema/publish';
@@ -70,6 +80,8 @@ final class SchemaController {
 	public static function routes(): array {
 		return array(
 			'draft'     => self::ROUTE_DRAFT,
+			'active'    => self::ROUTE_ACTIVE,
+			'update'    => self::ROUTE_UPDATE,
 			'publish'   => self::ROUTE_PUBLISH,
 			'revisions' => self::ROUTE_REVISIONS,
 			'restore'   => self::ROUTE_RESTORE,
@@ -137,6 +149,36 @@ final class SchemaController {
 				'callback'            => array( $this, 'publish' ),
 				'permission_callback' => array( $this, 'can_manage' ),
 				'args'                => array(
+					'expected_revision' => array(
+						'type'     => 'integer',
+						'required' => false,
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::rest_namespace(),
+			self::ROUTE_ACTIVE,
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_active' ),
+				'permission_callback' => array( $this, 'can_manage' ),
+			)
+		);
+
+		register_rest_route(
+			self::rest_namespace(),
+			self::ROUTE_UPDATE,
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_active' ),
+				'permission_callback' => array( $this, 'can_manage' ),
+				'args'                => array(
+					'schema'            => array(
+						'type'     => 'object',
+						'required' => true,
+					),
 					'expected_revision' => array(
 						'type'     => 'integer',
 						'required' => false,
@@ -253,6 +295,33 @@ final class SchemaController {
 		unset( $request );
 
 		return new WP_REST_Response( $this->repository->read( SchemaRepository::SLOT_DRAFT )->to_array(), 200 );
+	}
+
+	/**
+	 * Returns the configuration currently used by the checkout.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public function get_active( WP_REST_Request $request ): WP_REST_Response {
+		unset( $request );
+
+		return new WP_REST_Response( $this->repository->read( SchemaRepository::SLOT_PUBLISHED )->to_array(), 200 );
+	}
+
+	/**
+	 * Validates and applies the editor's configuration in one operation.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function update_active( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$incoming = SchemaDocument::from_array( (array) $request->get_param( 'schema' ) );
+		$expected = $this->expected_revision( $request );
+
+		$result = $this->repository->update_active( $incoming, $expected, get_current_user_id() );
+
+		return $this->respond( $result );
 	}
 
 	/**

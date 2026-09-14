@@ -30,7 +30,6 @@ import FieldProperties from './FieldProperties';
 import PreviewView from './PreviewView';
 import RulesView from './RulesView';
 import Notice from '../components/Notice';
-import PublishPanel from '../components/PublishPanel';
 import RevisionsList from '../components/RevisionsList';
 import Button from '../components/Button';
 import { Toast } from '../design/Toast';
@@ -45,7 +44,7 @@ import { typeGlyph } from '../design/typeGlyph';
  *
  * @type {string}
  */
-const EYEBROW = 'FIELD MANAGER';
+const EYEBROW = 'CAMPOS DO CHECKOUT';
 
 /**
  * How wide a field is, in the design's words: a percentage of the row.
@@ -125,16 +124,14 @@ export default function FieldManagerView( { model } ) {
 		onAdoptCore,
 		edits,
 		onSave,
-		publishing,
-		publishError,
 		report,
-		onPublish,
 		revisions,
 		restoring,
 		restored,
 		onRestore,
 		reference,
 		onExport,
+		onPreview,
 		onOpenSection,
 		onCreateSection,
 		isProtected,
@@ -164,7 +161,6 @@ export default function FieldManagerView( { model } ) {
 	const [ pendingBulk, setPendingBulk ] = useState(
 		/** @type {'enable'|'disable'|'archive'|null} */ ( null )
 	);
-	const [ publishOpen, setPublishOpen ] = useState( false );
 	const [ historyOpen, setHistoryOpen ] = useState( false );
 
 	/**
@@ -504,10 +500,8 @@ export default function FieldManagerView( { model } ) {
 		announceMove( field.label, to + 1 );
 	};
 
-	// The design's topbar carries the same two actions on every view, and the four views
-	// are views of one document: the archive, the rules and the preview have nothing of
-	// their own to save, and publishing from any of them reviews the same draft. So the
-	// bar and the dialog it opens are built once, here, and every branch renders them.
+	// The topbar carries the two actions that matter to the normal configuration flow:
+	// inspect the checkout and apply the complete editor document.
 	const topbarActions = (
 		<TopbarActions>
 			<button
@@ -517,53 +511,23 @@ export default function FieldManagerView( { model } ) {
 				onClick={ onSave }
 			>
 				<Icon name="save" />
-				<span>{ __( 'Salvar rascunho', 'wc-checkoutsuite' ) }</span>
+				<span>
+					{ saving
+						? __( 'Salvando…', 'wc-checkoutsuite' )
+						: Number( doc?.revision ?? 0 ) > 0
+						? __( 'Atualizar campos', 'wc-checkoutsuite' )
+						: __( 'Salvar campos', 'wc-checkoutsuite' ) }
+				</span>
 			</button>
 			<button
 				type="button"
 				className="btn btn-primary"
-				onClick={ () => setPublishOpen( true ) }
+				onClick={ onPreview }
 			>
-				<span>{ __( 'Revisar publicação', 'wc-checkoutsuite' ) }</span>
+				<span>{ __( 'Ver checkout', 'wc-checkoutsuite' ) }</span>
 				<Icon name="arrow" />
 			</button>
 		</TopbarActions>
-	);
-
-	/** The publication review, reachable from every view of the document. */
-	const publishDialog = (
-		<Dialog
-			open={ publishOpen }
-			size="publish"
-			eyebrow={ __( 'PUBLICAR', 'wc-checkoutsuite' ) }
-			title={ __( 'Revisar publicação', 'wc-checkoutsuite' ) }
-			subtitle={ __(
-				'O rascunho vira a versão que a loja corre. Publicar cria uma revisão nova e mantém a anterior.',
-				'wc-checkoutsuite'
-			) }
-			onClose={ () => setPublishOpen( false ) }
-			footer={
-				<Button
-					variant="secondary"
-					onClick={ () => setPublishOpen( false ) }
-				>
-					{ __( 'Fechar', 'wc-checkoutsuite' ) }
-				</Button>
-			}
-		>
-			<PublishPanel
-				report={ report }
-				enabled={
-					( doc?.fields ?? [] ).filter(
-						( /** @type {any} */ field ) => field.enabled
-					).length
-				}
-				dirty={ dirty }
-				publishing={ publishing }
-				error={ publishError }
-				onPublish={ onPublish }
-			/>
-		</Dialog>
 	);
 
 	// The field properties are one element with two homes, as the design draws them: the
@@ -596,7 +560,6 @@ export default function FieldManagerView( { model } ) {
 		return (
 			<>
 				{ topbarActions }
-				{ publishDialog }
 				<ArchiveView
 					fields={ doc?.fields ?? [] }
 					catalog={ catalog }
@@ -611,7 +574,6 @@ export default function FieldManagerView( { model } ) {
 		return (
 			<>
 				{ topbarActions }
-				{ publishDialog }
 				<RulesView onBack={ model.onBackToEditor } />
 			</>
 		);
@@ -621,7 +583,6 @@ export default function FieldManagerView( { model } ) {
 		return (
 			<>
 				{ topbarActions }
-				{ publishDialog }
 				<PreviewView
 					document={ doc }
 					siteName={ model.siteName }
@@ -648,14 +609,14 @@ export default function FieldManagerView( { model } ) {
 						</div>
 						<h1 id="editorTitle">
 							{ __(
-								'Campos que fazem a diferença',
+							'Campos do checkout',
 								'wc-checkoutsuite'
 							) }
 							<span className="heading-dot">.</span>
 						</h1>
 						<p>
 							{ __(
-								'Monte o formulário, ajuste os detalhes e veja seu checkout ganhar forma.',
+								'Adicione e organize os campos exibidos no checkout da sua loja.',
 								'wc-checkoutsuite'
 							) }
 						</p>
@@ -799,7 +760,16 @@ export default function FieldManagerView( { model } ) {
 
 				{ saved ? (
 					<Notice status="success">
-						<p>{ saved }</p>
+						<p>
+							<strong>{ saved }</strong>{ ' ' }
+							<button
+								type="button"
+								className="wccs-notice__link"
+								onClick={ model.onPreview }
+							>
+								{ __( 'Ver checkout', 'wc-checkoutsuite' ) }
+							</button>
+						</p>
 					</Notice>
 				) : null }
 
@@ -1881,7 +1851,6 @@ export default function FieldManagerView( { model } ) {
 				/>
 			</Dialog>
 
-			{ publishDialog }
 
 			<Dialog
 				open={ historyOpen }

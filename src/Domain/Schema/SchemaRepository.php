@@ -311,6 +311,81 @@ final class SchemaRepository {
 		$result = $this->write( self::SLOT_PUBLISHED, $document, $published->revision() );
 
 		if ( $result->is_ok() ) {
+			// Keep the legacy draft slot aligned for diagnostics, exports and
+			// installations that still expose the historical endpoint. It is a
+			// compatibility mirror; the active slot above is the source of truth.
+			$draft = $this->read( self::SLOT_DRAFT );
+			$this->write( self::SLOT_DRAFT, $document, $draft->revision() );
+			$this->append_history( $document, $user_id, $timestamp );
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Applies the editor document directly to the active schema.
+	 *
+	 * This is the normal configuration flow. It validates before replacing the
+	 * published slot, checks the revision the editor read, and does not create a
+	 * new revision when the submitted content is unchanged.
+	 *
+	 * @param SchemaDocument $incoming          Content currently shown in the editor.
+	 * @param int|null       $expected_revision Revision the editor read.
+	 * @param int            $user_id           User saving the configuration.
+	 * @return WriteResult
+	 */
+	public function update_active( SchemaDocument $incoming, ?int $expected_revision, int $user_id ): WriteResult {
+		$current = $this->read( self::SLOT_PUBLISHED );
+
+		if ( null !== $expected_revision && $current->revision() !== $expected_revision ) {
+			return WriteResult::conflict( $current->revision() );
+		}
+
+		$unchanged = array(
+			'fields'            => $incoming->fields(),
+			'sections'          => $incoming->sections(),
+			'settings'          => $incoming->settings(),
+			'migration_history' => $incoming->migration_history(),
+		) === array(
+			'fields'            => $current->fields(),
+			'sections'          => $current->sections(),
+			'settings'          => $current->settings(),
+			'migration_history' => $current->migration_history(),
+		);
+
+		if ( $unchanged ) {
+			return WriteResult::ok( $current->revision() );
+		}
+
+		$validation = $this->validate( $incoming );
+
+		if ( ! $validation->is_valid() ) {
+			return WriteResult::invalid( $validation->errors() );
+		}
+
+		$protection = $this->guard->guard( $current->fields(), $incoming->fields() );
+
+		if ( ! $protection->is_valid() ) {
+			return WriteResult::invalid( $protection->errors() );
+		}
+
+		$timestamp = gmdate( 'c' );
+		$document  = new SchemaDocument(
+			$current->revision() + 1,
+			$incoming->schema_version(),
+			$timestamp,
+			$user_id,
+			$incoming->fields(),
+			$incoming->sections(),
+			$incoming->settings(),
+			$incoming->migration_history()
+		);
+
+		$result = $this->write( self::SLOT_PUBLISHED, $document, $current->revision() );
+
+		if ( $result->is_ok() ) {
+			$draft = $this->read( self::SLOT_DRAFT );
+			$this->write( self::SLOT_DRAFT, $document, $draft->revision() );
 			$this->append_history( $document, $user_id, $timestamp );
 		}
 

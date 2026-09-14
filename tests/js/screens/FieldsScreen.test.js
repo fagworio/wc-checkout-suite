@@ -319,7 +319,7 @@ describe( 'editing', () => {
 
 		await duplicateField( user, 'CPF' );
 		await user.click(
-			screen.getByRole( 'button', { name: 'Salvar rascunho' } )
+			screen.getByRole( 'button', { name: 'Atualizar campos' } )
 		);
 
 		await waitFor( () =>
@@ -355,7 +355,7 @@ describe( 'a failure does not discard work', () => {
 
 		await duplicateField( user, 'CPF' );
 		await user.click(
-			screen.getByRole( 'button', { name: 'Salvar rascunho' } )
+			screen.getByRole( 'button', { name: 'Atualizar campos' } )
 		);
 
 		await screen.findByText( /could not be reached/ );
@@ -388,7 +388,7 @@ describe( 'a failure does not discard work', () => {
 
 		await duplicateField( user, 'CPF' );
 		await user.click(
-			screen.getByRole( 'button', { name: 'Salvar rascunho' } )
+			screen.getByRole( 'button', { name: 'Atualizar campos' } )
 		);
 
 		await screen.findByText( /Someone else saved first/ );

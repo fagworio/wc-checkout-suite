@@ -265,6 +265,18 @@
 	color: var(--wccs-ink-muted);
 }
 
+.wccs-admin .wccs-notice__link {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var(--wccs-accent);
+	font: inherit;
+	font-weight: var(--wccs-weight-semibold);
+	cursor: pointer;
+	text-decoration: underline;
+}
+
 .wccs-admin .wccs-notice__dismiss {
 	margin-left: auto;
 }
