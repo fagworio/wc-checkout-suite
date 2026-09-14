@@ -20,11 +20,11 @@ O fluxo da secção 12.1 passou a existir como uma decisão só, lida num só lu
   (`area`, `section`, `status`), e duas verificações novas recusam o que antes passava: o estado que o
   lojista não nomeou, e uma análise cuja secção não é oferecida naquela área
   (`approval_section_not_offered`) — a mesma lacuna que WCCS-073 fechou para os vínculos, aqui para o fluxo.
-- **Com o fluxo completo, o pedido que tem resposta espera no estado configurado.** O gancho é o do fim do
-  checkout (`woocommerce_checkout_order_processed` no clássico e o equivalente da Store API nos Blocks), ou
-  seja depois de o WooCommerce ter processado o pagamento e enviado os e-mails do estado a que o pedido
-  chegou. O pedido leva uma nota a dizer por que espera, e a mesma chamada duas vezes não muda nada nem
-  escreve duas notas.
+- **Com o fluxo completo, o pedido que tem resposta espera no estado configurado.** A Suite observa a
+  transição de status (`woocommerce_order_status_changed`) somente quando o WooCommerce chega a
+  `processing`, `completed` ou `on-hold`, e também `woocommerce_payment_complete` para gateways que usam
+  esse sinal. O checkout criado não é retido antes da decisão do gateway. O pedido leva uma nota a dizer
+  por que espera, e uma chamada repetida não muda nada nem escreve duas notas.
 - **O cliente é informado quando o lojista pediu.** Com `show_status`, o painel do pedido mostra
   «Situação da análise: <o nome que a loja escolheu>» — e o painel deixou de desaparecer quando não há linhas
   a mostrar, porque a situação do pedido é informação do cliente mesmo quando o documento não lhe é exibido.

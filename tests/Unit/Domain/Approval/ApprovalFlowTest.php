@@ -11,6 +11,7 @@ namespace WCCheckoutSuite\Tests\Unit\Domain\Approval;
 
 use PHPUnit\Framework\TestCase;
 use WCCheckoutSuite\Domain\Approval\ApprovalFlow;
+use WCCheckoutSuite\Domain\Approval\ReviewStatus;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 
 /**
@@ -205,5 +206,18 @@ final class ApprovalFlowTest extends TestCase {
 		self::assertFalse( ApprovalFlow::answered( '   ' ) );
 		self::assertFalse( ApprovalFlow::answered( null ) );
 		self::assertFalse( ApprovalFlow::answered( false ) );
+	}
+
+	/**
+	 * The review transition is only eligible after the gateway has decided.
+	 *
+	 * @return void
+	 */
+	public function test_only_post_payment_statuses_can_trigger_review(): void {
+		self::assertTrue( ReviewStatus::is_post_payment_status( 'processing' ) );
+		self::assertTrue( ReviewStatus::is_post_payment_status( 'completed' ) );
+		self::assertTrue( ReviewStatus::is_post_payment_status( 'on-hold' ) );
+		self::assertFalse( ReviewStatus::is_post_payment_status( 'pending' ) );
+		self::assertFalse( ReviewStatus::is_post_payment_status( 'wccs-custom' ) );
 	}
 }

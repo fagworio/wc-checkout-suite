@@ -262,6 +262,7 @@ final class ClassicPresentationTest extends TestCase {
 		$base = array( 'home', 'woocommerce', 'woocommerce-checkout' );
 
 		self::assertContains( ClassicAssets::SCOPE_CLASS, ClassicAssets::add_scope( $base, true, true ) );
+		self::assertContains( ClassicAssets::SCOPE_CLASS, ClassicAssets::add_scope( $base, true, false, true ), 'presentation may be enabled without custom fields' );
 		self::assertSame( $base, ClassicAssets::add_scope( $base, false, true ), 'another page is left as the theme left it' );
 		self::assertSame( $base, ClassicAssets::add_scope( $base, true, false ), 'a checkout with nothing to render is not marked' );
 	}

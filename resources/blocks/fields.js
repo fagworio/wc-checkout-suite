@@ -168,6 +168,7 @@ function useMaskedControl( ref, field, value, onChange ) {
 		};
 		// The mask is built once per field: re-creating it on every keystroke would
 		// throw away the cursor position and the text the customer is typing.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ ref, field ] );
 
 	useEffect( () => {

@@ -28,12 +28,13 @@
  * A value store.
  *
  * @typedef {Object} ValueStore
- * @property {(id: string) => any}                   get     Reads one value.
- * @property {(id: string, value: any) => void}      set     Writes one value.
- * @property {(id: string) => boolean}               has     Whether a value is held.
- * @property {(id: string) => void}                  forget  Drops one value.
- * @property {() => Record<string, any>}             all     Every value.
- * @property {(values: Record<string, any>) => void} replace Replaces everything.
+ * @property {(id: string) => any}                   get       Reads one value.
+ * @property {(id: string, value: any) => void}      set       Writes one value.
+ * @property {(id: string) => boolean}               has       Whether a value is held.
+ * @property {(id: string) => void}                  forget    Drops one value.
+ * @property {() => Record<string, any>}             all       Every value.
+ * @property {(values: Record<string, any>) => void} replace   Replaces everything.
+ * @property {Function}                              subscribe Listens for writes.
  */
 
 /**
@@ -46,15 +47,30 @@
 export function createValueStore( { values = {} } = {} ) {
 	/** @type {Map<string, any>} */
 	const held = new Map( Object.entries( values ) );
+	/** @type {Set<() => void>} */
+	const listeners = new Set();
+
+	const notify = () => {
+		for ( const listener of listeners ) {
+			listener();
+		}
+	};
 
 	return {
 		get: ( id ) => held.get( id ),
 		set: ( id, value ) => {
+			if ( Object.is( held.get( id ), value ) ) {
+				return;
+			}
+
 			held.set( id, value );
+			notify();
 		},
 		has: ( id ) => held.has( id ),
 		forget: ( id ) => {
-			held.delete( id );
+			if ( held.delete( id ) ) {
+				notify();
+			}
 		},
 		all: () => Object.fromEntries( held ),
 		replace: ( next ) => {
@@ -63,6 +79,13 @@ export function createValueStore( { values = {} } = {} ) {
 			for ( const [ id, value ] of Object.entries( next ?? {} ) ) {
 				held.set( id, value );
 			}
+
+			notify();
+		},
+		subscribe: ( /** @type {() => void} */ listener ) => {
+			listeners.add( listener );
+
+			return () => listeners.delete( listener );
 		},
 	};
 }
@@ -74,6 +97,7 @@ export function createValueStore( { values = {} } = {} ) {
  * @property {ValueStore}                                      store               The store itself.
  * @property {() => Record<string, any>}                       values              Values the components render.
  * @property {(id: string, value: any) => Record<string, any>} onChange            Records what was typed.
+ * @property {Function}                                        subscribe           Listens for writes.
  * @property {(id: string, visible: boolean) => void}          applyVisibility     Applies the hidden-value policy.
  * @property {() => Record<string, any>}                       remount             Re-decides visibility after a rebuild.
  * @property {(field: any) => string}                          policyOf            The policy a field declared.
@@ -159,5 +183,13 @@ export function createFieldLifecycle( {
 		return store.all();
 	};
 
-	return { store, values, onChange, applyVisibility, remount, policyOf };
+	return {
+		store,
+		values,
+		onChange,
+		applyVisibility,
+		remount,
+		policyOf,
+		subscribe: store.subscribe,
+	};
 }

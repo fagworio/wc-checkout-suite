@@ -305,9 +305,9 @@ wccs_proof_check(
 
 wccs_proof_check(
 	'And no checkout hook is added either',
-	! has_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC )
-		&& ! has_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_API ),
-	'classic=' . ( has_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC ) ? 'yes' : 'no' )
+	false === has_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC, array( \WCCheckoutSuite\Domain\Approval\ReviewStatus::class, 'hold_after_status_change' ) )
+		&& false === has_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_API, array( \WCCheckoutSuite\Domain\Approval\ReviewStatus::class, 'hold_api' ) ),
+	'classic=' . ( false !== has_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC, array( \WCCheckoutSuite\Domain\Approval\ReviewStatus::class, 'hold_after_status_change' ) ) ? 'yes' : 'no' )
 );
 
 $wccs_field_off = \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array( wccs_proof_field( array( 'require_review' => false ) ) );
@@ -315,7 +315,7 @@ $wccs_field_off = \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array( wc
 $wccs_order_off = wccs_proof_order( array( wccs_proof_field( array( 'require_review' => false ) ) ) );
 $wccs_orders[]  = $wccs_order_off;
 
-do_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC, $wccs_order_off->get_id(), array(), $wccs_order_off );
+do_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC, $wccs_order_off->get_id(), 'pending', 'processing', $wccs_order_off );
 
 wccs_proof_check(
 	'An order placed with it keeps the status WooCommerce gave it',
@@ -446,9 +446,9 @@ wccs_proof_check(
 
 wccs_proof_check(
 	'And the checkout is now watched, because a flow asked for it',
-	false !== has_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC )
-		&& false !== has_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_API ),
-	'classic=' . ( false !== has_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC ) ? 'yes' : 'no' )
+	false !== has_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC, array( \WCCheckoutSuite\Domain\Approval\ReviewStatus::class, 'hold_after_status_change' ) )
+		&& false !== has_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_API, array( \WCCheckoutSuite\Domain\Approval\ReviewStatus::class, 'hold_api' ) ),
+	'classic=' . ( false !== has_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC, array( \WCCheckoutSuite\Domain\Approval\ReviewStatus::class, 'hold_after_status_change' ) ) ? 'yes' : 'no' )
 );
 
 $wccs_definitions = array( $wccs_flow_field );
@@ -458,7 +458,7 @@ $wccs_orders[] = $wccs_order;
 
 $wccs_notes_before = wccs_proof_note_count( $wccs_order );
 
-do_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC, $wccs_order->get_id(), array(), $wccs_order );
+do_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC, $wccs_order->get_id(), 'pending', 'processing', $wccs_order );
 
 $wccs_held = wc_get_order( $wccs_order->get_id() );
 
@@ -474,7 +474,7 @@ wccs_proof_check(
 	'notes=' . wccs_proof_note_count( $wccs_held ) . ' before=' . $wccs_notes_before
 );
 
-do_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC, $wccs_held->get_id(), array(), $wccs_held );
+do_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC, $wccs_held->get_id(), 'processing', 'processing', $wccs_held );
 
 wccs_proof_check(
 	'Asking again changes nothing and says nothing twice',
@@ -486,7 +486,7 @@ wccs_proof_check(
 $wccs_order_empty = wccs_proof_order( $wccs_definitions, array() );
 $wccs_orders[]    = $wccs_order_empty;
 
-do_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC, $wccs_order_empty->get_id(), array(), $wccs_order_empty );
+do_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_CLASSIC, $wccs_order_empty->get_id(), 'pending', 'processing', $wccs_order_empty );
 
 wccs_proof_check(
 	'An order with nothing attached is not held',
@@ -497,7 +497,7 @@ wccs_proof_check(
 $wccs_store_api_order = wccs_proof_order( $wccs_definitions );
 $wccs_orders[]        = $wccs_store_api_order;
 
-do_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_API, $wccs_store_api_order );
+do_action( \WCCheckoutSuite\Domain\Approval\ReviewStatus::HOOK_API, $wccs_store_api_order->get_id() );
 
 wccs_proof_check(
 	'The Blocks checkout is held by the same rule',

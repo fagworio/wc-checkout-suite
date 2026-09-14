@@ -90,7 +90,11 @@ final class ClassicAssets {
 			return $classes;
 		}
 
-		return self::add_scope( $classes, true, self::has_renderable_fields() );
+		$presentation = \WCCheckoutSuite\Domain\Settings\CheckoutSettings::presents(
+			\WCCheckoutSuite\Domain\Settings\CheckoutSettings::offered_gateways()
+		);
+
+		return self::add_scope( $classes, true, self::has_renderable_fields(), $presentation );
 	}
 
 	/**
@@ -104,10 +108,11 @@ final class ClassicAssets {
 	 * @param array<int, string> $classes     Body classes.
 	 * @param bool               $is_checkout Whether the request is the classic checkout.
 	 * @param bool               $has_fields  Whether the published schema has a renderable field.
+	 * @param bool               $presentation Whether the layout was opted into.
 	 * @return array<int, string>
 	 */
-	public static function add_scope( array $classes, bool $is_checkout, bool $has_fields ): array {
-		if ( ! self::should_enqueue( $is_checkout, $has_fields ) ) {
+	public static function add_scope( array $classes, bool $is_checkout, bool $has_fields, bool $presentation = false ): array {
+		if ( ! $is_checkout || ( ! $has_fields && ! $presentation ) ) {
 			return $classes;
 		}
 
@@ -152,7 +157,7 @@ final class ClassicAssets {
 		$is_checkout = $is_checkout ?? self::is_classic_checkout();
 		$has_fields  = $has_fields ?? self::has_renderable_fields();
 
-		if ( ! self::should_enqueue( $is_checkout, $has_fields ) ) {
+		if ( ! $is_checkout ) {
 			return;
 		}
 
@@ -160,8 +165,16 @@ final class ClassicAssets {
 		// opt-in governs the stylesheet and the two presentation components, never the
 		// editor, the schema or the validation. A store that has not opted in still
 		// gets every field it configured, on WooCommerce's own checkout.
-		if ( \WCCheckoutSuite\Domain\Settings\CheckoutSettings::presents( \WCCheckoutSuite\Domain\Settings\CheckoutSettings::offered_gateways() ) ) {
+		$presentation = \WCCheckoutSuite\Domain\Settings\CheckoutSettings::presents(
+			\WCCheckoutSuite\Domain\Settings\CheckoutSettings::offered_gateways()
+		);
+
+		if ( $presentation ) {
 			self::enqueue_presentation();
+		}
+
+		if ( ! $has_fields ) {
+			return;
 		}
 
 		$bundle = 'build/checkout/index.js';

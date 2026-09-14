@@ -98,6 +98,30 @@ final class BlocksAdapterTest extends TestCase {
 	}
 
 	/**
+	 * A masked native text field goes through the controlled path exactly once.
+	 *
+	 * @return void
+	 */
+	public function test_a_masked_text_field_is_not_registered_as_native(): void {
+		$translated = $this->adapter->apply(
+			array(
+				$this->definition(
+					array(
+						'mask' => array(
+							'key'     => 'br.cpf',
+							'version' => 1,
+						),
+					)
+				),
+			),
+			array( $this->section( 'billing', 'billing' ) )
+		);
+
+		self::assertSame( array(), $translated['registrations'] );
+		self::assertSame( 'needs_controlled_component', $translated['report'][0]['code'] );
+	}
+
+	/**
 	 * A date field is refused, and the reason names what will deliver it.
 	 *
 	 * ROADMAP.md section 8 lists date among the natively supported types. The
@@ -371,6 +395,34 @@ final class BlocksAdapterTest extends TestCase {
 		self::assertSame( $rule, $translated['registrations'][0]['required'] );
 		self::assertSame( array( 'not' => $rule ), $translated['registrations'][0]['hidden'] );
 		self::assertSame( array(), $translated['report'] );
+	}
+
+	/**
+	 * A visibility rule does not make an optional field required.
+	 *
+	 * @return void
+	 */
+	public function test_a_visible_optional_field_stays_optional(): void {
+		$translated = $this->adapter->apply(
+			array(
+				$this->definition(
+					array(
+						'required'   => false,
+						'conditions' => array(
+							'visible' => array(
+								'source'   => 'country',
+								'operator' => 'equals',
+								'value'    => 'BR',
+							),
+						),
+					)
+				),
+			),
+			array( $this->section( 'billing', 'billing' ) )
+		);
+
+		self::assertFalse( $translated['registrations'][0]['required'] );
+		self::assertArrayHasKey( 'hidden', $translated['registrations'][0] );
 	}
 
 	/**

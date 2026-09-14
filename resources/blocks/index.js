@@ -15,7 +15,7 @@
  * can render, and it says out loud when there is nowhere to put them.
  */
 
-import { createElement } from '@wordpress/element';
+import { createElement, useEffect, useState } from '@wordpress/element';
 
 import { componentFor, unrenderable } from './fields';
 import { createFieldLifecycle, createValueStore } from './values';
@@ -73,6 +73,11 @@ const lifecycle = createFieldLifecycle( {
 	store: createValueStore(),
 	fields: payload.fields ?? [],
 } );
+
+/**
+ * Namespace used by the Store API extension.
+ */
+export const EXTENSION_NAMESPACE = 'wc-checkoutsuite';
 
 /**
  * The Blocks checkout API, when the platform has loaded it.
@@ -141,6 +146,107 @@ export function buildFields(
 }
 
 /**
+ * The value sent for an empty controlled field.
+ *
+ * Store API schemas distinguish an empty choice list and false from an empty
+ * string. Keeping the empty shape stable prevents the checkout store from
+ * dropping a field while it is being edited.
+ *
+ * @param {any} field Field payload.
+ * @param {any} value Current value.
+ * @return {any} Value suitable for setExtensionData.
+ */
+export function extensionValue( field, value ) {
+	if ( undefined !== value && null !== value ) {
+		return value;
+	}
+
+	if ( 'multiselect' === field?.type || 'checkbox-group' === field?.type ) {
+		return [];
+	}
+
+	return 'checkbox' === field?.type ? false : '';
+}
+
+/**
+ * The component registered for one field.
+ *
+ * Each registration closes over its own field. Rendering reads the current
+ * value from the shared store and never consumes a shared element queue, so
+ * React may render, remount or invoke the component more than once without
+ * changing which field it represents.
+ *
+ * @param {Object}   props                         Registration props.
+ * @param {any}      props.field                   Field payload.
+ * @param {any}      props.lifecycle               Value lifecycle.
+ * @param {Function} props.component               Field component.
+ * @param {Object}   [props.checkoutExtensionData] Store API bridge.
+ * @return {*} Rendered field.
+ */
+function RegisteredField( {
+	field,
+	lifecycle: fieldLifecycle,
+	component,
+	checkoutExtensionData,
+} ) {
+	const [ , redraw ] = useState( 0 );
+	const value = fieldLifecycle.store.get( field.id );
+	const setExtensionData = /** @type {any} */ ( checkoutExtensionData )
+		?.setExtensionData;
+
+	useEffect(
+		() =>
+			fieldLifecycle.subscribe( () => redraw( ( count ) => count + 1 ) ),
+		[ fieldLifecycle ]
+	);
+
+	useEffect( () => {
+		if ( 'function' === typeof setExtensionData ) {
+			setExtensionData(
+				EXTENSION_NAMESPACE,
+				field.name,
+				extensionValue( field, value )
+			);
+		}
+	}, [ setExtensionData, field, value ] );
+
+	const onChange = ( /** @type {any} */ next ) => {
+		fieldLifecycle.onChange( field.id, next );
+
+		if ( 'function' === typeof setExtensionData ) {
+			setExtensionData( EXTENSION_NAMESPACE, field.name, next );
+		}
+	};
+
+	return createElement( /** @type {any} */ ( component ), {
+		field,
+		value,
+		onChange,
+	} );
+}
+
+/**
+ * Builds one stable React element for a field.
+ *
+ * @param {any} field          Field payload.
+ * @param {any} fieldLifecycle Lifecycle.
+ * @return {*} React element, or null for an unsupported field.
+ */
+function elementFor( field, fieldLifecycle ) {
+	const component = componentFor( field );
+
+	if ( ! component ) {
+		return null;
+	}
+
+	return createElement( RegisteredField, {
+		field,
+		lifecycle: fieldLifecycle,
+		component,
+	} );
+}
+
+/**
  * The checkout areas a field may be registered under.
  *
  * `registerCheckoutBlock` takes an area as `metadata.parent` and throws — not
@@ -182,17 +288,23 @@ export function parentFor( location ) {
 export function register( { api = null, fields = null, render = null } = {} ) {
 	const declared = fields ?? payload.fields ?? [];
 	const resolved = api ?? checkoutApi();
-
-	// What the components render comes from the store, and what they report goes
-	// back into it. Nothing here reads the document to find a value again.
-	const { elements, missing } = buildFields(
-		declared,
-		lifecycle.values(),
-		lifecycle.onChange
-	);
+	const fieldLifecycle = fields
+		? createFieldLifecycle( {
+				store: createValueStore(),
+				fields: declared,
+		  } )
+		: lifecycle;
+	const missing = declared
+		.filter( ( field ) => ! componentFor( field ) )
+		.map( ( field ) => String( field.type ) );
 
 	if ( 'function' === typeof render ) {
-		render( elements, declared );
+		render(
+			declared
+				.map( ( field ) => elementFor( field, fieldLifecycle ) )
+				.filter( Boolean ),
+			declared
+		);
 
 		return {
 			registered: declared.map( ( field ) => field.id ),
@@ -229,6 +341,12 @@ export function register( { api = null, fields = null, render = null } = {} ) {
 			continue;
 		}
 
+		const component = componentFor( field );
+
+		if ( ! component ) {
+			continue;
+		}
+
 		resolved.registerCheckoutBlock( {
 			metadata: {
 				name: `wc-checkoutsuite/${ field.name }`,
@@ -239,7 +357,13 @@ export function register( { api = null, fields = null, render = null } = {} ) {
 				// location belongs to, which is what the payload carries.
 				parent: parentFor( field.location ),
 			},
-			component: () => elements.shift() ?? null,
+			component: ( props = {} ) =>
+				createElement( RegisteredField, {
+					...props,
+					field,
+					lifecycle: fieldLifecycle,
+					component,
+				} ),
 		} );
 	}
 

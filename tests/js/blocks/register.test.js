@@ -19,6 +19,8 @@ import {
 	parentFor,
 	register,
 } from '../../../resources/blocks/index';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 /**
  * The names WooCommerce's `innerBlockAreas` accepts, as its own build publishes them.
@@ -148,6 +150,63 @@ describe( 'registering with the checkout API', () => {
 			'woocommerce/checkout-shipping-address-block',
 			'woocommerce/checkout-contact-information-block',
 			'woocommerce/checkout-fields-block',
+		] );
+	} );
+
+	it( 'keeps each registered component stable across repeated renders', () => {
+		/** @type {Array<any>} */
+		const calls = [];
+		const fields = [
+			field(),
+			field( {
+				id: 'wc-checkoutsuite/wccs_other',
+				name: 'wccs_other',
+				location: 'order',
+			} ),
+		];
+
+		register( { api: api( calls ), fields } );
+
+		const first = calls[ 0 ].component( {} );
+		const second = calls[ 1 ].component( {} );
+
+		expect( first.props.field.name ).toBe( 'wccs_note' );
+		expect( second.props.field.name ).toBe( 'wccs_other' );
+		expect( calls[ 0 ].component( {} ).props.field.name ).toBe(
+			'wccs_note'
+		);
+		expect( calls[ 1 ].component( {} ).props.field.name ).toBe(
+			'wccs_other'
+		);
+	} );
+
+	it( 'updates the checkout extension data with the value the customer types', async () => {
+		const user = userEvent.setup();
+		/** @type {Array<any>} */
+		const calls = [];
+		/** @type {Array<any>} */
+		const extensionCalls = [];
+		const fields = [ field() ];
+
+		register( { api: api( calls ), fields } );
+		render(
+			calls[ 0 ].component( {
+				checkoutExtensionData: {
+					setExtensionData: (
+						/** @type {string} */ namespace,
+						/** @type {string} */ key,
+						/** @type {any} */ value
+					) => extensionCalls.push( [ namespace, key, value ] ),
+				},
+			} )
+		);
+
+		await user.type( screen.getByLabelText( /Note/ ), 'sent' );
+
+		expect( extensionCalls[ extensionCalls.length - 1 ] ).toEqual( [
+			'wc-checkoutsuite',
+			'wccs_note',
+			'sent',
 		] );
 	} );
 

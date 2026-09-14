@@ -34,14 +34,14 @@ use WCCheckoutSuite\Domain\Orders\OrderFieldsService;
 final class ReviewStatus {
 
 	/**
-	 * The classic checkout, once the order exists and is saved.
+	 * Status transition used by the classic checkout after the gateway responds.
 	 */
-	public const HOOK_CLASSIC = 'woocommerce_checkout_order_processed';
+	public const HOOK_CLASSIC = 'woocommerce_order_status_changed';
 
 	/**
-	 * The Store API checkout, which is the Blocks checkout.
+	 * Payment-complete transition used by the Blocks checkout and gateways.
 	 */
-	public const HOOK_API = 'woocommerce_store_api_checkout_order_processed';
+	public const HOOK_API = 'woocommerce_payment_complete';
 
 	/**
 	 * Registers the review state for the store that configured one.
@@ -94,7 +94,7 @@ final class ReviewStatus {
 			}
 		);
 
-		add_action( self::HOOK_CLASSIC, array( self::class, 'hold_classic' ), 20, 3 );
+		add_action( self::HOOK_CLASSIC, array( self::class, 'hold_after_status_change' ), 20, 4 );
 		add_action( self::HOOK_API, array( self::class, 'hold_api' ), 20, 1 );
 	}
 
@@ -156,7 +156,59 @@ final class ReviewStatus {
 	public static function hold_api( $order = null ): void {
 		if ( $order instanceof WC_Order ) {
 			self::apply( $order );
+
+			return;
 		}
+
+		$found = function_exists( 'wc_get_order' ) ? wc_get_order( $order ) : null;
+
+		if ( $found instanceof WC_Order ) {
+			self::apply( $found );
+		}
+	}
+
+	/**
+	 * Holds an order only after WooCommerce has moved it to a post-payment state.
+	 *
+	 * The checkout-created hook runs before the gateway is processed. Listening to
+	 * the status transition keeps the review state out of the payment decision and
+	 * makes repeated gateway callbacks harmless: only a transition into a state
+	 * WooCommerce uses after payment is considered.
+	 *
+	 * @param mixed $order_id    Order identifier.
+	 * @param mixed $from        Previous status.
+	 * @param mixed $to          New status.
+	 * @param mixed $order       Order object.
+	 * @return void
+	 */
+	public static function hold_after_status_change( $order_id = 0, $from = '', $to = '', $order = null ): void {
+		unset( $from );
+
+		if ( ! self::is_post_payment_status( (string) $to ) ) {
+			return;
+		}
+
+		if ( $order instanceof WC_Order ) {
+			self::apply( $order );
+
+			return;
+		}
+
+		$found = function_exists( 'wc_get_order' ) ? wc_get_order( $order_id ) : null;
+
+		if ( $found instanceof WC_Order ) {
+			self::apply( $found );
+		}
+	}
+
+	/**
+	 * Whether WooCommerce has reached a state after the gateway's decision.
+	 *
+	 * @param string $status Order status without the `wc-` prefix.
+	 * @return bool
+	 */
+	public static function is_post_payment_status( string $status ): bool {
+		return in_array( $status, array( 'processing', 'completed', 'on-hold' ), true );
 	}
 
 	/**

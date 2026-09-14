@@ -252,7 +252,7 @@ final class BlocksRenderer {
 		$is_blocks = $is_blocks ?? self::is_blocks_checkout();
 		$payload   = $payload ?? self::fields();
 
-		if ( ! $is_blocks || array() === $payload['fields'] ) {
+		if ( ! $is_blocks ) {
 			return;
 		}
 
@@ -263,6 +263,10 @@ final class BlocksRenderer {
 
 		if ( $wccs_settings::presents( $wccs_settings::offered_gateways() ) ) {
 			\WCCheckoutSuite\Checkout\Presentation::enqueue( self::STYLE_HANDLE, self::STYLE_FILE );
+		}
+
+		if ( array() === $payload['fields'] ) {
+			return;
 		}
 
 		$bundle = 'build/blocks/index.js';

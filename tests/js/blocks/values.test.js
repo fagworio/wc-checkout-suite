@@ -212,6 +212,19 @@ describe( 'blocks value lifecycle', () => {
 		expect( store.has( 'a' ) ).toBe( false );
 	} );
 
+	it( 'notifies subscribers when a value changes and stops after unsubscribe', () => {
+		const store = createValueStore();
+		const listener = jest.fn();
+		const unsubscribe = store.subscribe( listener );
+
+		store.set( 'a', 'one' );
+		store.set( 'a', 'one' );
+		unsubscribe();
+		store.set( 'a', 'two' );
+
+		expect( listener ).toHaveBeenCalledTimes( 1 );
+	} );
+
 	it( 'never reaches for a mutation observer, because nothing needs to watch the DOM', () => {
 		// The technique this asserts the absence of is the one that would make every
 		// other spec here pass for the wrong reason: a module that recovered values by

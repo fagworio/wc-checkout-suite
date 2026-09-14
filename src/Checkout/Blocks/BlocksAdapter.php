@@ -307,6 +307,17 @@ final class BlocksAdapter {
 		$type = isset( $definition['type'] ) ? (string) $definition['type'] : '';
 		$note = array();
 
+		// A native type can still require a controlled component when the
+		// definition carries behaviour the additional-fields API cannot express,
+		// such as a mask. Keep the native and controlled paths mutually exclusive.
+		if ( 'controlled' === self::mode_for( $definition ) ) {
+			return array(
+				'report' => array(
+					$this->entry( $id, 'needs_controlled_component', self::reason( $type ) ),
+				),
+			);
+		}
+
 		$native_type = self::native_type( $type );
 
 		if ( '' === $native_type ) {
@@ -394,11 +405,14 @@ final class BlocksAdapter {
 		}
 
 		if ( null !== $rule ) {
-			// Required exactly when it is shown, and shown exactly when the rule
-			// matches: the two keywords are one rule seen from two sides, which is
-			// what the Suite's `visible` means.
-			$registration['required'] = $rule;
-			$registration['hidden']   = array( 'not' => $rule );
+			// Visibility and requiredness are independent. An optional field remains
+			// optional while visible; only a required field gets the conditional
+			// schema that makes it required when shown.
+			if ( ! empty( $definition['required'] ) ) {
+				$registration['required'] = $rule;
+			}
+
+			$registration['hidden'] = array( 'not' => $rule );
 		}
 
 		return array(
