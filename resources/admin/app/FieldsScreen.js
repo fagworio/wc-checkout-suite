@@ -59,8 +59,11 @@ import {
 	protectionReason,
 	removeField,
 	removeSection,
+	removeSectionWithDependents,
+	sectionImpact,
 	sectionGroups,
 	setFieldEnabled,
+	uniqueSectionId,
 	updateField,
 	updateSection,
 } from './schema/fieldOperations';
@@ -71,6 +74,71 @@ import {
  * @type {string}
  */
 const FALLBACK_SECTION = 'order';
+
+/** The three stable work areas of the editor, mapped to real destinations. */
+const EDITOR_AREAS = [
+	{
+		id: 'checkout',
+		label: __( 'Checkout', 'wc-checkoutsuite' ),
+		description: __(
+			'Campos preenchidos durante a compra.',
+			'wc-checkoutsuite'
+		),
+	},
+	{
+		id: 'customer_order',
+		label: __( 'Cliente', 'wc-checkoutsuite' ),
+		description: __(
+			'Minha conta → Pedidos → Ver pedido.',
+			'wc-checkoutsuite'
+		),
+	},
+	{
+		id: 'admin_order',
+		label: __( 'Pedido', 'wc-checkoutsuite' ),
+		description: __(
+			'Admin → WooCommerce → Pedidos → Editar pedido.',
+			'wc-checkoutsuite'
+		),
+	},
+];
+
+/** Human location shown beside each section area choice. */
+/** @type {Record<string, string>} */
+const SECTION_AREA_REFERENCE = {
+	checkout: __(
+		'Preenchido pelo cliente durante a finalização da compra.',
+		'wc-checkoutsuite'
+	),
+	admin_order: __(
+		'Exibido para a equipe em WooCommerce → Pedidos → Editar pedido.',
+		'wc-checkoutsuite'
+	),
+	customer_order: __(
+		'Exibido ao cliente em Minha conta → Pedidos → Ver pedido.',
+		'wc-checkoutsuite'
+	),
+	order_received: __(
+		'Exibido na página mostrada ao cliente após concluir o pedido.',
+		'wc-checkoutsuite'
+	),
+	customer_email: __(
+		'Exibido nos e-mails enviados ao cliente sobre o pedido.',
+		'wc-checkoutsuite'
+	),
+	admin_email: __(
+		'Exibido nos e-mails internos enviados para a loja.',
+		'wc-checkoutsuite'
+	),
+	customer_profile: __(
+		'Exibido no perfil do cliente no painel administrativo.',
+		'wc-checkoutsuite'
+	),
+	public_api: __(
+		'Disponibilizado pela API pública, quando autorizada.',
+		'wc-checkoutsuite'
+	),
+};
 
 /** Local draft handoff used when the shell swaps the editor for another screen. */
 const LOCAL_DRAFT_KEY = 'wccs-local-draft';
@@ -156,6 +224,9 @@ export default function FieldsScreen( {
 	 * @type {[string, Function]}
 	 */
 	const [ mode, setMode ] = useState( 'classic' );
+	const [ area, setArea ] = useState( 'checkout' );
+	const [ linkDialogOpen, setLinkDialogOpen ] = useState( false );
+	const [ linkFieldId, setLinkFieldId ] = useState( '' );
 	/**
 	 * Identifier of the field open in the inspector.
 	 *
@@ -169,8 +240,28 @@ export default function FieldsScreen( {
 
 	// Annotating the argument rather than the destructured tuple: a JSDoc type on
 	// the tuple does not reach useState and leaves the state as `never`.
-	const [ editingSection, setEditingSection ] = useState(
-		/** @type {import('./schema/types').SectionDefinition|null} */ ( null )
+	const [ editingSectionId, setEditingSectionId ] = useState(
+		/** @type {string|null} */ ( null )
+	);
+	const [ sectionRemoval, setSectionRemoval ] = useState(
+		/** @type {{id: string, impact: {fields: string[], links: string[], approvals: string[]}}|null} */ (
+			null
+		)
+	);
+
+	/**
+	 * Resolve the section from the current document on every render. Keeping the
+	 * object itself in state made the inspector display the value from before the
+	 * previous edit was applied.
+	 *
+	 * @type {import('./schema/types').SectionDefinition|null}
+	 */
+	const editingSection = useMemo(
+		() =>
+			document?.sections?.find(
+				( /** @type {any} */ entry ) => entry.id === editingSectionId
+			) ?? null,
+		[ document, editingSectionId ]
 	);
 
 	/** @type {[string, Function]} */
@@ -306,16 +397,25 @@ export default function FieldsScreen( {
 
 			let local = null;
 			try {
-				const handoffEnabled = window.location.search.includes( 'wccs-checkoutsuite' ) || document.body?.classList.contains( 'wccs-admin' );
-				const stored = handoffEnabled ? window.sessionStorage?.getItem( LOCAL_DRAFT_KEY ) : null;
+				const handoffEnabled =
+					window.location.search.includes( 'wccs-checkoutsuite' ) ||
+					window.document.body?.classList.contains( 'wccs-admin' );
+				const stored = handoffEnabled
+					? window.sessionStorage?.getItem( LOCAL_DRAFT_KEY )
+					: null;
 				local = stored ? JSON.parse( stored ) : null;
-			} catch ( error ) {
+			} catch {
 				local = null;
 			}
 
 			if ( local?.baseRevision === draft.revision && local.document ) {
 				resetDocument( local.document );
-				setSaved( __( 'Há uma edição local não salva preservada nesta sessão.', 'wc-checkoutsuite' ) );
+				setSaved(
+					__(
+						'Há uma edição local não salva preservada nesta sessão.',
+						'wc-checkoutsuite'
+					)
+				);
 			} else {
 				window.sessionStorage?.removeItem( LOCAL_DRAFT_KEY );
 				resetDocument( draft );
@@ -355,7 +455,7 @@ export default function FieldsScreen( {
 					document,
 				} )
 			);
-		} catch ( error ) {
+		} catch {
 			// Storage is an enhancement for an internal navigation; the editor still
 			// works when the browser blocks sessionStorage.
 		}
@@ -402,8 +502,8 @@ export default function FieldsScreen( {
 	 * @type {import('./schema/types').SectionGroup[]}
 	 */
 	const groups = useMemo(
-		() => ( document ? sectionGroups( document ) : [] ),
-		[ document ]
+		() => ( document ? sectionGroups( document, area ) : [] ),
+		[ document, area ]
 	);
 
 	/**
@@ -470,17 +570,22 @@ export default function FieldsScreen( {
 			} );
 		}
 
-		for ( const location of catalog?.sectionLocations ?? [] ) {
-			if ( seen.has( location.value ) ) {
-				continue;
-			}
+		// Native locations are collection concepts. They are useful fallbacks only
+		// while configuring Checkout; adding them in a display area would retain a
+		// stale Checkout selection after the merchant changes area.
+		if ( 'checkout' === area ) {
+			for ( const location of catalog?.sectionLocations ?? [] ) {
+				if ( seen.has( location.value ) ) {
+					continue;
+				}
 
-			seen.add( location.value );
-			options.push( { id: location.value, label: location.label } );
+				seen.add( location.value );
+				options.push( { id: location.value, label: location.label } );
+			}
 		}
 
 		return options;
-	}, [ groups, catalog ] );
+	}, [ groups, catalog, area ] );
 
 	/**
 	 * Keeps the target section valid as the list of sections arrives.
@@ -559,7 +664,10 @@ export default function FieldsScreen( {
 			window.sessionStorage?.removeItem( LOCAL_DRAFT_KEY );
 			setSaved(
 				document.revision > 0
-					? __( 'Campos atualizados com sucesso.', 'wc-checkoutsuite' )
+					? __(
+							'Campos atualizados com sucesso.',
+							'wc-checkoutsuite'
+					  )
 					: __( 'Campos salvos com sucesso.', 'wc-checkoutsuite' )
 			);
 
@@ -689,6 +797,26 @@ export default function FieldsScreen( {
 			( /** @type {any} */ field ) => field.id === editing
 		) ?? null;
 
+	/** @type {Record<string, string>} */
+	const destinationNames = {
+		admin_order: __(
+			'Pedido no admin (WooCommerce → Pedidos)',
+			'wc-checkoutsuite'
+		),
+		customer_order: __(
+			'Pedido na conta do cliente (Minha conta → Pedidos)',
+			'wc-checkoutsuite'
+		),
+		order_received: __( 'Página de pedido recebido', 'wc-checkoutsuite' ),
+		customer_email: __( 'E-mail enviado ao cliente', 'wc-checkoutsuite' ),
+		admin_email: __( 'E-mail enviado à loja', 'wc-checkoutsuite' ),
+		customer_profile: __( 'Perfil do cliente', 'wc-checkoutsuite' ),
+		public_api: __( 'API pública', 'wc-checkoutsuite' ),
+	};
+	const dependencyField = ( /** @type {string} */ id ) =>
+		document.fields.find( ( /** @type {any} */ field ) => field.id === id )
+			?.label ?? id;
+
 	/**
 	 * Applies a bulk action to everything selected.
 	 *
@@ -807,12 +935,6 @@ export default function FieldsScreen( {
 		);
 	};
 
-	/** The section the panel is showing, as the document declares it. */
-	const currentSection =
-		groups.find(
-			( /** @type {any} */ group ) => group.section.id === section
-		)?.section ?? null;
-
 	return (
 		<>
 			<FieldManagerView
@@ -829,6 +951,9 @@ export default function FieldsScreen( {
 						label: group.section.title ?? group.section.id,
 						areas: group.section.areas ?? [ 'checkout' ],
 					} ) ),
+					area,
+					areas: EDITOR_AREAS,
+					onAreaChange: setArea,
 					loading,
 					dirty,
 					saving,
@@ -888,7 +1013,17 @@ export default function FieldsScreen( {
 					onRemove: ( /** @type {string|null} */ id ) =>
 						id && apply( removeField( document, id ) ),
 					onProtect: explainProtection,
-					onCreateField: ( /** @type {any} */ choice ) =>
+					onCreateField: ( /** @type {any} */ choice ) => {
+						if ( 'checkout' !== area ) {
+							setRefusal(
+								__(
+									'Campos são criados no Checkout. Nesta área, vincule um campo existente.',
+									'wc-checkoutsuite'
+								)
+							);
+							return;
+						}
+
 						apply(
 							createField( document, {
 								...choice,
@@ -897,7 +1032,8 @@ export default function FieldsScreen( {
 								settings: choice.settings,
 								layout: choice.defaults?.layout,
 							} )
-						),
+						);
+					},
 					onAdoptCore: ( /** @type {any} */ core ) =>
 						apply( adoptCoreField( document, core ) ),
 					onChangeField: (
@@ -928,8 +1064,286 @@ export default function FieldsScreen( {
 					onOpenRules,
 					onExport: exportConfig,
 					isProtected,
-					onOpenSection: () => setEditingSection( currentSection ),
-					onCreateSection: () => setSectionDraftOpen( true ),
+					onOpenSection: ( /** @type {string|null} */ id ) =>
+						id &&
+						document.sections.some(
+							( /** @type {any} */ entry ) => entry.id === id
+						)
+							? setEditingSectionId( id )
+							: setRefusal(
+									__(
+										'Esta seção implícita do WooCommerce não pode ser editada. Crie uma seção personalizada para configurar nome e áreas.',
+										'wc-checkoutsuite'
+									)
+							  ),
+					onCreateSection: () => {
+						setNewSectionAreas( [ area ] );
+						setNewSectionLocation(
+							'checkout' === area ? 'billing' : 'order'
+						);
+						setSectionDraftOpen( true );
+					},
+					onLinkExisting: () => {
+						setLinkFieldId( '' );
+						setLinkDialogOpen( true );
+					},
+					removalDialog: sectionRemoval ? (
+						<Dialog
+							open={ true }
+							title={ __(
+								'Remover seção e dependências',
+								'wc-checkoutsuite'
+							) }
+							onClose={ () => setSectionRemoval( null ) }
+							footer={
+								<>
+									<Button
+										variant="secondary"
+										onClick={ () =>
+											setSectionRemoval( null )
+										}
+									>
+										{ __( 'Cancelar', 'wc-checkoutsuite' ) }
+									</Button>
+									<Button
+										variant="primary"
+										onClick={ () => {
+											const result =
+												removeSectionWithDependents(
+													document,
+													sectionRemoval.id
+												);
+											if ( result.ok ) {
+												apply( result );
+												setEditingSectionId( null );
+												setSectionRemoval( null );
+											} else {
+												setRefusal( result.reason );
+											}
+										} }
+									>
+										{ __(
+											'Remover seção e campos',
+											'wc-checkoutsuite'
+										) }
+									</Button>
+								</>
+							}
+						>
+							<p>
+								{ __(
+									'Esta ação remove a seção e os itens abaixo. Ela não pode ser desfeita pelo botão Desfazer.',
+									'wc-checkoutsuite'
+								) }
+							</p>
+							{ sectionRemoval.impact.fields.length > 0 ? (
+								<>
+									<strong>
+										{ __(
+											'Campos que serão removidos',
+											'wc-checkoutsuite'
+										) }
+									</strong>
+									<ol className="wccs-dependency-list">
+										{ sectionRemoval.impact.fields.map(
+											( /** @type {string} */ id ) => (
+												<li key={ id }>
+													{ document.fields.find(
+														(
+															/** @type {any} */ field
+														) => field.id === id
+													)?.label ?? id }{ ' ' }
+													<code>{ id }</code>
+												</li>
+											)
+										) }
+									</ol>
+								</>
+							) : null }
+							{ sectionRemoval.impact.links.length > 0 ? (
+								<>
+									<strong>
+										{ __(
+											'Vínculos de exibição que serão removidos',
+											'wc-checkoutsuite'
+										) }
+									</strong>
+									<p>
+										{ __(
+											'Os campos abaixo continuarão existindo. Apenas deixarão de aparecer neste local de exibição.',
+											'wc-checkoutsuite'
+										) }
+									</p>
+									<ol className="wccs-dependency-list">
+										{ sectionRemoval.impact.links.map(
+											(
+												/** @type {string} */ reference
+											) => {
+												const [ fieldId, destination ] =
+													reference.split( ':' );
+												return (
+													<li key={ reference }>
+														<strong>
+															{ dependencyField(
+																fieldId
+															) }
+														</strong>{ ' ' }
+														—{ ' ' }
+														{ destinationNames[
+															destination
+														] ?? destination }
+													</li>
+												);
+											}
+										) }
+									</ol>
+								</>
+							) : null }
+							{ sectionRemoval.impact.approvals.length > 0 ? (
+								<>
+									<strong>
+										{ __(
+											'Fluxos de aprovação que serão removidos',
+											'wc-checkoutsuite'
+										) }
+									</strong>
+									<p>
+										{ __(
+											'São revisões humanas configuradas para esses campos.',
+											'wc-checkoutsuite'
+										) }
+									</p>
+									<ol className="wccs-dependency-list">
+										{ sectionRemoval.impact.approvals.map(
+											( /** @type {string} */ id ) => (
+												<li key={ id }>
+													<strong>
+														{ dependencyField(
+															id
+														) }
+													</strong>{ ' ' }
+													—{ ' ' }
+													{
+														destinationNames[
+															document.fields.find(
+																(
+																	/** @type {any} */ field
+																) =>
+																	field.id ===
+																	id
+															)?.approval?.area ??
+																'admin_order'
+														]
+													}
+												</li>
+											)
+										) }
+									</ol>
+								</>
+							) : null }
+						</Dialog>
+					) : null,
+					linkDialog: (
+						<Dialog
+							open={ linkDialogOpen }
+							title={ __(
+								'Vincular campo existente',
+								'wc-checkoutsuite'
+							) }
+							onClose={ () => setLinkDialogOpen( false ) }
+							footer={
+								<>
+									<Button
+										variant="secondary"
+										onClick={ () =>
+											setLinkDialogOpen( false )
+										}
+									>
+										{ __( 'Cancelar', 'wc-checkoutsuite' ) }
+									</Button>
+									<Button
+										variant="primary"
+										disabled={
+											'' === linkFieldId ||
+											'checkout' === area
+										}
+										onClick={ () => {
+											const field = document.fields.find(
+												( /** @type {any} */ entry ) =>
+													entry.id === linkFieldId
+											);
+
+											if ( ! field ) {
+												return;
+											}
+
+											apply(
+												updateField(
+													document,
+													field.id,
+													{
+														destinations: {
+															...( field.destinations ??
+																{} ),
+															[ area ]: {
+																...( field
+																	.destinations?.[
+																	area
+																] ?? {} ),
+																enabled: true,
+																section,
+															},
+														},
+													}
+												)
+											);
+											setLinkDialogOpen( false );
+										} }
+									>
+										{ __(
+											'Vincular campo',
+											'wc-checkoutsuite'
+										) }
+									</Button>
+								</>
+							}
+						>
+							<p>
+								{ __(
+									'Este vínculo altera apenas a exibição autorizada. A coleta, a chave e os valores do pedido permanecem os mesmos.',
+									'wc-checkoutsuite'
+								) }
+							</p>
+							<SelectField
+								id="wccs-link-existing-field"
+								label={ __( 'Campo', 'wc-checkoutsuite' ) }
+								value={ linkFieldId }
+								options={ [
+									{
+										value: '',
+										label: __(
+											'Selecione um campo',
+											'wc-checkoutsuite'
+										),
+									},
+									...( document.fields ?? [] )
+										.filter(
+											( /** @type {any} */ field ) =>
+												field.enabled
+										)
+										.map(
+											( /** @type {any} */ field ) => ( {
+												value: field.id,
+												label: `${ field.label } (${ field.id })`,
+											} )
+										),
+								] }
+								onChange={ (
+									/** @type {{target: {value: string}}} */ event
+								) => setLinkFieldId( event.target.value ) }
+							/>
+						</Dialog>
+					),
 					sectionDraft: (
 						<Dialog
 							open={ sectionDraftOpen }
@@ -948,16 +1362,32 @@ export default function FieldsScreen( {
 									<Button
 										variant="primary"
 										disabled={
-											'' === newSectionTitle.trim()
+											'' === newSectionTitle.trim() ||
+											0 === newSectionAreas.length
 										}
 										onClick={ () => {
-											apply(
-												createSection( document, {
-													title: newSectionTitle.trim(),
+											const title =
+												newSectionTitle.trim();
+											const result = createSection(
+												document,
+												{
+													title,
 													location:
 														newSectionLocation,
 													areas: newSectionAreas,
-												} )
+												}
+											);
+
+											if ( ! result.ok ) {
+												return;
+											}
+
+											apply( result );
+											setSection(
+												uniqueSectionId(
+													document,
+													title
+												)
 											);
 											setNewSectionTitle( '' );
 											setNewSectionAreas( [
@@ -990,70 +1420,99 @@ export default function FieldsScreen( {
 								) => setNewSectionTitle( event.target.value ) }
 							/>
 
-							<SelectField
-								id="wccs-new-section-location"
-								label={ __( 'Location', 'wc-checkoutsuite' ) }
-								value={ newSectionLocation }
-								options={ (
-									catalog?.sectionLocations ?? []
-								).map( ( /** @type {any} */ entry ) => ( {
-									value: entry.value,
-									label: entry.label,
-								} ) ) }
-								onChange={ (
-									/** @type {{ target: { value: string } }} */ event
-								) =>
-									setNewSectionLocation( event.target.value )
-								}
-							/>
-
-							{ /* Where the section may be offered. The checkout is where
-							     its fields are filled; each destination is a place they
-							     may be shown afterwards. */ }
-							<div className="form-label">
-								{ __( 'Areas', 'wc-checkoutsuite' ) }
-							</div>
-							{ ( catalog?.sectionAreas ?? [] ).map(
-								( /** @type {any} */ entry ) => (
-									<CheckboxField
-										key={ entry.value }
-										id={ `wccs-new-section-area-${ entry.value }` }
-										label={ entry.label }
-										checked={ newSectionAreas.includes(
-											entry.value
+							{ 'checkout' === area ? (
+								<>
+									<SelectField
+										id="wccs-new-section-location"
+										label={ __(
+											'Location',
+											'wc-checkoutsuite'
+										) }
+										value={ newSectionLocation }
+										options={ (
+											catalog?.sectionLocations ?? []
+										).map(
+											( /** @type {any} */ entry ) => ( {
+												value: entry.value,
+												label: entry.label,
+											} )
 										) }
 										onChange={ (
-											/** @type {{ target: { checked: boolean } }} */ event
+											/** @type {{ target: { value: string } }} */ event
 										) =>
-											setNewSectionAreas(
-												event.target.checked
-													? [
-															...newSectionAreas,
-															entry.value,
-													  ]
-													: newSectionAreas.filter(
-															(
-																/** @type {string} */ key
-															) =>
-																key !==
-																entry.value
-													  )
+											setNewSectionLocation(
+												event.target.value
 											)
 										}
 									/>
-								)
+									<div className="form-label">
+										{ __( 'Areas', 'wc-checkoutsuite' ) }
+									</div>
+									{ ( catalog?.sectionAreas ?? [] ).map(
+										( /** @type {any} */ entry ) => (
+											<CheckboxField
+												key={ entry.value }
+												id={ `wccs-new-section-area-${ entry.value }` }
+												label={ entry.label }
+												help={
+													SECTION_AREA_REFERENCE[
+														entry.value
+													] ?? entry.description
+												}
+												checked={ newSectionAreas.includes(
+													entry.value
+												) }
+												onChange={ (
+													/** @type {{ target: { checked: boolean } }} */ event
+												) =>
+													setNewSectionAreas(
+														event.target.checked
+															? [
+																	...newSectionAreas,
+																	entry.value,
+															  ]
+															: newSectionAreas.filter(
+																	(
+																		/** @type {string} */ key
+																	) =>
+																		key !==
+																		entry.value
+															  )
+													)
+												}
+											/>
+										)
+									) }
+								</>
+							) : (
+								<Notice status="info">
+									{ __(
+										'Esta seção será usada apenas para organizar a exibição nesta área. Para mostrar valores nela, vincule campos existentes.',
+										'wc-checkoutsuite'
+									) }
+								</Notice>
 							) }
+							{ 0 === newSectionAreas.length ? (
+								<Notice status="warning">
+									{ __(
+										'Escolha pelo menos uma área para criar a seção.',
+										'wc-checkoutsuite'
+									) }
+								</Notice>
+							) : null }
 						</Dialog>
 					),
 					sectionEditor: (
 						<Dialog
-							open={ Boolean( editingSection ) }
+							open={ null !== editingSectionId }
 							title={ __( 'Section', 'wc-checkoutsuite' ) }
-							onClose={ () => setEditingSection( null ) }
+							onClose={ () => setEditingSectionId( null ) }
 							footer={
 								<Button
 									variant="primary"
-									onClick={ () => setEditingSection( null ) }
+									onClick={ () =>
+										setEditingSectionId( null )
+									}
 								>
 									{ __( 'Done', 'wc-checkoutsuite' ) }
 								</Button>
@@ -1124,6 +1583,11 @@ export default function FieldsScreen( {
 												key={ entry.value }
 												id={ `wccs-section-area-${ entry.value }` }
 												label={ entry.label }
+												help={
+													SECTION_AREA_REFERENCE[
+														entry.value
+													] ?? entry.description
+												}
 												checked={ (
 													editingSection.areas ?? []
 												).includes( entry.value ) }
@@ -1133,6 +1597,19 @@ export default function FieldsScreen( {
 													const current =
 														editingSection.areas ??
 														[];
+													if (
+														! event.target
+															.checked &&
+														current.length <= 1
+													) {
+														setRefusal(
+															__(
+																'Uma seção precisa permanecer ativa em pelo menos uma área.',
+																'wc-checkoutsuite'
+															)
+														);
+														return;
+													}
 
 													apply(
 														updateSection(
@@ -1205,13 +1682,24 @@ export default function FieldsScreen( {
 									<Button
 										variant="secondary"
 										onClick={ () => {
-											apply(
-												removeSection(
-													document,
-													editingSection.id
-												)
+											const impact = sectionImpact(
+												document,
+												editingSection.id
 											);
-											setEditingSection( null );
+											const result = removeSection(
+												document,
+												editingSection.id
+											);
+
+											if ( result.ok ) {
+												apply( result );
+												setEditingSectionId( null );
+											} else {
+												setSectionRemoval( {
+													id: editingSection.id,
+													impact,
+												} );
+											}
 										} }
 									>
 										{ __(

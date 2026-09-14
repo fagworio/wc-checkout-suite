@@ -227,10 +227,15 @@ final class SectionValidator {
 	public static function validate_references( array $sections, array $fields ): ValidationResult {
 		$result = ValidationResult::valid();
 		$known  = SectionLocations::values();
+		$collection_sections = array_fill_keys( $known, true );
 
 		foreach ( $sections as $raw ) {
 			if ( is_array( $raw ) && isset( $raw['id'] ) ) {
 				$known[] = (string) $raw['id'];
+
+				if ( in_array( 'checkout', (array) ( $raw['areas'] ?? array( 'checkout' ) ), true ) ) {
+					$collection_sections[ (string) $raw['id'] ] = true;
+				}
 			}
 		}
 

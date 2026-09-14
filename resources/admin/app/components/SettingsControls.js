@@ -243,6 +243,46 @@ function StringListControl( { name, rules, value, onChange } ) {
 }
 
 /**
+ * A compact editor for array settings that people naturally type as a list.
+ *
+ * The schema remains an array — the API, validator and renderers never receive
+ * a comma-separated string. `format` merely describes the most legible input
+ * affordance for this setting.
+ *
+ * @param {Object}              props          Component properties.
+ * @param {string}              props.name     Setting name.
+ * @param {Record<string, any>} props.rules    Declared rules.
+ * @param {string[]}            props.value    Current list.
+ * @param {Function}            props.onChange Called with the parsed list.
+ * @return {*} Rendered element tree.
+ */
+function CommaSeparatedListControl( { name, rules, value, onChange } ) {
+	const items = Array.isArray( value ) ? value : [];
+	const label = rules.label ?? name;
+	const help =
+		rules.help ?? __( 'Separate values with commas.', 'wc-checkoutsuite' );
+
+	return (
+		<TextField
+			id={ `wccs-setting-${ name }` }
+			label={ label }
+			help={ help }
+			required={ Boolean( rules.required ) }
+			value={ items.join( ', ' ) }
+			placeholder="pdf, jpg, png"
+			onChange={ ( /** @type {{ target: { value: string } }} */ event ) =>
+				onChange(
+					event.target.value
+						.split( ',' )
+						.map( ( item ) => item.trim().replace( /^\.+/, '' ) )
+						.filter( Boolean )
+				)
+			}
+		/>
+	);
+}
+
+/**
  * Editor for a list of value/label options.
  *
  * The shape is the one the type declared through `items.properties`, so the
@@ -413,6 +453,20 @@ export function SettingsControls( { schema, value, onChange } ) {
 				}
 
 				if ( 'array' === rules.type ) {
+					if ( 'comma-separated' === rules.format ) {
+						return (
+							<CommaSeparatedListControl
+								key={ name }
+								name={ name }
+								rules={ rules }
+								value={ current }
+								onChange={ ( /** @type {any} */ next ) =>
+									write( name, next )
+								}
+							/>
+						);
+					}
+
 					return (
 						<StringListControl
 							key={ name }

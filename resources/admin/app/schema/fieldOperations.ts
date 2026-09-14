@@ -260,7 +260,11 @@ export function buildField(
 		required: Boolean( choice.required ),
 		position: nextPosition( document, section ),
 		layout: { ...DEFAULT_LAYOUT, ...( choice.layout ?? {} ) },
-		settings: choice.settings ?? {},
+		settings:
+			choice.settings ??
+			( 'file' === choice.type
+				? { maxFiles: 1, allowedExtensions: [ 'pdf' ] }
+				: {} ),
 		mask: choice.mask ?? presetSeed( choice.defaults, 'mask' ) ?? null,
 		normalizer: presetSeed( choice.defaults, 'normalizer' ) ?? null,
 		conditions: {},
@@ -993,12 +997,23 @@ function titleFromLocation( location: string ): string {
  * while remaining in the schema.
  *
  * @param document Document.
+ * @param area     Editor area: collection at checkout or one display destination.
  * @return Groups in order, each with whether it was declared.
  */
-export function sectionGroups( document: SchemaDocument ): SectionGroup[] {
-	const declared = [ ...( document.sections ?? [] ) ].sort(
-		( a, b ) => ( a.position || 0 ) - ( b.position || 0 )
-	);
+export function sectionGroups(
+	document: SchemaDocument,
+	area = 'checkout'
+): SectionGroup[] {
+	const declared = [ ...( document.sections ?? [] ) ]
+		.filter(
+			( section ) =>
+				( section.areas ?? [ 'checkout' ] ).includes( area ) ||
+				( 'checkout' === area &&
+					( document.fields ?? [] ).some(
+						( field ) => ( field.section ?? 'order' ) === section.id
+					) )
+		)
+		.sort( ( a, b ) => ( a.position || 0 ) - ( b.position || 0 ) );
 
 	const groups = new Map< string, SectionGroup >();
 
@@ -1011,9 +1026,25 @@ export function sectionGroups( document: SchemaDocument ): SectionGroup[] {
 	}
 
 	for ( const field of document.fields ?? [] ) {
-		const id = field.section ?? 'order';
+		const link =
+			'checkout' === area ? null : field.destinations?.[ area ] ?? null;
+		let id = '';
+		if ( 'checkout' === area ) {
+			id = field.section ?? 'order';
+		} else if ( link?.enabled && link.section ) {
+			id = link.section;
+		}
+
+		if ( '' === id ) {
+			continue;
+		}
 
 		if ( ! groups.has( id ) ) {
+			// Only checkout has implicit native locations. A post-purchase link
+			// without a declared, authorised section must not invent a panel.
+			if ( 'checkout' !== area ) {
+				continue;
+			}
 			groups.set( id, {
 				section: {
 					id,
@@ -1102,12 +1133,10 @@ export function createSection(
 		description: choice.description ?? '',
 		position: highest + POSITION_STEP,
 		location: choice.location,
-		// A section always belongs to somewhere: the checkout is what it was, unless
-		// the merchant says otherwise.
-		areas:
-			Array.isArray( choice.areas ) && choice.areas.length > 0
-				? choice.areas
-				: [ 'checkout' ],
+		// Omitted areas is the legacy/default case. An explicitly empty list is
+		// preserved so the editor can explain the invalid choice instead of silently
+		// assigning the section to Checkout.
+		areas: Array.isArray( choice.areas ) ? choice.areas : [ 'checkout' ],
 	};
 
 	return {
@@ -1171,19 +1200,25 @@ export function removeSection(
 	document: SchemaDocument,
 	id: string
 ): OperationResult {
-	const occupants = fieldsInSection( document, id );
+	const impact = sectionImpact( document, id );
 
-	if ( occupants.length > 0 ) {
+	if (
+		impact.fields.length > 0 ||
+		impact.links.length > 0 ||
+		impact.approvals.length > 0
+	) {
 		return {
 			ok: false,
 			document,
 			reason: sprintf(
-				/* translators: 1: number of fields, 2: section identifier. */
+				/* translators: 1: checkout fields, 2: display links, 3: approval flows, 4: section identifier. */
 				__(
-					'%1$d field(s) still belong to "%2$s". Move them before removing the section.',
+					'"%4$s" is still used by %1$d checkout field(s), %2$d display link(s) and %3$d approval flow(s). Move or remove those references before deleting the section.',
 					'wc-checkoutsuite'
 				),
-				occupants.length,
+				impact.fields.length,
+				impact.links.length,
+				impact.approvals.length,
 				id
 			),
 		};
@@ -1193,6 +1228,100 @@ export function removeSection(
 		ok: true,
 		document: {
 			...document,
+			sections: ( document.sections ?? [] ).filter(
+				( section ) => section.id !== id
+			),
+		},
+		reason: '',
+	};
+}
+
+/**
+ * Lists every live reference to a section before it can be deleted.
+ *
+ * @param document Document.
+ * @param id       Section identifier.
+ * @return Impact grouped by reference kind.
+ */
+export function sectionImpact( document: SchemaDocument, id: string ) {
+	const fields = fieldsInSection( document, id ).map( ( field ) => field.id );
+	const links = [];
+	const approvals = [];
+
+	for ( const field of document.fields ?? [] ) {
+		for ( const [ area, link ] of Object.entries(
+			field.destinations ?? {}
+		) ) {
+			if ( link?.enabled && link.section === id ) {
+				links.push( `${ field.id }:${ area }` );
+			}
+		}
+
+		if ( field.approval?.require_review && field.approval.section === id ) {
+			approvals.push( field.id );
+		}
+	}
+
+	return { fields, links, approvals };
+}
+
+/**
+ * Deletes a section together with the references the merchant confirmed.
+ *
+ * Core WooCommerce fields are never removed as a side effect. They need moving
+ * first, which keeps their contract intact even in a destructive flow.
+ *
+ * @param document Document.
+ * @param id       Section identifier.
+ * @return Result.
+ */
+export function removeSectionWithDependents(
+	document: SchemaDocument,
+	id: string
+): OperationResult {
+	const impact = sectionImpact( document, id );
+	const protectedFields = ( document.fields ?? [] ).filter(
+		( field ) => impact.fields.includes( field.id ) && isProtected( field )
+	);
+
+	if ( protectedFields.length > 0 ) {
+		return {
+			ok: false,
+			document,
+			reason: __(
+				'A section with WooCommerce-owned fields cannot be deleted. Move those fields to another section first.',
+				'wc-checkoutsuite'
+			),
+		};
+	}
+
+	return {
+		ok: true,
+		document: {
+			...document,
+			fields: ( document.fields ?? [] )
+				.filter( ( field ) => ! impact.fields.includes( field.id ) )
+				.map( ( field ) => {
+					const destinations = { ...( field.destinations ?? {} ) };
+
+					Object.entries( destinations ).forEach(
+						( [ area, link ] ) => {
+							if ( link?.enabled && link.section === id ) {
+								delete destinations[ area ];
+							}
+						}
+					);
+
+					return {
+						...field,
+						destinations,
+						approval:
+							field.approval?.require_review &&
+							field.approval.section === id
+								? undefined
+								: field.approval,
+					};
+				} ),
 			sections: ( document.sections ?? [] ).filter(
 				( section ) => section.id !== id
 			),

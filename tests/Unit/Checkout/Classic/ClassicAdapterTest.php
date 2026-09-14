@@ -125,6 +125,29 @@ final class ClassicAdapterTest extends TestCase {
 	}
 
 	/**
+	 * A section offered only after checkout groups a projection; it must never
+	 * cause a second input to appear during collection.
+	 *
+	 * @return void
+	 */
+	public function test_a_section_area_does_not_hide_its_checkout_field(): void {
+		$fields = $this->adapter->apply(
+			$this->woo_fields(),
+			array( $this->definition( 'document', array( 'section' => 'customer_documents' ) ) ),
+			array(
+				array(
+					'id'       => 'customer_documents',
+					'title'    => 'Documentos',
+					'location' => 'order',
+					'areas'    => array( 'customer_order' ),
+				),
+			)
+		);
+
+		self::assertArrayHasKey( 'document', $fields['order'] );
+	}
+
+	/**
 	 * The settings the type declares reach the field.
 	 *
 	 * @return void

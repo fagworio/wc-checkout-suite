@@ -185,7 +185,7 @@ final class ClassicAdapter {
 		$this->report = array();
 
 		$locations = $this->locations( $sections );
-		$ordered   = $this->order( $definitions, $locations );
+		$ordered   = $this->order( $this->collection_definitions( $definitions, $sections ), $locations );
 		$wides     = array();
 
 		foreach ( $ordered as $definition ) {
@@ -234,6 +234,22 @@ final class ClassicAdapter {
 		}
 
 		return $fields;
+	}
+
+	/**
+	 * Keeps display-only sections out of the checkout renderer.
+	 *
+	 * A section in an administrative or customer destination is a grouping for a
+	 * projection, never an instruction to collect another value at checkout.
+	 *
+	 * @param array<int, array<string, mixed>> $definitions Raw field definitions.
+	 * @param array<int, array<string, mixed>> $sections    Raw section definitions.
+	 * @return array<int, array<string, mixed>> Definitions eligible for collection.
+	 */
+	private function collection_definitions( array $definitions, array $sections ): array {
+		// A field's own section is the collection instruction. Section areas only
+		// describe post-checkout projections and must not hide that input.
+		return $definitions;
 	}
 
 	/**

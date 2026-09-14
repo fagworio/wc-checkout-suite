@@ -248,6 +248,62 @@ describe( 'the schema', () => {
 			screen.getByRole( 'heading', { name: 'Endereço de entrega' } )
 		).toBeInTheDocument();
 	} );
+
+	it( 'separates checkout collection from customer display links', async () => {
+		const user = userEvent.setup();
+		render(
+			<FieldsScreen
+				client={ client( {
+					draft: {
+						...doc( [
+							field( {
+								destinations: {
+									customer_order: {
+										enabled: true,
+										section: 'customer_documents',
+									},
+								},
+							} ),
+						] ),
+						sections: [
+							{
+								id: 'customer_documents',
+								title: 'Documentos',
+								description: '',
+								position: 10,
+								location: 'order',
+								areas: [ 'customer_order' ],
+							},
+						],
+					},
+				} ) }
+			/>
+		);
+
+		await screen.findByText( 'CPF' );
+		expect(
+			screen.getByRole( 'heading', { name: 'Dados de cobrança' } )
+		).toBeInTheDocument();
+
+		await user.click( screen.getByRole( 'tab', { name: /Cliente/ } ) );
+
+		expect(
+			screen.getByRole( 'heading', { name: 'Documentos' } )
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole( 'button', { name: 'Vincular campo existente' } )
+		).toBeInTheDocument();
+	} );
+
+	it( 'states the areas where the selected section is active', async () => {
+		render( <FieldsScreen client={ client() } /> );
+
+		await screen.findByText( 'CPF' );
+
+		expect(
+			screen.getByLabelText( 'Áreas em que esta seção está ativa' )
+		).toHaveTextContent( 'Ativa em: Checkout' );
+	} );
 } );
 
 describe( 'editing', () => {

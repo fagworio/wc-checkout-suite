@@ -188,6 +188,34 @@ final class SectionValidatorTest extends TestCase {
 	}
 
 	/**
+	 * Collection happens only in a section that explicitly offers checkout. A
+	 * customer/admin-only section can still be a valid display destination, but
+	 * cannot be used as the field's own checkout section.
+	 *
+	 * @return void
+	 */
+	public function test_a_field_section_is_collected_even_when_areas_are_post_checkout_only(): void {
+		$result = SectionValidator::validate_references(
+			array(
+				$this->section(
+					array(
+						'id'    => 'customer_documents',
+						'areas' => array( 'customer_order' ),
+					)
+				),
+			),
+			array(
+				array(
+					'id'      => 'billing_document',
+					'section' => 'customer_documents',
+				),
+			)
+		);
+
+		self::assertTrue( $result->is_valid(), implode( ', ', $result->error_codes() ) );
+	}
+
+	/**
 	 * An empty section is refused rather than assumed.
 	 *
 	 * @return void

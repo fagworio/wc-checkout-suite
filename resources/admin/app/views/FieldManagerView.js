@@ -98,6 +98,9 @@ export default function FieldManagerView( { model } ) {
 		coreFields,
 		sectionOptions,
 		sections,
+		area,
+		areas,
+		onAreaChange,
 		loading,
 		dirty,
 		saving,
@@ -134,9 +137,12 @@ export default function FieldManagerView( { model } ) {
 		onPreview,
 		onOpenSection,
 		onCreateSection,
+		onLinkExisting,
 		isProtected,
 		sectionEditor,
 		sectionDraft,
+		linkDialog,
+		removalDialog,
 	} = model;
 
 	/** The design's own view state: the search box and the origin filter. */
@@ -253,6 +259,17 @@ export default function FieldManagerView( { model } ) {
 		current?.section ?? { id: section, title: '', description: '' },
 		Boolean( current?.declared )
 	);
+	const activeArea = areas.find(
+		( /** @type {any} */ entry ) => entry.id === area
+	);
+	const sectionAreaIds = current?.fields?.length
+		? [ ...new Set( [ 'checkout', ...( current?.section.areas ?? [] ) ] ) ]
+		: current?.section.areas ?? [ 'checkout' ];
+	const sectionAreas = sectionAreaIds
+		.map( ( /** @type {string} */ id ) =>
+			areas.find( ( /** @type {any} */ entry ) => entry.id === id )
+		)
+		.filter( Boolean );
 
 	/** The rows the design's filter bar leaves on screen. */
 	const rows = useMemo( () => {
@@ -502,6 +519,13 @@ export default function FieldManagerView( { model } ) {
 
 	// The topbar carries the two actions that matter to the normal configuration flow:
 	// inspect the checkout and apply the complete editor document.
+	/** @type {string} */
+	let saveLabel = __( 'Salvar campos', 'wc-checkoutsuite' );
+	if ( saving ) {
+		saveLabel = __( 'Salvando…', 'wc-checkoutsuite' );
+	} else if ( Number( doc?.revision ?? 0 ) > 0 ) {
+		saveLabel = __( 'Atualizar campos', 'wc-checkoutsuite' );
+	}
 	const topbarActions = (
 		<TopbarActions>
 			<button
@@ -511,13 +535,7 @@ export default function FieldManagerView( { model } ) {
 				onClick={ onSave }
 			>
 				<Icon name="save" />
-				<span>
-					{ saving
-						? __( 'Salvando…', 'wc-checkoutsuite' )
-						: Number( doc?.revision ?? 0 ) > 0
-						? __( 'Atualizar campos', 'wc-checkoutsuite' )
-						: __( 'Salvar campos', 'wc-checkoutsuite' ) }
-				</span>
+				<span>{ saveLabel }</span>
 			</button>
 			<button
 				type="button"
@@ -608,27 +626,60 @@ export default function FieldManagerView( { model } ) {
 							{ EYEBROW }
 						</div>
 						<h1 id="editorTitle">
-							{ __(
-							'Campos do checkout',
-								'wc-checkoutsuite'
-							) }
+							{ activeArea?.label ??
+								__( 'Campos do checkout', 'wc-checkoutsuite' ) }
 							<span className="heading-dot">.</span>
 						</h1>
 						<p>
-							{ __(
-								'Adicione e organize os campos exibidos no checkout da sua loja.',
-								'wc-checkoutsuite'
-							) }
+							{ activeArea?.description ??
+								__(
+									'Adicione e organize os campos exibidos no checkout da sua loja.',
+									'wc-checkoutsuite'
+								) }
 						</p>
 					</div>
-					<button
-						type="button"
-						className="btn btn-primary btn-add"
-						onClick={ () => setPickerOpen( true ) }
-					>
-						<Icon name="plus" />
-						{ __( 'Adicionar campo', 'wc-checkoutsuite' ) }
-					</button>
+					{ 'checkout' === area ? (
+						<button
+							type="button"
+							className="btn btn-primary btn-add"
+							onClick={ () => setPickerOpen( true ) }
+						>
+							<Icon name="plus" />
+							{ __( 'Adicionar campo', 'wc-checkoutsuite' ) }
+						</button>
+					) : (
+						<button
+							type="button"
+							className="btn btn-primary btn-add"
+							onClick={ onLinkExisting }
+						>
+							<Icon name="plus" />
+							{ __(
+								'Vincular campo existente',
+								'wc-checkoutsuite'
+							) }
+						</button>
+					) }
+				</div>
+
+				<div
+					className="wccs-editor-areas"
+					role="tablist"
+					aria-label={ __( 'Área de trabalho', 'wc-checkoutsuite' ) }
+				>
+					{ areas.map( ( /** @type {any} */ entry ) => (
+						<button
+							key={ entry.id }
+							type="button"
+							role="tab"
+							aria-selected={ entry.id === area }
+							className={ entry.id === area ? 'active' : '' }
+							onClick={ () => onAreaChange( entry.id ) }
+						>
+							<strong>{ entry.label }</strong>
+							<small>{ entry.description }</small>
+						</button>
+					) ) }
 				</div>
 
 				<div className="contextbar">
@@ -743,9 +794,9 @@ export default function FieldManagerView( { model } ) {
 						<ul>
 							{ missingExtensions.map(
 								( /** @type {any} */ entry ) => (
-									<li key={ entry.field }>
-										{ `${ entry.label } — ${ entry.type }` }
-									</li>
+									<li
+										key={ entry.field }
+									>{ `${ entry.label } — ${ entry.type }` }</li>
 								)
 							) }
 						</ul>
@@ -798,7 +849,7 @@ export default function FieldManagerView( { model } ) {
 								className="section-tabs"
 								role="group"
 								aria-label={ __(
-									'Seções do checkout',
+									'Seções da área selecionada',
 									'wc-checkoutsuite'
 								) }
 							>
@@ -858,12 +909,37 @@ export default function FieldManagerView( { model } ) {
 									<div>
 										<h2>{ copy.title }</h2>
 										<p>{ copy.description }</p>
+										{ sectionAreas.length > 0 ? (
+											<p
+												className="wccs-section-areas"
+												aria-label={ __(
+													'Áreas em que esta seção está ativa',
+													'wc-checkoutsuite'
+												) }
+											>
+												<strong>
+													{ __(
+														'Ativa em:',
+														'wc-checkoutsuite'
+													) }
+												</strong>{ ' ' }
+												{ sectionAreas
+													.map(
+														(
+															/** @type {any} */ entry
+														) => entry.label
+													)
+													.join( ', ' ) }
+											</p>
+										) : null }
 									</div>
 								</div>
-								<button
-									type="button"
+								<span
 									className="badge"
-									onClick={ onOpenSection }
+									aria-label={ __(
+										'Quantidade de campos na seção',
+										'wc-checkoutsuite'
+									) }
 								>
 									{ sprintf(
 										/* translators: 1: enabled field count, 2: total field count. */
@@ -876,6 +952,28 @@ export default function FieldManagerView( { model } ) {
 												field.enabled
 										).length,
 										( current?.fields ?? [] ).length
+									) }
+								</span>
+								<button
+									type="button"
+									className="text-btn"
+									onClick={ () =>
+										onOpenSection(
+											current?.section.id ?? null
+										)
+									}
+									aria-label={ sprintf(
+										/* translators: %s: section title. */
+										__(
+											'Ações da seção %s',
+											'wc-checkoutsuite'
+										),
+										copy.title
+									) }
+								>
+									{ __(
+										'Ações da seção',
+										'wc-checkoutsuite'
 									) }
 								</button>
 							</div>
@@ -1851,7 +1949,6 @@ export default function FieldManagerView( { model } ) {
 				/>
 			</Dialog>
 
-
 			<Dialog
 				open={ historyOpen }
 				size="publish"
@@ -2002,6 +2099,9 @@ export default function FieldManagerView( { model } ) {
 			{ sectionEditor }
 
 			{ sectionDraft }
+
+			{ linkDialog }
+			{ removalDialog }
 
 			{ problems.length > 0 ? (
 				<Notice status="error">

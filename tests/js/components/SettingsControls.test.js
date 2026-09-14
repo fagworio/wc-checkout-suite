@@ -9,7 +9,7 @@
  * a type that declares nothing.
  */
 
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { SettingsControls } from '../../../resources/admin/app/components/SettingsControls';
@@ -118,6 +118,35 @@ describe( 'the settings a type declares', () => {
 		expect( last ).toEqual( {
 			placeholder: 'ac',
 			unknown_to_this_build: 'b',
+		} );
+	} );
+
+	it( 'edits comma-separated array settings in one input while saving an array', async () => {
+		const onChange = jest.fn();
+
+		render(
+			<SettingsControls
+				schema={ {
+					allowedExtensions: {
+						type: 'array',
+						format: 'comma-separated',
+						label: 'Extensões permitidas',
+					},
+				} }
+				value={ { allowedExtensions: [ 'pdf' ] } }
+				onChange={ onChange }
+			/>
+		);
+
+		const input = screen.getByLabelText( 'Extensões permitidas' );
+		expect( input ).toHaveValue( 'pdf' );
+
+		fireEvent.change( input, { target: { value: '.pdf, csv, png' } } );
+
+		expect(
+			onChange.mock.calls[ onChange.mock.calls.length - 1 ][ 0 ]
+		).toEqual( {
+			allowedExtensions: [ 'pdf', 'csv', 'png' ],
 		} );
 	} );
 } );

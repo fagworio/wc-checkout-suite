@@ -91,7 +91,9 @@ export function sectionCopy( section, declared = true ) {
 	}
 
 	return {
-		label: design ? design.label : section.title || section.id,
+		// A merchant-defined title is the section's public name. The logical
+		// location remains metadata and must not replace it in tabs or selectors.
+		label: section.title?.trim() || ( design ? design.label : section.id ),
 		title: section.title || design?.title || section.id,
 		description: section.description || design?.description || '',
 		icon: design ? design.icon : 'fields',

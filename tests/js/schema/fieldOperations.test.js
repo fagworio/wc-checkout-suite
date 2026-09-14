@@ -789,6 +789,69 @@ describe( 'section groups', () => {
 			'Billing'
 		);
 	} );
+
+	it( 'keeps collection and display sections in their own editor areas', () => {
+		const document = doc(
+			[
+				custom( {
+					id: 'document',
+					section: 'checkout_docs',
+					destinations: {
+						customer_order: {
+							enabled: true,
+							section: 'customer_docs',
+						},
+						admin_order: {
+							enabled: true,
+							section: 'admin_docs',
+						},
+					},
+				} ),
+			],
+			[
+				{
+					id: 'checkout_docs',
+					title: 'Documentos da compra',
+					description: '',
+					position: 10,
+					location: 'order',
+					areas: [ 'checkout' ],
+				},
+				{
+					id: 'customer_docs',
+					title: 'Documentos enviados',
+					description: '',
+					position: 20,
+					location: 'order',
+					areas: [ 'customer_order' ],
+				},
+				{
+					id: 'admin_docs',
+					title: 'Documentos para análise',
+					description: '',
+					position: 30,
+					location: 'order',
+					areas: [ 'admin_order' ],
+				},
+			]
+		);
+
+		expect(
+			sectionGroups( document, 'checkout' ).map(
+				( group ) => group.section.id
+			)
+		).toEqual( [ 'checkout_docs' ] );
+		expect(
+			sectionGroups( document, 'customer_order' )[ 0 ].fields.map(
+				( field ) => field.id
+			)
+		).toEqual( [ 'document' ] );
+		expect(
+			sectionGroups( document, 'admin_order' )[ 0 ].fields.map(
+				( field ) => field.id
+			)
+		).toEqual( [ 'document' ] );
+	} );
 } );
 
 describe( 'sections', () => {
@@ -909,7 +972,7 @@ describe( 'sections', () => {
 		const result = removeSection( document, 'extra' );
 
 		expect( result.ok ).toBe( false );
-		expect( result.reason ).toMatch( /still belong/ );
+		expect( result.reason ).toMatch( /still used/ );
 		expect( result.document ).toBe( document );
 	} );
 
@@ -930,6 +993,40 @@ describe( 'sections', () => {
 		expect(
 			removeSection( document, 'extra' ).document.sections
 		).toHaveLength( 0 );
+	} );
+
+	it( 'refuses deletion while display links or approval still reference it', () => {
+		const document = doc(
+			[
+				custom( {
+					id: 'document',
+					destinations: {
+						admin_order: { enabled: true, section: 'review' },
+					},
+					approval: {
+						require_review: true,
+						area: 'admin_order',
+						section: 'review',
+					},
+				} ),
+			],
+			[
+				{
+					id: 'review',
+					title: 'Análise',
+					description: '',
+					position: 10,
+					location: 'order',
+					areas: [ 'admin_order' ],
+				},
+			]
+		);
+
+		const result = removeSection( document, 'review' );
+
+		expect( result.ok ).toBe( false );
+		expect( result.reason ).toMatch( /1 display link/ );
+		expect( result.reason ).toMatch( /1 approval flow/ );
 	} );
 
 	it( 'moves a section and renumbers the order', () => {

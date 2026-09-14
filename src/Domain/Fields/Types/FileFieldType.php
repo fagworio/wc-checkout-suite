@@ -87,6 +87,11 @@ final class FileFieldType extends AbstractFieldType {
 			),
 			'allowedExtensions' => array(
 				'type'     => 'array',
+				// The stored contract is an array, while the merchant-facing editor
+				// presents this compact list as `pdf, jpg, png`.
+				'format'   => 'comma-separated',
+				'label'    => __( 'Allowed extensions', 'wc-checkoutsuite' ),
+				'help'     => __( 'Separate extensions with commas, for example: pdf, jpg, png.', 'wc-checkoutsuite' ),
 				'required' => true,
 				'minItems' => 1,
 				'maxItems' => 40,
