@@ -56,6 +56,15 @@ import {
 	unsupportedVersion,
 } from './schema/failureState';
 import {
+	createProfile,
+	moveProfile,
+	readableProfiles,
+	removeProfile,
+	setFallback,
+	updateProfile,
+	withProfiles,
+} from './schema/profiles';
+import {
 	adoptCoreField,
 	ambiguousDestinations,
 	bulkImpact,
@@ -375,6 +384,18 @@ export default function FieldsScreen( {
 	 */
 	const [ mode, setMode ] = useState( checkoutMode || 'classic' );
 	const [ area, setArea ] = useState( 'checkout' );
+	/**
+	 * The checkout the strip is showing: an empty string is the store's own
+	 * composition, and anything else is a profile's id (§6.3).
+	 */
+	const [ activeProfile, setActiveProfile ] = useState( '' );
+	/**
+	 * The code of the last refusal the profile rules answered with.
+	 *
+	 * A code and not a sentence: the rule belongs to `schema/profiles` and the
+	 * wording belongs to the screen, which is what keeps the two from drifting.
+	 */
+	const [ profileRefusal, setProfileRefusal ] = useState( '' );
 	const [ linkDialogOpen, setLinkDialogOpen ] = useState( false );
 	const [ linkFieldId, setLinkFieldId ] = useState( '' );
 	/**
@@ -662,6 +683,35 @@ export default function FieldsScreen( {
 			commitDocument( result.document, label );
 		},
 		[ commitDocument ]
+	);
+
+	/**
+	 * Applies a change to the profile list.
+	 *
+	 * The profiles travel inside the document (§3.4), so a change to them is a change to the same
+	 * draft every other edit goes through: the same undo history, the same unsaved-work guard and
+	 * the same single save.
+	 *
+	 * @param {Array<any>} next  Next profile list.
+	 * @param {string}     label History label.
+	 * @return {void}
+	 */
+	const applyProfiles = useCallback(
+		( /** @type {Array<any>} */ next, /** @type {string} */ label ) => {
+			if ( ! document ) {
+				return;
+			}
+
+			apply(
+				{
+					ok: true,
+					document: withProfiles( document, next ),
+					reason: '',
+				},
+				label
+			);
+		},
+		[ apply, document ]
 	);
 
 	/**
@@ -2060,6 +2110,88 @@ export default function FieldsScreen( {
 							) : null }
 						</Dialog>
 					),
+					profiles: readableProfiles( document ),
+					activeProfile,
+					profileRefusal,
+					onProfileSelect: ( /** @type {string} */ id ) => {
+						setProfileRefusal( '' );
+						setActiveProfile( id );
+					},
+					onDismissProfileRefusal: () => setProfileRefusal( '' ),
+					onCreateProfile: ( /** @type {any} */ choice ) => {
+						const stored = readableProfiles( document );
+						const created = createProfile(
+							document,
+							choice.name,
+							choice.source,
+							stored.find(
+								( /** @type {any} */ entry ) =>
+									entry.id === choice.from
+							) ?? null
+						);
+
+						applyProfiles(
+							[ ...stored, created ],
+							__( 'Criar checkout', 'wc-checkoutsuite' )
+						);
+						setActiveProfile( created.id );
+					},
+					onUpdateProfile: (
+						/** @type {string} */ id,
+						/** @type {any} */ changes
+					) => {
+						const stored = readableProfiles( document );
+
+						// The fallback is one place, so choosing it is choosing it for one
+						// checkout and taking it from the others — which is what the store
+						// accepts, and the alternative is writing something it refuses.
+						const next = changes.fallback
+							? updateProfile(
+									setFallback( stored, id ),
+									id,
+									changes
+							  )
+							: updateProfile( stored, id, changes );
+
+						applyProfiles(
+							next,
+							__( 'Alterar checkout', 'wc-checkoutsuite' )
+						);
+					},
+					onRemoveProfile: ( /** @type {string} */ id ) => {
+						const removed = removeProfile(
+							readableProfiles( document ),
+							id
+						);
+
+						if ( removed.refusal ) {
+							setProfileRefusal( removed.refusal );
+
+							return;
+						}
+
+						setProfileRefusal( '' );
+						applyProfiles(
+							removed.profiles,
+							__( 'Excluir checkout', 'wc-checkoutsuite' )
+						);
+
+						if ( activeProfile === id ) {
+							setActiveProfile( '' );
+						}
+					},
+					onMoveProfile: (
+						/** @type {string} */ id,
+						/** @type {number} */ delta
+					) =>
+						applyProfiles(
+							moveProfile(
+								readableProfiles( document ),
+								id,
+								delta
+							),
+							__( 'Reordenar checkouts', 'wc-checkoutsuite' )
+						),
 				} }
 			/>
 		</>

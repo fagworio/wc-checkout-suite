@@ -61,17 +61,27 @@ import {
 /**
  * The rule a stored conditions document carries, or null.
  *
- * The document is `{ visible: <rule> }`, and `{}` means the field is always
+ * A field's document is `{ visible: <rule> }` and `{}` means the field is always
  * shown. Anything that is not a group and does not name a source and an operator
  * is read as no rule rather than rendered as a broken form: every stored value is
  * one the validator accepted or nothing at all, so a third possibility is damage,
  * and a builder that displayed it would be offering to save it back.
  *
+ * A profile stores its rule **bare** — the tree itself and nothing around it
+ * (§3.4, §3.5). The envelope names what a rule decides: a field decides visibility,
+ * a profile decides which checkout runs. The tree, the operators and the sources are
+ * the same ones, which is what §14 means by one dialect of rules.
+ *
  * @param {Record<string, any>} document Stored conditions document.
+ * @param {string}              envelope Key the rule sits under, or an empty string for bare.
  * @return {import('../schema/conditions').ConditionNode|null} Rule, or null.
  */
-function ruleOf( document ) {
-	const raw = document ? document.visible : null;
+function ruleOf( document, envelope ) {
+	let raw = document ?? null;
+
+	if ( null !== raw && '' !== envelope ) {
+		raw = raw[ envelope ] ?? null;
+	}
 
 	if ( ! raw || 'object' !== typeof raw || Array.isArray( raw ) ) {
 		return null;
@@ -217,6 +227,7 @@ function formatForInput( value, kind ) {
  * @param {string}                                             [props.fieldId]    Identifier of the field being edited.
  * @param {Array<{id: string, label: string}>}                 [props.fields]     Fields a rule may read.
  * @param {(conditions: Record<string, any>) => void}          props.onChange     Called with the next document.
+ * @param {string}                                             [props.envelope]   Key the rule sits under; empty for a bare tree.
  * @return {*} Rendered element tree.
  */
 export default function ConditionBuilder( {
@@ -225,9 +236,10 @@ export default function ConditionBuilder( {
 	fieldId = '',
 	fields = [],
 	onChange,
+	envelope = 'visible',
 } ) {
 	const document = value && 'object' === typeof value ? value : {};
-	const rule = ruleOf( document );
+	const rule = ruleOf( document, envelope );
 	const ready =
 		( vocabulary.operators ?? [] ).length > 0 &&
 		( vocabulary.sources ?? [] ).length > 0;
@@ -297,12 +309,21 @@ export default function ConditionBuilder( {
 	 * @return {void}
 	 */
 	const write = ( next ) => {
+		// A bare tree is the tree: clearing it is an empty document, and setting it is the
+		// document itself. Only an enveloped rule is copied, so a key the editor does not own
+		// — `evaluator`, which pins the engine a store was written against — survives the edit.
+		if ( '' === envelope ) {
+			onChange( null === next ? {} : next );
+
+			return;
+		}
+
 		const updated = { ...document };
 
 		if ( null === next ) {
-			delete updated.visible;
+			delete updated[ envelope ];
 		} else {
-			updated.visible = next;
+			updated[ envelope ] = next;
 		}
 
 		onChange( updated );

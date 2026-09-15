@@ -198,6 +198,16 @@ export interface FieldCatalog {
 	/** The native My Account pages that may host a section, with the reason each is offered. */
 	accountSurfaces?: VocabularyEntry[];
 	conditions?: ConditionVocabularyShape;
+	/**
+	 * What the store can answer for, for the checklist §6.3 requires before a minimal
+	 * checkout is saved. Read from WooCommerce by the server, never guessed by the browser.
+	 */
+	checkoutFacts?: {
+		gateway?: boolean;
+		taxes?: boolean;
+		shipping?: boolean;
+		legal?: boolean;
+	};
 }
 
 /**

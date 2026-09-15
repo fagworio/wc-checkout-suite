@@ -28,9 +28,17 @@
  * @see ROADMAP.md sections 3.4, 6.3 and 6.9
  */
 
-import type { ConditionNode, ConditionVocabulary, PreviewContext } from './conditions';
+import type {
+	ConditionNode,
+	ConditionVocabulary,
+	PreviewContext,
+} from './conditions';
 import { preview } from './conditions';
-import type { SchemaDocument, SectionDefinition } from './types';
+import type {
+	FieldDefinition,
+	SchemaDocument,
+	SectionDefinition,
+} from './types';
 
 /**
  * One checkout composition.
@@ -72,7 +80,9 @@ export const DUPLICATION_SOURCE: ProfileSource = 'duplicate_profile';
  * @param document Document.
  * @return Profiles.
  */
-export function profilesOf( document: Partial< SchemaDocument > | null ): CheckoutProfile[] {
+export function profilesOf(
+	document: Partial< SchemaDocument > | null
+): CheckoutProfile[] {
 	const stored = ( document as { profiles?: unknown } | null )?.profiles;
 
 	return Array.isArray( stored ) ? ( stored as CheckoutProfile[] ) : [];
@@ -176,7 +186,9 @@ export function checkoutSections(
 		: [];
 
 	return sections.filter(
-		( section ) => ! Array.isArray( section.areas ) || section.areas.includes( 'checkout' )
+		( section ) =>
+			! Array.isArray( section.areas ) ||
+			section.areas.includes( 'checkout' )
 	);
 }
 
@@ -220,10 +232,13 @@ export function createProfile(
  * @return Priority.
  */
 export function nextPriority( profiles: CheckoutProfile[] ): number {
-	return profiles.reduce(
-		( highest, profile ) => Math.max( highest, Number( profile.priority ) || 0 ),
-		0
-	) + 10;
+	return (
+		profiles.reduce(
+			( highest, profile ) =>
+				Math.max( highest, Number( profile.priority ) || 0 ),
+			0
+		) + 10
+	);
 }
 
 /**
@@ -438,73 +453,90 @@ export function overlapsFor(
 /**
  * What a minimal checkout has to be able to answer before it is saved.
  *
- * §6.3: "não significa ignorar obrigações técnicas". Each entry is a fact about the store the
- * screen asks the server for — never a guess — and the ones that are false are what the merchant
- * has to deal with before the composition can be trusted.
+ * §6.3: "não significa ignorar obrigações técnicas". Four of the entries are facts about the
+ * **store** — the server reads them from WooCommerce and the browser never guesses them. The
+ * fifth is about the **composition**: a field the store requires has to have a container in this
+ * checkout to be filled in, or an integration that needs it loses it. That one is answered here,
+ * where the composition is known.
  */
 export interface MinimalFacts {
 	gateway: boolean;
 	taxes: boolean;
 	shipping: boolean;
-	integrations: boolean;
 	legal: boolean;
 }
 
 /** One thing a minimal checkout must not ignore. */
 export interface MinimalRequirement {
-	key: keyof MinimalFacts;
+	key: keyof MinimalFacts | 'integrations';
 	label: string;
 	reason: string;
 	met: boolean;
 }
 
 /**
- * The checklist for a minimal composition.
+ * The requirements a minimal composition has to satisfy.
  *
  * @param profile Profile being checked.
+ * @param fields  Fields of the document.
  * @param facts   What the store reports.
- * @return Every requirement, met or not.
+ * @return Every requirement, met or not, in the order §6.3 lists them.
  */
 export function minimalChecklist(
 	profile: CheckoutProfile,
+	fields: Array< Partial< FieldDefinition > >,
 	facts: MinimalFacts
 ): MinimalRequirement[] {
+	const containers = new Set(
+		( profile.sections ?? [] ).map( ( section ) => section.id )
+	);
+
+	const dropped = ( fields ?? [] ).filter(
+		( field ) =>
+			field.enabled &&
+			field.required &&
+			! containers.has( field.section ?? '' )
+	);
+
 	const requirements: Array< Omit< MinimalRequirement, 'met' > > = [
 		{
 			key: 'gateway',
 			label: 'Meio de pagamento',
-			reason:
-				'Um checkout sem um meio de pagamento disponível não consegue fechar um pedido.',
+			reason: 'Um checkout sem um meio de pagamento disponível não consegue fechar um pedido.',
 		},
 		{
 			key: 'taxes',
 			label: 'Impostos',
-			reason:
-				'Os impostos configurados na loja continuam a ser calculados neste checkout.',
+			reason: 'Os impostos configurados na loja continuam a ser calculados neste checkout.',
 		},
 		{
 			key: 'shipping',
 			label: 'Entrega',
-			reason:
-				'Uma composição que não pergunta o endereço não pode ser a única de uma loja que entrega.',
+			reason: 'Uma composição que não pergunta o endereço não pode ser a única de uma loja que entrega.',
 		},
 		{
 			key: 'integrations',
 			label: 'Dados exigidos pelas integrações',
 			reason:
-				'Um campo que uma integração exige não pode sair da composição sem a integração saber.',
+				0 === dropped.length
+					? 'Os campos obrigatórios continuam a ser recolhidos nesta composição.'
+					: `Campos obrigatórios fora desta composição: ${ dropped
+							.map( ( field ) => field.label ?? field.id ?? '' )
+							.join( ', ' ) }.`,
 		},
 		{
 			key: 'legal',
 			label: 'Regras legais',
-			reason:
-				'As regras legais configuradas têm de continuar a poder ser cumpridas.',
+			reason: 'As regras legais configuradas têm de continuar a poder ser cumpridas.',
 		},
 	];
 
 	return requirements.map( ( requirement ) => ( {
 		...requirement,
-		met: Boolean( facts[ requirement.key ] ),
+		met:
+			'integrations' === requirement.key
+				? 0 === dropped.length
+				: Boolean( facts[ requirement.key as keyof MinimalFacts ] ),
 	} ) );
 }
 

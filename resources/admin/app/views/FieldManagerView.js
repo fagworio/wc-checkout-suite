@@ -24,6 +24,7 @@ import { useEffect, useMemo, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 
 import Dialog from '../components/Dialog';
+import CheckoutProfilesPanel from '../components/CheckoutProfilesPanel';
 import CoreCheckoutPanel from '../components/CoreCheckoutPanel';
 import FieldPicker from '../components/FieldPicker';
 import ArchiveView from './ArchiveView';
@@ -153,6 +154,15 @@ export default function FieldManagerView( { model } ) {
 		linkDialog,
 		removalDialog,
 		migrationDialog,
+		profiles,
+		activeProfile,
+		onProfileSelect,
+		onCreateProfile,
+		onUpdateProfile,
+		onRemoveProfile,
+		onMoveProfile,
+		profileRefusal,
+		onDismissProfileRefusal,
 	} = model;
 
 	/** What this destination calls the group of fields the merchant works on. */
@@ -758,6 +768,27 @@ export default function FieldManagerView( { model } ) {
 							)
 						) }
 					</div>
+				) : null }
+
+				{ /* A store may run more than one checkout (§6.3), and they are all compositions of the
+				     same document. The strip is offered where the checkouts are: the checkout
+				     destination, which is what a profile composes. */ }
+				{ 'checkout' === area ? (
+					<CheckoutProfilesPanel
+						profiles={ profiles }
+						active={ activeProfile }
+						onSelect={ onProfileSelect }
+						onCreate={ onCreateProfile }
+						onUpdate={ onUpdateProfile }
+						onRemove={ onRemoveProfile }
+						onMove={ onMoveProfile }
+						vocabulary={ catalog?.conditions ?? {} }
+						fields={ doc?.fields ?? [] }
+						facts={ catalog?.checkoutFacts ?? null }
+						factsChecked={ Boolean( catalog ) }
+						refusal={ profileRefusal }
+						onDismissRefusal={ onDismissProfileRefusal }
+					/>
 				) : null }
 
 				<div className="contextbar">

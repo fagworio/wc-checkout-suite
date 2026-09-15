@@ -85,6 +85,27 @@ perderia a lista em qualquer gravação seguinte.
 - **`CheckoutConditionContext::context()`** aceita o checkout que pergunta (`classic`/`blocks`), para
   que a mesma regra possa ser respondida para o checkout certo.
 
+### 2.5 O editor
+
+- **`schema/profiles.ts`** — as operações, puras, sobre a lista de perfis: criar de uma das três
+  origens, duplicar, renomear sem mudar o id, marcar o fallback (que **desmarca o anterior**),
+  excluir (recusando **o único fallback**, que é o que responde aos carrinhos que nenhuma regra
+  cobre), reordenar por prioridade, e `overlapsFor()` — os pares que o mesmo carrinho poderia
+  seleccionar, resolvidos pelo **preview** do mesmo motor de regras com os valores que o comerciante
+  escreveu.
+- **`components/CheckoutProfilesPanel.js`** — a faixa §6.3: `[ Checkout padrão ] [ … ] [ + Novo
+  checkout ]` com `Condições de exibição` à direita, o modal de criação (nome + as três origens), e o
+  que o checkout activo diz de si: a regra, a prioridade, se é o fallback, a sobreposição e a
+  verificação do checkout mínimo. O `Checkout padrão` é apresentado pelo que é — a composição da
+  própria loja, que existe sempre — e não como um perfil entre outros.
+- **`ConditionBuilder`** ganhou `envelope`: um campo guarda `{ visible: <regra> }`, um perfil guarda
+  a **árvore** (§3.4). O envelope nomeia o que a regra decide; a árvore, os operadores e as fontes
+  são os mesmos, que é o que §14 quer dizer com um só dialecto de regras.
+- **`Domain\Checkout\CheckoutFacts`** e `checkoutFacts` no catálogo (`CatalogController`): o que a
+  loja responde para o checklist do mínimo — meio de pagamento disponível, impostos, entrega e
+  regras legais — lido do WooCommerce e nunca adivinhado pelo browser. A quinta pergunta, «os dados
+  exigidos pelas integrações», é sobre a composição e é respondida a partir dela.
+
 ## 3. Prova
 
 | Prova | Resultado |
@@ -92,9 +113,12 @@ perderia a lista em qualquer gravação seguinte.
 | `tests/Integration/FASE7-checkout-profile-proof.php` (novo) | **24/0**, 3 notas, com **carrinho real**: um carrinho com um produto da categoria restrita recebe a composição do perfil `restrito`, trocando o produto pelo digital passa para a do perfil `digital`, um carrinho vazio cai no `padrao` (o fallback) e voltar ao produto restrito volta à primeira — observado no **sítio onde o adaptador clássico coloca o campo** (`order`, `account`, `shipping`) e não no valor que o resolvedor devolve. O mesmo harness prova: o documento aceita, publica, lê e exporta os três perfis; dois fallbacks e um contentor que não é de checkout são recusados **no write do draft**, e o draft fica onde estava; um perfil substitui os contentores do checkout e **mantém** os das outras áreas; os campos são os mesmos em qualquer composição; sem perfis, a loja responde o que respondia |
 | `tests/Unit/Domain/Checkout/CheckoutProfileResolverTest.php` (novo) | 10 testes, 18 asserções: prioridade, empate pela ordem de declaração, perfil desligado que não responde a nada (nem como fallback), fallback só quando nada casa, um perfil que casa vale mais que o fallback, composição que mantém o que não é do checkout, e sobreposição reportada |
 | `tests/Unit/Domain/Checkout/ProfileValidatorTest.php` (novo) | 15 testes, 17 asserções: id/nome/source fechado, id único, prioridade fraccionada recusada e `2.0` aceite, um só fallback, contentor fora do checkout recusado, regra noutro dialecto recusada com o código do validador partilhado, e o erro a nomear o perfil |
+| `tests/js/schema/profiles.test.js` (novo) | 28 testes: identidade derivada do nome, as três origens, o fallback exclusivo, a recusa de excluir o único fallback, a prioridade e o desempate, a sobreposição com os valores do comerciante, e o checklist do mínimo — incluindo o campo obrigatório que a composição deixou para trás, nomeado |
+| `tests/js/components/CheckoutProfilesPanel.test.js` (novo) | 13 testes: a faixa e o `Checkout padrão` apresentado como a composição da loja, a regra do checkout activo, as duas ordens, a recusa do único fallback, o aviso de sobreposição, o modal (nome + origem, e sem nome não cria), e o checklist do mínimo nos três estados |
+| `tests/browser/fase7-checkout-profiles.mjs` (novo) | **20/0** num browser real, contra o servidor: a faixa é desenhada e o `Checkout padrão` é o primeiro separador; o modal pede o nome e as três origens; criar faz um separador e selecciona-o; a regra, a prioridade e as duas ordens são mostradas; marcar o fallback marca-o e a aba di-lo; o checklist aparece para o mínimo; **salvar grava os dois perfis** (`checkout_digital`, `checkout_minimo`, um só fallback, `source=minimal` num deles) **e o ecrã deixa a loja como a encontrou** |
 | `composer check` | phpcs e phpstan sem erros; **552 testes, 1928 asserções** |
 | Varredura de integração | **72 harnesses, 1638 asserções, 0 falhas** |
-| `npx jest` / `npx tsc --noEmit` / `npm run lint:js` | limpos (690 testes; nenhum ficheiro JS mudou no modelo e no runtime) |
+| `npx jest` / `npx tsc --noEmit` / `npm run lint:js` | limpos (**731 testes**, 47 suites); `npm run build` compila |
 
 ## 4. Limites que ficam registados
 
@@ -104,13 +128,25 @@ perderia a lista em qualquer gravação seguinte.
 - **Um contentor com o mesmo id em dois perfis é a forma normal de partilhar campos**, não um erro:
   é assim que o mesmo campo aparece em checkouts diferentes, cada um a decidir onde o contentor cai.
   Ids repetidos **dentro** de um perfil continuam a ser recusados (`duplicate_section_id`).
-- **O editor de perfis ainda não existe.** Esta fase entrega o modelo, a validação e o runtime; os
-  separadores `[ Checkout padrão ] [ Checkout digital ] …`, o modal de criação e a verificação do
-  «checkout mínimo» (§6.3) são a metade de interface da fase e ficam para o passo seguinte, com o
-  `for_cart()` já a obedecer ao que eles gravarem.
+- **O editor de perfis existe e não é uma segunda fonte.** Tudo o que ele faz passa pelo mesmo
+  rascunho, pelo mesmo histórico de desfazer e pelo mesmo «Salvar alterações» que uma edição de
+  campo: guardar grava o rascunho e publica, e o servidor valida os perfis no *write* e na
+  publicação. Não há um segundo ecrã de checkouts com o seu próprio botão de guardar.
+- **O editor compõe a regra, a prioridade e o fallback; a lista de secções continua a ser a do
+  documento, e o ecrã di-lo.** Criar um checkout copia os contentores do checkout da loja (§6.3:
+  «começa a partir dos campos WooCommerce atuais»), e essa cópia é a composição que o carrinho
+  recebe. Editar os contentores **dentro** de cada checkout — o painel esquerdo a mudar de dono
+  quando muda o separador — é a composição por checkout da §6.4, e fica para a fase que trata do
+  checkout customizado. Um aviso na faixa diz qual das duas listas está à esquerda, porque um ecrã
+  que deixasse o comerciante pensar que estava a editar o perfil seria pior do que um ecrã
+  incompleto.
 - **`checkout → perfil` continua recusado por nome.** O modelo de sincronização existe e a direcção
   ainda não está implementada; o editor não a oferece, e o validador responde
   `sync_direction_not_available` em vez de aceitar e ignorar.
 - **Um perfil não acrescenta um campo ao checkout Blocks.** A API de campos adicionais regista cada
   campo uma vez, de forma global. O que um perfil decide é a composição — contentores e onde o campo
   cai —, e é isso que o pedido do Store API e o payload do renderizador passaram a ler por carrinho.
+- **O checklist do mínimo lê o que o WooCommerce responde neste pedido.** Nesta loja de
+  desenvolvimento `gateway`, `taxes` e `legal` são falsos porque a loja não tem meio de pagamento
+  activo, não calcula impostos e não tem página de termos — o aviso está certo. Uma loja com a
+  configuração feita vê o aviso desaparecer, e é a mesma pergunta que o ecrã de Pagamentos já faz.

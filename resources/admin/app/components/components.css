@@ -1368,3 +1368,115 @@
     animation: none !important;
   }
 }
+
+/* ------------------------------------------------- Checkouts of the store */
+
+/*
+ * The strip of checkouts §6.3 draws, and what the active one says about itself.
+ *
+ * A profile is not a field and not a section: it is a whole composition, chosen by the cart. The
+ * strip is therefore a tab list and not a form, and the panel under it states the three things a
+ * merchant has to be able to see without opening anything — the rule that selects it, where it sits
+ * in the priority order, and whether it is the fallback.
+ */
+
+.wccs-admin .wccs-checkouts {
+  margin: 0 0 var(--wccs-space-16);
+}
+
+.wccs-admin .wccs-checkouts__strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--wccs-space-8);
+  padding-bottom: var(--wccs-space-8);
+  border-bottom: 1px solid var(--wccs-border-control);
+}
+
+.wccs-admin .wccs-checkouts__strip button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wccs-space-4);
+  padding: var(--wccs-space-8) var(--wccs-space-12);
+  border: 1px solid transparent;
+  border-radius: var(--wccs-radius-control);
+  background: transparent;
+  color: var(--wccs-ink-muted);
+  cursor: pointer;
+}
+
+.wccs-admin .wccs-checkouts__strip button.active {
+  border-color: var(--wccs-border-control);
+  background: var(--wccs-surface);
+  color: var(--wccs-ink);
+}
+
+.wccs-admin .wccs-checkouts__strip button small {
+  color: var(--wccs-ink-muted);
+}
+
+.wccs-admin .wccs-checkouts__conditions {
+  margin-inline-start: auto;
+}
+
+.wccs-admin .wccs-checkouts__own {
+  margin: var(--wccs-space-8) 0 0;
+  color: var(--wccs-ink-muted);
+  font-size: var(--wccs-text-help);
+}
+
+.wccs-admin .wccs-checkouts__detail {
+  margin-top: var(--wccs-space-12);
+  padding: var(--wccs-space-12);
+  border: 1px solid var(--wccs-border-control);
+  border-radius: var(--wccs-radius-control);
+  background: var(--wccs-surface);
+}
+
+.wccs-admin .wccs-checkouts__rule {
+  margin: 0 0 var(--wccs-space-12);
+}
+
+.wccs-admin .wccs-checkouts__actions,
+.wccs-admin .wccs-checkouts__switches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--wccs-space-12);
+  margin-bottom: var(--wccs-space-12);
+}
+
+.wccs-admin .wccs-checkouts__priority {
+  color: var(--wccs-ink-muted);
+  font-size: var(--wccs-text-help);
+}
+
+.wccs-admin .wccs-checkouts__sources {
+  margin: var(--wccs-space-12) 0;
+  padding: 0;
+  border: 0;
+}
+
+.wccs-admin .wccs-checkouts__sources legend {
+  margin-bottom: var(--wccs-space-8);
+  font-weight: 600;
+}
+
+.wccs-admin .wccs-checkouts__sources label {
+  display: flex;
+  gap: var(--wccs-space-8);
+  padding: var(--wccs-space-8) 0;
+}
+
+.wccs-admin .wccs-checkouts__sources strong,
+.wccs-admin .wccs-checkouts__sources small {
+  display: block;
+}
+
+.wccs-admin .wccs-checkouts__sources small {
+  color: var(--wccs-ink-muted);
+}
+
+.wccs-admin .wccs-checkouts__remove {
+  margin-top: var(--wccs-space-8);
+}

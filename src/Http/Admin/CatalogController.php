@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Http\Admin;
 
+use WCCheckoutSuite\Domain\Checkout\CheckoutFacts;
 use WCCheckoutSuite\Domain\Checkout\CoreFields;
 use WCCheckoutSuite\Domain\Customers\AccountSurfaces;
 use WCCheckoutSuite\Domain\Conditions\ConditionValidator;
@@ -181,6 +182,11 @@ final class CatalogController {
 				'maxNodes' => ConditionValidator::MAX_NODES,
 			),
 		);
+
+		// What the store can answer for, when a checkout is cut down to the essentials. §6.3
+		// requires a minimal composition to be verified before it is saved, and a checklist the
+		// browser invented would agree with a store that cannot take a payment.
+		$catalogue['checkoutFacts'] = CheckoutFacts::all();
 
 		return new WP_REST_Response( $catalogue, 200 );
 	}

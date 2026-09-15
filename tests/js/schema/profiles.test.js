@@ -92,7 +92,9 @@ describe( 'profiles', () => {
 	test( 'a document written before profiles existed has none', () => {
 		expect( profilesOf( {} ) ).toEqual( [] );
 		expect( profilesOf( null ) ).toEqual( [] );
-		expect( profilesOf( { profiles: null } ) ).toEqual( [] );
+		expect(
+			profilesOf( /** @type {any} */ ( { profiles: null } ) )
+		).toEqual( [] );
 	} );
 
 	test( 'a document carries its profiles without losing anything else', () => {
@@ -204,13 +206,17 @@ describe( 'profiles', () => {
 			] );
 			expect( needsChecklist( created ) ).toBe( true );
 			expect(
-				needsChecklist( createProfile( document, 'Outro', 'woocommerce_current' ) )
+				needsChecklist(
+					createProfile( document, 'Outro', 'woocommerce_current' )
+				)
 			).toBe( false );
 		} );
 
 		test( 'a new checkout is considered before the ones that already exist', () => {
 			expect( nextPriority( [] ) ).toBe( 10 );
-			expect( nextPriority( [ profile( { priority: 30 } ) ] ) ).toBe( 40 );
+			expect( nextPriority( [ profile( { priority: 30 } ) ] ) ).toBe(
+				40
+			);
 		} );
 	} );
 
@@ -223,13 +229,15 @@ describe( 'profiles', () => {
 
 			const marked = setFallback( profiles, 'dois' );
 
-			expect( fallbacks( marked ).map( ( entry ) => entry.id ) ).toEqual( [
-				'dois',
-			] );
+			expect( fallbacks( marked ).map( ( entry ) => entry.id ) ).toEqual(
+				[ 'dois' ]
+			);
 		} );
 
 		test( 'a store may have no fallback profile at all', () => {
-			expect( fallbacks( setFallback( [ profile() ], '' ) ) ).toEqual( [] );
+			expect( fallbacks( setFallback( [ profile() ], '' ) ) ).toEqual(
+				[]
+			);
 		} );
 
 		test( 'the only fallback cannot be deleted', () => {
@@ -291,10 +299,13 @@ describe( 'profiles', () => {
 				-1
 			);
 
-			expect( moved.map( ( entry ) => entry.id ) ).toEqual( [ 'b', 'a' ] );
-			expect( orderedProfiles( moved ).map( ( entry ) => entry.id ) ).toEqual(
-				[ 'b', 'a' ]
-			);
+			expect( moved.map( ( entry ) => entry.id ) ).toEqual( [
+				'b',
+				'a',
+			] );
+			expect(
+				orderedProfiles( moved ).map( ( entry ) => entry.id )
+			).toEqual( [ 'b', 'a' ] );
 		} );
 
 		test( 'moving past the end changes nothing', () => {
@@ -350,7 +361,11 @@ describe( 'profiles', () => {
 
 		test( 'a cart only one profile answers has no overlap', () => {
 			expect(
-				overlapsFor( store, { cart_categories: [ 'livros' ] }, VOCABULARY )
+				overlapsFor(
+					store,
+					{ cart_categories: [ 'livros' ] },
+					VOCABULARY
+				)
 			).toHaveLength( 0 );
 		} );
 
@@ -396,14 +411,25 @@ describe( 'profiles', () => {
 	describe( 'the minimal checkout', () => {
 		const minimal = profile( { source: 'minimal' } );
 
-		test( 'every requirement the store cannot answer for is reported', () => {
-			const checklist = minimalChecklist( minimal, {
-				gateway: true,
-				taxes: false,
-				shipping: true,
-				integrations: false,
-				legal: true,
-			} );
+		test( 'every requirement the store cannot answer for is reported, and so is a dropped field', () => {
+			const checklist = minimalChecklist(
+				minimal,
+				[
+					{
+						id: 'licenca',
+						label: 'Licença química',
+						enabled: true,
+						required: true,
+						section: 'documentacao',
+					},
+				],
+				{
+					gateway: true,
+					taxes: false,
+					shipping: true,
+					legal: true,
+				}
+			);
 
 			expect( checklist.map( ( entry ) => entry.key ) ).toEqual( [
 				'gateway',
@@ -413,17 +439,43 @@ describe( 'profiles', () => {
 				'legal',
 			] );
 			expect(
-				checklist.filter( ( entry ) => ! entry.met ).map( ( entry ) => entry.key )
+				checklist
+					.filter( ( entry ) => ! entry.met )
+					.map( ( entry ) => entry.key )
 			).toEqual( [ 'taxes', 'integrations' ] );
 			expect( checklist[ 1 ].reason ).toContain( 'impostos' );
+			// The merchant has to be told which field the composition left behind.
+			expect( checklist[ 3 ].reason ).toContain( 'Licença química' );
+		} );
+
+		test( 'a required field the composition keeps is not a missing datum', () => {
+			const checklist = minimalChecklist(
+				minimal,
+				[
+					{
+						id: 'contato_email',
+						label: 'E-mail',
+						enabled: true,
+						required: true,
+						section: 'contato',
+					},
+				],
+				{
+					gateway: true,
+					taxes: true,
+					shipping: true,
+					legal: true,
+				}
+			);
+
+			expect( checklist.every( ( entry ) => entry.met ) ).toBe( true );
 		} );
 
 		test( 'a store that answers for everything has nothing to fix', () => {
-			const checklist = minimalChecklist( minimal, {
+			const checklist = minimalChecklist( minimal, [], {
 				gateway: true,
 				taxes: true,
 				shipping: true,
-				integrations: true,
 				legal: true,
 			} );
 
