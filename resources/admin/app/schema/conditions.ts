@@ -660,6 +660,192 @@ export function issues(
 }
 
 /**
+ * One rule that cannot be satisfied by any cart.
+ *
+ * @see conflicts
+ */
+export interface ConditionConflict {
+	/** Source the two comparisons disagree about. */
+	source: string;
+	/** The two readings, in the vocabulary's own words. */
+	first: string;
+	second: string;
+	/** Sentence the editor shows. */
+	message: string;
+}
+
+/**
+ * Comparisons inside one `all` that cannot both hold.
+ *
+ * §6.9 asks for a conflict to be **shown** and not refused, and this is the same rule for a
+ * condition tree: a merchant may write `country equals BR` and `country equals PT` while they are
+ * working, or keep a rule that a promotion has temporarily made impossible, and a store that
+ * refused to save it would be a store that refuses work in progress. What it must not do is stay
+ * silent, because a rule nothing can satisfy is a field that never appears and a checkout profile
+ * that never runs — the exact failure this phase exists to make visible.
+ *
+ * Only `all` groups are read as a conjunction. Inside an `any`, a pair that contradicts itself
+ * sits beside alternatives that may hold, so nothing there is unsatisfiable; and a nested `all` is
+ * kept as its own scope rather than merged with its parent, which can only make this report
+ * narrower than the truth, never wider. A report that cried wolf would be turned off.
+ *
+ * @param node       Root node.
+ * @param vocabulary Vocabulary.
+ * @return Conflicts, in the order they were found.
+ */
+export function conflicts(
+	node: ConditionNode,
+	vocabulary: ConditionVocabulary
+): ConditionConflict[] {
+	const found: ConditionConflict[] = [];
+
+	/**
+	 * The leaves of one conjunction.
+	 *
+	 * @param group Group node.
+	 * @return Leaves directly inside it, which is what "both at once" means.
+	 */
+	const conjuncts = ( group: ConditionNode ): ConditionLeaf[] =>
+		childrenOf( group ).filter(
+			( child ) => ! isGroup( child )
+		) as ConditionLeaf[];
+
+	/**
+	 * One comparison, in words.
+	 *
+	 * @param leaf Leaf.
+	 * @return Sentence fragment.
+	 */
+	const sentence = ( leaf: ConditionLeaf ): string => {
+		const operator = operatorOf( vocabulary, leaf.operator );
+		const label = operator?.label ?? leaf.operator;
+
+		if ( ! operator?.takesValue ) {
+			return label;
+		}
+
+		return `${ label } ${ formatValue( leaf.value ) }`;
+	};
+
+	/**
+	 * Whether two comparisons of one source cannot both hold.
+	 *
+	 * @param a First.
+	 * @param b Second.
+	 * @return Whether they contradict.
+	 */
+	const contradict = ( a: ConditionLeaf, b: ConditionLeaf ): boolean => {
+		const numeric = ( value: any ): number | null => {
+			const asNumber = Number( value );
+
+			return 'number' === valueType( value ) && ! Number.isNaN( asNumber )
+				? asNumber
+				: null;
+		};
+
+		const pair = [ a.operator, b.operator ].sort().join( '+' );
+
+		switch ( pair ) {
+			case 'equals+equals':
+				return formatValue( a.value ) !== formatValue( b.value );
+
+			case 'equals+not_equals':
+				return formatValue( a.value ) === formatValue( b.value );
+
+			case 'contains+not_contains':
+				return formatValue( a.value ) === formatValue( b.value );
+
+			case 'is_empty+is_not_empty':
+				return true;
+
+			// Asking for a value and asking for no value are two answers to one question.
+			case 'equals+is_empty':
+			case 'contains+is_empty':
+			case 'in+is_empty':
+				return true;
+
+			case 'equals+greater_than': {
+				const equals = 'equals' === a.operator ? a : b;
+				const greater = 'equals' === a.operator ? b : a;
+				const value = numeric( equals.value );
+				const bound = numeric( greater.value );
+
+				return null !== value && null !== bound && value <= bound;
+			}
+
+			case 'equals+less_than': {
+				const equals = 'equals' === a.operator ? a : b;
+				const less = 'equals' === a.operator ? b : a;
+				const value = numeric( equals.value );
+				const bound = numeric( less.value );
+
+				return null !== value && null !== bound && value >= bound;
+			}
+
+			case 'greater_than+less_than': {
+				const greater = 'greater_than' === a.operator ? a : b;
+				const less = 'greater_than' === a.operator ? b : a;
+				const floor = numeric( greater.value );
+				const ceiling = numeric( less.value );
+
+				return null !== floor && null !== ceiling && floor >= ceiling;
+			}
+
+			default:
+				return false;
+		}
+	};
+
+	/**
+	 * Reads one node, reporting the contradictions inside it.
+	 *
+	 * @param current Node.
+	 */
+	const walk = ( current: ConditionNode ): void => {
+		if ( ! isGroup( current ) ) {
+			return;
+		}
+
+		if ( 'all' === groupKind( current ) ) {
+			const leaves = conjuncts( current ).filter( ( leaf ) => {
+				const source = sourceOf( vocabulary, leaf.source );
+
+				// A reference reads another field, and what it holds is decided by that
+				// field: two comparisons of it are not two comparisons of one value here.
+				return Boolean( source ) && ! source?.isReference;
+			} );
+
+			leaves.forEach( ( leaf, index ) => {
+				leaves.slice( index + 1 ).forEach( ( other ) => {
+					if ( leaf.source !== other.source ) {
+						return;
+					}
+
+					if ( ! contradict( leaf, other ) ) {
+						return;
+					}
+
+					found.push( {
+						source: leaf.source,
+						first: sentence( leaf ),
+						second: sentence( other ),
+						message: `"${ sentence( leaf ) }" and "${ sentence(
+							other
+						) }" cannot both be true, so this rule matches no cart.`,
+					} );
+				} );
+			} );
+		}
+
+		childrenOf( current ).forEach( walk );
+	};
+
+	walk( node );
+
+	return found;
+}
+
+/**
  * The type of a comparison value, as the vocabulary names types.
  *
  * @param value Value.

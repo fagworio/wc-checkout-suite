@@ -48,7 +48,19 @@ final class Sources {
 			new Source( 'customer_logged_in', __( 'Customer is logged in', 'wc-checkoutsuite' ), Operator::TYPE_BOOLEAN, Source::SCOPE_SERVER ),
 			new Source( 'cart_items', __( 'Products in the cart', 'wc-checkoutsuite' ), Operator::TYPE_LIST, Source::SCOPE_SERVER ),
 			new Source( 'cart_categories', __( 'Product categories in the cart', 'wc-checkoutsuite' ), Operator::TYPE_LIST, Source::SCOPE_SERVER ),
+			new Source( 'cart_tags', __( 'Product tags in the cart', 'wc-checkoutsuite' ), Operator::TYPE_LIST, Source::SCOPE_SERVER ),
 			new Source( 'cart_total', __( 'Cart total', 'wc-checkoutsuite' ), Operator::TYPE_NUMBER, Source::SCOPE_SERVER ),
+
+			// The rest of §6.8's list. The two product properties are read as a statement about
+			// **every** item — "nothing in this cart has to be shipped" is what a checkout
+			// without an address is for — and the label says so rather than leaving the merchant
+			// to guess which of the two quantities a boolean meant. `user_role` lists the roles,
+			// so a rule about staff is a rule about one entry of a list.
+			new Source( 'cart_virtual', __( 'Every product in the cart is virtual', 'wc-checkoutsuite' ), Operator::TYPE_BOOLEAN, Source::SCOPE_SERVER ),
+			new Source( 'cart_downloadable', __( 'Every product in the cart is downloadable', 'wc-checkoutsuite' ), Operator::TYPE_BOOLEAN, Source::SCOPE_SERVER ),
+			new Source( 'cart_quantity', __( 'Items in the cart', 'wc-checkoutsuite' ), Operator::TYPE_NUMBER, Source::SCOPE_SERVER ),
+			new Source( 'cart_subtotal', __( 'Cart subtotal, before shipping', 'wc-checkoutsuite' ), Operator::TYPE_NUMBER, Source::SCOPE_SERVER ),
+			new Source( 'user_role', __( 'Role of the signed-in user', 'wc-checkoutsuite' ), Operator::TYPE_LIST, Source::SCOPE_SERVER ),
 		);
 
 		$catalogue = array();

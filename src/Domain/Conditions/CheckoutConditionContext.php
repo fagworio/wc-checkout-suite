@@ -61,7 +61,13 @@ final class CheckoutConditionContext {
 			'customer_logged_in',
 			'cart_items',
 			'cart_categories',
+			'cart_tags',
 			'cart_total',
+			'cart_virtual',
+			'cart_downloadable',
+			'cart_quantity',
+			'cart_subtotal',
+			'user_role',
 		);
 	}
 
@@ -110,8 +116,14 @@ final class CheckoutConditionContext {
 				'payment_method'     => $this->chosen( 'chosen_payment_method' ),
 				'customer_logged_in' => function_exists( 'is_user_logged_in' ) && is_user_logged_in(),
 				'cart_items'         => $this->product_ids(),
-				'cart_categories'    => $this->category_slugs(),
+				'cart_categories'    => $this->taxonomy_slugs( 'product_cat' ),
+				'cart_tags'          => $this->taxonomy_slugs( 'product_tag' ),
 				'cart_total'         => $this->cart_total(),
+				'cart_virtual'       => $this->every_product( 'is_virtual' ),
+				'cart_downloadable'  => $this->every_product( 'is_downloadable' ),
+				'cart_quantity'      => $this->cart_quantity(),
+				'cart_subtotal'      => $this->cart_subtotal(),
+				'user_role'          => $this->user_roles(),
 				'fields'             => $fields,
 			),
 			$adapter
@@ -226,11 +238,33 @@ final class CheckoutConditionContext {
 	}
 
 	/**
-	 * Category slugs of the products in the cart.
+	 * The cart total as a number.
 	 *
+	 * The number rather than the formatted price, because a rule compares it with
+	 * a number: the formatted string carries the currency and the store's decimal
+	 * separators, and comparing those as text is how "greater than 100" starts
+	 * being wrong in a store that writes 1.000,00.
+	 *
+	 * @return float
+	 */
+	private function cart_total(): float {
+		$cart = $this->cart();
+
+		return null === $cart ? 0.0 : (float) $cart->get_total( 'edit' );
+	}
+
+	/**
+	 * Slugs of one taxonomy, across the products in the cart.
+	 *
+	 * Categories and tags are the same question asked of two taxonomies, so they are the same
+	 * walk: the slug is the stable form the taxonomy itself uses, and a name would be translated
+	 * and edited. An unknown taxonomy answers with nothing rather than with an error — a store
+	 * whose product tags were removed still has a checkout.
+	 *
+	 * @param string $taxonomy Taxonomy key.
 	 * @return array<int, string>
 	 */
-	private function category_slugs(): array {
+	private function taxonomy_slugs( string $taxonomy ): array {
 		$cart = $this->cart();
 
 		if ( null === $cart || ! function_exists( 'wp_get_post_terms' ) ) {
@@ -246,7 +280,7 @@ final class CheckoutConditionContext {
 				continue;
 			}
 
-			$terms = wp_get_post_terms( $id, 'product_cat', array( 'fields' => 'slugs' ) );
+			$terms = wp_get_post_terms( $id, $taxonomy, array( 'fields' => 'slugs' ) );
 
 			if ( is_wp_error( $terms ) || ! is_array( $terms ) ) {
 				continue;
@@ -263,19 +297,96 @@ final class CheckoutConditionContext {
 	}
 
 	/**
-	 * The cart total as a number.
+	 * Whether every product in the cart has one property.
 	 *
-	 * The number rather than the formatted price, because a rule compares it with
-	 * a number: the formatted string carries the currency and the store's decimal
-	 * separators, and comparing those as text is how "greater than 100" starts
-	 * being wrong in a store that writes 1.000,00.
+	 * **Every**, and the label published with the source says so. The archetypal rule reading
+	 * this is "a checkout that asks no address, because nothing here has to be shipped", which is
+	 * a statement about all the items; "some item is virtual" is a different question, and an
+	 * empty cart answers `false` for both readings rather than claiming a property nothing has.
+	 *
+	 * @param string $method Product method: `is_virtual` or `is_downloadable`.
+	 * @return bool
+	 */
+	private function every_product( string $method ): bool {
+		$cart = $this->cart();
+
+		if ( null === $cart || ! function_exists( 'wc_get_product' ) ) {
+			return false;
+		}
+
+		$seen = false;
+
+		foreach ( $cart->get_cart() as $item ) {
+			$id = isset( $item['product_id'] ) ? (int) $item['product_id'] : 0;
+
+			if ( $id <= 0 ) {
+				continue;
+			}
+
+			$product = wc_get_product( $id );
+
+			if ( ! $product instanceof \WC_Product ) {
+				// A product that cannot be read cannot be claimed to be virtual: the answer that
+				// hides an address the customer needs is the dangerous one.
+				return false;
+			}
+
+			if ( ! $product->{$method}() ) {
+				return false;
+			}
+
+			$seen = true;
+		}
+
+		return $seen;
+	}
+
+	/**
+	 * How many items the cart holds, counting quantities.
+	 *
+	 * @return int
+	 */
+	private function cart_quantity(): int {
+		$cart = $this->cart();
+
+		return null === $cart ? 0 : (int) $cart->get_cart_contents_count();
+	}
+
+	/**
+	 * The cart subtotal, before shipping and fees.
+	 *
+	 * A number for the same reason the total is one, and the *subtotal* rather than the total
+	 * because a rule about "how much the customer is buying" must not change its answer when the
+	 * shipping method does.
 	 *
 	 * @return float
 	 */
-	private function cart_total(): float {
+	private function cart_subtotal(): float {
 		$cart = $this->cart();
 
-		return null === $cart ? 0.0 : (float) $cart->get_total( 'edit' );
+		return null === $cart ? 0.0 : (float) $cart->get_subtotal();
+	}
+
+	/**
+	 * The roles of the signed-in user.
+	 *
+	 * A list, because a user can hold more than one role and a rule about staff is a rule about
+	 * one entry of the list. A guest has none, which is what "is empty" answers.
+	 *
+	 * @return array<int, string>
+	 */
+	private function user_roles(): array {
+		if ( ! function_exists( 'wp_get_current_user' ) ) {
+			return array();
+		}
+
+		$user = wp_get_current_user();
+
+		if ( ! $user instanceof \WP_User || 0 === (int) $user->ID ) {
+			return array();
+		}
+
+		return array_values( array_map( 'strval', (array) $user->roles ) );
 	}
 
 	/**

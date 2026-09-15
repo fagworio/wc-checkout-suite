@@ -46,6 +46,14 @@ const OPERATORS = {
 /**
  * Source keys the engine can read.
  *
+ * The whole published vocabulary, mirrored from `Sources`, including the sources only the server
+ * can answer for. Knowing a key and being given it are different things: the engine's job is to
+ * answer a rule it was handed, and which rules reach the page is decided by the transport —
+ * `ClassicAssets` sends only the rules whose every source the page can answer for, and the server
+ * recomputes the rest with the context it holds (§11). An engine that refused to know a source it
+ * might be handed would answer "matches" for a rule the server had already decided, and the two
+ * halves would disagree about the same document.
+ *
  * @type {Record<string, boolean>}
  */
 const SOURCES = {
@@ -57,7 +65,13 @@ const SOURCES = {
 	customer_logged_in: true,
 	cart_items: true,
 	cart_categories: true,
+	cart_tags: true,
 	cart_total: true,
+	cart_virtual: true,
+	cart_downloadable: true,
+	cart_quantity: true,
+	cart_subtotal: true,
+	user_role: true,
 };
 
 /**

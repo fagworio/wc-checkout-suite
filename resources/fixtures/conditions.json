@@ -1,434 +1,1045 @@
 {
-  "artifact": "conditions.json",
-  "artifact_version": 1,
-  "task": "WCCS-033",
-  "purpose": "Cases the PHP and the JavaScript condition engines both answer, so a divergence shows up as a failing assertion on one side rather than as two stores behaving differently.",
-  "vocabulary": {
-    "note": "The operators and sources here are the ones GET /field-types publishes. They are copied so this file can be read without a running store; docs/validation/WCCS-033.md records that the catalogue is asserted to publish exactly these keys.",
-    "operators": [
-      "equals",
-      "not_equals",
-      "contains",
-      "not_contains",
-      "greater_than",
-      "less_than",
-      "is_empty",
-      "is_not_empty",
-      "in",
-      "not_in"
-    ],
-    "sources": [
-      "field",
-      "country",
-      "state",
-      "shipping_method",
-      "payment_method",
-      "customer_logged_in",
-      "cart_items",
-      "cart_categories",
-      "cart_total"
-    ]
-  },
-  "cases": [
-    {
-      "group": "empty",
-      "name": "an absent entry is empty",
-      "note": "A source the context does not carry reads as absent, not as false.",
-      "tree": { "source": "country", "operator": "is_empty" },
-      "context": {},
-      "expect": true
-    },
-    {
-      "group": "empty",
-      "name": "an empty string is empty",
-      "tree": { "source": "state", "operator": "is_empty" },
-      "context": { "state": "" },
-      "expect": true
-    },
-    {
-      "group": "empty",
-      "name": "an empty list is empty",
-      "tree": { "source": "cart_items", "operator": "is_empty" },
-      "context": { "cart_items": [] },
-      "expect": true
-    },
-    {
-      "group": "empty",
-      "name": "absence negated is presence",
-      "tree": { "source": "country", "operator": "is_not_empty" },
-      "context": {},
-      "expect": false
-    },
-    {
-      "group": "empty",
-      "name": "a list that was not submitted is empty",
-      "tree": { "source": "cart_categories", "operator": "is_empty" },
-      "context": { "cart_categories": [] },
-      "expect": true
-    },
-    {
-      "group": "zero",
-      "name": "a cart total of zero is a value",
-      "note": "Empty is not falsy: zero is a total the customer has.",
-      "tree": { "source": "cart_total", "operator": "is_empty" },
-      "context": { "cart_total": 0 },
-      "expect": false
-    },
-    {
-      "group": "zero",
-      "name": "the text zero is a value",
-      "tree": { "source": "cart_total", "operator": "is_empty" },
-      "context": { "cart_total": "0" },
-      "expect": false
-    },
-    {
-      "group": "zero",
-      "name": "zero equals the text zero",
-      "tree": { "source": "cart_total", "operator": "equals", "value": "0" },
-      "context": { "cart_total": 0 },
-      "expect": true
-    },
-    {
-      "group": "zero",
-      "name": "zero is not greater than zero",
-      "tree": { "source": "cart_total", "operator": "greater_than", "value": 0 },
-      "context": { "cart_total": 0 },
-      "expect": false
-    },
-    {
-      "group": "zero",
-      "name": "zero is less than one",
-      "tree": { "source": "cart_total", "operator": "less_than", "value": 1 },
-      "context": { "cart_total": "0" },
-      "expect": true
-    },
-    {
-      "group": "false",
-      "name": "false is a value",
-      "tree": { "source": "customer_logged_in", "operator": "is_empty" },
-      "context": { "customer_logged_in": false },
-      "expect": false
-    },
-    {
-      "group": "false",
-      "name": "false equals false",
-      "tree": { "source": "customer_logged_in", "operator": "equals", "value": false },
-      "context": { "customer_logged_in": false },
-      "expect": true
-    },
-    {
-      "group": "false",
-      "name": "false does not equal true",
-      "tree": { "source": "customer_logged_in", "operator": "not_equals", "value": true },
-      "context": { "customer_logged_in": false },
-      "expect": true
-    },
-    {
-      "group": "false",
-      "name": "a boolean compares as one and zero on both sides",
-      "note": "PHP casts true to '1' and JavaScript to 'true', so the text form is fixed on both sides.",
-      "tree": { "source": "customer_logged_in", "operator": "equals", "value": true },
-      "context": { "customer_logged_in": true },
-      "expect": true
-    },
-    {
-      "group": "false",
-      "name": "the text one equals a true boolean",
-      "tree": { "source": "customer_logged_in", "operator": "equals", "value": "1" },
-      "context": { "customer_logged_in": true },
-      "expect": true
-    },
-    {
-      "group": "lists",
-      "name": "a product in the cart is contained",
-      "tree": { "source": "cart_items", "operator": "contains", "value": "shirt" },
-      "context": { "cart_items": ["hat", "shirt"] },
-      "expect": true
-    },
-    {
-      "group": "lists",
-      "name": "a product that is not in the cart is not contained",
-      "tree": { "source": "cart_items", "operator": "contains", "value": "shirt" },
-      "context": { "cart_items": ["hat"] },
-      "expect": false
-    },
-    {
-      "group": "lists",
-      "name": "a category is one of a set",
-      "tree": { "source": "cart_categories", "operator": "contains", "value": "books" },
-      "context": { "cart_categories": ["books", "music"] },
-      "expect": true
-    },
-    {
-      "group": "lists",
-      "name": "an empty cart contains nothing",
-      "tree": { "source": "cart_items", "operator": "contains", "value": "shirt" },
-      "context": { "cart_items": [] },
-      "expect": false
-    },
-    {
-      "group": "lists",
-      "name": "text is searched as text",
-      "tree": { "source": "state", "operator": "contains", "value": "G" },
-      "context": { "state": "MG" },
-      "expect": true
-    },
-    {
-      "group": "lists",
-      "name": "a number in a list is found by its text form",
-      "tree": { "source": "cart_items", "operator": "contains", "value": "12" },
-      "context": { "cart_items": [12, 13] },
-      "expect": true
-    },
-    {
-      "group": "membership",
-      "name": "a country is one of a set",
-      "tree": { "source": "country", "operator": "in", "value": ["BR", "PT"] },
-      "context": { "country": "PT" },
-      "expect": true
-    },
-    {
-      "group": "membership",
-      "name": "a country that is not in the set is not one of it",
-      "tree": { "source": "country", "operator": "in", "value": ["BR", "PT"] },
-      "context": { "country": "US" },
-      "expect": false
-    },
-    {
-      "group": "membership",
-      "name": "a number is one of a set of text numbers",
-      "tree": { "source": "cart_total", "operator": "in", "value": ["10", "20"] },
-      "context": { "cart_total": 20 },
-      "expect": true
-    },
-    {
-      "group": "membership",
-      "name": "an empty set contains nothing",
-      "tree": { "source": "country", "operator": "in", "value": [] },
-      "context": { "country": "BR" },
-      "expect": false
-    },
-    {
-      "group": "comparison",
-      "name": "a total above the threshold is greater",
-      "tree": { "source": "cart_total", "operator": "greater_than", "value": 100 },
-      "context": { "cart_total": 150 },
-      "expect": true
-    },
-    {
-      "group": "comparison",
-      "name": "a total written as text is compared as a number",
-      "note": "Otherwise 100 would sort before 9 and the rule would be about text.",
-      "tree": { "source": "cart_total", "operator": "greater_than", "value": 9 },
-      "context": { "cart_total": "100" },
-      "expect": true
-    },
-    {
-      "group": "comparison",
-      "name": "text is not a number",
-      "tree": { "source": "cart_total", "operator": "greater_than", "value": 9 },
-      "context": { "cart_total": "abc" },
-      "expect": false
-    },
-    {
-      "group": "comparison",
-      "name": "a hexadecimal spelling is not a number here",
-      "note": "PHP reads 0x1A as text and JavaScript as 26; the shared pattern refuses both.",
-      "tree": { "source": "cart_total", "operator": "greater_than", "value": 1 },
-      "context": { "cart_total": "0x1A" },
-      "expect": false
-    },
-    {
-      "group": "comparison",
-      "name": "an absent value is not greater than anything",
-      "tree": { "source": "cart_total", "operator": "greater_than", "value": 0 },
-      "context": {},
-      "expect": false
-    },
-    {
-      "group": "context",
-      "name": "the chosen shipping method is read",
-      "tree": { "source": "shipping_method", "operator": "equals", "value": "flat_rate:3" },
-      "context": { "shipping_method": "flat_rate:3" },
-      "expect": true
-    },
-    {
-      "group": "context",
-      "name": "the chosen payment method is read",
-      "tree": { "source": "payment_method", "operator": "equals", "value": "bacs" },
-      "context": { "payment_method": "cod" },
-      "expect": false
-    },
-    {
-      "group": "context",
-      "name": "another field is read from the submission",
-      "tree": { "source": "field", "field": "person_type", "operator": "equals", "value": "pj" },
-      "context": { "fields": { "person_type": "pj" } },
-      "expect": true
-    },
-    {
-      "group": "context",
-      "name": "another field that was not submitted reads as absent",
-      "tree": { "source": "field", "field": "person_type", "operator": "is_empty" },
-      "context": { "fields": {} },
-      "expect": true
-    },
-    {
-      "group": "context",
-      "name": "another field that holds zero is not empty",
-      "tree": { "source": "field", "field": "quantity", "operator": "is_empty" },
-      "context": { "fields": { "quantity": 0 } },
-      "expect": false
-    },
-    {
-      "group": "context",
-      "name": "a source the context does not carry is absent rather than false",
-      "tree": { "source": "payment_method", "operator": "is_empty" },
-      "context": {},
-      "expect": true
-    },
-    {
-      "group": "negation",
-      "name": "a negation is the operator, not a wrapper",
-      "tree": { "source": "country", "operator": "not_equals", "value": "BR" },
-      "context": { "country": "PT" },
-      "expect": true
-    },
-    {
-      "group": "negation",
-      "name": "a negation of a match does not match",
-      "tree": { "source": "country", "operator": "not_equals", "value": "BR" },
-      "context": { "country": "BR" },
-      "expect": false
-    },
-    {
-      "group": "negation",
-      "name": "not contains over a list",
-      "tree": { "source": "cart_categories", "operator": "not_contains", "value": "books" },
-      "context": { "cart_categories": ["music"] },
-      "expect": true
-    },
-    {
-      "group": "negation",
-      "name": "not in over a set",
-      "tree": { "source": "country", "operator": "not_in", "value": ["BR", "PT"] },
-      "context": { "country": "US" },
-      "expect": true
-    },
-    {
-      "group": "negation",
-      "name": "not in when the value is in the set",
-      "tree": { "source": "country", "operator": "not_in", "value": ["BR", "PT"] },
-      "context": { "country": "BR" },
-      "expect": false
-    },
-    {
-      "group": "negation",
-      "name": "the negation of empty is presence",
-      "tree": { "source": "state", "operator": "is_not_empty" },
-      "context": { "state": "MG" },
-      "expect": true
-    },
-    {
-      "group": "groups",
-      "name": "all of two matches",
-      "tree": {
-        "all": [
-          { "source": "customer_logged_in", "operator": "equals", "value": true },
-          { "source": "cart_total", "operator": "greater_than", "value": 100 }
-        ]
-      },
-      "context": { "customer_logged_in": true, "cart_total": 150 },
-      "expect": true
-    },
-    {
-      "group": "groups",
-      "name": "all of two with one that does not match",
-      "tree": {
-        "all": [
-          { "source": "customer_logged_in", "operator": "equals", "value": true },
-          { "source": "cart_total", "operator": "greater_than", "value": 100 }
-        ]
-      },
-      "context": { "customer_logged_in": false, "cart_total": 150 },
-      "expect": false
-    },
-    {
-      "group": "groups",
-      "name": "any of two with one that matches",
-      "tree": {
-        "any": [
-          { "source": "country", "operator": "equals", "value": "BR" },
-          { "source": "cart_total", "operator": "greater_than", "value": 100 }
-        ]
-      },
-      "context": { "country": "US", "cart_total": 150 },
-      "expect": true
-    },
-    {
-      "group": "groups",
-      "name": "any of two with neither matching",
-      "tree": {
-        "any": [
-          { "source": "country", "operator": "equals", "value": "BR" },
-          { "source": "cart_total", "operator": "greater_than", "value": 100 }
-        ]
-      },
-      "context": { "country": "US", "cart_total": 50 },
-      "expect": false
-    },
-    {
-      "group": "groups",
-      "name": "a group of one is that one",
-      "tree": { "all": [{ "source": "country", "operator": "equals", "value": "BR" }] },
-      "context": { "country": "BR" },
-      "expect": true
-    },
-    {
-      "group": "groups",
-      "name": "groups nest",
-      "tree": {
-        "all": [
-          { "source": "field", "field": "person_type", "operator": "equals", "value": "pj" },
-          {
-            "any": [
-              { "source": "country", "operator": "equals", "value": "BR" },
-              { "source": "customer_logged_in", "operator": "equals", "value": true }
-            ]
-          }
-        ]
-      },
-      "context": { "fields": { "person_type": "pj" }, "country": "PT", "customer_logged_in": false },
-      "expect": false
-    },
-    {
-      "group": "unreadable",
-      "name": "a tree that cannot be parsed does not hide a field",
-      "note": "The validator refuses this shape on every write, so reaching it means damage, and damage must not remove a field from the checkout.",
-      "tree": { "all": "not-a-list" },
-      "context": {},
-      "expect": true
-    },
-    {
-      "group": "unreadable",
-      "name": "an empty group does not hide a field",
-      "tree": { "all": [] },
-      "context": {},
-      "expect": true
-    },
-    {
-      "group": "unreadable",
-      "name": "an operator outside the vocabulary does not hide a field",
-      "tree": { "source": "country", "operator": "is_roughly", "value": "BR" },
-      "context": { "country": "US" },
-      "expect": true
-    },
-    {
-      "group": "unreadable",
-      "name": "a source outside the vocabulary does not hide a field",
-      "tree": { "source": "weather", "operator": "equals", "value": "rain" },
-      "context": { "weather": "rain" },
-      "expect": true
-    }
-  ]
+	"artifact": "conditions.json",
+	"artifact_version": 1,
+	"task": "WCCS-033",
+	"purpose": "Cases the PHP and the JavaScript condition engines both answer, so a divergence shows up as a failing assertion on one side rather than as two stores behaving differently.",
+	"vocabulary": {
+		"note": "The operators and sources here are the ones GET /field-types publishes. They are copied so this file can be read without a running store; docs/validation/WCCS-033.md records that the catalogue is asserted to publish exactly these keys.",
+		"operators": [
+			"equals",
+			"not_equals",
+			"contains",
+			"not_contains",
+			"greater_than",
+			"less_than",
+			"is_empty",
+			"is_not_empty",
+			"in",
+			"not_in"
+		],
+		"sources": [
+			"field",
+			"country",
+			"state",
+			"shipping_method",
+			"payment_method",
+			"customer_logged_in",
+			"cart_items",
+			"cart_categories",
+			"cart_tags",
+			"cart_total",
+			"cart_virtual",
+			"cart_downloadable",
+			"cart_quantity",
+			"cart_subtotal",
+			"user_role"
+		]
+	},
+	"cases": [
+		{
+			"group": "empty",
+			"name": "an absent entry is empty",
+			"note": "A source the context does not carry reads as absent, not as false.",
+			"tree": {
+				"source": "country",
+				"operator": "is_empty"
+			},
+			"context": {},
+			"expect": true
+		},
+		{
+			"group": "empty",
+			"name": "an empty string is empty",
+			"tree": {
+				"source": "state",
+				"operator": "is_empty"
+			},
+			"context": {
+				"state": ""
+			},
+			"expect": true
+		},
+		{
+			"group": "empty",
+			"name": "an empty list is empty",
+			"tree": {
+				"source": "cart_items",
+				"operator": "is_empty"
+			},
+			"context": {
+				"cart_items": []
+			},
+			"expect": true
+		},
+		{
+			"group": "empty",
+			"name": "absence negated is presence",
+			"tree": {
+				"source": "country",
+				"operator": "is_not_empty"
+			},
+			"context": {},
+			"expect": false
+		},
+		{
+			"group": "empty",
+			"name": "a list that was not submitted is empty",
+			"tree": {
+				"source": "cart_categories",
+				"operator": "is_empty"
+			},
+			"context": {
+				"cart_categories": []
+			},
+			"expect": true
+		},
+		{
+			"group": "zero",
+			"name": "a cart total of zero is a value",
+			"note": "Empty is not falsy: zero is a total the customer has.",
+			"tree": {
+				"source": "cart_total",
+				"operator": "is_empty"
+			},
+			"context": {
+				"cart_total": 0
+			},
+			"expect": false
+		},
+		{
+			"group": "zero",
+			"name": "the text zero is a value",
+			"tree": {
+				"source": "cart_total",
+				"operator": "is_empty"
+			},
+			"context": {
+				"cart_total": "0"
+			},
+			"expect": false
+		},
+		{
+			"group": "zero",
+			"name": "zero equals the text zero",
+			"tree": {
+				"source": "cart_total",
+				"operator": "equals",
+				"value": "0"
+			},
+			"context": {
+				"cart_total": 0
+			},
+			"expect": true
+		},
+		{
+			"group": "zero",
+			"name": "zero is not greater than zero",
+			"tree": {
+				"source": "cart_total",
+				"operator": "greater_than",
+				"value": 0
+			},
+			"context": {
+				"cart_total": 0
+			},
+			"expect": false
+		},
+		{
+			"group": "zero",
+			"name": "zero is less than one",
+			"tree": {
+				"source": "cart_total",
+				"operator": "less_than",
+				"value": 1
+			},
+			"context": {
+				"cart_total": "0"
+			},
+			"expect": true
+		},
+		{
+			"group": "false",
+			"name": "false is a value",
+			"tree": {
+				"source": "customer_logged_in",
+				"operator": "is_empty"
+			},
+			"context": {
+				"customer_logged_in": false
+			},
+			"expect": false
+		},
+		{
+			"group": "false",
+			"name": "false equals false",
+			"tree": {
+				"source": "customer_logged_in",
+				"operator": "equals",
+				"value": false
+			},
+			"context": {
+				"customer_logged_in": false
+			},
+			"expect": true
+		},
+		{
+			"group": "false",
+			"name": "false does not equal true",
+			"tree": {
+				"source": "customer_logged_in",
+				"operator": "not_equals",
+				"value": true
+			},
+			"context": {
+				"customer_logged_in": false
+			},
+			"expect": true
+		},
+		{
+			"group": "false",
+			"name": "a boolean compares as one and zero on both sides",
+			"note": "PHP casts true to '1' and JavaScript to 'true', so the text form is fixed on both sides.",
+			"tree": {
+				"source": "customer_logged_in",
+				"operator": "equals",
+				"value": true
+			},
+			"context": {
+				"customer_logged_in": true
+			},
+			"expect": true
+		},
+		{
+			"group": "false",
+			"name": "the text one equals a true boolean",
+			"tree": {
+				"source": "customer_logged_in",
+				"operator": "equals",
+				"value": "1"
+			},
+			"context": {
+				"customer_logged_in": true
+			},
+			"expect": true
+		},
+		{
+			"group": "lists",
+			"name": "a product in the cart is contained",
+			"tree": {
+				"source": "cart_items",
+				"operator": "contains",
+				"value": "shirt"
+			},
+			"context": {
+				"cart_items": [
+					"hat",
+					"shirt"
+				]
+			},
+			"expect": true
+		},
+		{
+			"group": "lists",
+			"name": "a product that is not in the cart is not contained",
+			"tree": {
+				"source": "cart_items",
+				"operator": "contains",
+				"value": "shirt"
+			},
+			"context": {
+				"cart_items": [
+					"hat"
+				]
+			},
+			"expect": false
+		},
+		{
+			"group": "lists",
+			"name": "a category is one of a set",
+			"tree": {
+				"source": "cart_categories",
+				"operator": "contains",
+				"value": "books"
+			},
+			"context": {
+				"cart_categories": [
+					"books",
+					"music"
+				]
+			},
+			"expect": true
+		},
+		{
+			"group": "lists",
+			"name": "an empty cart contains nothing",
+			"tree": {
+				"source": "cart_items",
+				"operator": "contains",
+				"value": "shirt"
+			},
+			"context": {
+				"cart_items": []
+			},
+			"expect": false
+		},
+		{
+			"group": "lists",
+			"name": "text is searched as text",
+			"tree": {
+				"source": "state",
+				"operator": "contains",
+				"value": "G"
+			},
+			"context": {
+				"state": "MG"
+			},
+			"expect": true
+		},
+		{
+			"group": "lists",
+			"name": "a number in a list is found by its text form",
+			"tree": {
+				"source": "cart_items",
+				"operator": "contains",
+				"value": "12"
+			},
+			"context": {
+				"cart_items": [
+					12,
+					13
+				]
+			},
+			"expect": true
+		},
+		{
+			"group": "membership",
+			"name": "a country is one of a set",
+			"tree": {
+				"source": "country",
+				"operator": "in",
+				"value": [
+					"BR",
+					"PT"
+				]
+			},
+			"context": {
+				"country": "PT"
+			},
+			"expect": true
+		},
+		{
+			"group": "membership",
+			"name": "a country that is not in the set is not one of it",
+			"tree": {
+				"source": "country",
+				"operator": "in",
+				"value": [
+					"BR",
+					"PT"
+				]
+			},
+			"context": {
+				"country": "US"
+			},
+			"expect": false
+		},
+		{
+			"group": "membership",
+			"name": "a number is one of a set of text numbers",
+			"tree": {
+				"source": "cart_total",
+				"operator": "in",
+				"value": [
+					"10",
+					"20"
+				]
+			},
+			"context": {
+				"cart_total": 20
+			},
+			"expect": true
+		},
+		{
+			"group": "membership",
+			"name": "an empty set contains nothing",
+			"tree": {
+				"source": "country",
+				"operator": "in",
+				"value": []
+			},
+			"context": {
+				"country": "BR"
+			},
+			"expect": false
+		},
+		{
+			"group": "comparison",
+			"name": "a total above the threshold is greater",
+			"tree": {
+				"source": "cart_total",
+				"operator": "greater_than",
+				"value": 100
+			},
+			"context": {
+				"cart_total": 150
+			},
+			"expect": true
+		},
+		{
+			"group": "comparison",
+			"name": "a total written as text is compared as a number",
+			"note": "Otherwise 100 would sort before 9 and the rule would be about text.",
+			"tree": {
+				"source": "cart_total",
+				"operator": "greater_than",
+				"value": 9
+			},
+			"context": {
+				"cart_total": "100"
+			},
+			"expect": true
+		},
+		{
+			"group": "comparison",
+			"name": "text is not a number",
+			"tree": {
+				"source": "cart_total",
+				"operator": "greater_than",
+				"value": 9
+			},
+			"context": {
+				"cart_total": "abc"
+			},
+			"expect": false
+		},
+		{
+			"group": "comparison",
+			"name": "a hexadecimal spelling is not a number here",
+			"note": "PHP reads 0x1A as text and JavaScript as 26; the shared pattern refuses both.",
+			"tree": {
+				"source": "cart_total",
+				"operator": "greater_than",
+				"value": 1
+			},
+			"context": {
+				"cart_total": "0x1A"
+			},
+			"expect": false
+		},
+		{
+			"group": "comparison",
+			"name": "an absent value is not greater than anything",
+			"tree": {
+				"source": "cart_total",
+				"operator": "greater_than",
+				"value": 0
+			},
+			"context": {},
+			"expect": false
+		},
+		{
+			"group": "context",
+			"name": "the chosen shipping method is read",
+			"tree": {
+				"source": "shipping_method",
+				"operator": "equals",
+				"value": "flat_rate:3"
+			},
+			"context": {
+				"shipping_method": "flat_rate:3"
+			},
+			"expect": true
+		},
+		{
+			"group": "context",
+			"name": "the chosen payment method is read",
+			"tree": {
+				"source": "payment_method",
+				"operator": "equals",
+				"value": "bacs"
+			},
+			"context": {
+				"payment_method": "cod"
+			},
+			"expect": false
+		},
+		{
+			"group": "context",
+			"name": "another field is read from the submission",
+			"tree": {
+				"source": "field",
+				"field": "person_type",
+				"operator": "equals",
+				"value": "pj"
+			},
+			"context": {
+				"fields": {
+					"person_type": "pj"
+				}
+			},
+			"expect": true
+		},
+		{
+			"group": "context",
+			"name": "another field that was not submitted reads as absent",
+			"tree": {
+				"source": "field",
+				"field": "person_type",
+				"operator": "is_empty"
+			},
+			"context": {
+				"fields": {}
+			},
+			"expect": true
+		},
+		{
+			"group": "context",
+			"name": "another field that holds zero is not empty",
+			"tree": {
+				"source": "field",
+				"field": "quantity",
+				"operator": "is_empty"
+			},
+			"context": {
+				"fields": {
+					"quantity": 0
+				}
+			},
+			"expect": false
+		},
+		{
+			"group": "context",
+			"name": "a source the context does not carry is absent rather than false",
+			"tree": {
+				"source": "payment_method",
+				"operator": "is_empty"
+			},
+			"context": {},
+			"expect": true
+		},
+		{
+			"group": "negation",
+			"name": "a negation is the operator, not a wrapper",
+			"tree": {
+				"source": "country",
+				"operator": "not_equals",
+				"value": "BR"
+			},
+			"context": {
+				"country": "PT"
+			},
+			"expect": true
+		},
+		{
+			"group": "negation",
+			"name": "a negation of a match does not match",
+			"tree": {
+				"source": "country",
+				"operator": "not_equals",
+				"value": "BR"
+			},
+			"context": {
+				"country": "BR"
+			},
+			"expect": false
+		},
+		{
+			"group": "negation",
+			"name": "not contains over a list",
+			"tree": {
+				"source": "cart_categories",
+				"operator": "not_contains",
+				"value": "books"
+			},
+			"context": {
+				"cart_categories": [
+					"music"
+				]
+			},
+			"expect": true
+		},
+		{
+			"group": "negation",
+			"name": "not in over a set",
+			"tree": {
+				"source": "country",
+				"operator": "not_in",
+				"value": [
+					"BR",
+					"PT"
+				]
+			},
+			"context": {
+				"country": "US"
+			},
+			"expect": true
+		},
+		{
+			"group": "negation",
+			"name": "not in when the value is in the set",
+			"tree": {
+				"source": "country",
+				"operator": "not_in",
+				"value": [
+					"BR",
+					"PT"
+				]
+			},
+			"context": {
+				"country": "BR"
+			},
+			"expect": false
+		},
+		{
+			"group": "negation",
+			"name": "the negation of empty is presence",
+			"tree": {
+				"source": "state",
+				"operator": "is_not_empty"
+			},
+			"context": {
+				"state": "MG"
+			},
+			"expect": true
+		},
+		{
+			"group": "groups",
+			"name": "all of two matches",
+			"tree": {
+				"all": [
+					{
+						"source": "customer_logged_in",
+						"operator": "equals",
+						"value": true
+					},
+					{
+						"source": "cart_total",
+						"operator": "greater_than",
+						"value": 100
+					}
+				]
+			},
+			"context": {
+				"customer_logged_in": true,
+				"cart_total": 150
+			},
+			"expect": true
+		},
+		{
+			"group": "groups",
+			"name": "all of two with one that does not match",
+			"tree": {
+				"all": [
+					{
+						"source": "customer_logged_in",
+						"operator": "equals",
+						"value": true
+					},
+					{
+						"source": "cart_total",
+						"operator": "greater_than",
+						"value": 100
+					}
+				]
+			},
+			"context": {
+				"customer_logged_in": false,
+				"cart_total": 150
+			},
+			"expect": false
+		},
+		{
+			"group": "groups",
+			"name": "any of two with one that matches",
+			"tree": {
+				"any": [
+					{
+						"source": "country",
+						"operator": "equals",
+						"value": "BR"
+					},
+					{
+						"source": "cart_total",
+						"operator": "greater_than",
+						"value": 100
+					}
+				]
+			},
+			"context": {
+				"country": "US",
+				"cart_total": 150
+			},
+			"expect": true
+		},
+		{
+			"group": "groups",
+			"name": "any of two with neither matching",
+			"tree": {
+				"any": [
+					{
+						"source": "country",
+						"operator": "equals",
+						"value": "BR"
+					},
+					{
+						"source": "cart_total",
+						"operator": "greater_than",
+						"value": 100
+					}
+				]
+			},
+			"context": {
+				"country": "US",
+				"cart_total": 50
+			},
+			"expect": false
+		},
+		{
+			"group": "groups",
+			"name": "a group of one is that one",
+			"tree": {
+				"all": [
+					{
+						"source": "country",
+						"operator": "equals",
+						"value": "BR"
+					}
+				]
+			},
+			"context": {
+				"country": "BR"
+			},
+			"expect": true
+		},
+		{
+			"group": "groups",
+			"name": "groups nest",
+			"tree": {
+				"all": [
+					{
+						"source": "field",
+						"field": "person_type",
+						"operator": "equals",
+						"value": "pj"
+					},
+					{
+						"any": [
+							{
+								"source": "country",
+								"operator": "equals",
+								"value": "BR"
+							},
+							{
+								"source": "customer_logged_in",
+								"operator": "equals",
+								"value": true
+							}
+						]
+					}
+				]
+			},
+			"context": {
+				"fields": {
+					"person_type": "pj"
+				},
+				"country": "PT",
+				"customer_logged_in": false
+			},
+			"expect": false
+		},
+		{
+			"group": "unreadable",
+			"name": "a tree that cannot be parsed does not hide a field",
+			"note": "The validator refuses this shape on every write, so reaching it means damage, and damage must not remove a field from the checkout.",
+			"tree": {
+				"all": "not-a-list"
+			},
+			"context": {},
+			"expect": true
+		},
+		{
+			"group": "unreadable",
+			"name": "an empty group does not hide a field",
+			"tree": {
+				"all": []
+			},
+			"context": {},
+			"expect": true
+		},
+		{
+			"group": "unreadable",
+			"name": "an operator outside the vocabulary does not hide a field",
+			"tree": {
+				"source": "country",
+				"operator": "is_roughly",
+				"value": "BR"
+			},
+			"context": {
+				"country": "US"
+			},
+			"expect": true
+		},
+		{
+			"group": "unreadable",
+			"name": "a source outside the vocabulary does not hide a field",
+			"tree": {
+				"source": "weather",
+				"operator": "equals",
+				"value": "rain"
+			},
+			"context": {
+				"weather": "rain"
+			},
+			"expect": true
+		},
+		{
+			"group": "lists",
+			"name": "a tag in the cart is contained",
+			"note": "Tags answer the same question categories do, of another taxonomy: the slug is what the taxonomy uses.",
+			"tree": {
+				"source": "cart_tags",
+				"operator": "contains",
+				"value": "promocao"
+			},
+			"context": {
+				"cart_tags": [
+					"verao",
+					"promocao"
+				]
+			},
+			"expect": true
+		},
+		{
+			"group": "lists",
+			"name": "a tag that is not in the cart is not contained",
+			"tree": {
+				"source": "cart_tags",
+				"operator": "contains",
+				"value": "promocao"
+			},
+			"context": {
+				"cart_tags": [
+					"verao"
+				]
+			},
+			"expect": false
+		},
+		{
+			"group": "empty",
+			"name": "a cart with no tags has none",
+			"tree": {
+				"source": "cart_tags",
+				"operator": "is_empty"
+			},
+			"context": {
+				"cart_tags": []
+			},
+			"expect": true
+		},
+		{
+			"group": "context",
+			"name": "a cart of virtual products is virtual",
+			"note": "The source is a statement about every item, which is what a checkout without an address is for.",
+			"tree": {
+				"source": "cart_virtual",
+				"operator": "equals",
+				"value": true
+			},
+			"context": {
+				"cart_virtual": true
+			},
+			"expect": true
+		},
+		{
+			"group": "context",
+			"name": "a cart with one product to ship is not virtual",
+			"tree": {
+				"source": "cart_virtual",
+				"operator": "equals",
+				"value": true
+			},
+			"context": {
+				"cart_virtual": false
+			},
+			"expect": false
+		},
+		{
+			"group": "false",
+			"name": "a cart that holds nothing is not virtual",
+			"note": "An empty cart has no product with the property, and claiming it did would drop an address the customer needs.",
+			"tree": {
+				"source": "cart_virtual",
+				"operator": "equals",
+				"value": true
+			},
+			"context": {
+				"cart_virtual": false
+			},
+			"expect": false
+		},
+		{
+			"group": "context",
+			"name": "a cart of downloads is downloadable",
+			"tree": {
+				"source": "cart_downloadable",
+				"operator": "equals",
+				"value": true
+			},
+			"context": {
+				"cart_downloadable": true
+			},
+			"expect": true
+		},
+		{
+			"group": "context",
+			"name": "a cart with one product that cannot be downloaded is not",
+			"tree": {
+				"source": "cart_downloadable",
+				"operator": "equals",
+				"value": true
+			},
+			"context": {
+				"cart_downloadable": false
+			},
+			"expect": false
+		},
+		{
+			"group": "comparison",
+			"name": "five items are more than three",
+			"tree": {
+				"source": "cart_quantity",
+				"operator": "greater_than",
+				"value": 3
+			},
+			"context": {
+				"cart_quantity": 5
+			},
+			"expect": true
+		},
+		{
+			"group": "comparison",
+			"name": "two items are not more than three",
+			"tree": {
+				"source": "cart_quantity",
+				"operator": "greater_than",
+				"value": 3
+			},
+			"context": {
+				"cart_quantity": 2
+			},
+			"expect": false
+		},
+		{
+			"group": "zero",
+			"name": "an empty cart holds zero items, which is a quantity",
+			"note": "Zero is a value and not an absence: a rule about an empty cart can be written.",
+			"tree": {
+				"source": "cart_quantity",
+				"operator": "is_empty"
+			},
+			"context": {
+				"cart_quantity": 0
+			},
+			"expect": false
+		},
+		{
+			"group": "comparison",
+			"name": "a subtotal below the threshold is not above it",
+			"tree": {
+				"source": "cart_subtotal",
+				"operator": "greater_than",
+				"value": 200
+			},
+			"context": {
+				"cart_subtotal": 150.5
+			},
+			"expect": false
+		},
+		{
+			"group": "comparison",
+			"name": "a subtotal above the threshold is above it",
+			"tree": {
+				"source": "cart_subtotal",
+				"operator": "greater_than",
+				"value": 200
+			},
+			"context": {
+				"cart_subtotal": 200.01
+			},
+			"expect": true
+		},
+		{
+			"group": "comparison",
+			"name": "a subtotal of exactly the threshold is not above it",
+			"note": "The same reading as every other comparison: greater than means greater than.",
+			"tree": {
+				"source": "cart_subtotal",
+				"operator": "greater_than",
+				"value": 200
+			},
+			"context": {
+				"cart_subtotal": 200
+			},
+			"expect": false
+		},
+		{
+			"group": "membership",
+			"name": "a role in the set of roles is one of them",
+			"note": "`in` reads a scalar, so a rule about a role asks a list source with `contains`.",
+			"tree": {
+				"source": "user_role",
+				"operator": "contains",
+				"value": "administrator"
+			},
+			"context": {
+				"user_role": [
+					"administrator"
+				]
+			},
+			"expect": true
+		},
+		{
+			"group": "lists",
+			"name": "a role in the list is contained",
+			"tree": {
+				"source": "user_role",
+				"operator": "contains",
+				"value": "shop_manager"
+			},
+			"context": {
+				"user_role": [
+					"customer",
+					"shop_manager"
+				]
+			},
+			"expect": true
+		},
+		{
+			"group": "lists",
+			"name": "a role that is not held is not contained",
+			"tree": {
+				"source": "user_role",
+				"operator": "contains",
+				"value": "shop_manager"
+			},
+			"context": {
+				"user_role": [
+					"customer"
+				]
+			},
+			"expect": false
+		},
+		{
+			"group": "empty",
+			"name": "a guest holds no role",
+			"tree": {
+				"source": "user_role",
+				"operator": "is_empty"
+			},
+			"context": {
+				"user_role": []
+			},
+			"expect": true
+		}
+	]
 }

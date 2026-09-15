@@ -115,21 +115,32 @@ final class ConditionVocabularyTest extends TestCase {
 	}
 
 	/**
-	 * The sources of section 11 are all present.
+	 * The sources §6.8 lists are all present, and nothing else is.
+	 *
+	 * Section 6.8 names them as the sources a conditional rule may read — product, category, tag,
+	 * virtual/downloadable, quantity, subtotal, country, state, shipping method, payment method,
+	 * user, role and another field — and the vocabulary is closed for the reason ADR-0007 gives:
+	 * the set the editor offers and the set the validator accepts have to be the same set.
 	 *
 	 * @return void
 	 */
-	public function test_the_source_vocabulary_covers_section_11(): void {
+	public function test_the_source_vocabulary_covers_section_6_8(): void {
 		$expected = array(
 			'field',
 			'country',
 			'state',
+			'shipping_method',
+			'payment_method',
 			'customer_logged_in',
 			'cart_items',
 			'cart_categories',
+			'cart_tags',
 			'cart_total',
-			'shipping_method',
-			'payment_method',
+			'cart_virtual',
+			'cart_downloadable',
+			'cart_quantity',
+			'cart_subtotal',
+			'user_role',
 		);
 
 		$keys = array_keys( Sources::all() );
@@ -138,6 +149,36 @@ final class ConditionVocabularyTest extends TestCase {
 		sort( $keys );
 
 		self::assertSame( $expected, $keys );
+	}
+
+	/**
+	 * The vocabulary the shared fixtures cover is the one this store publishes.
+	 *
+	 * Parity is only a claim about the sources both engines were held to. The fixture file carries
+	 * its own copy of the vocabulary so it can be read without a running store; this is where the
+	 * copy is held to the catalogue, so a source added here without a case — or a case for a source
+	 * this store does not have — fails instead of quietly narrowing what "paridade" means.
+	 *
+	 * @return void
+	 */
+	public function test_the_fixture_vocabulary_is_the_published_one(): void {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Fixture shipped with the plugin; the sniff targets remote URLs.
+		$raw  = file_get_contents( dirname( __DIR__, 4 ) . '/resources/fixtures/conditions.json' );
+		$data = false === $raw ? array() : json_decode( $raw, true );
+
+		$sources   = array_keys( Sources::all() );
+		$operators = array_keys( Operators::all() );
+
+		$fixture_sources   = (array) ( $data['vocabulary']['sources'] ?? array() );
+		$fixture_operators = (array) ( $data['vocabulary']['operators'] ?? array() );
+
+		sort( $sources );
+		sort( $fixture_sources );
+		sort( $operators );
+		sort( $fixture_operators );
+
+		self::assertSame( $sources, $fixture_sources, 'sources the fixtures cover' );
+		self::assertSame( $operators, $fixture_operators, 'operators the fixtures cover' );
 	}
 
 	/**
@@ -156,6 +197,19 @@ final class ConditionVocabularyTest extends TestCase {
 		self::assertSame( Operator::TYPE_NUMBER, Sources::get( 'cart_total' )->type() );
 		self::assertSame( Operator::TYPE_LIST, Sources::get( 'cart_items' )->type() );
 		self::assertSame( Operator::TYPE_BOOLEAN, Sources::get( 'customer_logged_in' )->type() );
+
+		// The rest of §6.8's list, and the reading each one carries. Every one of them is answered
+		// by the server with the context it holds, so none of them is a source the page decides.
+		self::assertSame( Operator::TYPE_LIST, Sources::get( 'cart_tags' )->type() );
+		self::assertSame( Operator::TYPE_BOOLEAN, Sources::get( 'cart_virtual' )->type() );
+		self::assertSame( Operator::TYPE_BOOLEAN, Sources::get( 'cart_downloadable' )->type() );
+		self::assertSame( Operator::TYPE_NUMBER, Sources::get( 'cart_quantity' )->type() );
+		self::assertSame( Operator::TYPE_NUMBER, Sources::get( 'cart_subtotal' )->type() );
+		self::assertSame( Operator::TYPE_LIST, Sources::get( 'user_role' )->type() );
+
+		foreach ( array( 'cart_tags', 'cart_virtual', 'cart_downloadable', 'cart_quantity', 'cart_subtotal', 'user_role' ) as $server_source ) {
+			self::assertTrue( Sources::get( $server_source )->is_server_only(), $server_source );
+		}
 	}
 
 	/**

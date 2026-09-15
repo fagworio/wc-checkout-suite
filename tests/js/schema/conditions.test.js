@@ -16,6 +16,7 @@
 import {
 	addChildAt,
 	childrenOf,
+	conflicts,
 	depth,
 	// The rule renderer is aliased because `describe` is also jest's own suite
 	// function: importing it unaliased made every suite call below invoke the
@@ -673,5 +674,343 @@ describe( 'condition model', () => {
 
 			expect( result.matches ).toBe( true );
 		} );
+	} );
+} );
+
+/**
+ * Two comparisons that cannot both hold.
+ *
+ * §6.9 asks for a conflict to be shown rather than refused, and a rule nothing can satisfy is the
+ * failure the warning exists for: a field that never appears, a checkout that never runs. These
+ * specs pin what counts as a conflict and — as importantly — what does not, because a report that
+ * cried wolf would be turned off and the real one would go with it.
+ */
+describe( 'conflicts', () => {
+	/** The operators the contradictions need, beside the sources they read. */
+	const vocabulary = {
+		operators: [
+			...( VOCABULARY.operators ?? [] ),
+			{
+				key: 'less_than',
+				label: 'is less than',
+				takesValue: true,
+				valueTypes: [ 'number' ],
+				sourceTypes: [ 'number' ],
+				negated: false,
+			},
+			{
+				key: 'not_contains',
+				label: 'does not contain',
+				takesValue: true,
+				valueTypes: [ 'string' ],
+				sourceTypes: [ 'string', 'list' ],
+				negated: true,
+			},
+			{
+				key: 'not_in',
+				label: 'is not one of',
+				takesValue: true,
+				valueTypes: [ 'list' ],
+				sourceTypes: [ 'string', 'number' ],
+				negated: true,
+			},
+		],
+		// The sources the contradictions are written about. Two of them are the newest the
+		// vocabulary has, because a rule about a tag or a subtotal is exactly where a merchant
+		// writes two bounds and means one.
+		sources: [
+			...( VOCABULARY.sources ?? [] ),
+			{
+				key: 'state',
+				label: 'State',
+				type: 'string',
+				scope: 'client',
+				isReference: false,
+			},
+			{
+				key: 'cart_tags',
+				label: 'Product tags in the cart',
+				type: 'list',
+				scope: 'server',
+				isReference: false,
+			},
+			{
+				key: 'cart_quantity',
+				label: 'Items in the cart',
+				type: 'number',
+				scope: 'server',
+				isReference: false,
+			},
+			{
+				key: 'cart_subtotal',
+				label: 'Cart subtotal, before shipping',
+				type: 'number',
+				scope: 'server',
+				isReference: false,
+			},
+		],
+	};
+
+	it( 'reports two different values asked of one source', () => {
+		const found = conflicts(
+			{
+				all: [
+					{ source: 'country', operator: 'equals', value: 'BR' },
+					{ source: 'country', operator: 'equals', value: 'PT' },
+				],
+			},
+			vocabulary
+		);
+
+		expect( found ).toHaveLength( 1 );
+		expect( found[ 0 ].source ).toBe( 'country' );
+		expect( found[ 0 ].message ).toContain( 'cannot both be true' );
+	} );
+
+	it( 'says nothing about the same value asked twice', () => {
+		expect(
+			conflicts(
+				{
+					all: [
+						{ source: 'country', operator: 'equals', value: 'BR' },
+						{ source: 'country', operator: 'equals', value: 'BR' },
+					],
+				},
+				vocabulary
+			)
+		).toEqual( [] );
+	} );
+
+	it( 'reports a value and its negation', () => {
+		expect(
+			conflicts(
+				{
+					all: [
+						{ source: 'state', operator: 'equals', value: 'MG' },
+						{
+							source: 'state',
+							operator: 'not_equals',
+							value: 'MG',
+						},
+					],
+				},
+				vocabulary
+			)
+		).toHaveLength( 1 );
+	} );
+
+	it( 'reports a list that must contain and must not contain the same entry', () => {
+		expect(
+			conflicts(
+				{
+					all: [
+						{
+							source: 'cart_tags',
+							operator: 'contains',
+							value: 'promocao',
+						},
+						{
+							source: 'cart_tags',
+							operator: 'not_contains',
+							value: 'promocao',
+						},
+					],
+				},
+				vocabulary
+			)
+		).toHaveLength( 1 );
+	} );
+
+	it( 'reports a source asked to be both empty and present', () => {
+		expect(
+			conflicts(
+				{
+					all: [
+						{ source: 'country', operator: 'is_empty' },
+						{ source: 'country', operator: 'is_not_empty' },
+					],
+				},
+				vocabulary
+			)
+		).toHaveLength( 1 );
+	} );
+
+	it( 'reports a bound no number can satisfy', () => {
+		expect(
+			conflicts(
+				{
+					all: [
+						{
+							source: 'cart_subtotal',
+							operator: 'greater_than',
+							value: 500,
+						},
+						{
+							source: 'cart_subtotal',
+							operator: 'less_than',
+							value: 100,
+						},
+					],
+				},
+				vocabulary
+			)
+		).toHaveLength( 1 );
+	} );
+
+	it( 'reports a value that the bound excludes', () => {
+		expect(
+			conflicts(
+				{
+					all: [
+						{
+							source: 'cart_quantity',
+							operator: 'greater_than',
+							value: 5,
+						},
+						{
+							source: 'cart_quantity',
+							operator: 'equals',
+							value: 5,
+						},
+					],
+				},
+				vocabulary
+			)
+		).toHaveLength( 1 );
+	} );
+
+	it( 'says nothing about two bounds that overlap', () => {
+		expect(
+			conflicts(
+				{
+					all: [
+						{
+							source: 'cart_subtotal',
+							operator: 'greater_than',
+							value: 100,
+						},
+						{
+							source: 'cart_subtotal',
+							operator: 'less_than',
+							value: 500,
+						},
+					],
+				},
+				vocabulary
+			)
+		).toEqual( [] );
+	} );
+
+	it( 'says nothing about two different sources', () => {
+		expect(
+			conflicts(
+				{
+					all: [
+						{ source: 'country', operator: 'equals', value: 'BR' },
+						{ source: 'state', operator: 'equals', value: 'MG' },
+					],
+				},
+				vocabulary
+			)
+		).toEqual( [] );
+	} );
+
+	it( 'says nothing inside an any, where the alternatives may hold', () => {
+		expect(
+			conflicts(
+				{
+					any: [
+						{ source: 'country', operator: 'equals', value: 'BR' },
+						{ source: 'country', operator: 'equals', value: 'PT' },
+					],
+				},
+				vocabulary
+			)
+		).toEqual( [] );
+	} );
+
+	it( 'reads a contradiction nested inside an all of the same group', () => {
+		const found = conflicts(
+			{
+				all: [
+					{ source: 'country', operator: 'equals', value: 'BR' },
+					{
+						all: [
+							{
+								source: 'country',
+								operator: 'equals',
+								value: 'PT',
+							},
+						],
+					},
+				],
+			},
+			vocabulary
+		);
+
+		// The nested group is one `all`; the contradiction between the first leaf and the
+		// nested one is outside the scope this report claims, and it says so by staying quiet.
+		expect( found ).toEqual( [] );
+	} );
+
+	it( 'finds the contradiction inside a nested all of its own', () => {
+		const found = conflicts(
+			{
+				any: [
+					{ source: 'state', operator: 'equals', value: 'SP' },
+					{
+						all: [
+							{
+								source: 'country',
+								operator: 'equals',
+								value: 'BR',
+							},
+							{
+								source: 'country',
+								operator: 'equals',
+								value: 'PT',
+							},
+						],
+					},
+				],
+			},
+			vocabulary
+		);
+
+		expect( found ).toHaveLength( 1 );
+		expect( found[ 0 ].source ).toBe( 'country' );
+	} );
+
+	it( 'says nothing about a reference, whose value only the document knows', () => {
+		expect(
+			conflicts(
+				{
+					all: [
+						{
+							source: 'field',
+							field: 'tipo_pessoa',
+							operator: 'equals',
+							value: 'pj',
+						},
+						{
+							source: 'field',
+							field: 'tipo_pessoa',
+							operator: 'equals',
+							value: 'pf',
+						},
+					],
+				},
+				vocabulary
+			)
+		).toEqual( [] );
+	} );
+
+	it( 'says nothing about a rule with one part', () => {
+		expect(
+			conflicts(
+				{ source: 'country', operator: 'equals', value: 'BR' },
+				vocabulary
+			)
+		).toEqual( [] );
 	} );
 } );

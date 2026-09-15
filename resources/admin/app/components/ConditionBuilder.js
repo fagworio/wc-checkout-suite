@@ -52,6 +52,7 @@ import {
 	issues,
 	operatorOf,
 	operatorsFor,
+	conflicts,
 	preview,
 	removeAt,
 	replaceAt,
@@ -296,6 +297,18 @@ export default function ConditionBuilder( {
 	const result = useMemo(
 		() => ( rule ? preview( rule, context, vocabulary ) : null ),
 		[ rule, context, vocabulary ]
+	);
+
+	/**
+	 * Comparisons of one source that cannot both hold.
+	 *
+	 * Read from the same tree the preview reads, and reported rather than refused: a merchant may
+	 * be mid-edit, and a store that would not save a rule that matches nothing would be a store
+	 * that refuses work in progress.
+	 */
+	const contradictions = useMemo(
+		() => ( rule ? conflicts( rule, vocabulary ) : [] ),
+		[ rule, vocabulary ]
 	);
 
 	/**
@@ -770,6 +783,27 @@ export default function ConditionBuilder( {
 					<ul>
 						{ messages.map( ( message ) => (
 							<li key={ message }>{ message }</li>
+						) ) }
+					</ul>
+				</Notice>
+			) : null }
+
+			{ /* A rule nothing can satisfy is not refused (§6.9 asks for the conflict to be shown),
+			     and it is not silent either: it is a field that never appears and a checkout that
+			     never runs, which is the failure the warning exists for. */ }
+			{ contradictions.length > 0 ? (
+				<Notice
+					status="warning"
+					title={ __(
+						'Esta regra não corresponde a carrinho nenhum',
+						'wc-checkoutsuite'
+					) }
+				>
+					<ul>
+						{ contradictions.map( ( conflict ) => (
+							<li key={ conflict.message }>
+								{ conflict.message }
+							</li>
 						) ) }
 					</ul>
 				</Notice>
