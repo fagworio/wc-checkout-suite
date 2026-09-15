@@ -179,24 +179,34 @@ O gate da F14 foi dado como cumprido na passagem anterior, com base nos harnesse
 passagem mostrou que três dos seus termos não valiam para a loja real: um campo vinculado
 não aparecia no checkout (F-1), o WooCommerce mostrava campos não vinculados (F-2) e, num
 store com campos nativos, os valores captados não chegavam a superfície nenhuma (F-4). Os
-três foram corrigidos e reobservados na loja. Resta um achado:
+três foram corrigidos e reobservados na loja. O quarto achado também está fechado:
 
-- **F-3** deixa a área `admin_order` sem superfície no ecrã de pedido desta plataforma,
-  embora o plugin registe o painel. Não foi introduzido por esta fase e não foi corrigido
-  aqui.
+- **F-3** deixava a área `admin_order` sem superfície no ecrã de pedido desta plataforma,
+  embora o plugin registasse o painel. O painel passou a ser desenhado pelos hooks de dados
+  do pedido que o ecrã HPOS desta versão dispara, e a observação foi repetida: por HTTP
+  autenticado, o ecrã serve **um** painel com os três campos vinculados e um nonce; e
+  `tests/browser/f14-admin-order-screen.mjs` passa **4 de 4**, com o painel desenhado uma só
+  vez (`panels=1 nonces=1`) — a caixa e os dois hooks inline podem disparar no mesmo pedido,
+  e um registo partilhado em `OrderFieldsPanel::render()` garante que só o primeiro desenha.
 
-Por isso `docs/compatibility.json` mantém a F14 com `gate_met: false`, agora com um só
-motivo escrito. Não é uma regressão do que foi entregue: é a diferença entre o que os
-harnesses provam e o que a loja faz.
+Com isso a fase deixa de ter achado aberto e `docs/compatibility.json` passa a F14 com
+`gate_met: true`. A correção do F-3 e das provas que a acompanham está registada em
+`docs/validation/RECUPERACAO-POS-AUDITORIA-WCCS.md`.
 
 ## 5. Reprogramação
 
 Os dois caminhos a seguir, na ordem em que fazem diferença:
 
-1. **F-3** — descobrir como o WooCommerce 11.1 desenha caixas de terceiros no ecrã de
-   pedido (HPOS) e registar o painel por esse caminho, mantendo o registo de metabox para o
-   ecrã clássico. Aceite: `tests/browser/f14-admin-order-screen.mjs` passa. O que já se sabe
-   está no achado: o registo chega, o callback não é chamado, e duas caixas de depuração
-   registadas da mesma forma também não foram desenhadas, enquanto as do WooCommerce foram.
-2. **`customer_profile`** continua sem superfície e sem dados (escopo `customer` declarado e
-   nada o escreve) — registado desde a WCCS-076 e ainda sem dono no roadmap.
+1. **F-3 — feito.** O painel é registado pelos hooks de dados do pedido
+   (`woocommerce_admin_order_data_after_order_details` e `_after_billing_address`), que é o
+   caminho que o ecrã HPOS desta versão dispara, com o registo de metabox mantido para o ecrã
+   clássico e um registo partilhado para o painel não sair duas vezes. Aceite cumprido:
+   `tests/browser/f14-admin-order-screen.mjs` passa 4/4.
+2. **`customer_profile` — feito.** Uma seção oferecida na área do perfil é uma página de
+   Minha Conta que grava no cliente, com o título e a ordem do vínculo; prova em
+   `tests/Integration/ACCOUNT-my-account-sections-proof.php` (30/0) e no percurso de browser
+   `tests/browser/my-account-sections-flow.mjs` (6/6).
+3. **O que fica por fazer na conta** — upload privado sem pedido, reuso de uma página de conta
+   existente, exclusão que só desvincula, e a separação entre «Minha Conta» e «Admin → Perfil
+   do cliente». Está na especificação (`roadmap/ESPECIFICACAO-SECOES-WCCS.md`) e não nesta
+   fase.

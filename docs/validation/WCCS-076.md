@@ -39,12 +39,18 @@ configurados». Foi isso que a tarefa fechou.
    vinculado a `customer_order` aparecia também no agradecimento — inserção onde não foi vinculado, que é
    exatamente o risco que o gate da fase nomeia. O harness prova a distinção fingindo a página (as três
    globais que o `is_order_received_page()` do WooCommerce lê) e restaurando-as depois.
-3. **`customer_profile` continua sem superfície, e agora está dito.** O destino existe no vocabulário desde
-   WCCS-071, mas o *escopo de armazenamento* `customer` — «o valor é lembrado para o cliente e oferecido de
-   novo no próximo pedido» — está declarado e **nada o escreve**: não há valor de perfil para mostrar. Não
-   pertence a nenhuma tarefa deste roadmap, e esta tarefa não o inventou. O que fez foi provar a direção
-   segura: um campo vinculado ao perfil aparece **em lugar nenhum**, e nenhuma área ganha um painel vazio. O
-   limite fica registado em vez de tapado com uma caixa vazia.
+3. **`customer_profile` não tinha superfície, e essa lacuna foi tratada depois desta auditoria.** Quando
+   esta tarefa correu, o destino existia no vocabulário desde WCCS-071 mas o *escopo de armazenamento*
+   `customer` — «o valor é lembrado para o cliente e oferecido de novo no próximo pedido» — estava declarado
+   e **nada o escrevia**: não havia valor de perfil para mostrar, e a auditoria provou a direção segura (um
+   campo vinculado ao perfil não aparecia em lugar nenhum) em vez de tapar o buraco com uma caixa vazia. A
+   superfície foi construída a seguir: uma seção oferecida na área do perfil passa a ser uma página de Minha
+   Conta — endpoint, entrada no menu, formulário, validação pelo mesmo `ValueProcessor` e armazenamento no
+   cliente — e o documento é recusado (`account_section_requires_customer_storage`) quando o campo vinculado
+   a essa página não guarda no cliente. O harness desta auditoria passou a exercer a área em vez de afirmar a
+   ausência, e a prova da página (com o vaivém de um valor submetido) está em
+   `tests/Integration/ACCOUNT-my-account-sections-proof.php` e em
+   `docs/validation/RECUPERACAO-POS-AUDITORIA-WCCS.md` §2.2.
 4. **`public_api` já era uma projeção com portão.** O controlador de integração só publica o campo que
    declara `public_api` (WCCS-054), e a auditoria confirma-o do lado do modelo: um campo declara-o, o outro
    não. A API expõe o **valor**; secção, título e ordem são propriedades de um painel, e ali não há painel.
@@ -70,8 +76,9 @@ O gate da F14 pede três coisas, e as três estão provadas por um harness cada:
 
 **Limites que ficam registados:**
 
-- **`customer_profile`** não tem superfície nem dados (§2.3). Um campo vinculado ao perfil não aparece em
-  lugar nenhum: a direção segura, mas o destino está inerte.
+- **`customer_profile`** tem superfície e dados desde a passagem de recuperação (§2.3): a área é servida por
+  páginas de Minha Conta que gravam no cliente. O que ainda não existe ali é upload (o ciclo de vida do
+  ficheiro privado da conta) e o reuso de uma página de conta que já exista.
 - **As ações por destino** (aprovar, pedir correção, reenviar) estão modeladas, validadas e aplicadas como
   *permissões* (WCCS-074); o acto que as executa não pertence a nenhuma tarefa do roadmap e não é prometido em
   superfície nenhuma (WCCS-075, §4).

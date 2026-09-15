@@ -20,6 +20,7 @@
 | Artefato | Papel |
 |---|---|
 | `src/Privacy/DataSubjectOrders.php` | Quais pedidos são de uma pessoa |
+| `src/Privacy/DataSubjectCustomer.php` | Qual conta é daquela pessoa (valores guardados em Minha Conta) |
 | `src/Privacy/OrderFieldsExporter.php` | "O que guardam sobre mim" |
 | `src/Privacy/OrderFieldsEraser.php` | "Esqueçam-me", e o que fica com motivo |
 | `src/Privacy/PrivacyPolicy.php` | O texto da política, gerado do vocabulário |
@@ -39,9 +40,11 @@ A regra não é uma lista escrita aqui: é a **sensibilidade de armazenamento** 
 
 E **os dois fluxos leem a mesma decisão** (`personal_fields()`), porque uma pessoa a quem se diz que os seus dados são uma coisa quando pede uma cópia e outra quando pede que desapareçam foi informada de duas coisas diferentes pela mesma loja.
 
-## 5. Quais pedidos são daquela pessoa
+## 5. Quais pedidos são daquela pessoa — e qual conta
 
 O caso que uma busca por endereço deixa passar: um cliente que fez um pedido como visitante com um endereço **e** outro com sessão iniciada com outro endereço de faturação. `DataSubjectOrders` procura **pelos dois caminhos** — `billing_email` e `customer_id` — e a prova constrói exatamente esse caso e afirma que o segundo pedido **também** foi apagado. Um instrumento de privacidade que lesse a tabela errada (com o HPOS autoritativo) diria à pessoa que os seus dados não existem, e isso é pior do que os contar duas vezes.
+
+**E um valor que não tem pedido nenhum.** Um campo preenchido numa página de Minha Conta pertence ao cliente e vive na conta, não em pedido algum: uma busca por pedidos, por mais completa que seja, nunca o encontra. O export passou a incluir o grupo «Checkout fields (customer account)» — com a mesma definição de dado pessoal e o mesmo formatador dos pedidos — e o apagamento remove os valores pessoais da conta, preservando os que o vocabulário não chama pessoais. A prova cobre os dois fluxos e afirma que o valor existe antes, desaparece da conta depois, e que o valor não pessoal fica.
 
 ## 6. "Retenção explicável" é a mensagem, não uma promessa
 

@@ -22,8 +22,14 @@ O fluxo da secção 12.1 passou a existir como uma decisão só, lida num só lu
   (`approval_section_not_offered`) — a mesma lacuna que WCCS-073 fechou para os vínculos, aqui para o fluxo.
 - **Com o fluxo completo, o pedido que tem resposta espera no estado configurado.** A Suite observa a
   transição de status (`woocommerce_order_status_changed`) somente quando o WooCommerce chega a
-  `processing`, `completed` ou `on-hold`, e também `woocommerce_payment_complete` para gateways que usam
-  esse sinal. O checkout criado não é retido antes da decisão do gateway. O pedido leva uma nota a dizer
+  `processing` ou `completed`, e também `woocommerce_payment_complete` para gateways que usam esse sinal.
+  `on-hold` **não** conta: é a loja à espera de transferência ou cheque, ou seja antes da decisão, e um
+  pedido por pagar não sai do fluxo de pagamento que o cliente conhece.
+- **A retenção acontece uma vez por pedido.** `ReviewStatus::apply()` grava `_wccs_review_held` no pedido
+  quando ele entra no estado de análise, e não volta a reter um pedido que já passou por lá. Sem isso,
+  qualquer transição posterior para um estado de pós-pagamento — a própria aprovação da equipa, o envio, o
+  reembolso — era lida como um pedido novo e punha-o outra vez em análise, desfazendo a decisão de quem
+  analisou. O checkout criado não é retido antes da decisão do gateway. O pedido leva uma nota a dizer
   por que espera, e uma chamada repetida não muda nada nem escreve duas notas.
 - **O cliente é informado quando o lojista pediu.** Com `show_status`, o painel do pedido mostra
   «Situação da análise: <o nome que a loja escolheu>» — e o painel deixou de desaparecer quando não há linhas
@@ -75,7 +81,7 @@ O fluxo da secção 12.1 passou a existir como uma decisão só, lida num só lu
   frase que sugira um envio que não existe.
 - **O estado da Suite não tem e-mail.** O WooCommerce envia e-mails nas transições que conhece; um estado
   próprio não tem nenhum, e a Suite não inventa um. Na prática a retenção acontece depois de o gateway ter
-  levado o pedido a `processing`/`on-hold`, ou seja depois de os e-mails desse estado terem saído; o que
+  levado o pedido a `processing`, ou seja depois de os e-mails desse estado terem saído; o que
   informa é a nota no pedido, para a equipa, e a situação no painel do cliente, quando o lojista a pediu.
   Mapear um e-mail para o estado da Suite exige código da loja (`woocommerce_email_actions`) e fica registado
   como decisão da loja, não como omissão do plugin.
