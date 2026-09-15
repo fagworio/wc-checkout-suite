@@ -66,7 +66,34 @@ dispositivo, e não pode expirar com um carrinho que não foi fechado.
   quem o envia e substitui na página dele: um `input type=file` sem tratador seria uma oferta que
   aquele ecrã não faz — o envio pelo painel é a Fase 5.
 
-## 4. Prova
+## 4. §7.4 — a secção dentro de uma página nativa homologada
+
+O documento pede uma secção **dentro de uma página que a Minha conta já tem** («Detalhes da conta») e
+exige que a implementação declare quais as páginas nativas que podem receber conteúdo em segurança.
+
+- **`Domain\Customers\AccountSurfaces`** é essa declaração: uma **lista fechada** (`edit-account`,
+  `dashboard`), cada entrada com a frase que o lojista lê, e um mapa das **recusadas** com o motivo
+  de cada uma — a lista de pedidos e a de downloads são o que listam, `edit-address` renderiza um
+  formulário por tipo de endereço, `payment-methods` é do gateway, e `customer-logout` não é uma
+  página. A pergunta não é se algo é uma página: é se inserir um formulário nela é seguro e significa
+  alguma coisa. É seguro porque cada template da WooCommerce fecha o seu próprio `<form>` antes de a
+  ação do endpoint devolver, portanto a secção é **irmã** do conteúdo nativo e nunca um formulário
+  aninhado — aninhar faria o browser descartar um dos dois, em silêncio.
+- **`presentation.account.page`** é a escolha no documento: vazio significa página própria (o endpoint
+  de sempre); uma página nativa significa que a secção se desenha **dentro** dela e **não regista
+  endpoint nenhum** — nem rewrite rule, nem entrada no menu, nem slug. `MyAccountSections` separa os
+  dois casos em `configured_sections()` e `native_sections()`, e `render_native()` responde à ação
+  `woocommerce_account_<página>_endpoint` com prioridade 20, depois da WooCommerce. O caminho de
+  submissão é **o mesmo código**: `render_section()` não sabe de que página veio.
+- **`SectionValidator`** aceita `page` da lista (e só dela) e passa a exigir o slug **só** quando a
+  secção tem página própria; duas secções em páginas nativas não colidem por um slug que nenhuma tem.
+  Uma página recusada é-o pelo nome (`account_page_not_supported`) com o motivo na mensagem.
+- **O editor** ganhou «Onde esta seção aparece»: «Página própria (nova aba)» ou uma das páginas
+  nativas — a lista vem do servidor (`catalog.accountSurfaces`, do mesmo `AccountSurfaces` que o
+  validador lê), e escolher uma página nativa esconde o endereço e o nome no menu, que não se aplicam,
+  mostrando a razão da página.
+
+## 5. Prova
 
 | Prova | Resultado |
 |---|---|
@@ -75,9 +102,13 @@ dispositivo, e não pode expirar com um carrinho que não foi fechado.
 | `tests/Integration/FASE4-customer-upload-proof.php` (novo) | **21/0** contra a base e o diretório reais: a tabela tem `user_id` e a versão diz qual build a instalou; o upload de um cliente é aceite e fica `stored`, sem expiração e sem pedido; a página encontra-o **por cliente e campo**; conta na quota dele; **outro cliente recebe `not_yours`**; a **página renderizada** mostra o documento, a ligação com o token, o formulário `multipart` com `name="wccs_account_files[…]"`; sem ambiente protegido mostra a razão **sem** controlo e continua a mostrar o documento; o limpo vê a linha sem expiração; e o `sweep` remove-a, ficheiro e linha |
 | `tests/browser/fase4-my-account-upload.mjs` (novo) | **11/0** com um POST real: o cliente abre a sua página, vê o campo e «Nenhum documento enviado.»; envia um PDF pelo formulário; a página volta a mostrar o documento e a dizer que foi enviado; o campo de texto da **mesma** submissão foi gravado; e o documento continua lá num acesso novo |
 | `tests/Integration/support/seed-customer-document.php` (novo) | escreve e desfaz o cenário: documento publicado, cliente, e — porque esta máquina serve o diretório privado por HTTP — a observação de ambiente, que `teardown` remove |
-| `composer check` | phpcs e phpstan sem erros; **509 testes, 1838 asserções** |
-| Varredura de integração | **70 harnesses, 1589 asserções, 0 falhas** |
-| `npx jest` / `npx tsc --noEmit` / `npm run lint:js` | limpos (687 testes) |
+| `AccountSurfacesTest` (novo) | 5 testes: as superfícies oferecidas são as seguras; cada uma se explica; uma chave é conhecida e rotulada (e uma desconhecida é devolvida a si mesma, para a recusa poder nomeá-la); cada página recusada diz porquê; o logout é explicado como ligação |
+| `SectionValidatorTest` (3 testes novos) | uma secção pode viver numa página nativa e não precisa de slug; uma página que não pode receber conteúdo é recusada pelo nome (`account_page_not_supported`) em todas as cinco; duas secções em páginas nativas não colidem por um slug |
+| `FASE4-customer-upload-proof.php` (§7.4) | **+3 asserções**: a secção numa página nativa é aceite pelo servidor, **não regista endpoint nem entrada de menu**, e renderiza-se dentro da ação da página com o seu próprio formulário e o marcador de secção |
+| `FieldsScreen.test.js` (1 teste novo) | o editor oferece as páginas da lista do servidor; escolher «Detalhes da conta» esconde o endereço da aba e mostra o título da secção; e o documento gravado fica com `presentation.account.page = 'edit-account'` |
+| `composer check` | phpcs e phpstan sem erros; **517 testes, 1874 asserções** |
+| Varredura de integração | **70 harnesses, 1593 asserções, 0 falhas** |
+| `npx jest` / `npx tsc --noEmit` / `npm run lint:js` / `npm run build` | limpos (**688 testes**) |
 
 O harness segue a convenção que WCCS-042 fixou para este ambiente: faz a observação **real** primeiro
 e di-lo em nota — nesta máquina o diretório privado é servido por HTTP (`protected=no status=200`),
@@ -85,7 +116,7 @@ portanto o upload está desligado por regra —, e só depois injeta a observaç
 de posse e de retenção, apagando o que escreveu no fim. A observação de browser faz o mesmo e di-lo
 no cabeçalho e no resultado.
 
-## 5. Limites que ficam registados
+## 6. Limites que ficam registados
 
 - **A substituição não apaga o documento anterior.** O ficheiro novo é uma linha nova e a página lê
   a mais recente; a antiga fica sem ninguém a apontar para ela até o cliente ser removido. Não é uma
@@ -95,13 +126,6 @@ no cabeçalho e no resultado.
 - **O envio pelo painel de administração não existe.** O painel mostra o documento e di-lo; enviar
   ou substituir por conta do cliente é a Fase 5 (perfil do cliente para a equipa), onde as permissões
   de editar/ver por uso passam a ser configuráveis.
-- **§7.4 — a página nativa ainda não recebe secções.** Hoje uma secção de cliente vive numa página
-  própria (endpoint) ou não vive. O documento pede também o contrário: uma secção dentro de uma
-  superfície nativa homologada («Detalhes da conta»), e a implementação tem de **declarar quais as
-  páginas nativas que podem receber conteúdo em segurança** — inserir um formulário na lista de
-  pedidos ou nos downloads não é o mesmo que inseri-lo em «Detalhes da conta». É o passo seguinte
-  desta fase: a lista fechada com o motivo de cada página, a apresentação a poder apontar para uma
-  delas, e a validação a recusar as outras pelo nome.
 - **Nesta máquina o upload está desligado** porque o `.htaccess` do diretório privado é ignorado pelo
   Apache do devilbox (`AllowOverride`). A prova de browser injecta a observação — e di-lo no
   cabeçalho, na nota e no fixture — como o harness faz; a proteção real do diretório é uma decisão de

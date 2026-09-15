@@ -859,4 +859,109 @@ final class SectionValidatorTest extends TestCase {
 			'a use nobody sees offers no form, so it promises nothing: ' . implode( ', ', $hidden->error_codes() )
 		);
 	}
+
+	/**
+	 * A section may live on a native page instead of one of its own (§7.4).
+	 *
+	 * The page is named from the closed list of surfaces that may host content, and a section
+	 * placed there needs no slug of its own: it does not register an endpoint. That is why the
+	 * slug requirement does not apply to it.
+	 *
+	 * @return void
+	 */
+	public function test_a_section_may_live_on_a_native_my_account_page(): void {
+		$result = SectionValidator::validate(
+			SectionDefinition::from_array(
+				$this->section(
+					array(
+						'areas'        => array( 'customer_account' ),
+						'presentation' => array(
+							'account' => array(
+								'page'       => 'edit-account',
+								'menu_label' => 'Dados profissionais',
+								'icon'       => 'fields',
+								'position'   => 5,
+								'mode'       => 'edit',
+							),
+						),
+					)
+				)
+			)
+		);
+
+		self::assertTrue(
+			$result->is_valid(),
+			'a section on a native page needs no slug of its own: ' . implode( ', ', $result->error_codes() )
+		);
+	}
+
+	/**
+	 * A native page that may not host content is refused, by name and with the reason.
+	 *
+	 * @return void
+	 */
+	public function test_a_native_page_that_may_not_host_content_is_refused(): void {
+		foreach ( array( 'orders', 'downloads', 'edit-address', 'payment-methods', 'customer-logout', 'nao-existe' ) as $page ) {
+			$result = SectionValidator::validate(
+				SectionDefinition::from_array(
+					$this->section(
+						array(
+							'areas'        => array( 'customer_account' ),
+							'presentation' => array(
+								'account' => array(
+									'page'       => $page,
+									'menu_label' => 'Dados profissionais',
+									'icon'       => 'fields',
+									'position'   => 5,
+									'mode'       => 'edit',
+								),
+							),
+						)
+					)
+				)
+			);
+
+			self::assertContains(
+				'account_page_not_supported',
+				$result->error_codes(),
+				'page=' . $page
+			);
+		}
+	}
+
+	/**
+	 * Two sections on native pages do not collide over a slug neither of them has.
+	 *
+	 * @return void
+	 */
+	public function test_two_native_page_sections_do_not_collide_over_a_slug(): void {
+		$section = static function ( string $id, string $page ): array {
+			return array(
+				'id'           => $id,
+				'title'        => $id,
+				'description'  => '',
+				'position'     => 10,
+				'location'     => 'order',
+				'areas'        => array( 'customer_account' ),
+				'presentation' => array(
+					'account' => array(
+						'page'       => $page,
+						'menu_label' => 'Documentos',
+						'icon'       => 'file',
+						'position'   => 5,
+						'mode'       => 'edit',
+					),
+				),
+			);
+		};
+
+		$result = SectionValidator::validate_sections(
+			array(
+				$section( 'dados_profissionais', 'edit-account' ),
+				$section( 'resumo_do_cliente', 'dashboard' ),
+			)
+		);
+
+		self::assertNotContains( 'duplicate_account_endpoint_slug', $result->error_codes() );
+	}
 }

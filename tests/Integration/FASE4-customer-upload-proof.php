@@ -125,6 +125,9 @@ delete_option( $wccs_ref_privacy_option );
 delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_DRAFT ) );
 delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED ) );
 delete_option( 'wccs_schema_revisions' );
+// The endpoint signature is this harness's to write and remove: registering the endpoints below
+// records what they were, and the teardown removes the record along with the document.
+delete_option( 'wccs_account_endpoint_signature' );
 
 $wccs_ref_options_before = wccs_proof_option_count();
 
@@ -430,6 +433,68 @@ wccs_proof_check(
 
 // The published document this section wrote is removed, so the sweep is not run against a
 // store this harness configured.
+delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED ) );
+
+// ---------------------------------------------------------------------------
+// 5. A section inside a native page (§7.4).
+// ---------------------------------------------------------------------------
+$wccs_ref_native = $wccs_ref_document;
+$wccs_ref_native['sections'][0]['presentation']['account'] = array(
+	// A section placed on a page WooCommerce already has: no slug of its own, no endpoint, no
+	// menu entry — it renders inside the page that exists.
+	'page'       => 'edit-account',
+	'menu_label' => 'Dados profissionais',
+	'icon'       => 'fields',
+	'position'   => 5,
+	'mode'       => 'edit',
+);
+
+$wccs_ref_native_written = $wccs_ref_repository_published->write(
+	\WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED,
+	\WCCheckoutSuite\Domain\Schema\SchemaDocument::from_array( $wccs_ref_native ),
+	$wccs_ref_repository_published->read( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED )->revision()
+);
+
+wccs_proof_check(
+	'A section placed inside a native page is a document the store accepts',
+	$wccs_ref_native_written->is_ok(),
+	'ok=' . ( $wccs_ref_native_written->is_ok() ? 'yes' : 'no' )
+);
+
+\WCCheckoutSuite\Account\MyAccountSections::register_endpoints();
+
+$wccs_ref_menu = \WCCheckoutSuite\Account\MyAccountSections::menu_items( array() );
+
+wccs_proof_check(
+	'It registers no endpoint of its own, and adds no menu entry',
+	! isset( $wccs_ref_menu['dados-profissionais'] ) &&
+		! in_array( 'Dados profissionais', $wccs_ref_menu, true ),
+	'menu=' . implode( ',', array_keys( $wccs_ref_menu ) )
+);
+
+// The native page's own action, which is what WooCommerce fires for the page the customer
+// opened. Firing it is what the page does.
+set_query_var( 'edit-account', '' );
+
+ob_start();
+do_action( 'woocommerce_account_edit-account_endpoint' );
+$wccs_ref_native_html = (string) ob_get_clean();
+
+wccs_proof_check(
+	'And it renders inside that page, after WooCommerce\'s own content',
+	false !== strpos( $wccs_ref_native_html, 'Seu contrato' ) &&
+		false !== strpos( $wccs_ref_native_html, 'wccs-account-section' ),
+	'length=' . strlen( $wccs_ref_native_html )
+);
+
+wccs_proof_check(
+	'With its own form and its own section marker, so a submission knows what it answers',
+	false !== strpos( $wccs_ref_native_html, '<form method="post"' ) &&
+		false !== strpos( $wccs_ref_native_html, 'name="wccs_account_section"' ) &&
+		false !== strpos( $wccs_ref_native_html, 'value="documentos_da_conta"' ),
+	'the same submission path as a page of its own'
+);
+
 delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED ) );
 
 $wccs_ref_path = (string) $wccs_ref_record['path'];

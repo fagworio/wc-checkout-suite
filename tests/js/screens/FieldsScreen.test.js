@@ -122,6 +122,19 @@ function client( overrides = {} ) {
 			sectionLocations: [
 				{ value: 'billing', label: 'Billing', description: '' },
 			],
+			accountSurfaces: [
+				{
+					value: 'edit-account',
+					label: 'Detalhes da conta',
+					description:
+						'A página onde o cliente vê e altera os próprios dados.',
+				},
+				{
+					value: 'dashboard',
+					label: 'Painel',
+					description: 'A primeira página da Minha Conta.',
+				},
+			],
 		} ) ),
 		coreFields: jest.fn( async () => ( {
 			available: true,
@@ -1404,5 +1417,81 @@ describe( 'the row menu', () => {
 				)
 			).toHaveFocus()
 		);
+	} );
+	it( 'places a customer section inside a native page instead of a page of its own', async () => {
+		const user = userEvent.setup();
+		const section = {
+			id: 'dados_profissionais',
+			title: 'Dados profissionais',
+			description: '',
+			position: 10,
+			location: 'order',
+			areas: [ 'customer_account' ],
+			presentation: {
+				account: {
+					slug: 'dados-profissionais',
+					menu_label: 'Dados profissionais',
+					icon: 'fields',
+					position: 5,
+					mode: 'edit',
+				},
+			},
+		};
+
+		const stub = client( {
+			draft: { ...doc( [] ), sections: [ section ] },
+		} );
+
+		render( <FieldsScreen client={ stub } /> );
+
+		await screen.findByText( 'Esta seção está pronta para começar.' );
+
+		await user.click( screen.getByRole( 'tab', { name: /^Minha conta/ } ) );
+		await user.click( screen.getByRole( 'button', { name: /Ações d/ } ) );
+
+		// §7.4: the section can live inside a page WooCommerce already has. The list is the
+		// server's, so the editor offers exactly the pages the store accepts.
+		const choose = screen.getByLabelText( 'Onde esta seção aparece' );
+
+		expect(
+			within( choose ).getByRole( 'option', {
+				name: 'Detalhes da conta',
+			} )
+		).toBeInTheDocument();
+		expect(
+			within( choose ).getByRole( 'option', {
+				name: 'Página própria (nova aba)',
+			} )
+		).toBeInTheDocument();
+
+		await user.selectOptions( choose, 'edit-account' );
+
+		// A section on a native page registers no endpoint, so the address and the menu
+		// name it would have had are not asked for at all.
+		expect(
+			screen.queryByLabelText( 'Endereço da aba' )
+		).not.toBeInTheDocument();
+		expect(
+			screen.getByLabelText( 'Título da seção' )
+		).toBeInTheDocument();
+
+		// The editor is the panel's own dialog; closing it is what a merchant does before
+		// saving the document.
+		await user.click( screen.getByRole( 'button', { name: 'Done' } ) );
+
+		const save = screen.getByRole( 'button', {
+			name: 'Salvar alterações',
+		} );
+
+		await user.click( save );
+
+		await waitFor( () => expect( stub.saveDraft ).toHaveBeenCalled() );
+
+		const [ saved ] = stub.saveDraft.mock.calls[ 0 ];
+		const written = ( saved.sections ?? [] ).find(
+			( /** @type {any} */ entry ) => 'dados_profissionais' === entry.id
+		);
+
+		expect( written.presentation.account.page ).toBe( 'edit-account' );
 	} );
 } );

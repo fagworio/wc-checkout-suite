@@ -126,12 +126,22 @@ function defaultSectionLocation( area ) {
 /**
  * Settings that make a section a real, independent Minha conta page.
  *
- * @param {{section: import('./schema/types').SectionDefinition, document: import('./schema/types').SchemaDocument, apply: Function}} props Component properties.
+ * @param {{section: import('./schema/types').SectionDefinition, document: import('./schema/types').SchemaDocument, apply: Function, surfaces?: Array<{value: string, label: string, description: string}>}} props Component properties.
  * @return {*} Account presentation controls.
  */
-function AccountSectionPresentation( { section, document, apply } ) {
+function AccountSectionPresentation( {
+	section,
+	document,
+	apply,
+	surfaces = [],
+} ) {
 	const presentation = section.presentation ?? {};
 	const account = presentation.account ?? {};
+	const page = account.page ?? '';
+	const onNativePage = '' !== page;
+	const surface = surfaces.find(
+		( /** @type {any} */ entry ) => entry.value === page
+	);
 	const update = ( /** @type {Record<string, unknown>} */ changes ) =>
 		apply(
 			updateSection( document, section.id, {
@@ -144,32 +154,79 @@ function AccountSectionPresentation( { section, document, apply } ) {
 
 	return (
 		<>
-			<Notice status="info">
-				{ __(
-					'Esta é uma aba autenticada de Minha conta. Os valores pertencem ao cliente e não a um pedido.',
-					'wc-checkoutsuite'
-				) }
-			</Notice>
-			<TextField
-				id="wccs-account-section-slug"
-				label={ __( 'Endereço da aba', 'wc-checkoutsuite' ) }
-				help={ __(
-					'Utilize minúsculas, números e hífens. Exemplo: meus-documentos.',
-					'wc-checkoutsuite'
-				) }
-				value={ account.slug ?? '' }
+			{ /* §7.4: a section lives on a page of its own or inside a page WooCommerce already
+			     has. The list is the server's, so the editor cannot offer a page the store would
+			     refuse — and the pages that are not there have their reason in the vocabulary. */ }
+			<SelectField
+				id="wccs-account-section-page"
+				label={ __( 'Onde esta seção aparece', 'wc-checkoutsuite' ) }
+				value={ page }
+				options={ [
+					{
+						value: '',
+						label: __(
+							'Página própria (nova aba)',
+							'wc-checkoutsuite'
+						),
+					},
+					...surfaces.map( ( /** @type {any} */ entry ) => ( {
+						value: entry.value,
+						label: entry.label,
+					} ) ),
+				] }
 				onChange={ (
 					/** @type {{ target: { value: string } }} */ event
-				) => update( { slug: event.target.value } ) }
+				) => update( { page: event.target.value } ) }
 			/>
-			<TextField
-				id="wccs-account-section-menu-label"
-				label={ __( 'Nome no menu', 'wc-checkoutsuite' ) }
-				value={ account.menu_label ?? section.title }
-				onChange={ (
-					/** @type {{ target: { value: string } }} */ event
-				) => update( { menu_label: event.target.value } ) }
-			/>
+
+			{ onNativePage ? (
+				<>
+					<Notice status="info">
+						{ surface?.description ??
+							__(
+								'A seção aparece dentro de uma página que a Minha conta já tem.',
+								'wc-checkoutsuite'
+							) }
+					</Notice>
+					<TextField
+						id="wccs-account-section-menu-label"
+						label={ __( 'Título da seção', 'wc-checkoutsuite' ) }
+						value={ account.menu_label ?? section.title }
+						onChange={ (
+							/** @type {{ target: { value: string } }} */ event
+						) => update( { menu_label: event.target.value } ) }
+					/>
+				</>
+			) : (
+				<>
+					<Notice status="info">
+						{ __(
+							'Esta é uma aba autenticada de Minha conta. Os valores pertencem ao cliente e não a um pedido.',
+							'wc-checkoutsuite'
+						) }
+					</Notice>
+					<TextField
+						id="wccs-account-section-slug"
+						label={ __( 'Endereço da aba', 'wc-checkoutsuite' ) }
+						help={ __(
+							'Utilize minúsculas, números e hífens. Exemplo: meus-documentos.',
+							'wc-checkoutsuite'
+						) }
+						value={ account.slug ?? '' }
+						onChange={ (
+							/** @type {{ target: { value: string } }} */ event
+						) => update( { slug: event.target.value } ) }
+					/>
+					<TextField
+						id="wccs-account-section-menu-label"
+						label={ __( 'Nome no menu', 'wc-checkoutsuite' ) }
+						value={ account.menu_label ?? section.title }
+						onChange={ (
+							/** @type {{ target: { value: string } }} */ event
+						) => update( { menu_label: event.target.value } ) }
+					/>
+				</>
+			) }
 			<SelectField
 				id="wccs-account-section-mode"
 				label={ __( 'Modo', 'wc-checkoutsuite' ) }
@@ -1924,6 +1981,9 @@ export default function FieldsScreen( {
 											section={ editingSection }
 											document={ document }
 											apply={ apply }
+											surfaces={
+												catalog?.accountSurfaces ?? []
+											}
 										/>
 									) : null }
 

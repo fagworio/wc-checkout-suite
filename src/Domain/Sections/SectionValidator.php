@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace WCCheckoutSuite\Domain\Sections;
 
 use WCCheckoutSuite\Domain\Approval\ApprovalFlow;
+use WCCheckoutSuite\Domain\Customers\AccountSurfaces;
 use WCCheckoutSuite\Domain\Fields\DefinitionVocabulary;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Fields\ValidationResult;
@@ -247,21 +248,46 @@ final class SectionValidator {
 		$id       = $section->id();
 		$account  = $section->account();
 		$slug     = isset( $account['slug'] ) ? trim( (string) $account['slug'] ) : '';
+		$page     = isset( $account['page'] ) ? trim( (string) $account['page'] ) : '';
 		$label    = isset( $account['menu_label'] ) ? trim( (string) $account['menu_label'] ) : '';
 		$icon     = isset( $account['icon'] ) ? (string) $account['icon'] : '';
 		$mode     = isset( $account['mode'] ) ? (string) $account['mode'] : 'edit';
 		$position = isset( $account['position'] ) ? $account['position'] : 0;
 
-		if ( '' === $slug || 1 !== preg_match( '/^[a-z0-9][a-z0-9-]*$/', $slug ) || in_array( $slug, self::RESERVED_ACCOUNT_SLUGS, true ) ) {
+		// A section lands on one of two things: a page of its own, or a native page that may host
+		// it (§7.4). A section that names neither is a section the customer would never find.
+		if ( '' === $page ) {
+			if ( '' === $slug || 1 !== preg_match( '/^[a-z0-9][a-z0-9-]*$/', $slug ) || in_array( $slug, self::RESERVED_ACCOUNT_SLUGS, true ) ) {
+				$result = $result->merge(
+					ValidationResult::invalid(
+						'invalid_account_endpoint_slug',
+						sprintf(
+							/* translators: %s: section id */
+							__( 'The My Account endpoint for section "%s" must use a unique lowercase slug and cannot replace a WooCommerce page.', 'wc-checkoutsuite' ),
+							$id
+						),
+						array( 'section' => $id )
+					)
+				);
+			}
+		} elseif ( ! AccountSurfaces::has( $page ) ) {
+			$refused = AccountSurfaces::refused();
+			$reason  = $refused[ $page ] ?? __( 'Esta página da Minha Conta não é uma superfície que possa receber conteúdo.', 'wc-checkoutsuite' );
+
 			$result = $result->merge(
 				ValidationResult::invalid(
-					'invalid_account_endpoint_slug',
+					'account_page_not_supported',
 					sprintf(
-						/* translators: %s: section id */
-						__( 'The My Account endpoint for section "%s" must use a unique lowercase slug and cannot replace a WooCommerce page.', 'wc-checkoutsuite' ),
-						$id
+						/* translators: 1: section id, 2: page key, 3: reason */
+						__( 'The section "%1$s" cannot be placed on the My Account page "%2$s": %3$s', 'wc-checkoutsuite' ),
+						$id,
+						$page,
+						$reason
 					),
-					array( 'section' => $id )
+					array(
+						'section' => $id,
+						'page'    => $page,
+					)
 				)
 			);
 		}
@@ -361,8 +387,11 @@ final class SectionValidator {
 			if ( $section->is_offered_in( self::ACCOUNT_AREA ) ) {
 				$account = $section->account();
 				$slug    = isset( $account['slug'] ) ? trim( (string) $account['slug'] ) : '';
+				$page    = isset( $account['page'] ) ? trim( (string) $account['page'] ) : '';
 
-				if ( '' !== $slug && isset( $account_slugs[ $slug ] ) ) {
+				// A section that lives on a native page has no endpoint and no slug of its own,
+				// so it cannot collide with one.
+				if ( '' === $page && '' !== $slug && isset( $account_slugs[ $slug ] ) ) {
 					$result = $result->merge(
 						ValidationResult::invalid(
 							'duplicate_account_endpoint_slug',
@@ -376,7 +405,7 @@ final class SectionValidator {
 					);
 				}
 
-				if ( '' !== $slug ) {
+				if ( '' === $page && '' !== $slug ) {
 					$account_slugs[ $slug ] = true;
 				}
 			}

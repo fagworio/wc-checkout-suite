@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace WCCheckoutSuite\Http\Admin;
 
 use WCCheckoutSuite\Domain\Checkout\CoreFields;
+use WCCheckoutSuite\Domain\Customers\AccountSurfaces;
 use WCCheckoutSuite\Domain\Conditions\ConditionValidator;
 use WCCheckoutSuite\Domain\Conditions\Operators;
 use WCCheckoutSuite\Domain\Conditions\Sources;
@@ -160,6 +161,11 @@ final class CatalogController {
 		// The areas a section may be offered in: the checkout, where a section has
 		// always lived, and the destinations where its fields may be shown.
 		$catalogue['sectionAreas'] = DefinitionVocabulary::section_areas();
+
+		// The native My Account pages that may host a section, with the reason each is
+		// offered. Published from the class the validator reads, so the inspector cannot
+		// propose a page the server would refuse — and can say why the others are not there.
+		$catalogue['accountSurfaces'] = AccountSurfaces::all();
 
 		// The condition vocabulary. The rule editor offers exactly these operators
 		// and these sources because the validator accepts exactly these, and both

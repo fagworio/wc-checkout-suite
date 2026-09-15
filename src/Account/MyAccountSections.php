@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace WCCheckoutSuite\Account;
 
 use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
+use WCCheckoutSuite\Domain\Customers\AccountSurfaces;
 use WCCheckoutSuite\Domain\Customers\CustomerFieldsService;
 use WCCheckoutSuite\Domain\Customers\CustomerSectionFields;
 use WCCheckoutSuite\Domain\Fields\FieldBinding;
@@ -39,6 +40,17 @@ final class MyAccountSections {
 	 */
 	private static array $endpoints = array();
 
+	/** Sections that live on a native page, keyed by the page's endpoint key.
+	 *
+	 * `roadmap/WC-CheckoutSuite-Especificacao-Completa-com-Referencias-Visuais` §7.4: a section may
+	 * be placed inside a page WooCommerce already has instead of a page of its own. Those pages
+	 * are listed, with the reason each may host content, in
+	 * {@see \WCCheckoutSuite\Domain\Customers\AccountSurfaces}.
+	 *
+	 * @var array<string,array<int,array<string,mixed>>>
+	 */
+	private static array $native = array();
+
 	/** Registers the WordPress and WooCommerce hooks. */
 	public static function register(): void {
 		add_action( 'init', array( self::class, 'register_endpoints' ), 20 );
@@ -48,10 +60,18 @@ final class MyAccountSections {
 	/** Registers configured endpoints and refreshes rewrite rules only when needed. */
 	public static function register_endpoints(): void {
 		self::$endpoints = self::configured_sections();
+		self::$native    = self::native_sections();
 
 		foreach ( self::$endpoints as $slug => $section ) {
 			add_rewrite_endpoint( $slug, EP_ROOT | EP_PAGES );
 			add_action( 'woocommerce_account_' . $slug . '_endpoint', array( self::class, 'render' ) );
+		}
+
+		// A native page renders its own content through the same action, so a section placed on
+		// it is a sibling of that content and never a nested form. The priority is after
+		// WooCommerce's own, which is what makes it a sibling.
+		foreach ( array_keys( self::$native ) as $page ) {
+			add_action( 'woocommerce_account_' . $page . '_endpoint', array( self::class, 'render_native' ), 20 );
 		}
 
 		$signature = md5( (string) wp_json_encode( array_keys( self::$endpoints ) ) );
@@ -108,6 +128,46 @@ final class MyAccountSections {
 			return;
 		}
 
+		self::render_section( $section );
+	}
+
+	/**
+	 * Renders the sections a native page hosts, after WooCommerce's own content.
+	 *
+	 * The page is found from the query vars, the same way an endpoint finds its slug: a native
+	 * page's action fires on the request that asked for it, and nothing else names the page.
+	 *
+	 * @return void
+	 */
+	public static function render_native(): void {
+		if ( ! is_user_logged_in() ) {
+			return;
+		}
+
+		foreach ( self::native_page_order() as $page ) {
+			if ( null === get_query_var( $page, null ) ) {
+				continue;
+			}
+
+			foreach ( self::$native[ $page ] ?? array() as $section ) {
+				self::render_section( $section );
+			}
+
+			return;
+		}
+	}
+
+	/**
+	 * One section, rendered.
+	 *
+	 * This is the whole of a section: its fields, the submission it may be answering, and the
+	 * form — the same code whether the section has a page of its own or sits on a native one,
+	 * because a submission does not care which page it arrived from.
+	 *
+	 * @param array<string, mixed> $section Section.
+	 * @return void
+	 */
+	private static function render_section( array $section ): void {
 		$fields   = CustomerSectionFields::entries(
 			PublishedDocument::read()->fields(),
 			self::DESTINATION,
@@ -215,6 +275,10 @@ final class MyAccountSections {
 	/**
 	 * Reads valid My Account sections from the published document.
 	 *
+	 * Only the sections that have a page of their own: a section placed on a native page
+	 * ({@see self::native_sections()}) has no endpoint, so it has no slug to register and no
+	 * menu entry to add.
+	 *
 	 * @return array<string,array<string,mixed>> Endpoint sections keyed by slug.
 	 */
 	private static function configured_sections(): array {
@@ -226,12 +290,71 @@ final class MyAccountSections {
 			$section = SectionDefinition::from_array( $raw );
 			$account = $section->account();
 			$slug    = isset( $account['slug'] ) ? sanitize_title( (string) $account['slug'] ) : '';
-			if ( ! $section->is_offered_in( self::DESTINATION ) || '' === $slug || isset( $found[ $slug ] ) ) {
+			$page    = isset( $account['page'] ) ? sanitize_key( (string) $account['page'] ) : '';
+			if ( ! $section->is_offered_in( self::DESTINATION ) || '' !== $page || '' === $slug || isset( $found[ $slug ] ) ) {
 				continue;
 			}
 			$found[ $slug ] = $section->to_array();
 		}
 		return $found;
+	}
+
+	/**
+	 * The sections placed on a native page, keyed by that page.
+	 *
+	 * A page this plugin does not know how to place content on is skipped here rather than
+	 * rendered somewhere it does not belong: the validator refuses it by name, and a document
+	 * that reached the store before that rule existed must not put a form on the orders list.
+	 *
+	 * @return array<string,array<int,array<string,mixed>>>
+	 */
+	private static function native_sections(): array {
+		$found = array();
+
+		foreach ( PublishedDocument::read()->sections() as $raw ) {
+			if ( ! is_array( $raw ) ) {
+				continue;
+			}
+
+			$section = SectionDefinition::from_array( $raw );
+			$account = $section->account();
+			$page    = isset( $account['page'] ) ? sanitize_key( (string) $account['page'] ) : '';
+
+			if ( ! $section->is_offered_in( self::DESTINATION ) || '' === $page || ! AccountSurfaces::has( $page ) ) {
+				continue;
+			}
+
+			$position = (int) $section->position();
+
+			$found[ $page ][ $position . '-' . $section->id() ] = $section->to_array();
+		}
+
+		// Sorted by the section's own position, so two sections on the same page come out in the
+		// order the merchant put them in — and by identifier when the positions are equal, so the
+		// order never changes between reads.
+		foreach ( $found as $page => $sections ) {
+			ksort( $sections );
+			$found[ $page ] = array_values( $sections );
+		}
+
+		return $found;
+	}
+
+	/**
+	 * The native pages that carry sections, in the order they are declared.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function native_page_order(): array {
+		$order = array();
+
+		foreach ( AccountSurfaces::values() as $page ) {
+			if ( isset( self::$native[ $page ] ) ) {
+				$order[] = $page;
+			}
+		}
+
+		return $order;
 	}
 
 	/** Returns the endpoint slug WordPress resolved for this request. */

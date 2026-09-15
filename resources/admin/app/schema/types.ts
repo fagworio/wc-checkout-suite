@@ -80,6 +80,14 @@ export interface SectionDefinition {
 	presentation?: {
 		show_title?: boolean;
 		account?: {
+			/**
+			 * The page of My Account this section lives on.
+			 *
+			 * Empty means a page of its own, registered as an endpoint. A value means one of the
+			 * native pages that may host content (§7.4): the section renders inside it and
+			 * registers no endpoint, so the slug and the menu position do not apply.
+			 */
+			page?: string;
 			slug?: string;
 			menu_label?: string;
 			icon?: string;
@@ -168,6 +176,8 @@ export interface FieldCatalog {
 	vocabulary: DefinitionVocabulary;
 	sectionLocations: SectionLocation[];
 	sectionAreas: VocabularyEntry[];
+	/** The native My Account pages that may host a section, with the reason each is offered. */
+	accountSurfaces?: VocabularyEntry[];
 	conditions?: ConditionVocabularyShape;
 }
 
