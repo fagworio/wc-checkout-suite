@@ -212,6 +212,27 @@ final class SectionValidator {
 			);
 		}
 
+		// `target` is the canonical key the final model writes for where a container sits, and
+		// it is the one the adapters read. It falls back to the historical `location`, so a
+		// document that sets it to something the domain does not know would be read as a
+		// placement that no adapter can perform — while the location beside it looked fine.
+		$target = $section->target();
+
+		if ( '' !== $target && ! SectionLocations::has( $target ) ) {
+			$result = $result->merge(
+				ValidationResult::invalid(
+					'section_unknown_target',
+					sprintf(
+						/* translators: 1: section id, 2: comma separated list of locations */
+						__( 'The target of "%1$s" must be one of: %2$s.', 'wc-checkoutsuite' ),
+						$id,
+						implode( ', ', SectionLocations::values() )
+					),
+					array( 'section' => $id )
+				)
+			);
+		}
+
 		return $result;
 	}
 

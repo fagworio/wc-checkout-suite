@@ -185,6 +185,47 @@ final class SectionValidatorTest extends TestCase {
 	}
 
 	/**
+	 * A target the domain does not know is refused, even when the location beside it is fine.
+	 *
+	 * `target` is the canonical key the final model writes, and it is what the adapters read
+	 * to decide where a container lands. A document that sets it to something no adapter can
+	 * perform is configuration the merchant believes is in place.
+	 *
+	 * @return void
+	 */
+	public function test_a_target_must_be_a_domain_concept(): void {
+		$refused = SectionValidator::validate(
+			SectionDefinition::from_array(
+				$this->section(
+					array(
+						'target'   => 'sidebar',
+						'location' => 'billing',
+					)
+				)
+			)
+		);
+
+		self::assertFalse( $refused->is_valid() );
+		self::assertContains( 'section_unknown_target', $refused->error_codes() );
+
+		$accepted = SectionValidator::validate(
+			SectionDefinition::from_array(
+				$this->section(
+					array(
+						'target'   => 'shipping',
+						'location' => 'billing',
+					)
+				)
+			)
+		);
+
+		self::assertTrue(
+			$accepted->is_valid(),
+			'the canonical key decides where it lands: ' . implode( ', ', $accepted->error_codes() )
+		);
+	}
+
+	/**
 	 * An account page is the customer's own form, so the field it collects has to
 	 * store where that page writes.
 	 *

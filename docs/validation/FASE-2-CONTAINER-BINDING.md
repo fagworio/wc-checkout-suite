@@ -93,6 +93,11 @@ errada:
   um** uso só a lista o pode dizer, e aí a lista decide e o mapa é a sua projeção.
 - `FieldDefinition::raw_bindings()` expõe a lista como foi guardada, e `bindings_from()` deixou de
   filtrar entradas que não são mapas: ler pode ignorar o que não compreende, validar não pode.
+- `SectionValidator` passou a validar o **`target`** do container contra a mesma lista fechada de
+  conceitos do domínio que o `location` histórico já usava (`section_unknown_target`). O `target`
+  cai para o `location` quando não é escrito, pelo que um documento que o pusesse fora da lista
+  seria lido como uma colocação que nenhum adaptador sabe fazer — com o `location` ao lado a
+  parecer correto.
 
 ## 2. Prova
 
@@ -106,11 +111,11 @@ errada:
 | `AreaProjectionTest` (4 testes novos) | um campo usado duas vezes aparece duas vezes; dois usos no mesmo container mantêm ordem estável; uso invisível é saltado; uso de ficheiro sem `show_metadata` não é listado |
 | `FieldDefinitionTest` (3 testes novos) | mapa guardado → bindings; dois bindings no mesmo destino; escrita consistente das duas formas |
 | `DefinitionValidatorTest` (7 testes novos) | um uso responde pelas suas ações; sem ações de ficheiro num tipo sem ficheiro; dois usos não partilham identificador; um uso pertence ao campo onde está listado; um uso que não é mapa é recusado; ordem negativa recusada; um mapa guardado continua a ser validado ligação a ligação |
-| `SectionValidatorTest` (3 testes novos) | um uso num container que a área não oferece é recusado; o segundo uso da área é perguntado por si; cada uso visível numa superfície de cliente é perguntado sobre o storage (e um uso invisível não) |
+| `SectionValidatorTest` (4 testes novos) | um uso num container que a área não oferece é recusado; o segundo uso da área é perguntado por si; cada uso visível numa superfície de cliente é perguntado sobre o storage (e um uso invisível não); um `target` fora dos conceitos do domínio é recusado |
 | `DocumentMigratorTest` (2 testes novos) | a lista não é reconstruída do mapa (dois usos sobrevivem, a projeção é a do último); um mapa editado chega ao uso que descreve, e não decide onde há dois usos |
 | `tests/Integration/FASE2-binding-validation-proof.php` (novo) | **8/0** pela rota real: dois usos do mesmo campo no mesmo destino são aceites e voltam os dois; um uso com `approve` no destino do cliente é recusado (`invalid_destination_action`); um uso num container da equipa dentro do destino do cliente é recusado (`destination_section_not_offered`); a recusa não substitui o documento guardado |
 | `npx jest` / `npx tsc --noEmit` / `npm run lint:js` / `npm run build` | limpos (647 testes) |
-| `composer check` | phpcs e phpstan sem erros; **500 testes, 1818 asserções** |
+| `composer check` | phpcs e phpstan sem erros; **501 testes, 1821 asserções** |
 | Varredura de integração | **68 harnesses, 1550 asserções, 0 falhas** |
 | `tests/browser/f14-links-observation.mjs` | **22/0** com o documento migrado (o editor lê a seção da variante do destino, que é o comportamento novo) |
 | `tests/browser/my-account-sections-flow.mjs` | **6/6** com o documento migrado: o campo aparece sem pedido, o cliente grava o próprio valor, o valor persiste no acesso seguinte, e o campo de Minha conta não aparece no checkout |
@@ -134,8 +139,10 @@ container da sua área (13/0).
   mesmo destino. A regra de reconciliação do migrador existe precisamente para os dois conviverem: um
   destino com um uso segue o mapa (a edição do editor), um destino com dois usos segue a lista. É o
   item (a) do passo seguinte, a par do (b) `target`.
-- **`target` livre por destino** ainda não é validado por lista fechada: hoje vale para o checkout
-  (onde é a localização lógica) e não é usado pelas outras superfícies.
+- **`target` está validado por lista fechada, mas ainda não por destino.** Hoje a lista é a dos
+  conceitos do domínio (`billing`, `shipping`, `contact`, `account`, `order`), que é a linguagem que
+  os adaptadores falam; apertar a regra por destino só faz sentido quando cada superfície passar a
+  inserir containers por um alvo próprio (Fases 4, 6 e 14), e aí a lista por destino passa a existir.
 - **Duas superfícies ainda são indexadas por campo, não por uso.** `CustomerOrderFields::visible()`
   e `OrderEmailFields::visible()` devolvem um mapa `id do campo → definição`, porque o que desenham a
   seguir é a lista de valores do pedido (um por campo). Um campo usado duas vezes no mesmo destino
