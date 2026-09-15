@@ -39,19 +39,36 @@ final class UploadRepository {
 	public const STATUS_EXPIRED = 'expired';
 
 	/**
+	 * Record status: a document the customer keeps on their own profile.
+	 *
+	 * It belongs to a customer, not to a checkout, so it does not expire: it stays while the
+	 * customer exists and goes with them when they do. That is the fourth life an upload can
+	 * have, and the one the account page needs — a profile document that vanished after a day
+	 * would be a document the customer could never rely on.
+	 */
+	public const STATUS_STORED = 'stored';
+
+	/**
 	 * Inserts a record.
 	 *
 	 * The token is generated here rather than accepted from a caller: it is the
 	 * handle the browser will hold, and a handle anybody can choose is a handle
 	 * anybody can guess.
 	 *
-	 * @param array{owner: string, field_id: string, file_name: string, mime_type: string, byte_size: int, path: string, expires_at: string} $record Record.
+	 * A record that belongs to a **customer** (`user_id` above zero) is inserted as
+	 * `stored` with no expiry: it is kept because the customer exists, not because a
+	 * checkout is in progress. Everything else is the temporary case, which is the life
+	 * a file has before an order claims it.
+	 *
+	 * @param array{owner: string, field_id: string, file_name: string, mime_type: string, byte_size: int, path: string, expires_at?: string|null, user_id?: int} $record Record.
 	 * @return string The token, or an empty string when it could not be stored.
 	 */
 	public function insert( array $record ): string {
 		global $wpdb;
 
-		$token = bin2hex( random_bytes( 32 ) );
+		$token   = bin2hex( random_bytes( 32 ) );
+		$user_id = isset( $record['user_id'] ) ? max( 0, (int) $record['user_id'] ) : 0;
+		$expires = $record['expires_at'] ?? null;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- A write to this plugin's own table, whose name is built from the WordPress prefix and a constant; there is nothing to invalidate.
 		$ok = $wpdb->insert(
@@ -64,15 +81,52 @@ final class UploadRepository {
 				'mime_type'  => (string) $record['mime_type'],
 				'byte_size'  => (int) $record['byte_size'],
 				'path'       => (string) $record['path'],
-				'status'     => self::STATUS_TEMPORARY,
+				'status'     => $user_id > 0 ? self::STATUS_STORED : self::STATUS_TEMPORARY,
 				'order_id'   => 0,
+				'user_id'    => $user_id,
 				'created_at' => current_time( 'mysql', true ),
-				'expires_at' => (string) $record['expires_at'],
+				'expires_at' => is_string( $expires ) && '' !== $expires ? $expires : null,
 			)
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
 		return false === $ok ? '' : $token;
+	}
+
+	/**
+	 * The document a customer currently keeps for one field.
+	 *
+	 * Keyed by the customer and the field rather than by a token, because the account page
+	 * does not hold a token when it renders: the value the document stores is the token, but
+	 * the question the page asks is "what is my file for this field", and a customer who
+	 * signs in on another device has no session to have remembered one in.
+	 *
+	 * The newest row wins: replacing a document is how a customer sends a new version, and
+	 * the older one is then a file nobody points at.
+	 *
+	 * @param int    $user_id  Customer.
+	 * @param string $field_id Field.
+	 * @return array<string, mixed>|null
+	 */
+	public function for_user( int $user_id, string $field_id ): ?array {
+		global $wpdb;
+
+		if ( $user_id <= 0 ) {
+			return null;
+		}
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- A read of this plugin's own table; the table name is built from the prefix and a constant, and the values are placeholders.
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				'SELECT * FROM ' . UploadsTable::name() . ' WHERE user_id = %d AND field_id = %s ORDER BY id DESC LIMIT 1',
+				$user_id,
+				$field_id
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+
+		return is_array( $row ) ? $row : null;
 	}
 
 	/**
@@ -243,10 +297,14 @@ final class UploadRepository {
 
 		$moment = gmdate( 'Y-m-d H:i:s', $now );
 
+		// Three reasons a row has to be looked at: a temporary upload past its time, a binding
+		// to an order that may be gone, and a document kept for a customer who may be gone.
+		// A customer row has no expiry, so leaving it out of this query would be a file kept
+		// for a customer who no longer exists — the case nothing else would ever collect.
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- A read of this plugin's own table, batched; the name is built from the prefix and a constant.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT * FROM ' . UploadsTable::name() . ' WHERE ( order_id = 0 AND expires_at IS NOT NULL AND expires_at <= %s ) OR order_id > 0 ORDER BY id ASC LIMIT %d',
+				'SELECT * FROM ' . UploadsTable::name() . ' WHERE user_id > 0 OR ( order_id = 0 AND expires_at IS NOT NULL AND expires_at <= %s ) OR order_id > 0 ORDER BY id ASC LIMIT %d',
 				$moment,
 				$limit
 			),

@@ -35,8 +35,12 @@ final class UploadsTable {
 
 	/**
 	 * Schema version this build installs.
+	 *
+	 * 2 adds `user_id`: a document a customer keeps on their own profile has no order to
+	 * belong to, and the row has to say whose it is for the account page to find it again
+	 * from another device.
 	 */
-	public const VERSION = '1';
+	public const VERSION = '2';
 
 	/**
 	 * Table name, without the prefix.
@@ -100,13 +104,15 @@ final class UploadsTable {
 			path varchar(255) NOT NULL,
 			status varchar(20) NOT NULL DEFAULT 'temporary',
 			order_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			user_id bigint(20) unsigned NOT NULL DEFAULT 0,
 			created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
 			expires_at datetime NULL DEFAULT NULL,
 			PRIMARY KEY  (id),
 			UNIQUE KEY token (token),
 			KEY owner (owner),
 			KEY status_expires (status,expires_at),
-			KEY order_id (order_id)
+			KEY order_id (order_id),
+			KEY user_id (user_id)
 		) {$collate};";
 
 		dbDelta( $sql );
@@ -157,6 +163,7 @@ final class UploadsTable {
 			'path',
 			'status',
 			'order_id',
+			'user_id',
 			'created_at',
 			'expires_at',
 		);

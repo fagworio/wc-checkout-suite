@@ -1,0 +1,359 @@
+<?php
+/**
+ * Fase 4 proof harness — a document the customer keeps on their own profile.
+ *
+ * Task:   Fase 4 "Minha Conta — upload do perfil"
+ * Gate:   "cliente sem pedido usa formulário e persiste dados."
+ *
+ * The account page is where a customer without an order fills in and keeps their own data.
+ * A document is part of that data, and it is not a checkout upload: it belongs to the
+ * customer, it has to be there when they sign in from another device, and it must not expire
+ * with a cart that was never placed. This harness proves the server half of that, against the
+ * real database and the real private directory:
+ *
+ * 1. **The schema carries whose a file is.** `user_id` exists on the uploads table, and the
+ *    version option says which build installed it.
+ * 2. **An upload for a customer is accepted and recorded as theirs**, with no expiry, and the
+ *    account page finds it by customer and field — not by a token it would have to remember.
+ * 3. **Another customer cannot reach it**: the owner is checked in the query, not by a caller.
+ * 4. **It is kept while the customer exists and goes with them when they do** — the case
+ *    nothing else would ever collect, because the row has no expiry and no order.
+ * 5. The harness leaves the store as it found it.
+ *
+ * Prerequisite: the plugin must be ACTIVE, uploads enabled and the uploads table installed.
+ *
+ * @package WCCheckoutSuite
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	fwrite( STDERR, "This harness must run inside WordPress (wp eval-file).\n" );
+	exit( 1 );
+}
+
+$GLOBALS['wccs_proof'] = array( 'pass' => 0, 'fail' => 0, 'checks' => array(), 'notes' => array() );
+
+/**
+ * Print a line.
+ *
+ * @param string $message Message.
+ * @return void
+ */
+function wccs_proof_out( $message ) {
+	echo $message . "\n";
+}
+
+/**
+ * Record and print one assertion.
+ *
+ * @param string $label     Assertion description.
+ * @param bool   $condition Result.
+ * @param string $detail    Optional observed detail.
+ * @return void
+ */
+function wccs_proof_check( $label, $condition, $detail = '' ) {
+	$ok                                = (bool) $condition;
+	$GLOBALS['wccs_proof']['checks'][] = array( 'label' => $label, 'ok' => $ok, 'detail' => $detail );
+	++$GLOBALS['wccs_proof'][ $ok ? 'pass' : 'fail' ];
+	wccs_proof_out( sprintf( '  %s  %s%s', $ok ? 'PASS' : 'FAIL', $label, '' !== $detail ? "  [{$detail}]" : '' ) );
+}
+
+/**
+ * Record an informational observation.
+ *
+ * @param string $label  Observation.
+ * @param string $detail Detail.
+ * @return void
+ */
+function wccs_proof_note( $label, $detail = '' ) {
+	$GLOBALS['wccs_proof']['notes'][] = array( 'label' => $label, 'detail' => $detail );
+	wccs_proof_out( sprintf( '  NOTE  %s%s', $label, '' !== $detail ? "  [{$detail}]" : '' ) );
+}
+
+/**
+ * Counts the plugin options currently stored.
+ *
+ * @return int
+ */
+function wccs_proof_option_count(): int {
+	global $wpdb;
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Verification that the harness left no residue.
+	return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE 'wccs\_%'" );
+}
+
+/**
+ * A file on disk to hand to the service, as PHP would hand an uploaded one.
+ *
+ * `is_uploaded_file()` is checked at the HTTP boundary and nowhere else — that check needs a
+ * real request — so a harness can exercise the service with a readable path, which is what
+ * every other test of this subsystem does.
+ *
+ * @param string $contents Contents.
+ * @param string $name     Submitted name.
+ * @return array<string, mixed>
+ */
+function wccs_proof_file( string $contents, string $name ): array {
+	$path = wp_tempnam( $name );
+
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- A fixture the harness owns and removes.
+	file_put_contents( $path, $contents );
+
+	return array(
+		'name'     => $name,
+		'tmp_name' => $path,
+		'size'     => strlen( $contents ),
+		'error'    => UPLOAD_ERR_OK,
+		'type'     => 'application/pdf',
+	);
+}
+
+wccs_proof_out( '=====================================================================' );
+wccs_proof_out( 'Fase 4 proof — a document the customer keeps on their own profile' );
+wccs_proof_out( 'Site: ' . home_url() . ' | WP ' . get_bloginfo( 'version' ) . ' | PHP ' . PHP_VERSION );
+wccs_proof_out( '=====================================================================' );
+
+wp_set_current_user( 1 );
+
+global $wpdb;
+
+// The observation is deleted first so the count at the end is comparable, and so the
+// harness's own injection cannot be mistaken for something the store decided.
+$wccs_ref_privacy_option = \WCCheckoutSuite\Domain\Uploads\UploadsEnvironment::STATE_OPTION;
+
+delete_option( $wccs_ref_privacy_option );
+
+$wccs_ref_options_before = wccs_proof_option_count();
+
+// ---------------------------------------------------------------------------
+// 1. The schema carries whose a file is.
+// ---------------------------------------------------------------------------
+$wccs_ref_columns = $wpdb->get_col( 'DESCRIBE ' . \WCCheckoutSuite\Domain\Uploads\UploadsTable::name(), 0 ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Reading the shape of this plugin's own table.
+
+wccs_proof_check(
+	'The uploads table carries the customer a document belongs to',
+	in_array( 'user_id', $wccs_ref_columns, true ),
+	implode( ',', $wccs_ref_columns )
+);
+
+wccs_proof_check(
+	'And the version option says which build installed it',
+	'2' === (string) get_option( \WCCheckoutSuite\Domain\Uploads\UploadsTable::VERSION_OPTION, '' ),
+	'version=' . (string) get_option( \WCCheckoutSuite\Domain\Uploads\UploadsTable::VERSION_OPTION, '' )
+);
+
+// What this store says today, before anything is injected. The probe is an outbound HTTP
+// request to the store's own address, which is why it is made here rather than on a
+// storefront request.
+$wccs_ref_observed = \WCCheckoutSuite\Domain\Uploads\UploadsEnvironment::state( true );
+
+wccs_proof_note(
+	'What this store does today',
+	'protected=' . ( $wccs_ref_observed['protected'] ? 'yes' : 'no' ) . ' status=' . $wccs_ref_observed['status'] . ' reason=' . ( '' !== $wccs_ref_observed['reason'] ? $wccs_ref_observed['reason'] : '(none)' )
+);
+
+// From here on the observation is injected, so the rules can be exercised on a store that
+// would be allowed to hold a file. The harness says so rather than implying that this
+// environment passes the check, and deletes what it writes.
+wccs_proof_note(
+	'The accepting path below is exercised with the observation injected',
+	'This is the same convention WCCS-042 set: the probe result is a cached fact about the environment, and injecting it lets the ownership and the retention be proven without pretending this box protects the directory.'
+);
+
+update_option(
+	$wccs_ref_privacy_option,
+	array(
+		'protected'  => true,
+		'status'     => 403,
+		'reason'     => '',
+		'checked_at' => time(),
+	),
+	false
+);
+
+wccs_proof_check(
+	'With a protected directory, uploads are offered',
+	\WCCheckoutSuite\Domain\Uploads\UploadsEnvironment::enabled(),
+	\WCCheckoutSuite\Domain\Uploads\UploadsEnvironment::reason()
+);
+
+// ---------------------------------------------------------------------------
+// 2. One customer's document.
+// ---------------------------------------------------------------------------
+$wccs_ref_login = 'wccs_upload_' . wp_generate_password( 6, false, false );
+$wccs_ref_user  = wp_insert_user(
+	array(
+		'user_login' => $wccs_ref_login,
+		'user_pass'  => wp_generate_password( 20, true, true ),
+		'user_email' => $wccs_ref_login . '@example.invalid',
+		'role'       => 'customer',
+	)
+);
+
+if ( is_wp_error( $wccs_ref_user ) ) {
+	fwrite( STDERR, 'Could not create the fixture customer: ' . $wccs_ref_user->get_error_message() . "\n" );
+	exit( 1 );
+}
+
+$wccs_ref_user_id = (int) $wccs_ref_user;
+$wccs_ref_login   = (string) get_userdata( $wccs_ref_user_id )->user_login;
+
+$wccs_ref_service = new \WCCheckoutSuite\Domain\Uploads\UploadService();
+$wccs_ref_file    = wccs_proof_file( "%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n", 'contrato-social.pdf' );
+
+$wccs_ref_accepted = $wccs_ref_service->accept_for_customer( $wccs_ref_file, 'documento_do_cliente', $wccs_ref_user_id );
+
+wccs_proof_check(
+	'An upload for a customer is accepted',
+	'' === $wccs_ref_accepted['code'] && 64 === strlen( $wccs_ref_accepted['token'] ),
+	'code=' . $wccs_ref_accepted['code'] . ' message=' . $wccs_ref_accepted['message']
+);
+
+$wccs_ref_token  = (string) $wccs_ref_accepted['token'];
+$wccs_ref_record = $wccs_ref_service->for_customer_field( $wccs_ref_user_id, 'documento_do_cliente' );
+
+wccs_proof_check(
+	'And the account page finds it by customer and field, not by token',
+	is_array( $wccs_ref_record ) && (string) $wccs_ref_record['token'] === $wccs_ref_token,
+	is_array( $wccs_ref_record ) ? 'file=' . $wccs_ref_record['file_name'] : '(not found)'
+);
+
+wccs_proof_check(
+	'It is stored for that customer, with no expiry',
+	is_array( $wccs_ref_record ) &&
+		$wccs_ref_user_id === (int) $wccs_ref_record['user_id'] &&
+		'stored' === (string) $wccs_ref_record['status'] &&
+		null === $wccs_ref_record['expires_at'] &&
+		0 === (int) $wccs_ref_record['order_id'],
+	is_array( $wccs_ref_record )
+		? 'user=' . $wccs_ref_record['user_id'] . ' status=' . $wccs_ref_record['status'] . ' expires=' . var_export( $wccs_ref_record['expires_at'], true )
+		: '(not found)'
+);
+
+wccs_proof_check(
+	'And it counts against that customer, so the quota is theirs',
+	(int) $wccs_ref_record['byte_size'] === (int) ( new \WCCheckoutSuite\Domain\Uploads\UploadRepository() )->used_bytes( 'customer:' . $wccs_ref_user_id ),
+	'bytes=' . ( is_array( $wccs_ref_record ) ? $wccs_ref_record['byte_size'] : 0 )
+);
+
+// ---------------------------------------------------------------------------
+// 3. Another customer cannot reach it.
+// ---------------------------------------------------------------------------
+$wccs_ref_other_login = 'wccs_other_' . wp_generate_password( 6, false, false );
+$wccs_ref_other       = wp_insert_user(
+	array(
+		'user_login' => $wccs_ref_other_login,
+		'user_pass'  => wp_generate_password( 20, true, true ),
+		'user_email' => $wccs_ref_other_login . '@example.invalid',
+		'role'       => 'customer',
+	)
+);
+
+$wccs_ref_other_id = is_wp_error( $wccs_ref_other ) ? 0 : (int) $wccs_ref_other;
+
+$wccs_ref_theirs = $wccs_ref_service->find( $wccs_ref_token, \WCCheckoutSuite\Domain\Uploads\UploadService::customer_owner( $wccs_ref_other_id ) );
+
+wccs_proof_check(
+	'Another customer cannot read it, and is told it is not theirs',
+	'not_yours' === $wccs_ref_theirs['code'],
+	'code=' . $wccs_ref_theirs['code']
+);
+
+$wccs_ref_own = $wccs_ref_service->find( $wccs_ref_token, \WCCheckoutSuite\Domain\Uploads\UploadService::customer_owner( $wccs_ref_user_id ) );
+
+wccs_proof_check(
+	'While its own customer reads it',
+	'' === $wccs_ref_own['code'] && is_array( $wccs_ref_own['record'] ),
+	'code=' . $wccs_ref_own['code']
+);
+
+wccs_proof_check(
+	'And a checkout session is not the customer, so a session cannot claim it',
+	'' === \WCCheckoutSuite\Domain\Uploads\UploadService::customer_owner( 0 ),
+	'owner=' . var_export( \WCCheckoutSuite\Domain\Uploads\UploadService::customer_owner( 0 ), true )
+);
+
+// ---------------------------------------------------------------------------
+// 4. Kept while the customer exists, gone with them when they are not.
+// ---------------------------------------------------------------------------
+$wccs_ref_repository = new \WCCheckoutSuite\Domain\Uploads\UploadRepository();
+$wccs_ref_candidates = $wccs_ref_repository->candidates( time(), 200 );
+$wccs_ref_seen       = false;
+
+foreach ( $wccs_ref_candidates as $wccs_ref_candidate ) {
+	if ( (string) ( $wccs_ref_candidate['token'] ?? '' ) === $wccs_ref_token ) {
+		$wccs_ref_seen = true;
+	}
+}
+
+wccs_proof_check(
+	'The cleanup looks at a customer document, even though it never expires',
+	$wccs_ref_seen,
+	'candidates=' . count( $wccs_ref_candidates )
+);
+
+$wccs_ref_decision = \WCCheckoutSuite\Domain\Uploads\UploadsRetention::decision( (array) $wccs_ref_record, time(), false, true );
+
+wccs_proof_check(
+	'It is kept while the customer exists',
+	'keep' === $wccs_ref_decision,
+	'decision=' . $wccs_ref_decision
+);
+
+$wccs_ref_path = (string) $wccs_ref_record['path'];
+
+require_once ABSPATH . 'wp-admin/includes/user.php';
+wp_delete_user( $wccs_ref_user_id, $wccs_ref_other_id > 0 ? $wccs_ref_other_id : null );
+
+$wccs_ref_after_delete = $wccs_ref_repository->for_user( $wccs_ref_user_id, 'documento_do_cliente' );
+
+wccs_proof_check(
+	'The document is still on file when the customer is gone, so the cleanup can decide',
+	is_array( $wccs_ref_after_delete ),
+	is_array( $wccs_ref_after_delete ) ? 'row kept until the sweep runs' : '(row already gone)'
+);
+
+$wccs_ref_sweep = \WCCheckoutSuite\Domain\Uploads\UploadsRetention::sweep( 200 );
+
+wccs_proof_check(
+	'And the sweep removes it, file and row together',
+	null === $wccs_ref_repository->for_user( $wccs_ref_user_id, 'documento_do_cliente' ) && ! file_exists( $wccs_ref_path ),
+	'orphaned=' . ( $wccs_ref_sweep['orphaned'] ?? 0 ) . ' files_removed=' . ( $wccs_ref_sweep['files_removed'] ?? 0 )
+);
+
+if ( $wccs_ref_other_id > 0 ) {
+	wp_delete_user( $wccs_ref_other_id );
+}
+
+if ( file_exists( (string) $wccs_ref_file['tmp_name'] ) ) {
+	unlink( (string) $wccs_ref_file['tmp_name'] );
+}
+
+wccs_proof_note(
+	'What is not proven here yet',
+	'The account form that hands a file to this service is the next slice of Fase 4: the field renderer, the multipart form and the submission are not wired to it yet, so this harness proves the server half only.'
+);
+
+// ---------------------------------------------------------------------------
+// Summary.
+// ---------------------------------------------------------------------------
+delete_option( $wccs_ref_privacy_option );
+
+wccs_proof_check(
+	'The harness left no stored option behind',
+	wccs_proof_option_count() === $wccs_ref_options_before,
+	'before=' . $wccs_ref_options_before . ' after=' . wccs_proof_option_count()
+);
+
+wccs_proof_out( '' );
+wccs_proof_out( '=====================================================================' );
+wccs_proof_out(
+	sprintf(
+		'RESULT: %d passed, %d failed, %d notes',
+		$GLOBALS['wccs_proof']['pass'],
+		$GLOBALS['wccs_proof']['fail'],
+		count( $GLOBALS['wccs_proof']['notes'] )
+	)
+);
+wccs_proof_out( '=====================================================================' );
+
+exit( $GLOBALS['wccs_proof']['fail'] > 0 ? 1 : 0 );

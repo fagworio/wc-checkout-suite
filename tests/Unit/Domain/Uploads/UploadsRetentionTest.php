@@ -182,4 +182,72 @@ final class UploadsRetentionTest extends TestCase {
 
 		self::assertSame( array( 'expire', 'orphaned', 'expire' ), $answers );
 	}
+
+	/**
+	 * A document kept for a customer does not expire while the customer exists.
+	 *
+	 * A profile document belongs to the customer, not to a checkout: it has no expiry, and a
+	 * file that vanished after a day would be a document the customer could never rely on.
+	 *
+	 * @return void
+	 */
+	public function test_a_document_kept_for_a_customer_is_kept_while_the_customer_exists(): void {
+		$record = $this->record(
+			array(
+				'status'     => 'stored',
+				'user_id'    => 12,
+				'owner'      => 'customer:12',
+				'expires_at' => null,
+			)
+		);
+
+		self::assertSame( 'keep', UploadsRetention::decision( $record, $this->now, false, true ) );
+	}
+
+	/**
+	 * And goes with the customer when the customer is gone.
+	 *
+	 * This is the case nothing else would ever collect: the row has no expiry, so the
+	 * temporary rule never looks at it, and it is bound to no order.
+	 *
+	 * @return void
+	 */
+	public function test_a_document_kept_for_a_deleted_customer_is_orphaned(): void {
+		$record = $this->record(
+			array(
+				'status'     => 'stored',
+				'user_id'    => 12,
+				'owner'      => 'customer:12',
+				'expires_at' => null,
+			)
+		);
+
+		self::assertSame( 'orphaned', UploadsRetention::decision( $record, $this->now, false, false ) );
+	}
+
+	/**
+	 * A row that says it was stored for a customer it does not name is orphaned.
+	 *
+	 * The reason it was kept cannot be checked from the row, and a file nothing can justify
+	 * keeping is not kept — the same rule the ordered status already had.
+	 *
+	 * @return void
+	 */
+	public function test_a_stored_row_without_a_customer_is_orphaned(): void {
+		self::assertSame(
+			'orphaned',
+			UploadsRetention::decision(
+				$this->record(
+					array(
+						'status'     => 'stored',
+						'user_id'    => 0,
+						'expires_at' => null,
+					)
+				),
+				$this->now,
+				false,
+				true
+			)
+		);
+	}
 }

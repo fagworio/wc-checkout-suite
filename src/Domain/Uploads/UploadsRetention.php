@@ -54,20 +54,34 @@ final class UploadsRetention {
 	 * @param array<string, mixed> $record       Upload record.
 	 * @param int                  $now          Current timestamp.
 	 * @param bool                 $order_exists Whether the bound order still exists.
+	 * @param bool                 $user_exists  Whether the customer it belongs to still exists.
 	 * @return string One of `keep`, `expire` or `orphaned`.
 	 */
-	public static function decision( array $record, int $now, bool $order_exists ): string {
+	public static function decision( array $record, int $now, bool $order_exists, bool $user_exists = true ): string {
 		$status   = isset( $record['status'] ) ? (string) $record['status'] : '';
 		$order_id = isset( $record['order_id'] ) ? (int) $record['order_id'] : 0;
+		$user_id  = isset( $record['user_id'] ) ? (int) $record['user_id'] : 0;
 
 		if ( $order_id > 0 ) {
 			return $order_exists ? 'keep' : 'orphaned';
+		}
+
+		// A document on the customer's own profile is kept because the customer exists, not
+		// because a checkout is in progress: it does not expire, and it goes when they do.
+		if ( $user_id > 0 ) {
+			return $user_exists ? 'keep' : 'orphaned';
 		}
 
 		if ( UploadRepository::STATUS_ORDERED === $status ) {
 			// Bound, but the row does not say to what: the order is gone, or the row
 			// is damaged. Either way the reason it was kept cannot be checked, and a
 			// file nothing can justify keeping is not kept.
+			return 'orphaned';
+		}
+
+		if ( UploadRepository::STATUS_STORED === $status ) {
+			// Stored for a customer the row no longer names. The reason it was kept cannot
+			// be checked any more, and a file nothing can justify keeping is not kept.
 			return 'orphaned';
 		}
 
@@ -100,8 +114,14 @@ final class UploadsRetention {
 		foreach ( $repository->candidates( $now, $limit ) as $record ) {
 			$order_id = (int) ( $record['order_id'] ?? 0 );
 			$order    = $order_id > 0 && function_exists( 'wc_get_order' ) ? wc_get_order( $order_id ) : null;
+			$user_id  = (int) ( $record['user_id'] ?? 0 );
 
-			$decision = self::decision( $record, $now, $order instanceof \WC_Order );
+			// The customer is asked about only when the row names one: a checkout upload has
+			// no customer to look up, and looking one up would be answering a question the
+			// row does not ask.
+			$user = $user_id > 0 && function_exists( 'get_userdata' ) ? get_userdata( $user_id ) : false;
+
+			$decision = self::decision( $record, $now, $order instanceof \WC_Order, false !== $user );
 
 			if ( 'keep' === $decision ) {
 				++$tally['kept'];

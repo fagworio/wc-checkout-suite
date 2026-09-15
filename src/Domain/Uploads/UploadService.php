@@ -215,6 +215,129 @@ final class UploadService {
 	}
 
 	/**
+	 * The owner identifier of a customer's own documents.
+	 *
+	 * A checkout upload belongs to a **session** on purpose: two checkouts must not see each
+	 * other's documents. A document on the customer's own profile is the opposite case — it
+	 * belongs to the customer, and a customer who signs in on another device has to find it
+	 * again. So the identifier is derived from the user, and the row also records the user id,
+	 * which is what the account page looks the file up by.
+	 *
+	 * @param int $user_id Customer.
+	 * @return string Empty when there is no customer to attach the file to.
+	 */
+	public static function customer_owner( int $user_id ): string {
+		return $user_id > 0 ? 'customer:' . $user_id : '';
+	}
+
+	/**
+	 * Accepts a file a customer keeps on their own profile.
+	 *
+	 * The checks are the same three, in the same order, as {@see self::accept()}: whether the
+	 * store may hold private files at all, what the file really is, and whether its owner has
+	 * room. What differs is the life of the result — a customer document does not expire, so
+	 * no expiry is written, and the row says whose it is.
+	 *
+	 * @param array<string, mixed>|null $file     One entry of `$_FILES`.
+	 * @param string                    $field_id Field the upload belongs to.
+	 * @param int                       $user_id  Customer.
+	 * @return array{token: string, code: string, message: string} Token on success, a refusal otherwise.
+	 */
+	public function accept_for_customer( ?array $file, string $field_id, int $user_id ): array {
+		if ( ! UploadsEnvironment::enabled() ) {
+			return $this->refuse( 'not_available', UploadsEnvironment::reason() );
+		}
+
+		$owner = self::customer_owner( $user_id );
+
+		if ( '' === $owner ) {
+			return $this->refuse( 'not_available', __( 'There is no customer to attach this document to.', 'wc-checkoutsuite' ) );
+		}
+
+		$path = isset( $file['tmp_name'] ) && is_string( $file['tmp_name'] ) ? $file['tmp_name'] : '';
+
+		if ( null === $file || '' === $path || ! is_readable( $path ) || ! isset( $file['size'] ) ) {
+			return $this->refuse( 'empty_file', UploadRules::message( 'empty_file' ) );
+		}
+
+		$bytes = (int) $file['size'];
+		$mime  = self::detect( (string) $file['tmp_name'] );
+
+		$code = UploadRules::check( $mime, $bytes, $this->repository->used_bytes( $owner ) );
+
+		if ( '' !== $code ) {
+			return $this->refuse( $code, UploadRules::message( $code ) );
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading the temporary file PHP just received; it is a local path, not a URL.
+		$contents = file_get_contents( (string) $file['tmp_name'] );
+
+		if ( ! is_string( $contents ) ) {
+			return $this->refuse( 'empty_file', UploadRules::message( 'empty_file' ) );
+		}
+
+		$stored = PrivateStorage::put( $contents, self::suffix( $mime ) );
+
+		if ( null === $stored ) {
+			return $this->refuse( 'not_available', __( 'The store could not write the file.', 'wc-checkoutsuite' ) );
+		}
+
+		$token = $this->repository->insert(
+			array(
+				'owner'      => $owner,
+				'field_id'   => $field_id,
+				'file_name'  => self::safe_name( (string) ( $file['name'] ?? '' ) ),
+				'mime_type'  => $mime,
+				'byte_size'  => $bytes,
+				'path'       => (string) $stored['path'],
+				'user_id'    => $user_id,
+				// No expiry: the reason to keep it is the customer, not a checkout.
+				'expires_at' => null,
+			)
+		);
+
+		if ( '' === $token ) {
+			PrivateStorage::delete( (string) $stored['path'] );
+
+			return $this->refuse( 'not_available', __( 'The store could not record the file.', 'wc-checkoutsuite' ) );
+		}
+
+		return array(
+			'token'   => $token,
+			'code'    => '',
+			'message' => '',
+		);
+	}
+
+	/**
+	 * The document a customer currently keeps for one field.
+	 *
+	 * @param int    $user_id  Customer.
+	 * @param string $field_id Field.
+	 * @return array<string, mixed>|null
+	 */
+	public function for_customer_field( int $user_id, string $field_id ): ?array {
+		return $this->repository->for_user( $user_id, $field_id );
+	}
+
+	/**
+	 * Removes one document of a customer's own, when it is theirs.
+	 *
+	 * @param string $token   Token.
+	 * @param int    $user_id Customer.
+	 * @return string Empty on success, a stable code otherwise.
+	 */
+	public function remove_for_customer( string $token, int $user_id ): string {
+		$owner = self::customer_owner( $user_id );
+
+		if ( '' === $owner ) {
+			return 'not_yours';
+		}
+
+		return $this->remove( $token, $owner );
+	}
+
+	/**
 	 * What the server says the file is.
 	 *
 	 * `finfo` rather than the browser's content type, and rather than the extension:
