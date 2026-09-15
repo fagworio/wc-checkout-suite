@@ -591,7 +591,7 @@ export function buildField(
 				: {} ),
 		mask: choice.mask ?? presetSeed( choice.defaults, 'mask' ) ?? null,
 		normalizer: presetSeed( choice.defaults, 'normalizer' ) ?? null,
-		conditions: {},
+		conditions: choice.conditions ?? {},
 		hidden_value_policy: 'discard',
 		...surfaces,
 		storage: choice.storage ?? surfaces.storage,

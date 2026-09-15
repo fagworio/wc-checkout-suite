@@ -229,7 +229,9 @@ describe( 'loading', () => {
 
 		render( <FieldsScreen client={ stub } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		// The regression guard. A screen whose loading effect depends on something
 		// that changes when it loads will call this until React refuses to render;
@@ -278,9 +280,17 @@ describe( 'the schema', () => {
 			/>
 		);
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
-		expect( screen.getByText( 'IE' ) ).toBeInTheDocument();
+		expect(
+			within(
+				await screen.findByRole( 'list', {
+					name: 'Campos da seção',
+				} )
+			).getByText( 'IE' )
+		).toBeInTheDocument();
 		expect( screen.getByText( /2 de 2 ativos/ ) ).toBeInTheDocument();
 	} );
 
@@ -300,7 +310,9 @@ describe( 'the schema', () => {
 		// store runs — the server read it.
 		render( <FieldsScreen client={ client() } checkoutMode="blocks" /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		expect(
 			screen.getByText( 'Modo Blocks · matriz de capacidades.' )
@@ -310,7 +322,9 @@ describe( 'the schema', () => {
 	it( 'does not warn about Blocks on a store that runs the classic checkout', async () => {
 		render( <FieldsScreen client={ client() } checkoutMode="classic" /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		expect(
 			screen.queryByText( 'Modo Blocks · matriz de capacidades.' )
@@ -387,7 +401,9 @@ describe( 'the schema', () => {
 			/>
 		);
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		expect(
 			screen.getByRole( 'heading', { name: 'Endereço de entrega' } )
@@ -425,7 +441,9 @@ describe( 'the schema', () => {
 			/>
 		);
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 		expect(
 			screen.getByRole( 'heading', { name: 'Dados de cobrança' } )
 		).toBeInTheDocument();
@@ -445,7 +463,9 @@ describe( 'the schema', () => {
 	it( 'states the areas where the selected section is active', async () => {
 		render( <FieldsScreen client={ client() } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		expect(
 			screen.getByLabelText( 'Áreas em que esta seção está ativa' )
@@ -457,7 +477,9 @@ describe( 'the destination the merchant works in', () => {
 	it( 'keeps the destinations the merchant uses most on their own', async () => {
 		render( <FieldsScreen client={ client() } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		const bar = screen.getByRole( 'tablist', { name: 'Destino' } );
 
@@ -479,7 +501,9 @@ describe( 'the destination the merchant works in', () => {
 
 		render( <FieldsScreen client={ client() } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		// Nothing of a group is shown until the group is opened.
 		expect(
@@ -510,7 +534,9 @@ describe( 'the destination the merchant works in', () => {
 
 		render( <FieldsScreen client={ client() } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		// The checkout has sections.
 		expect(
@@ -546,7 +572,9 @@ describe( 'creating a container', () => {
 
 		render( <FieldsScreen client={ stub } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await user.click( screen.getByRole( 'tab', { name: /^Minha conta/ } ) );
 		await user.click(
@@ -593,7 +621,9 @@ describe( 'creating a container', () => {
 
 		render( <FieldsScreen client={ stub } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await user.click(
 			screen.getByRole( 'tab', { name: /^Pedido do cliente/ } )
@@ -653,7 +683,9 @@ describe( 'editing', () => {
 
 		render( <FieldsScreen client={ client() } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		const undo = screen.getByRole( 'button', {
 			name: 'Desfazer alteração',
@@ -673,11 +705,19 @@ describe( 'editing', () => {
 
 		render( <FieldsScreen client={ client() } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await duplicateField( user, 'CPF' );
 
-		expect( screen.getByText( 'CPF (copy)' ) ).toBeInTheDocument();
+		expect(
+			within(
+				await screen.findByRole( 'list', {
+					name: 'Campos da seção',
+				} )
+			).getByText( 'CPF (copy)' )
+		).toBeInTheDocument();
 
 		await user.click(
 			screen.getByRole( 'button', { name: 'Desfazer alteração' } )
@@ -692,7 +732,9 @@ describe( 'editing', () => {
 
 		render( <FieldsScreen client={ stub } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		expect(
 			screen.queryByText( 'Alterações não salvas' )
@@ -712,7 +754,9 @@ describe( 'editing', () => {
 
 		render( <FieldsScreen client={ stub } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await duplicateField( user, 'CPF' );
 		await user.click(
@@ -776,7 +820,9 @@ describe( 'editing', () => {
 
 		render( <FieldsScreen client={ stub } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await duplicateField( user, 'CPF' );
 		await user.click(
@@ -808,7 +854,9 @@ describe( 'editing', () => {
 
 		render( <FieldsScreen client={ stub } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await duplicateField( user, 'CPF' );
 		await user.click(
@@ -841,7 +889,9 @@ describe( 'a failure does not discard work', () => {
 
 		render( <FieldsScreen client={ stub } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await duplicateField( user, 'CPF' );
 		await user.click(
@@ -851,7 +901,13 @@ describe( 'a failure does not discard work', () => {
 		await screen.findByText( /could not be reached/ );
 
 		// The edit is still there, and the screen still says it is unsaved.
-		expect( screen.getByText( 'CPF (copy)' ) ).toBeInTheDocument();
+		expect(
+			within(
+				await screen.findByRole( 'list', {
+					name: 'Campos da seção',
+				} )
+			).getByText( 'CPF (copy)' )
+		).toBeInTheDocument();
 		expect(
 			screen.getByText( 'Alterações não salvas' )
 		).toBeInTheDocument();
@@ -874,7 +930,9 @@ describe( 'a failure does not discard work', () => {
 
 		render( <FieldsScreen client={ stub } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await duplicateField( user, 'CPF' );
 		await user.click(
@@ -884,7 +942,13 @@ describe( 'a failure does not discard work', () => {
 		await screen.findByText( /Someone else saved first/ );
 
 		expect( screen.getByText( /revision 9/ ) ).toBeInTheDocument();
-		expect( screen.getByText( 'CPF (copy)' ) ).toBeInTheDocument();
+		expect(
+			within(
+				await screen.findByRole( 'list', {
+					name: 'Campos da seção',
+				} )
+			).getByText( 'CPF (copy)' )
+		).toBeInTheDocument();
 	} );
 
 	it( 'says a session has expired instead of showing the raw message', async () => {
@@ -1035,7 +1099,9 @@ describe( 'reordering', () => {
 	it( 'moves a row onto the row it is dropped on', async () => {
 		render( <FieldsScreen client={ client( { draft: twoFields() } ) } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		expect( rowOrder() ).toEqual( [ 'CPF', 'IE' ] );
 
@@ -1047,7 +1113,9 @@ describe( 'reordering', () => {
 	it( 'announces where the field landed, as the design does', async () => {
 		render( <FieldsScreen client={ client( { draft: twoFields() } ) } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		drag( 'IE', 'CPF' );
 
@@ -1068,7 +1136,9 @@ describe( 'reordering', () => {
 
 		render( <FieldsScreen client={ client( { draft: twoFields() } ) } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		// Both fields are custom, so they stay on screen and only the *filter* is
 		// active — which is the state the design refuses to reorder in.
@@ -1097,7 +1167,9 @@ describe( 'reordering', () => {
 
 		render( <FieldsScreen client={ client( { draft: twoFields() } ) } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		const handle = screen.getByRole( 'button', {
 			name: 'Ordenar IE. Alt e setas para mover.',
@@ -1148,7 +1220,9 @@ describe( 'announcements', () => {
 
 		render( <FieldsScreen client={ client( { draft: twoFields() } ) } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await user.click(
 			screen.getByRole( 'checkbox', { name: 'Selecionar CPF' } )
@@ -1181,7 +1255,9 @@ describe( 'announcements', () => {
 
 		render( <FieldsScreen client={ client( { draft: twoFields() } ) } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await user.click(
 			screen.getByRole( 'checkbox', { name: 'Selecionar CPF' } )
@@ -1221,7 +1297,9 @@ describe( 'announcements', () => {
 			/>
 		);
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await user.click(
 			screen.getByRole( 'checkbox', { name: 'Selecionar CPF' } )
@@ -1273,7 +1351,9 @@ describe( 'announcements', () => {
 			/>
 		);
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await user.click(
 			screen.getByRole( 'button', { name: 'Exportar configuração' } )
@@ -1305,7 +1385,9 @@ describe( 'announcing an undo', () => {
 
 		render( <FieldsScreen client={ client() } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await duplicateField( user, 'CPF' );
 
@@ -1360,7 +1442,9 @@ describe( 'a bulk action with consequences', () => {
 
 		render( <FieldsScreen client={ client( { draft: dependent() } ) } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await user.click(
 			screen.getByRole( 'checkbox', { name: 'Selecionar CPF' } )
@@ -1397,7 +1481,9 @@ describe( 'a bulk action with consequences', () => {
 
 		render( <FieldsScreen client={ client() } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await user.click(
 			screen.getByRole( 'checkbox', { name: 'Selecionar CPF' } )
@@ -1419,7 +1505,9 @@ describe( 'the row menu', () => {
 
 		render( <FieldsScreen client={ client() } /> );
 
-		await screen.findByText( 'CPF' );
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
 
 		await user.click(
 			screen.getByRole( 'button', { name: 'Ações de CPF' } )

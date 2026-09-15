@@ -176,7 +176,7 @@ describe( 'the field properties on a narrow window', () => {
 
 		render( <FieldsScreen client={ client() } /> );
 
-		await screen.findByText( 'CPF' );
+		await screen.findByRole( 'listitem' );
 		await user.click( fieldRow() );
 
 		// A wide window does not mount the dialog at all: the properties are in the
@@ -184,6 +184,7 @@ describe( 'the field properties on a narrow window', () => {
 		expect(
 			globalThis.document.querySelector( '.mobile-inspector' )
 		).toBeNull();
+		// eslint-disable-next-line no-console
 		expect( screen.getByLabelText( 'Nome do campo' ) ).toBeInTheDocument();
 	} );
 
@@ -194,7 +195,7 @@ describe( 'the field properties on a narrow window', () => {
 
 		render( <FieldsScreen client={ client() } /> );
 
-		await screen.findByText( 'CPF' );
+		await screen.findByRole( 'listitem' );
 
 		expect(
 			globalThis.document.querySelector( '.mobile-inspector' )
@@ -228,7 +229,7 @@ describe( 'the field properties on a narrow window', () => {
 
 		render( <FieldsScreen client={ client() } /> );
 
-		await screen.findByText( 'CPF' );
+		await screen.findByRole( 'listitem' );
 		await user.click( fieldRow() );
 
 		await waitFor( () =>

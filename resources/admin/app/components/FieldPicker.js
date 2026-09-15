@@ -22,6 +22,8 @@
 import { useMemo, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 
+import ConditionBuilder from './ConditionBuilder';
+import { SettingsControls } from './SettingsControls';
 import { Icon } from '../design/icons';
 import { typeGlyph } from '../design/typeGlyph';
 
@@ -102,6 +104,13 @@ export default function FieldPicker( {
 	const [ key, setKey ] = useState( '' );
 	const [ required, setRequired ] = useState( false );
 	const [ width, setWidth ] = useState( 12 );
+	const [ description, setDescription ] = useState( '' );
+	const [ settings, setSettings ] = useState(
+		/** @type {Record<string, any>} */ ( {} )
+	);
+	const [ conditions, setConditions ] = useState(
+		/** @type {Record<string, any>} */ ( {} )
+	);
 
 	/** Every entry the catalogue offers: types, presets and WooCommerce's own fields. */
 	const entries = useMemo( () => {
@@ -246,7 +255,20 @@ export default function FieldPicker( {
 		setKey( suggestedKey( entry.key ) );
 		setRequired( false );
 		setWidth( 12 );
+		// The form is the field's first version, so it starts from the preset and
+		// from nothing else — never from the field chosen before it.
+		setDescription( '' );
+		setSettings(
+			/** @type {Record<string, any>} */ ( entry.preset?.settings ?? {} )
+		);
+		setConditions( {} );
 	};
+
+	// What the chosen type declares about itself. Read from the catalogue, because a
+	// control for a type this build has never seen cannot be invented here.
+	const chosenType = chosen
+		? catalog?.types?.[ chosen.preset?.type ?? chosen.key ] ?? null
+		: null;
 
 	if ( chosen ) {
 		return (
@@ -291,6 +313,29 @@ export default function FieldPicker( {
 									'wc-checkoutsuite'
 								) }
 							</p>
+						</div>
+
+						<div className="form-group">
+							<label htmlFor="wccs-new-description">
+								{ __(
+									'Descrição (opcional)',
+									'wc-checkoutsuite'
+								) }
+							</label>
+							<textarea
+								id="wccs-new-description"
+								className="input"
+								rows={ 3 }
+								maxLength={ 280 }
+								value={ description }
+								placeholder={ __(
+									'Explique ao cliente o que enviar aqui.',
+									'wc-checkoutsuite'
+								) }
+								onChange={ (
+									/** @type {{ target: { value: string } }} */ event
+								) => setDescription( event.target.value ) }
+							/>
 						</div>
 
 						<div className="form-group">
@@ -390,6 +435,58 @@ export default function FieldPicker( {
 						</div>
 					</div>
 
+					{ chosenType ? (
+						<div
+							className="form-group"
+							role="group"
+							aria-label={ __(
+								'Configurações do tipo',
+								'wc-checkoutsuite'
+							) }
+						>
+							<p className="form-label">
+								{ __(
+									'Configurações do tipo',
+									'wc-checkoutsuite'
+								) }
+							</p>
+							<SettingsControls
+								schema={ chosenType.settingsSchema }
+								value={ settings }
+								onChange={ (
+									/** @type {Record<string, any>} */ next
+								) => setSettings( next ) }
+							/>
+						</div>
+					) : null }
+
+					<div
+						className="form-group"
+						role="group"
+						aria-label={ __(
+							'Regras de exibição',
+							'wc-checkoutsuite'
+						) }
+					>
+						<p className="form-label">
+							{ __( 'Regras de exibição', 'wc-checkoutsuite' ) }
+						</p>
+						<ConditionBuilder
+							value={ conditions }
+							vocabulary={ catalog?.conditions ?? {} }
+							fields={ [] }
+							onChange={ (
+								/** @type {Record<string, any>} */ next
+							) => setConditions( next ) }
+						/>
+						<p className="form-help">
+							{ __(
+								'Sem regra, o campo aparece sempre. A validação final é do servidor.',
+								'wc-checkoutsuite'
+							) }
+						</p>
+					</div>
+
 					<aside className="create-aside">
 						<div className="field-glyph" aria-hidden="true">
 							{ chosen.glyph }
@@ -452,14 +549,17 @@ export default function FieldPicker( {
 								idHint: key.trim(),
 								section,
 								required,
+								description: description.trim(),
+								conditions,
+								settings:
+									Object.keys( settings ).length > 0
+										? settings
+										: undefined,
 								layout: { desktop: width },
 								// A preset carries its own settings and defaults, and
 								// the capabilities belong to the type it is built on:
 								// without them the field would be created with
 								// defaults the server refuses.
-								settings: chosen.preset
-									? chosen.preset.settings ?? {}
-									: undefined,
 								defaults: chosen.preset?.defaults ?? undefined,
 								supports:
 									catalog?.types?.[

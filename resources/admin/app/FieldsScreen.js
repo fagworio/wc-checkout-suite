@@ -1329,6 +1329,30 @@ export default function FieldsScreen( {
 					area,
 					areas: navigation(),
 					onAreaChange: selectArea,
+					onToggleSectionTitle: (
+						/** @type {boolean} */ checked
+					) => {
+						const found = composition?.sections?.find(
+							( /** @type {any} */ entry ) => entry.id === section
+						);
+
+						if ( ! found ) {
+							// An implied section of WooCommerce has nowhere to store
+							// the choice, and the control is disabled for it — so
+							// this is a guard and not a silent no-op.
+							return;
+						}
+
+						applyComposed(
+							updateSection( composition, section, {
+								presentation: {
+									...( found.presentation ?? {} ),
+									show_title: checked,
+								},
+							} ),
+							__( 'Exibir título da seção', 'wc-checkoutsuite' )
+						);
+					},
 					loading,
 					dirty,
 					saving,

@@ -573,6 +573,18 @@ export default function FieldManagerView( { model } ) {
 		</TopbarActions>
 	);
 
+	/**
+	 * Whether the checkout shows this section's title.
+	 *
+	 * Absent means shown: a section written before the switch existed is a section
+	 * whose title WooCommerce already drew, and the switch is there to let the
+	 * merchant hide it — never to hide it by default.
+	 *
+	 * @type {boolean}
+	 */
+	const sectionShowsTitle =
+		false !== current?.section?.presentation?.show_title;
+
 	// The field properties are one element with two homes, as the design draws them: the
 	// editor's right column on a wide window, and a dialog over the list below 870px,
 	// where the stylesheet hides that column.
@@ -982,76 +994,89 @@ export default function FieldManagerView( { model } ) {
 					</div>
 				) : null }
 
-				{ /* The store's own checkout, above the document that configures it (§6.2).
-				     It is offered where fields are collected: the native fields and their
-				     order belong to the checkout, and a screen for a display destination
-				     would be promising a management it cannot perform. */ }
-				{ 'checkout' === area ? (
-					<CoreCheckoutPanel
-						inventory={ coreFields }
-						document={ composition ?? doc }
-						onAdoptField={ onAdoptCore }
-						onAdoptSection={ onAdoptCoreSection }
-					/>
-				) : null }
-
 				<div className="editor-grid">
+					{ /* As seções do checkout, na coluna da esquerda. O que era uma tira
+					     horizontal de separadores passa a ser a lista do desenho: ícone, nome e a
+					     frase que diz o que a seção guarda. É a mesma escolha, com lugar
+					     para a explicar. */ }
+					<aside
+						className="panel sections-panel"
+						aria-label={ __(
+							'Seções do checkout',
+							'wc-checkoutsuite'
+						) }
+					>
+						<div className="sections-head">
+							<h2>
+								{ __(
+									'Seções do checkout',
+									'wc-checkoutsuite'
+								) }
+							</h2>
+							<p>
+								{ __(
+									'Organize as seções e defina onde cada campo será exibido no checkout.',
+									'wc-checkoutsuite'
+								) }
+							</p>
+						</div>
+
+						<div
+							className="section-tabs"
+							role="group"
+							aria-label={ sprintf(
+								/* translators: %s: what this destination calls its containers. */
+								__( '%s desta área', 'wc-checkoutsuite' ),
+								words.many
+							) }
+						>
+							{ groups.map( ( /** @type {any} */ group ) => {
+								const tab = sectionCopy(
+									group.section,
+									Boolean( group.declared )
+								);
+								const isActive = group.section.id === section;
+
+								return (
+									<button
+										key={ group.section.id }
+										type="button"
+										className={ isActive ? 'active' : '' }
+										aria-pressed={ isActive }
+										onClick={ () =>
+											onSectionChange( group.section.id )
+										}
+									>
+										<span
+											className="section-row-icon"
+											aria-hidden="true"
+										>
+											<Icon name={ tab.icon } />
+										</span>
+										<span className="section-row-text">
+											<strong>{ tab.label }</strong>
+											<small>{ tab.description }</small>
+										</span>
+										<small className="section-row-count">
+											{ group.fields.length }
+										</small>
+									</button>
+								);
+							} ) }
+						</div>
+
+						<button
+							type="button"
+							className="sections-add"
+							onClick={ onCreateSection }
+						>
+							<Icon name="plus" />
+							{ words.create }
+						</button>
+					</aside>
+
 					<div className="editor-column">
 						<div className="panel builder-panel">
-							<div
-								className="section-tabs"
-								role="group"
-								aria-label={ sprintf(
-									/* translators: %s: what this destination calls its containers. */
-									__( '%s desta área', 'wc-checkoutsuite' ),
-									words.many
-								) }
-							>
-								{ groups.map( ( /** @type {any} */ group ) => {
-									const tab = sectionCopy(
-										group.section,
-										Boolean( group.declared )
-									);
-									const isActive =
-										group.section.id === section;
-
-									return (
-										<button
-											key={ group.section.id }
-											type="button"
-											className={
-												isActive ? 'active' : ''
-											}
-											aria-pressed={ isActive }
-											onClick={ () =>
-												onSectionChange(
-													group.section.id
-												)
-											}
-										>
-											{ tab.label }
-											<small>
-												{ group.fields.length }
-											</small>
-										</button>
-									);
-								} ) }
-
-								{ /* The design draws the five checkout
-								     locations as fixed tabs. This plugin lets
-								     a merchant add a section of their own, so
-								     the control sits where sections are, in
-								     the design's own tab language. */ }
-								<button
-									type="button"
-									className="text-btn"
-									onClick={ onCreateSection }
-								>
-									<Icon name="plus" />
-									{ words.create }
-								</button>
-							</div>
-
 							<div className="builder-header">
 								<div className="panel-heading">
 									<div
@@ -1062,7 +1087,12 @@ export default function FieldManagerView( { model } ) {
 									</div>
 									<div>
 										<h2>{ copy.title }</h2>
-										<p>{ copy.description }</p>
+										<p>
+											{ __(
+												'Gerencie os campos desta seção. Arraste para reordenar.',
+												'wc-checkoutsuite'
+											) }
+										</p>
 										{ sectionAreas.length > 0 ? (
 											<p
 												className="wccs-section-areas"
@@ -1088,6 +1118,43 @@ export default function FieldManagerView( { model } ) {
 										) : null }
 									</div>
 								</div>
+								{ /* §6.4: o título é do comerciante e pode ser escondido no
+								     checkout sem perder o nome no admin. A seção implícita do
+								     WooCommerce não tem onde guardar a escolha, e o controlo
+								     di-lo em vez de fingir que a guardou. */ }
+								<label
+									className="switch-row section-title-switch"
+									htmlFor="wccs-section-show-title"
+								>
+									<input
+										id="wccs-section-show-title"
+										type="checkbox"
+										checked={ sectionShowsTitle }
+										disabled={ ! current?.declared }
+										title={
+											current?.declared
+												? undefined
+												: __(
+														'Uma seção do próprio WooCommerce não guarda esta escolha: crie uma seção personalizada para a controlar.',
+														'wc-checkoutsuite'
+												  )
+										}
+										onChange={ (
+											/** @type {{ target: { checked: boolean } }} */ event
+										) =>
+											model.onToggleSectionTitle?.(
+												event.target.checked
+											)
+										}
+									/>
+									<span>
+										{ __(
+											'Exibir título da seção',
+											'wc-checkoutsuite'
+										) }
+									</span>
+								</label>
+
 								<span
 									className="badge"
 									aria-label={ __(
@@ -1308,6 +1375,7 @@ export default function FieldManagerView( { model } ) {
 
 							<div
 								className="field-list"
+								role="list"
 								aria-label={ __(
 									'Campos da seção',
 									'wc-checkoutsuite'
@@ -1380,6 +1448,7 @@ export default function FieldManagerView( { model } ) {
 											<div
 												key={ field.id }
 												data-row-id={ field.id }
+												role="listitem"
 												className={
 													'field-row' +
 													( isSelected
@@ -1919,6 +1988,118 @@ export default function FieldManagerView( { model } ) {
 							</div>
 						</div>
 
+						{ /* O botão tracejado do desenho: o mesmo caminho do cabeçalho,
+						     onde o campo nasce — dentro da seção que está aberta. */ }
+						<button
+							type="button"
+							className="add-field-inline"
+							onClick={ () => setPickerOpen( true ) }
+						>
+							<Icon name="plus" />
+							{ __(
+								'Adicionar campo nesta seção',
+								'wc-checkoutsuite'
+							) }
+						</button>
+
+						{ /* A prévia da seção, como o desenho a põe: o mesmo documento, os
+						     mesmos rótulos, a mesma largura por campo — uma amostra do que o
+						     cliente vai ver. Não é o renderizador do WooCommerce, e a prévia
+						     completa continua a ser a da seção «Prévia do checkout». */ }
+						<div className="section-preview">
+							<div className="section-preview-head">
+								<h3>
+									{ __(
+										'Prévia da seção',
+										'wc-checkoutsuite'
+									) }
+								</h3>
+								<p>
+									{ __(
+										'Veja como esta seção aparecerá para o cliente.',
+										'wc-checkoutsuite'
+									) }
+								</p>
+							</div>
+
+							{ ( current?.fields ?? [] ).length === 0 ? (
+								<p className="muted small">
+									{ __(
+										'Assim que houver um campo nesta seção, ele aparece aqui.',
+										'wc-checkoutsuite'
+									) }
+								</p>
+							) : (
+								<div className="section-preview-grid">
+									{ ( current?.fields ?? [] ).map(
+										( /** @type {any} */ field ) => {
+											const width = Number(
+												field.layout?.desktop ?? 12
+											);
+
+											return (
+												<div
+													key={ field.id }
+													className="section-preview-field"
+													style={ {
+														gridColumn: `span ${ Math.max(
+															1,
+															Math.min(
+																12,
+																width
+															)
+														) }`,
+													} }
+												>
+													<span className="sample-label">
+														{ field.label ||
+															__(
+																'Campo sem nome',
+																'wc-checkoutsuite'
+															) }
+														{ field.required ? (
+															<span
+																className="required-star"
+																aria-label={ __(
+																	'obrigatório',
+																	'wc-checkoutsuite'
+																) }
+															>
+																*
+															</span>
+														) : null }
+													</span>
+													<span className="section-preview-control">
+														{ field.description ||
+															field.placeholder ||
+															'' }
+													</span>
+												</div>
+											);
+										}
+									) }
+								</div>
+							) }
+						</div>
+
+						{ /* O checkout da própria loja, oferecido para adoção (§6.2). Fica
+						     depois da lista e da prévia e não antes delas: o desenho abre
+						     na seção, nos campos e na amostra, e adotar o checkout que a
+						     loja já corre é o passo que se faz depois de ver o que
+						     falta. */ }
+						{ /* The store's own checkout, above the document that configures it (§6.2).
+				     It is offered where fields are collected: the native fields and their
+				     order belong to the checkout, and a screen for a display destination
+				     would be promising a management it cannot perform. */ }
+						{ 'checkout' === area ? (
+							<CoreCheckoutPanel
+								inventory={ coreFields }
+								document={ composition ?? doc }
+								onAdoptField={ onAdoptCore }
+								onAdoptSection={ onAdoptCoreSection }
+							/>
+						) : null }
+
 						<div className="editor-bottom">
 							<div className="tip-card">
 								<div className="tip-icon">
@@ -1993,19 +2174,131 @@ export default function FieldManagerView( { model } ) {
 						{ properties && ! narrow ? (
 							properties
 						) : (
-							<div className="inspector-head">
-								<div className="eyebrow">
-									{ __(
-										'PROPRIEDADES DO CAMPO',
-										'wc-checkoutsuite'
-									) }
+							<div
+								className="add-field-panel"
+								aria-label={ __(
+									'Adicionar campo',
+									'wc-checkoutsuite'
+								) }
+							>
+								<div className="add-field-head">
+									<h2>
+										{ __(
+											'Adicionar campo',
+											'wc-checkoutsuite'
+										) }
+									</h2>
 								</div>
+
 								<p className="muted small">
 									{ __(
-										'Escolha um campo na lista para editar as propriedades dele.',
+										'Crie um campo novo para esta seção, ou use um que a loja já tem. Escolha um campo da lista para editar as propriedades dele.',
 										'wc-checkoutsuite'
 									) }
 								</p>
+
+								{ /* As duas entradas do desenho — «Novo campo» e «Campo
+								     existente» — como dois caminhos e não como um
+								     interruptor: cada um leva a um sítio diferente, e um
+								     segmentado que muda o que está por baixo faria o
+								     comerciante pensar que escolheu um campo. */ }
+								<div className="add-field-actions">
+									<button
+										type="button"
+										className="btn btn-primary"
+										onClick={ () => setPickerOpen( true ) }
+									>
+										<Icon name="plus" />
+										{ __(
+											'Novo campo',
+											'wc-checkoutsuite'
+										) }
+									</button>
+									<button
+										type="button"
+										className="btn"
+										onClick={ onLinkExisting }
+									>
+										{ __(
+											'Campo existente',
+											'wc-checkoutsuite'
+										) }
+									</button>
+								</div>
+
+								{ /* O que o desenho põe por baixo do formulário: o campo
+								     nativo da loja que esta seção ainda não adotou. É o
+								     mesmo caminho do painel «Checkout padrão», aqui onde o
+								     campo nasce. */ }
+								{ ( coreFields?.fields ?? [] ).length > 0 ? (
+									<div className="add-field-native">
+										<h3>
+											{ __(
+												'Campos do próprio WooCommerce',
+												'wc-checkoutsuite'
+											) }
+										</h3>
+										<p className="muted small">
+											{ sprintf(
+												/* translators: 1: adopted count, 2: total count. */
+												__(
+													'%1$d de %2$d gerenciados nesta tela.',
+													'wc-checkoutsuite'
+												),
+												(
+													coreFields?.fields ?? []
+												).filter(
+													(
+														/** @type {any} */ entry
+													) => entry.managed
+												).length,
+												( coreFields?.fields ?? [] )
+													.length
+											) }
+										</p>
+										<ul className="add-field-native-list">
+											{ ( coreFields?.fields ?? [] )
+												.filter(
+													(
+														/** @type {any} */ entry
+													) => ! entry.managed
+												)
+												.slice( 0, 6 )
+												.map(
+													(
+														/** @type {any} */ entry
+													) => (
+														<li key={ entry.id }>
+															<span>
+																<strong>
+																	{ entry.label ??
+																		entry.id }
+																</strong>
+																<code>
+																	{ entry.id }
+																</code>
+															</span>
+															<button
+																type="button"
+																className="text-btn"
+																onClick={ () =>
+																	onAdoptCore(
+																		entry
+																	)
+																}
+															>
+																<Icon name="plus" />
+																{ __(
+																	'Usar',
+																	'wc-checkoutsuite'
+																) }
+															</button>
+														</li>
+													)
+												) }
+										</ul>
+									</div>
+								) : null }
 							</div>
 						) }
 					</aside>

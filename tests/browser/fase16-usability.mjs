@@ -300,6 +300,105 @@ await step( 'O ecrã de automação responde quando a cobrança acontece', async
 } );
 
 // ---------------------------------------------------------------------------
+// 4b. The flow of the fields, as the prototype of the checkout screen draws it.
+// ---------------------------------------------------------------------------
+await step( 'A tela de campos tem o fluxo do protótipo', async () => {
+	await open( 'fields', '.section-tabs' );
+
+	// A coluna das seções, com a frase que diz o que cada uma guarda e o botão
+	// tracejado que cria outra.
+	const sections = await page.evaluate( () => {
+		const panel = document.querySelector( '.sections-panel' );
+
+		return {
+			panel: Boolean( panel ),
+			head: panel?.querySelector( '.sections-head h2' )?.textContent ?? '',
+			rows: panel?.querySelectorAll( '.section-tabs button' ).length ?? 0,
+			described: Boolean(
+				panel?.querySelector( '.section-row-text small' )?.textContent
+					?.trim()
+			),
+			add: Boolean( panel?.querySelector( '.sections-add' ) ),
+		};
+	} );
+
+	record(
+		'As seções ficam na coluna da esquerda, com nome, frase e o criar tracejado',
+		sections.panel &&
+			sections.rows > 0 &&
+			sections.described &&
+			sections.add,
+		JSON.stringify( sections )
+	);
+
+	// O interruptor do título da seção, no cabeçalho do meio.
+	const titleSwitch = await page.evaluate( () => {
+		const input = document.querySelector( '#wccs-section-show-title' );
+
+		return {
+			present: Boolean( input ),
+			label: input?.closest( 'label' )?.textContent?.trim() ?? '',
+		};
+	} );
+
+	record(
+		'E o título da seção tem o seu interruptor no cabeçalho',
+		titleSwitch.present &&
+			/exibir título/i.test( titleSwitch.label ),
+		titleSwitch.label
+	);
+
+	// O botão tracejado do meio abre o mesmo caminho de criação, e o formulário
+	// traz os campos que o protótipo desenha.
+	const dashed = page.locator( '.add-field-inline' );
+
+	record(
+		'E «Adicionar campo nesta seção» está onde os campos nascem',
+		( await dashed.count() ) === 1 && ( await dashed.isVisible() )
+	);
+
+	await dashed.click();
+
+	// O passo 1 é o catálogo; o formulário do protótipo é o passo 2, depois de
+	// escolher um tipo.
+	await page.waitForSelector( '.picker-card', { timeout: 10000 } );
+	await page.locator( '.picker-card' ).first().click();
+	await page.waitForSelector( '#wccs-new-label', { timeout: 10000 } );
+
+	record(
+		'E o formulário abre com o tipo escolhido',
+		( await page.locator( '#wccs-new-description' ).count() ) === 1
+	);
+
+	const form = await page.evaluate( () => ( {
+		name: Boolean( document.querySelector( '#wccs-new-label' ) ),
+		slug: Boolean( document.querySelector( '#wccs-new-key' ) ),
+		description: Boolean( document.querySelector( '#wccs-new-description' ) ),
+		rules: Boolean(
+			Array.from( document.querySelectorAll( '[role="group"]' ) ).some(
+				( node ) =>
+					/Regras de exibição/i.test(
+						node.getAttribute( 'aria-label' ) ?? ''
+					)
+			)
+		),
+		submit: Boolean(
+			Array.from( document.querySelectorAll( 'button' ) ).find(
+				( node ) => /Adicionar campo/.test( node.textContent )
+			)
+		),
+	} ) );
+
+	record(
+		'E o formulário pede nome, chave, descrição, regras e confirma',
+		form.name && form.slug && form.description && form.submit,
+		JSON.stringify( form )
+	);
+
+	await page.keyboard.press( 'Escape' );
+} );
+
+// ---------------------------------------------------------------------------
 // 5. A destination is an address: choosing one writes it, and the address reopens it.
 // ---------------------------------------------------------------------------
 await step( 'O destino fica no endereço e o endereço reabre-o', async () => {

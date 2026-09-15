@@ -386,6 +386,7 @@ export interface PickerChoice {
 	mask?: { key: string; version: number } | null;
 	settingsSchema?: Record< string, Record< string, unknown > >;
 	settingsValue?: Record< string, unknown >;
+	conditions?: Record< string, unknown >;
 	collectionSurface?: 'checkout' | 'my_account';
 	storage?: { scope: string; sensitivity: string };
 	destinations?: Record< string, DestinationLink >;

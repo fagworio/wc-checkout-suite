@@ -217,7 +217,7 @@ body:has(.wccs-admin) #wpfooter {
 .wccs-admin .badge.green{color:var(--green);background:color-mix(in srgb,var(--green) 8%,transparent)}
 .wccs-admin .badge.amber{color:var(--amber);background:color-mix(in srgb,var(--amber) 9%,transparent)}
 .wccs-admin .badge.red{color:var(--red);background:color-mix(in srgb,var(--red) 9%,transparent)}
-.wccs-admin .editor-grid{display:grid;grid-template-columns:minmax(0,1fr) 325px;gap:22px;align-items:start}
+.wccs-admin .editor-grid{display:grid;grid-template-columns:210px minmax(0,1fr) 320px;gap:18px;align-items:start}
 .wccs-admin .editor-column{min-width:0}
 .wccs-admin .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad);box-shadow:0 2px 4px #20233402;overflow:hidden}
 .wccs-admin .section-tabs{display:flex;gap:3px;overflow:auto;border-bottom:1px solid var(--border);padding:0 15px;scrollbar-width:thin}
@@ -225,7 +225,10 @@ body:has(.wccs-admin) #wpfooter {
 .wccs-admin .section-tabs button.active{color:var(--brand);border-bottom-color:var(--brand);font-weight:650}
 .wccs-admin .section-tabs button small{font-size:9px;background:var(--bg);border-radius:4px;min-width:17px;padding:1px 4px}
 .wccs-admin .section-tabs button.active small{background:var(--soft)}
-.wccs-admin .builder-header{padding:23px 22px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.wccs-admin .builder-header{padding:23px 22px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;row-gap:10px}
+.wccs-admin .builder-header .panel-heading{flex:1 1 260px;min-width:0}
+.wccs-admin .builder-header .badge{white-space:nowrap}
+.wccs-admin .builder-header .text-btn{white-space:nowrap}
 .wccs-admin .panel-heading{display:flex;align-items:center;gap:12px}
 .wccs-admin .section-icon{display:grid;place-items:center;width:38px;height:38px;background:var(--soft);color:var(--brand);border-radius:11px}
 .wccs-admin .panel-heading h2{font-size:15px;font-weight:650;letter-spacing:-.2px}
@@ -561,7 +564,7 @@ body:has(.wccs-admin) #wpfooter {
 .wccs-admin .topbar{padding:14px 46px}
 .wccs-admin .app{grid-template-columns:240px minmax(0,1fr)}
 .wccs-admin .sidebar{padding-left:20px;padding-right:20px}
-.wccs-admin .editor-grid{grid-template-columns:minmax(0,1fr) 355px;gap:28px}
+.wccs-admin .editor-grid{grid-template-columns:224px minmax(0,1fr) 336px;gap:20px}
 .wccs-admin .field-row{min-height:81px}
 .wccs-admin .field-info code{max-width:360px}
 .wccs-admin .field-name strong{font-size:13px}
@@ -584,7 +587,7 @@ body:has(.wccs-admin) #wpfooter {
 .wccs-admin .topbar{padding:13px 25px}
 .wccs-admin .breadcrumb span:last-child,.wccs-admin .breadcrumb span:nth-last-child(2){display:none}
 .wccs-admin h1{font-size:25px}
-.wccs-admin .editor-grid{grid-template-columns:minmax(0,1fr) 288px;gap:18px}
+.wccs-admin .editor-grid{grid-template-columns:196px minmax(0,1fr) 288px;gap:14px}
 .wccs-admin .section-tabs{padding:0 9px}
 .wccs-admin .section-tabs button{font-size:10px;padding:14px 8px;gap:5px}
 .wccs-admin .builder-header{padding:20px 18px 17px}
@@ -969,4 +972,64 @@ body:has(.wccs-admin) #wpfooter {
 .wccs-admin .native-support li small {
 	margin-left: auto;
 	font-size: 9px;
+}
+
+/* ------------------------------------------------- As seções do checkout */
+
+/* A lista da esquerda (§6.4). Era uma tira horizontal de separadores — só o nome
+   e a contagem; passa a ser a lista do desenho, com lugar para a frase que diz o
+   que a seção guarda, porque a escolha é entre seções e não entre etiquetas. */
+.wccs-admin .sections-panel{position:sticky;top:16px}
+.wccs-admin .sections-head{padding:18px 16px 12px}
+.wccs-admin .sections-head h2{font-size:13px;font-weight:650;letter-spacing:-.1px}
+.wccs-admin .sections-head p{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.45}
+.wccs-admin .sections-panel .section-tabs{display:flex;flex-direction:column;gap:2px;overflow:visible;border:0;padding:0 10px 10px}
+.wccs-admin .sections-panel .section-tabs button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 10px;border:0;border-radius:9px;background:none;color:var(--ink);font-size:11px;white-space:normal}
+.wccs-admin .sections-panel .section-tabs button:hover{background:var(--bg)}
+.wccs-admin .sections-panel .section-tabs button.active{background:var(--soft);color:var(--brand);font-weight:650}
+.wccs-admin .section-row-icon{display:grid;place-items:center;flex:0 0 26px;height:26px;border-radius:8px;background:var(--bg);color:var(--muted)}
+.wccs-admin .sections-panel .section-tabs button.active .section-row-icon{background:#fff;color:var(--brand)}
+.wccs-admin .section-row-text{display:grid;gap:1px;min-width:0;flex:1 1 auto}
+.wccs-admin .section-row-text strong{font-size:11px;font-weight:600;color:inherit}
+.wccs-admin .section-row-text small{font-size:9px;color:var(--muted);line-height:1.35}
+.wccs-admin .section-row-count{flex:0 0 auto;font-size:9px;background:var(--bg);border-radius:4px;padding:1px 5px;color:var(--muted)}
+.wccs-admin .sections-add{display:flex;align-items:center;justify-content:center;gap:7px;width:calc(100% - 20px);margin:2px 10px 12px;padding:9px;border:1px dashed var(--border);border-radius:9px;background:none;color:var(--muted);font-size:11px}
+.wccs-admin .sections-add:hover{border-color:var(--brand);color:var(--brand)}
+
+/* O mesmo botão tracejado dentro da lista de campos: onde o campo nasce. */
+.wccs-admin .add-field-inline{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 44px);margin:14px 22px 0;padding:11px;border:1px dashed var(--border);border-radius:10px;background:none;color:var(--brand);font-size:11px;font-weight:600}
+.wccs-admin .add-field-inline:hover{border-color:var(--brand);background:var(--soft)}
+
+/* A prévia da seção: o mesmo documento, os mesmos rótulos. */
+.wccs-admin .section-preview{margin:20px 22px 0;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
+.wccs-admin .section-preview-head h3{font-size:12px;font-weight:650}
+.wccs-admin .section-preview-head p{font-size:10px;color:var(--muted);margin-top:3px}
+.wccs-admin .section-preview-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;margin-top:14px}
+.wccs-admin .section-preview-field{display:grid;gap:4px;min-width:0}
+.wccs-admin .section-preview-field .sample-label{font-size:10px;font-weight:600;color:var(--ink)}
+.wccs-admin .section-preview-control{display:block;min-height:30px;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface);font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* O interruptor do título da seção, no cabeçalho do meio (§6.4). */
+.wccs-admin .builder-header .section-title-switch{display:flex;align-items:center;gap:8px;margin-left:auto;padding:0;font-size:10px;color:var(--muted);white-space:nowrap;cursor:pointer}
+.wccs-admin .builder-header .section-title-switch input{order:2}
+.wccs-admin .builder-header .section-title-switch span{order:1;font-weight:600}
+
+/* O painel «Adicionar campo» da direita. */
+.wccs-admin .add-field-panel{padding:20px 20px 22px}
+.wccs-admin .add-field-head{margin-bottom:8px}
+.wccs-admin .add-field-head h2{font-size:15px;font-weight:650;letter-spacing:-.2px}
+.wccs-admin .add-field-actions{display:grid;gap:8px;margin-top:14px}
+.wccs-admin .add-field-actions .btn{width:100%;justify-content:center}
+.wccs-admin .add-field-native{margin-top:18px;border-top:1px solid var(--border);padding-top:14px}
+.wccs-admin .add-field-native h3{font-size:11px;font-weight:650}
+.wccs-admin .add-field-native p{margin-top:4px}
+.wccs-admin .add-field-native-list{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:2px}
+.wccs-admin .add-field-native-list li{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:6px 0}
+.wccs-admin .add-field-native-list span{display:grid;min-width:0}
+.wccs-admin .add-field-native-list strong{font-size:11px;font-weight:600}
+.wccs-admin .add-field-native-list code{font-size:9px;color:var(--muted);font-family:ui-monospace,monospace}
+
+@media (max-width:1280px){
+  .wccs-admin .editor-grid{grid-template-columns:minmax(0,1fr) 288px}
+  .wccs-admin .sections-panel{display:none}
 }
