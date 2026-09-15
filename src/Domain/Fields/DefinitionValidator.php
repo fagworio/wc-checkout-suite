@@ -265,7 +265,7 @@ final class DefinitionValidator {
 	 * @return array<int, string>
 	 */
 	public static function customer_surfaces(): array {
-		return array( 'customer_account', 'admin_customer' );
+		return array( 'customer_account', 'admin_customer_profile' );
 	}
 
 	/**

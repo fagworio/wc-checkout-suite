@@ -243,7 +243,7 @@ function wccs_proof_document(): array {
 					'admin_email'      => array( 'enabled' => false ),
 					'public_api'       => array( 'enabled' => false ),
 					'customer_account' => $link( 'perfil', 'Preferência do perfil', 10 ),
-					'admin_customer'   => $link( 'perfil', 'Preferência (equipa)', 10 ),
+					'admin_customer_profile'   => $link( 'perfil', 'Preferência (equipa)', 10 ),
 					'order_received'   => array( 'enabled' => false ),
 				),
 				// The profile area is the customer's own page, so the value it
@@ -278,7 +278,7 @@ function wccs_proof_document(): array {
 				'perfil',
 				'Documentos do perfil',
 				40,
-				array( 'customer_account', 'admin_customer' ),
+				array( 'customer_account', 'admin_customer_profile' ),
 				array(
 					'slug'       => 'preferencias',
 					'menu_label' => 'Preferências',
@@ -653,7 +653,7 @@ wccs_proof_check(
 	'The staff panel shows the field under the title its own link configured',
 	str_contains( $wccs_staff_panel, 'Preferência (equipa)' )
 		&& str_contains( $wccs_staff_panel, 'Documentos do perfil' ),
-	'admin_customer'
+	'admin_customer_profile'
 );
 
 wccs_proof_check(

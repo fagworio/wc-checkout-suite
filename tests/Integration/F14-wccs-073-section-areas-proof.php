@@ -240,7 +240,7 @@ wccs_proof_check(
 		&& in_array( 'customer_email', $wccs_areas, true )
 		&& in_array( 'admin_email', $wccs_areas, true )
 		&& in_array( 'customer_account', $wccs_areas, true )
-		&& in_array( 'admin_customer', $wccs_areas, true ),
+		&& in_array( 'admin_customer_profile', $wccs_areas, true ),
 	'count=' . count( $wccs_areas )
 );
 
@@ -294,18 +294,37 @@ foreach ( $wccs_stored->fields() as $wccs_raw_field ) {
 	}
 }
 
+// A container belongs to one destination in the final model
+// (`roadmap/WC-CheckoutSuite-Especificacao-Completa-com-Referencias-Visuais` §3.2), so a
+// section the merchant offered in two areas is read as two containers: the first keeps the
+// identifier it always had and the other derives one from it. Nothing is lost — the name,
+// the position and the fields are the same — and each destination link now points at the
+// variant of its own destination.
 wccs_proof_check(
-	'There is one section, offered in both areas',
-	1 === count( $wccs_sections )
-		&& array( 'admin_order', 'customer_order' ) === ( $wccs_sections['documentos'] ?? array() ),
+	'A section offered in two areas is read as one container per destination',
+	2 === count( $wccs_sections )
+		&& array( 'admin_order' ) === ( $wccs_sections['documentos'] ?? array() )
+		&& array( 'customer_order' ) === ( $wccs_sections['documentos__customer_order'] ?? array() ),
 	'sections=' . wp_json_encode( $wccs_sections )
 );
 
 wccs_proof_check(
-	'Both destinations point at the same section',
+	'And each destination points at the container of its own area',
 	'documentos' === ( $wccs_links['admin_order'] ?? '' )
-		&& 'documentos' === ( $wccs_links['customer_order'] ?? '' ),
+		&& 'documentos__customer_order' === ( $wccs_links['customer_order'] ?? '' ),
 	'links=' . wp_json_encode( $wccs_links )
+);
+
+$wccs_names = array();
+
+foreach ( $wccs_stored->sections() as $wccs_raw_section ) {
+	$wccs_names[] = \WCCheckoutSuite\Domain\Sections\ContainerDefinition::from_array( $wccs_raw_section )->name();
+}
+
+wccs_proof_check(
+	'And the two containers carry the same name and position, so the split loses nothing',
+	array( 'Documentos', 'Documentos' ) === $wccs_names,
+	'names=' . wp_json_encode( $wccs_names )
 );
 
 // ---------------------------------------------------------------------------

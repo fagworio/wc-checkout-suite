@@ -262,8 +262,10 @@ final class SchemaDiffTest extends TestCase {
 			$this->document( array(), array( array_merge( $section, array( 'title' => 'Outra' ) ) ), 2 )
 		);
 
+		// The canonical key of a container's name is `name`; `title` follows it as the read
+		// projection the surfaces still use, so a rename is reported once, by its own key.
 		self::assertSame(
-			'title',
+			'name',
 			$changed['sections']['changed'][0]['differences'][0]['key']
 		);
 	}

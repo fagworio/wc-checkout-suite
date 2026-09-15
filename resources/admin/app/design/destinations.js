@@ -124,7 +124,7 @@ export const DESTINATIONS = [
 		},
 	},
 	{
-		id: 'admin_customer',
+		id: 'admin_customer_profile',
 		label: __( 'Perfil do cliente', 'wc-checkoutsuite' ),
 		description: __(
 			'Admin → Usuários → editar cliente.',

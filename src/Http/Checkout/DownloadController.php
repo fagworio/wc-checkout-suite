@@ -46,7 +46,7 @@ final class DownloadController {
 	 *
 	 * @var array<int, string>
 	 */
-	private const STAFF_DESTINATIONS = array( 'admin_order', 'admin_email', 'admin_customer' );
+	private const STAFF_DESTINATIONS = array( 'admin_order', 'admin_email', 'admin_customer_profile' );
 
 	/**
 	 * The destinations the customer of the order may ask from.

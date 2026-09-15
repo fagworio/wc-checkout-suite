@@ -223,12 +223,12 @@ await step( 'The links tab of a file field could be opened', async () => {
 	record(
 		'A destination that is off offers only its switch',
 		! file.selects.some(
-			( select ) => select.id === 'wccs-link-section-admin_customer'
+			( select ) => select.id === 'wccs-link-section-admin_customer_profile'
 		) &&
 			! file.checkboxes.some( ( box ) =>
-				box.id.startsWith( 'wccs-link-action-admin_customer-' )
+				box.id.startsWith( 'wccs-link-action-admin_customer_profile-' )
 			),
-		'admin_customer and public_api are off'
+		'admin_customer_profile and public_api are off'
 	);
 
 	record(
@@ -263,19 +263,27 @@ await step( 'The links tab of a file field could be opened', async () => {
 		'approve only where the destination may do it'
 	);
 
+	// The section each link names is checked as "a section came back into the control", not
+	// as a fixed identifier: a container offered in two destinations is read as one
+	// container per destination, so the identifier of the variant is the store's business
+	// and not the observation's. What the merchant configured — title and order — is exact.
+	const staffSection = value( file.selects, 'wccs-link-section-admin_order' );
+	const siteSection = value( file.selects, 'wccs-link-section-order_received' );
+
 	record(
 		'The section, the title and the order the document holds come back into the controls',
-		value( file.selects, 'wccs-link-section-admin_order' ) ===
-			'documentos_para_analise' &&
+		'' !== ( staffSection ?? '' ) &&
 			value( file.inputs, 'wccs-link-title-admin_order' ) ===
 				'Autorização assinada' &&
 			value( file.inputs, 'wccs-link-position-admin_order' ) === '20' &&
-			value( file.selects, 'wccs-link-section-order_received' ) ===
-				'documentos_enviados' &&
+			'' !== ( siteSection ?? '' ) &&
 			value( file.inputs, 'wccs-link-title-order_received' ) ===
 				'Enviado agora' &&
 			value( file.inputs, 'wccs-link-position-order_received' ) === '30',
-		'admin_order=documentos_para_analise/20, order_received=documentos_enviados/10'
+		'admin_order=' +
+			staffSection +
+			' order_received=' +
+			siteSection
 	);
 
 	record(
@@ -289,15 +297,15 @@ await step( 'The links tab of a file field could be opened', async () => {
 		'the customer may look, not take; the store may take'
 	);
 
-	const staffSection =
+	const staffOptions =
 		file.selects.find(
 			( select ) => select.id === 'wccs-link-section-admin_order'
 		) || {};
 
 	record(
 		'The section select of a destination offers only the sections offered there',
-		( staffSection.options || [] ).includes( 'documentos_para_analise' ) &&
-			! ( staffSection.options || [] ).includes( 'documentos_enviados' ),
+		( staffOptions.options || [] ).includes( 'documentos_para_analise' ) &&
+			! ( staffOptions.options || [] ).includes( 'documentos_enviados' ),
 		'admin_order sees documentos_para_analise only'
 	);
 

@@ -5,11 +5,11 @@
  * What this harness proves, in order:
  *
  * 1. **The panel exists, and only where it was configured.** A section offered in
- *    `admin_customer` renders on the profile screen with its fields; a store that offers
+ *    `admin_customer_profile` renders on the profile screen with its fields; a store that offers
  *    no section there renders nothing at all, and a person who may not edit the user is
  *    shown nothing.
  * 2. **It shows the links, not the document.** Each field appears under the title and in
- *    the order its `admin_customer` link configured; a field linked to another surface is
+ *    the order its `admin_customer_profile` link configured; a field linked to another surface is
  *    not there; a link in `view` mode renders a value and no control.
  * 3. **The value round-trips through the customer store.** A submitted panel validates
  *    with the same processor the checkout uses, is written to the customer, and is what
@@ -156,7 +156,7 @@ function wccs_panel_document( bool $with_panel = true ): array {
 			'description'  => 'O que a loja sabe sobre o cliente.',
 			'position'     => 10,
 			'location'     => 'account',
-			'areas'        => array( 'admin_customer' ),
+			'areas'        => array( 'admin_customer_profile' ),
 			'presentation' => array( 'show_title' => true ),
 		);
 	}
@@ -187,7 +187,7 @@ function wccs_panel_document( bool $with_panel = true ): array {
 				'text',
 				10,
 				array(
-					'admin_customer' => array(
+					'admin_customer_profile' => array(
 						'enabled'  => true,
 						'section'  => 'dados_do_cliente',
 						'title'    => 'Registo profissional',
@@ -203,7 +203,7 @@ function wccs_panel_document( bool $with_panel = true ): array {
 				'text',
 				20,
 				array(
-					'admin_customer' => array(
+					'admin_customer_profile' => array(
 						'enabled'  => true,
 						'section'  => 'dados_do_cliente',
 						'title'    => 'Empresa onde trabalha',
@@ -218,7 +218,7 @@ function wccs_panel_document( bool $with_panel = true ): array {
 				'text',
 				30,
 				array(
-					'admin_customer' => array(
+					'admin_customer_profile' => array(
 						'enabled'  => true,
 						'section'  => 'dados_do_cliente',
 						'title'    => 'Plano contratado',

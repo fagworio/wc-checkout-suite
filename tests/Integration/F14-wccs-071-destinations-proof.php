@@ -348,7 +348,7 @@ $wccs_configured_field = wccs_proof_field(
 			'admin_email'      => array( 'enabled' => false ),
 			'order_received'   => array( 'enabled' => false ),
 			'customer_account' => array( 'enabled' => false ),
-			'admin_customer'   => array( 'enabled' => false ),
+			'admin_customer_profile'   => array( 'enabled' => false ),
 			'public_api'       => array( 'enabled' => false ),
 		),
 	)
@@ -381,7 +381,7 @@ wccs_proof_check(
 		&& false === ( $wccs_dest['customer_email']['enabled'] ?? null )
 		&& false === ( $wccs_dest['order_received']['enabled'] ?? null )
 		&& false === ( $wccs_dest['customer_account']['enabled'] ?? null )
-		&& false === ( $wccs_dest['admin_customer']['enabled'] ?? null ),
+		&& false === ( $wccs_dest['admin_customer_profile']['enabled'] ?? null ),
 	'email=' . wp_json_encode( $wccs_dest['customer_email']['enabled'] ?? null )
 );
 

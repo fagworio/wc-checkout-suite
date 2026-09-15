@@ -1794,7 +1794,7 @@ export default function FieldsScreen( {
 										variant="primary"
 										onClick={ () =>
 											chooseDestination(
-												'admin_customer'
+												'admin_customer_profile'
 											)
 										}
 									>

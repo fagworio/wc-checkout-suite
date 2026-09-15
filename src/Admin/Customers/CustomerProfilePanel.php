@@ -46,7 +46,7 @@ final class CustomerProfilePanel {
 	/**
 	 * The destination this surface serves.
 	 */
-	public const DESTINATION = 'admin_customer';
+	public const DESTINATION = 'admin_customer_profile';
 
 	/**
 	 * Field name prefix of a submitted value.

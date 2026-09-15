@@ -71,7 +71,7 @@ final class SectionValidator {
 	 *
 	 * @var array<int,string>
 	 */
-	private const CUSTOMER_SURFACES = array( 'customer_account', 'admin_customer' );
+	private const CUSTOMER_SURFACES = array( 'customer_account', 'admin_customer_profile' );
 
 	/**
 	 * Validates a section definition on its own.

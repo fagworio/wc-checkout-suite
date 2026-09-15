@@ -907,15 +907,15 @@ describe( 'the retired destination key', () => {
 
 		const staff = resolveAmbiguousDestinations(
 			document,
-			'admin_customer'
+			'admin_customer_profile'
 		);
 
 		expect( staff.changed ).toBe( true );
 		expect(
 			Object.keys( staff.document.fields[ 0 ].destinations )
-		).toEqual( [ 'admin_customer' ] );
+		).toEqual( [ 'admin_customer_profile' ] );
 		expect(
-			staff.document.fields[ 0 ].destinations.admin_customer
+			staff.document.fields[ 0 ].destinations.admin_customer_profile
 		).toEqual( {
 			enabled: true,
 			section: 'dados_profissionais',
@@ -924,7 +924,7 @@ describe( 'the retired destination key', () => {
 			mode: 'edit',
 		} );
 		expect( staff.document.sections[ 0 ].areas ).toEqual( [
-			'admin_customer',
+			'admin_customer_profile',
 		] );
 		expect( ambiguousDestinations( staff.document ) ).toEqual( [] );
 

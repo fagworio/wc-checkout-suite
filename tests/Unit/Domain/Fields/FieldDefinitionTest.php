@@ -141,4 +141,159 @@ final class FieldDefinitionTest extends TestCase {
 		$this->assertSame( 'custom', $this->definition()->origin() );
 		$this->assertSame( 'core', $this->definition( array( 'origin' => 'core' ) )->origin() );
 	}
+
+	/**
+	 * A document written before bindings is read as bindings, one per enabled destination.
+	 *
+	 * @return void
+	 */
+	public function test_a_stored_destination_map_becomes_bindings(): void {
+		$definition = $this->definition(
+			array(
+				'destinations' => array(
+					'admin_order'      => array(
+						'enabled'  => true,
+						'section'  => 'documentos',
+						'title'    => 'Documento fiscal',
+						'position' => 20,
+						'mode'     => 'view',
+						'actions'  => array( 'show_metadata', 'view' ),
+					),
+					'customer_account' => array( 'enabled' => false ),
+					'public_api'       => array( 'enabled' => false ),
+				),
+			)
+		);
+
+		$bindings = $definition->bindings();
+
+		self::assertCount( 1, $bindings, 'a destination that is off is not a use of the field' );
+		self::assertSame( 'admin_order', $bindings[0]->destination() );
+		self::assertSame( 'documentos', $bindings[0]->container_id() );
+		self::assertSame( 'Documento fiscal', $bindings[0]->label_override() );
+		self::assertFalse( $bindings[0]->is_editable() );
+		self::assertTrue( $definition->shows_in( 'admin_order' ) );
+		self::assertFalse( $definition->shows_in( 'customer_account' ) );
+		self::assertFalse( $definition->is_canonical() );
+	}
+
+	/**
+	 * The same field can be used twice in the same destination — the reason bindings exist.
+	 *
+	 * @return void
+	 */
+	public function test_a_canonical_document_can_hold_two_bindings_in_one_destination(): void {
+		$definition = $this->definition(
+			array(
+				'bindings' => array(
+					array(
+						'field_id'       => 'wccs_size',
+						'container_id'   => 'medidas_cliente',
+						'destination'    => 'customer_account',
+						'label_override' => 'Tamanho atual',
+						'position'       => 10,
+						'visible'        => true,
+						'editable'       => true,
+					),
+					array(
+						'field_id'       => 'wccs_size',
+						'container_id'   => 'medidas_pedido',
+						'destination'    => 'customer_order',
+						'label_override' => 'Tamanho do pedido',
+						'position'       => 20,
+						'visible'        => true,
+						'editable'       => false,
+						'permissions'    => array( 'view' ),
+					),
+				),
+			)
+		);
+
+		self::assertTrue( $definition->is_canonical() );
+		self::assertCount( 2, $definition->bindings() );
+
+		$customer = $definition->bindings_for( 'customer_account' );
+		$order    = $definition->bindings_for( 'customer_order' );
+
+		self::assertCount( 1, $customer );
+		self::assertCount( 1, $order );
+		self::assertSame( 'medidas_cliente', $customer[0]->container_id() );
+		self::assertSame( 'Tamanho atual', $customer[0]->title_for( 'Size' ) );
+		self::assertTrue( $customer[0]->is_editable() );
+		self::assertSame( 'Tamanho do pedido', $order[0]->title_for( 'Size' ) );
+		self::assertFalse( $order[0]->is_editable() );
+		self::assertSame( array( 'view' ), $order[0]->permissions() );
+		self::assertTrue( $definition->shows_in( 'customer_account' ) );
+		self::assertTrue( $definition->shows_in( 'customer_order' ) );
+	}
+
+	/**
+	 * A canonical document writes its bindings and the map derived from them.
+	 *
+	 * The two shapes cannot disagree because only one of them is stored: the map the
+	 * surfaces read is projected from the bindings on the way out.
+	 *
+	 * @return void
+	 */
+	public function test_a_canonical_document_writes_both_shapes_consistently(): void {
+		$definition = $this->definition(
+			array(
+				'bindings' => array(
+					array(
+						'field_id'       => 'wccs_size',
+						'container_id'   => 'medidas',
+						'destination'    => 'customer_account',
+						'label_override' => 'Tamanho atual',
+						'position'       => 30,
+						'visible'        => true,
+						'editable'       => true,
+						'permissions'    => array( 'show_metadata', 'view' ),
+					),
+				),
+			)
+		);
+
+		$array = $definition->to_array();
+
+		self::assertCount( 1, $array['bindings'] );
+		self::assertSame( 'wccs_size@customer_account/medidas', $array['bindings'][0]['id'] );
+		self::assertSame(
+			array(
+				'enabled'  => true,
+				'section'  => 'medidas',
+				'title'    => 'Tamanho atual',
+				'position' => 30,
+				'mode'     => 'edit',
+				'actions'  => array( 'show_metadata', 'view' ),
+			),
+			$array['destinations']['customer_account']
+		);
+	}
+
+	/**
+	 * A document written before bindings keeps the map it has, with no bindings beside it.
+	 *
+	 * A canonical list written next to a map that the editor still edits would be two
+	 * sources of truth for the same decision.
+	 *
+	 * @return void
+	 */
+	public function test_a_stored_map_is_written_back_unchanged(): void {
+		$definition = $this->definition(
+			array(
+				'destinations' => array(
+					'checkout' => array(
+						'enabled' => true,
+						'section' => 'billing',
+						'mode'    => 'edit',
+					),
+				),
+			)
+		);
+
+		$array = $definition->to_array();
+
+		self::assertSame( array(), $array['bindings'] );
+		self::assertSame( 'billing', $array['destinations']['checkout']['section'] );
+	}
 }

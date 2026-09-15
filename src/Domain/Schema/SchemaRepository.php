@@ -505,6 +505,14 @@ final class SchemaRepository {
 			return SchemaDocument::empty();
 		}
 
+		// The version migrations above move a document between schema versions. This one
+		// moves it from the model that had one link per destination and one container in
+		// several areas to the final model — one bindings list, one destination per
+		// container — so every reader and writer answers the same shape. It runs on
+		// every read and is idempotent, so a stored document is upgraded the first time it
+		// is written back, and nothing is rewritten behind the merchant's back.
+		$decoded = DocumentMigrator::migrate( $decoded )['document'];
+
 		return SchemaDocument::from_array( $decoded );
 	}
 

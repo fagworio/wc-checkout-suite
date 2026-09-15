@@ -25,7 +25,7 @@ describe( 'the destinations the editor offers', () => {
 
 		expect( ids ).toEqual(
 			[
-				'admin_customer',
+				'admin_customer_profile',
 				'admin_email',
 				'admin_order',
 				'checkout',
@@ -42,7 +42,10 @@ describe( 'the destinations the editor offers', () => {
 			isCustomerDestination( entry.id )
 		).map( ( entry ) => entry.id );
 
-		expect( customer ).toEqual( [ 'customer_account', 'admin_customer' ] );
+		expect( customer ).toEqual( [
+			'customer_account',
+			'admin_customer_profile',
+		] );
 	} );
 
 	it( 'collects only where a customer actually fills a field in', () => {
@@ -76,7 +79,7 @@ describe( 'the navigation', () => {
 					entry.members.map( ( member ) => member.id ),
 				] )
 		).toEqual( [
-			[ 'admin', [ 'admin_order', 'admin_customer' ] ],
+			[ 'admin', [ 'admin_order', 'admin_customer_profile' ] ],
 			[ 'more', [ 'order_received', 'customer_email', 'admin_email' ] ],
 		] );
 	} );
@@ -84,7 +87,7 @@ describe( 'the navigation', () => {
 	it( 'says which entry a destination belongs to', () => {
 		expect( activeEntry( 'checkout' ) ).toBe( 'checkout' );
 		expect( activeEntry( 'customer_order' ) ).toBe( 'customer_order' );
-		expect( activeEntry( 'admin_customer' ) ).toBe( 'admin' );
+		expect( activeEntry( 'admin_customer_profile' ) ).toBe( 'admin' );
 		expect( activeEntry( 'admin_order' ) ).toBe( 'admin' );
 		expect( activeEntry( 'customer_email' ) ).toBe( 'more' );
 	} );
@@ -102,7 +105,7 @@ describe( 'what each place calls the group of fields', () => {
 		expect( containerWords( 'admin_order' ).one ).toBe(
 			'Painel do pedido'
 		);
-		expect( containerWords( 'admin_customer' ).one ).toBe(
+		expect( containerWords( 'admin_customer_profile' ).one ).toBe(
 			'Painel do cliente'
 		);
 		expect( containerWords( 'customer_email' ).one ).toBe(
@@ -122,7 +125,7 @@ describe( 'what each place calls the group of fields', () => {
 			'Novo bloco'
 		);
 		expect( containerWords( 'admin_order' ).create ).toBe( 'Novo painel' );
-		expect( containerWords( 'admin_customer' ).create ).toBe(
+		expect( containerWords( 'admin_customer_profile' ).create ).toBe(
 			'Novo painel'
 		);
 		expect( containerWords( 'admin_email' ).create ).toBe( 'Novo bloco' );
@@ -141,7 +144,10 @@ describe( 'where a container appears', () => {
 			'Aparece em: Checkout'
 		);
 		expect(
-			offeredInSentence( [ 'customer_account', 'admin_customer' ] )
+			offeredInSentence( [
+				'customer_account',
+				'admin_customer_profile',
+			] )
 		).toBe( 'Aparece em: Minha conta, Perfil do cliente' );
 	} );
 

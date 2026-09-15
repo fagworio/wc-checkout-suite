@@ -169,7 +169,7 @@ final class DefinitionVocabulary {
 				'actions'     => array( 'show_metadata', 'view' ),
 			),
 			array(
-				'value'       => 'admin_customer',
+				'value'       => 'admin_customer_profile',
 				'label'       => __( 'Customer profile, for staff', 'wc-checkoutsuite' ),
 				'description' => __(
 					'Shown to staff on the customer\'s own profile screen, outside any order. The values belong to the customer, not to an order.',
@@ -335,7 +335,7 @@ final class DefinitionVocabulary {
 	 */
 	public static function replacements_for_ambiguous_destination( string $destination ): array {
 		return in_array( $destination, self::AMBIGUOUS_DESTINATIONS, true )
-			? array( 'customer_account', 'admin_customer' )
+			? array( 'customer_account', 'admin_customer_profile' )
 			: array();
 	}
 

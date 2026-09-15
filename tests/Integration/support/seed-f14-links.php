@@ -202,7 +202,7 @@ $wccs_fields = array(
 					'position' => 10,
 					'mode'     => 'edit',
 				),
-				'admin_customer'   => array(
+				'admin_customer_profile'   => array(
 					'enabled'  => true,
 					'section'  => 'preferencias_do_perfil',
 					'title'    => 'Preferência de contacto (equipa)',
@@ -349,7 +349,7 @@ $wccs_sections = array(
 		'title'        => 'Preferências',
 		'position'     => 60,
 		'location'     => 'order',
-		'areas'        => array( 'customer_account', 'admin_customer' ),
+		'areas'        => array( 'customer_account', 'admin_customer_profile' ),
 		// A section offered in the profile area is an authenticated page in My Account:
 		// its own address, its own entry in the account menu, and the icon the design
 		// draws for it.

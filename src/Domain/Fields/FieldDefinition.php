@@ -46,6 +46,8 @@ final class FieldDefinition {
 	 * @param array<string, mixed>             $destinations       Where the answer may be shown, per destination.
 	 * @param array<string, mixed>|null        $approval           Optional approval flow, or null.
 	 * @param string                           $collection_surface Where the field is collected.
+	 * @param array<int, array<string, mixed>> $bindings           Every use of the field, in the final model.
+	 * @param bool                             $canonical          Whether the document stored `bindings`.
 	 */
 	public function __construct(
 		private string $id,
@@ -70,7 +72,9 @@ final class FieldDefinition {
 		private int $schema_version,
 		private array $destinations = array(),
 		private ?array $approval = null,
-		private string $collection_surface = 'checkout'
+		private string $collection_surface = 'checkout',
+		private array $bindings = array(),
+		private bool $canonical = false
 	) {
 	}
 
@@ -82,6 +86,30 @@ final class FieldDefinition {
 	 * does not lose what it had configured; a document carrying neither has **no
 	 * destination enabled**, which is the rule ROADMAP.md section 4 states — nothing
 	 * appears anywhere without explicit configuration.
+	 *
+	 * @param array<string, mixed> $data Raw definition.
+	 * @return array<string, mixed>
+	 */
+	/**
+	 * The uses a stored definition carries, when it carries the final model.
+	 *
+	 * @param array<string, mixed> $data Raw definition.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function bindings_from( array $data ): array {
+		if ( ! isset( $data['bindings'] ) || ! is_array( $data['bindings'] ) ) {
+			return array();
+		}
+
+		return array_values( array_filter( $data['bindings'], 'is_array' ) );
+	}
+
+	/**
+	 * Where the answer may be shown, in whichever shape the document stores it.
+	 *
+	 * A document that carries the `destinations` map is taken as it is; one that carries
+	 * only the flat audience map of the oldest versions is migrated, so a store upgrading
+	 * does not lose what it had configured.
 	 *
 	 * @param array<string, mixed> $data Raw definition.
 	 * @return array<string, mixed>
@@ -140,7 +168,9 @@ final class FieldDefinition {
 			isset( $data['schema_version'] ) ? (int) $data['schema_version'] : 1,
 			self::destinations_from( $data ),
 			isset( $data['approval'] ) && is_array( $data['approval'] ) ? $data['approval'] : null,
-			isset( $data['collection_surface'] ) ? (string) $data['collection_surface'] : 'checkout'
+			isset( $data['collection_surface'] ) ? (string) $data['collection_surface'] : 'checkout',
+			self::bindings_from( $data ),
+			isset( $data['bindings'] ) && is_array( $data['bindings'] )
 		);
 	}
 
@@ -156,11 +186,81 @@ final class FieldDefinition {
 	/**
 	 * Whether one destination is enabled for this field.
 	 *
+	 * A field may be bound into the same destination more than once (§3.3), so the
+	 * question is answered by the bindings: there is at least one for that destination.
+	 *
 	 * @param string $destination Destination key.
 	 * @return bool
 	 */
 	public function shows_in( string $destination ): bool {
-		return ! empty( $this->destinations[ $destination ]['enabled'] );
+		return array() !== $this->bindings_for( $destination );
+	}
+
+	/**
+	 * Every use of this field, in the final model.
+	 *
+	 * A document written before bindings existed carries a map of destination links
+	 * instead; each *enabled* link is one use, and it is read through
+	 * {@see FieldBinding::from_link()} so both shapes answer the same questions. The order
+	 * is stable — by destination, then by position — because a projection that reorders
+	 * itself between reads is a projection nobody can test.
+	 *
+	 * @return array<int, FieldBinding>
+	 */
+	public function bindings(): array {
+		if ( ! $this->canonical ) {
+			$derived = array();
+
+			foreach ( $this->destinations as $destination => $link ) {
+				if ( ! is_array( $link ) || empty( $link['enabled'] ) ) {
+					continue;
+				}
+
+				$derived[] = FieldBinding::from_link( $this->id, (string) $destination, $link );
+			}
+
+			usort( $derived, static fn( FieldBinding $a, FieldBinding $b ): int => $a->destination() <=> $b->destination() );
+
+			return $derived;
+		}
+
+		$bindings = array();
+
+		foreach ( $this->bindings as $raw ) {
+			if ( is_array( $raw ) ) {
+				$bindings[] = FieldBinding::from_array( $raw );
+			}
+		}
+
+		return $bindings;
+	}
+
+	/**
+	 * The uses of this field in one destination.
+	 *
+	 * @param string $destination Destination key.
+	 * @return array<int, FieldBinding>
+	 */
+	public function bindings_for( string $destination ): array {
+		return array_values(
+			array_filter(
+				$this->bindings(),
+				static fn( FieldBinding $binding ): bool => $binding->destination() === $destination
+			)
+		);
+	}
+
+	/**
+	 * Whether the stored definition carries the final model.
+	 *
+	 * It decides what {@see self::to_array()} writes: a document keeps the shape it was
+	 * written in until the migration layer converts it, so an editor that still edits the
+	 * destination map cannot end up with a canonical list that disagrees with it.
+	 *
+	 * @return bool
+	 */
+	public function is_canonical(): bool {
+		return $this->canonical;
 	}
 
 	/**
@@ -374,10 +474,42 @@ final class FieldDefinition {
 			'conditions'          => $this->conditions,
 			'hidden_value_policy' => $this->hidden_value_policy,
 			'storage'             => $this->storage,
-			'destinations'        => $this->destinations,
+			// A canonical document writes its bindings and the map derived from them. A
+			// document written before the split keeps the map it has, and gains bindings
+			// only when the migration layer converts it.
+			'bindings'            => $this->canonical ? $this->exported_bindings() : array(),
+			'destinations'        => $this->exported_destinations(),
 			'approval'            => $this->approval,
 			'collection_surface'  => $this->collection_surface,
 			'schema_version'      => $this->schema_version,
 		);
+	}
+
+	/**
+	 * The bindings as they are written back.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function exported_bindings(): array {
+		return array_values( array_map( static fn( FieldBinding $binding ): array => $binding->to_array(), $this->bindings() ) );
+	}
+
+	/**
+	 * The destination map the surfaces read, derived from the bindings.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function exported_destinations(): array {
+		if ( ! $this->canonical ) {
+			return $this->destinations;
+		}
+
+		$map = $this->destinations;
+
+		foreach ( $this->bindings() as $binding ) {
+			$map[ $binding->destination() ] = $binding->to_link();
+		}
+
+		return $map;
 	}
 }

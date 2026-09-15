@@ -85,7 +85,7 @@ const REPAIRABLE_DESTINATION_AREAS = new Set( [
 	'customer_email',
 	'admin_email',
 	'customer_account',
-	'admin_customer',
+	'admin_customer_profile',
 	'public_api',
 ] );
 
@@ -99,8 +99,8 @@ const REPAIRABLE_DESTINATION_AREAS = new Set( [
  * in the areas the same key named.
  */
 export const AMBIGUOUS_DESTINATION_REPLACEMENTS: Record< string, string[] > = {
-	customer_profile: [ 'customer_account', 'admin_customer' ],
-	my_account: [ 'customer_account', 'admin_customer' ],
+	customer_profile: [ 'customer_account', 'admin_customer_profile' ],
+	my_account: [ 'customer_account', 'admin_customer_profile' ],
 };
 
 /**

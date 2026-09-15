@@ -269,12 +269,12 @@ final class SectionValidatorTest extends TestCase {
 			$this->section(
 				array(
 					'id'    => 'documentos_do_cliente',
-					'areas' => array( 'admin_customer' ),
+					'areas' => array( 'admin_customer_profile' ),
 				)
 			),
 		);
 
-		foreach ( array( 'customer_account', 'admin_customer' ) as $surface ) {
+		foreach ( array( 'customer_account', 'admin_customer_profile' ) as $surface ) {
 			$refused = SectionValidator::validate_references(
 				$sections,
 				array(
