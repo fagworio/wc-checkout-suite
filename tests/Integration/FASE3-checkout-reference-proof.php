@@ -393,6 +393,99 @@ wccs_proof_note(
 );
 
 // ---------------------------------------------------------------------------
+// 5. Editing a native field never becomes a silent copy (§6.7).
+// ---------------------------------------------------------------------------
+$wccs_ref_adapter_section = array(
+	array(
+		'id'       => 'billing',
+		'title'    => 'Cobrança',
+		'location' => 'billing',
+		'position' => 10,
+	),
+);
+
+$wccs_ref_blocks = new \WCCheckoutSuite\Checkout\Blocks\BlocksAdapter();
+
+$wccs_ref_core_definition = array(
+	'id'             => 'billing_first_name',
+	'integration_id' => 'billing_first_name',
+	'origin'         => 'core',
+	'type'           => 'text',
+	'label'          => 'Nome',
+	'section'        => 'billing',
+	'enabled'        => true,
+	'required'       => true,
+	'position'       => 10,
+	'layout'         => array(),
+	'settings'       => array(),
+	'conditions'     => array(),
+	'storage'        => array(
+		'scope'       => 'order',
+		'sensitivity' => 'personal',
+	),
+	'destinations'   => array(),
+);
+
+$wccs_ref_translated = $wccs_ref_blocks->apply( array( $wccs_ref_core_definition ), $wccs_ref_adapter_section );
+
+wccs_proof_check(
+	'A native field is not registered with the additional-fields API',
+	array() === $wccs_ref_translated['registrations'] &&
+		'core_field_not_registered' === ( $wccs_ref_translated['report'][0]['code'] ?? '' ),
+	'registrations=' . count( $wccs_ref_translated['registrations'] ) . ' code=' . ( $wccs_ref_translated['report'][0]['code'] ?? '(none)' )
+);
+
+$wccs_ref_custom           = $wccs_ref_core_definition;
+$wccs_ref_custom['id']     = 'wccs_campo_proprio';
+$wccs_ref_custom['origin'] = 'custom';
+
+$wccs_ref_custom_translated = $wccs_ref_blocks->apply( array( $wccs_ref_custom ), $wccs_ref_adapter_section );
+
+wccs_proof_check(
+	'While a field this plugin owns is still registered, so the rule is the origin',
+	1 === count( $wccs_ref_custom_translated['registrations'] ) &&
+		array() === $wccs_ref_custom_translated['report'],
+	'registrations=' . count( $wccs_ref_custom_translated['registrations'] )
+);
+
+$wccs_ref_classic = new \WCCheckoutSuite\Checkout\Classic\ClassicAdapter();
+$wccs_ref_fields  = array(
+	'billing' => array(
+		'billing_first_name' => array(
+			'label'    => 'Nome',
+			'type'     => 'text',
+			'required' => true,
+			'priority' => 10,
+		),
+	),
+);
+
+$wccs_ref_applied = $wccs_ref_classic->apply(
+	$wccs_ref_fields,
+	array(
+		array_merge(
+			$wccs_ref_core_definition,
+			array(
+				'label'    => 'Nome completo',
+				// The definition says the field is not required; the store says it is. The
+				// adapter writes presentation and leaves the platform's contract alone, which
+				// is what §6.7 promises the merchant.
+				'required' => false,
+			)
+		),
+	)
+);
+
+$wccs_ref_applied_field = $wccs_ref_applied['billing']['billing_first_name'] ?? array();
+
+wccs_proof_check(
+	'And the classic adapter writes the edit onto the real field, without taking over its contract',
+	'Nome completo' === ( $wccs_ref_applied_field['label'] ?? '' ) &&
+		true === ( $wccs_ref_applied_field['required'] ?? null ),
+	'label=' . ( $wccs_ref_applied_field['label'] ?? '(none)' ) . ' required=' . var_export( $wccs_ref_applied_field['required'] ?? null, true )
+);
+
+// ---------------------------------------------------------------------------
 // Summary.
 // ---------------------------------------------------------------------------
 delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_DRAFT ) );

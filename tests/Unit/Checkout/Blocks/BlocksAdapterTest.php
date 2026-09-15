@@ -470,4 +470,49 @@ final class BlocksAdapterTest extends TestCase {
 
 		self::assertSame( 'wc-checkoutsuite/wccs_company', $translated['registrations'][0]['id'] );
 	}
+
+	/**
+	 * A field WooCommerce owns is never registered as an additional field.
+	 *
+	 * §6.7: editing a native field has to modify the real field, never create a silent copy.
+	 * Handing `billing_first_name` to the additional-fields API would ask the platform to draw
+	 * a second field with the name of the real one, so the adapter refuses it and says which
+	 * properties the Blocks checkout keeps as its own.
+	 *
+	 * @return void
+	 */
+	public function test_a_native_field_is_not_registered_as_an_additional_one(): void {
+		$translated = $this->adapter->apply(
+			array(
+				$this->definition(
+					array(
+						'id'             => 'billing_first_name',
+						'integration_id' => 'billing_first_name',
+						'origin'         => 'core',
+						'label'          => 'Nome',
+					)
+				),
+			),
+			array( $this->section( 'billing', 'billing' ) )
+		);
+
+		self::assertSame( array(), $translated['registrations'] );
+		self::assertSame( 'core_field_not_registered', $translated['report'][0]['code'] );
+		self::assertStringContainsString( 'billing_first_name', $translated['report'][0]['reason'] );
+	}
+
+	/**
+	 * A field this plugin owns is still registered, so the rule is about the origin.
+	 *
+	 * @return void
+	 */
+	public function test_a_custom_field_is_registered_as_before(): void {
+		$translated = $this->adapter->apply(
+			array( $this->definition( array( 'origin' => 'custom' ) ) ),
+			array( $this->section( 'billing', 'billing' ) )
+		);
+
+		self::assertCount( 1, $translated['registrations'] );
+		self::assertSame( array(), $translated['report'] );
+	}
 }

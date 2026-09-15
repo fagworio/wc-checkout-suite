@@ -928,3 +928,45 @@ body:has(.wccs-admin) #wpfooter {
 .wccs-admin .core-checkout-fields .text-btn {
 	margin-left: auto;
 }
+
+/*
+ * What an edit of a native field changes, per checkout (§6.7).
+ *
+ * It is a statement, not a control: it lists the properties this plugin writes onto the real
+ * WooCommerce field and the ones the platform keeps, so the merchant knows what the save
+ * will do before typing.
+ */
+.wccs-admin .native-support {
+	margin-bottom: 14px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background: color-mix(in srgb, var(--soft) 30%, var(--surface));
+	padding: 12px 14px;
+}
+
+.wccs-admin .native-support p {
+	font-size: 10px;
+	line-height: 1.7;
+	margin: 0 0 8px;
+}
+
+.wccs-admin .native-support ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+	gap: 4px 12px;
+}
+
+.wccs-admin .native-support li {
+	font-size: 10px;
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+}
+
+.wccs-admin .native-support li small {
+	margin-left: auto;
+	font-size: 9px;
+}

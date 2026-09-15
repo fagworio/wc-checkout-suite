@@ -279,7 +279,60 @@ await step( 'A whole section of the store checkout is adopted', async () => {
 } );
 
 // ---------------------------------------------------------------------------
-// 3. What is managed stops being offered.
+// 3. What an edit of a native field changes (§6.7).
+// ---------------------------------------------------------------------------
+await step( 'The inspector says what an edit of a native field changes', async () => {
+	// The adopted field is now part of the document, so the editor lists it under the
+	// location the store runs it in.
+	// The tab is named the way the editor names the location, and the location the store
+	// runs it in is the one that holds the adopted fields.
+	await page
+		.getByRole( 'button', { name: /^(Cobrança|Billing)/ } )
+		.first()
+		.click();
+	await page.waitForTimeout( 600 );
+
+	// The row's own button, not the panel above it: the store-checkout panel also prints the
+	// key of every native field, and clicking that would open nothing.
+	await page
+		.locator( '.builder-panel button.field-info', {
+			hasText: NATIVE_FIELD,
+		} )
+		.first()
+		.click();
+	await page.waitForTimeout( 900 );
+
+	const support = page.locator( '#wccs-native-support' );
+	const present = ( await support.count() ) > 0;
+
+	record(
+		'Opening a native field states what this checkout will take from the edit',
+		present,
+		present
+			? ( await support.innerText() ).split( '\n' )[ 0 ].slice( 0, 80 )
+			: 'no statement on screen'
+	);
+
+	if ( present ) {
+		const mode = await page.evaluate( () =>
+			( /** @type {any} */ ( window ).wccsAdmin ?? {} ).checkoutMode
+		);
+		const label = await page.locator( '#wccs-native-label' ).innerText();
+
+		record(
+			'And it matches the checkout the store runs',
+			'blocks' === mode
+				? label.includes( 'da plataforma' )
+				: label.includes( 'aplicado' ),
+			'mode=' + mode + ' label=' + label.replace( /\s+/g, ' ' ).trim()
+		);
+	}
+
+	await page.screenshot( { path: `${ OUT }/fase3-native-support.png` } );
+} );
+
+// ---------------------------------------------------------------------------
+// 4. What is managed stops being offered.
 // ---------------------------------------------------------------------------
 await step( 'The panel stops offering what is managed', async () => {
 	await page.goto( URL, { waitUntil: 'domcontentloaded' } );

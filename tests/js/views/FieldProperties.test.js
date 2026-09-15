@@ -271,6 +271,48 @@ describe( 'the field properties', () => {
 
 		expect( onDuplicate ).toHaveBeenCalledTimes( 1 );
 	} );
+
+	it( 'says what a native field edit changes, before it is typed', () => {
+		renderInspector( {
+			field: field( { id: 'billing_first_name', origin: 'core' } ),
+			reference: 'classic',
+		} );
+
+		const support = document.getElementById( 'wccs-native-support' );
+
+		expect( support ).not.toBeNull();
+		expect( support?.textContent ).toContain(
+			'escritas no campo real do WooCommerce'
+		);
+		// The label is applied; the required flag is the platform's, and the panel
+		// says so rather than pretending the toggle writes it.
+		expect(
+			document.getElementById( 'wccs-native-label' )?.textContent
+		).toContain( 'aplicado' );
+		expect(
+			document.getElementById( 'wccs-native-required' )?.textContent
+		).toContain( 'da plataforma' );
+	} );
+
+	it( 'says the platform owns native fields on a Blocks store', () => {
+		renderInspector( {
+			field: field( { id: 'billing_first_name', origin: 'core' } ),
+			reference: 'blocks',
+		} );
+
+		const support = document.getElementById( 'wccs-native-support' );
+
+		expect( support?.textContent ).toContain( 'dono dos campos nativos' );
+		expect(
+			document.getElementById( 'wccs-native-label' )?.textContent
+		).toContain( 'da plataforma' );
+	} );
+
+	it( 'says nothing of the sort about a field this plugin owns', () => {
+		renderInspector( { reference: 'classic' } );
+
+		expect( document.getElementById( 'wccs-native-support' ) ).toBeNull();
+	} );
 } );
 
 describe( 'the links and display tab', () => {

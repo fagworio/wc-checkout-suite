@@ -581,6 +581,7 @@ export default function FieldManagerView( { model } ) {
 			onDuplicate={ () => onDuplicate( editingField.id ) }
 			onArchive={ () => onToggleEnabled( editingField.id ) }
 			onProtect={ () => onProtect( editingField.id ) }
+			reference={ model.reference }
 		/>
 	) : null;
 

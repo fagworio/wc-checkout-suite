@@ -50,27 +50,52 @@ o configura:
 protege o campo de ser apagado), a ordenação e as secções do editor, o `show_title` por omissão
 **desligado** na criação de secção (§6.4), e os dois adaptadores (Classic e Blocks) já existentes.
 
+**O que a edição de um campo nativo muda, dito antes de escrever** (§6.7) — «não criar uma cópia
+silenciosa» e «se uma propriedade não puder ser alterada no Blocks, informar imediatamente»:
+
+- `nativeFieldSupport( $modo )` e `nativeFieldSummary( $modo )` (em `coreCheckout.ts`) respondem com
+  o que os adaptadores **de facto** fazem: no Classic, `ClassicAdapter::apply_to_core()` escreve
+  etiqueta, descrição, placeholder, largura e ordem no campo real do WooCommerce; o tipo e o
+  obrigatório continuam a ser da plataforma (shipping, tax e payment leem-nos). No Blocks, o plugin
+  não altera campos nativos de todo.
+- O inspetor desenha isso para um campo `origin: core` (`#wccs-native-support`), com uma linha por
+  propriedade e a marca «aplicado» ou «da plataforma» — antes de o lojista escrever, não depois de
+  guardar.
+- **O adaptador de Blocks deixou de registar um campo nativo como se fosse adicional.**
+  `BlocksAdapter::build()` recusa `origin: core` com `core_field_not_registered`: entregar
+  `billing_first_name` à API de campos adicionais pedia à plataforma para desenhar um **segundo**
+  campo com o nome do real — a cópia silenciosa que §6.7 proíbe. Um campo do plugin continua a ser
+  registado, portanto a regra é a origem e não o tipo.
+
 ## 2. Prova
 
 | Prova | Resultado |
 |---|---|
-| `tests/js/schema/coreCheckout.test.js` (novo) | 9 testes: secções e campos na ordem da loja; quantos gerenciados; só os adotáveis; nada quando o inventário não foi lido; tipo mapeado; adoção de uma secção inteira na ordem da loja; ordem/etiqueta/obrigatório reais preservados; o que já é gerenciado fica como está; nada a fazer numa secção completa |
+| `tests/js/schema/coreCheckout.test.js` (novo) | 12 testes: secções e campos na ordem da loja; quantos gerenciados; só os adotáveis; nada quando o inventário não foi lido; tipo mapeado; adoção de uma secção inteira na ordem da loja; ordem/etiqueta/obrigatório reais preservados; o que já é gerenciado fica como está; nada a fazer numa secção completa; o que o Classic escreve no campo real; o Blocks não escreve nada; as frases não prometem mais do que isso |
 | `tests/js/components/CoreCheckoutPanel.test.js` (novo) | 7 testes: lista secções e campos nativos; adota um campo; adota a secção; marca o que é gerenciado e não oferece ação; avisa do tipo mapeado; cala-se sem inventário e com tudo gerenciado |
 | `FieldsScreen.test.js` (3 testes novos) | o checkout da loja aparece numa primeira entrada e uma secção é adotada numa ação; a barra começa no checkout que a loja corre (`blocks`) e não avisa quem corre o clássico |
-| `tests/Integration/FASE3-checkout-reference-proof.php` (novo) | **15/0** pela rota real: inventário lido ao vivo (4 secções, 20 campos, com identidade/etiqueta/tipo/prioridade), leitura estável, `store_checkout_mode()` respondido pela loja e publicado no bootstrap, a definição que o ecrã constrói é aceite pelo servidor com a identidade da WooCommerce, a ordem real (`10…110`) e as etiquetas da loja, adotar duas vezes não duplica nada, e o harness não deixa ótica nenhuma |
-| `tests/browser/fase3-checkout-reference.mjs` (novo) | **12/0**: o painel mostra exatamente as secções que o servidor reporta para aquele pedido (comparado com a resposta da rota), os 20 campos nativos com selo «Nativo», a barra no modo da loja (`blocks`), a secção adotada numa ação, os campos guardados com identidade e prioridade da WooCommerce, e a secção a deixar de ser oferecida |
-| `npx jest` / `npx tsc --noEmit` / `npm run lint:js` / `npm run build` | limpos (**681 testes**, 45 suites) |
-| `composer check` | phpcs e phpstan sem erros; **502 testes, 1824 asserções** |
-| Varredura de integração | **69 harnesses, 1565 asserções, 0 falhas** |
+| `FieldProperties.test.js` (3 testes novos) | o estado do que é aplicado aparece para um campo nativo (Classic); no Blocks diz que a plataforma é dona; e não aparece nada disso num campo do plugin |
+| `BlocksAdapterTest` (2 testes novos) | um campo nativo não é registado como adicional (`core_field_not_registered`); um campo do plugin continua a ser |
+| `tests/Integration/FASE3-checkout-reference-proof.php` (novo) | **18/0** pela rota real: inventário lido ao vivo (4 secções, 20 campos, com identidade/etiqueta/tipo/prioridade), leitura estável, `store_checkout_mode()` respondido pela loja e publicado no bootstrap, a definição que o ecrã constrói é aceite pelo servidor com a identidade da WooCommerce, a ordem real (`10…110`) e as etiquetas da loja, adotar duas vezes não duplica nada, o campo nativo não é registado como adicional, o campo do plugin é, o Classic escreve a etiqueta **sem** tomar conta do obrigatório, e o harness não deixa ótica nenhuma |
+| `tests/browser/fase3-checkout-reference.mjs` (novo) | **14/0**: o painel mostra exatamente as secções que o servidor reporta para aquele pedido (comparado com a resposta da rota), os 20 campos nativos com selo «Nativo», a barra no modo da loja (`blocks`), a secção adotada numa ação, os campos guardados com identidade e prioridade da WooCommerce, o inspetor a dizer o que o checkout aceita (e a coincidir com o modo da loja), e a secção a deixar de ser oferecida |
+| `npx jest` / `npx tsc --noEmit` / `npm run lint:js` / `npm run build` | limpos (**687 testes**, 45 suites) |
+| `composer check` | phpcs e phpstan sem erros; **504 testes, 1829 asserções** |
+| Varredura de integração | **69 harnesses, 1568 asserções, 0 falhas** |
 | `tests/browser/f14-links-observation.mjs` · `f14-bindings-observation.mjs` | **22/0** e **13/0**: o painel novo convive com o editor por destino e com a lista de usos |
 
 ## 3. Limites que ficam registados
 
 - **O checkout da loja corre em Blocks, e no Blocks um campo nativo não tem ordem nem largura
   livre.** É o próprio ecrã que o diz («Modo Blocks · matriz de capacidades»), agora sem o lojista
-  ter de escolher o modo à mão. O adaptador Classic continua a aplicar etiqueta, descrição,
-  placeholder, largura e ordem; o Blocks aplica o que o componente nativo permite, e o que não
-  permite é dito em vez de prometido.
+  ter de escolher o modo à mão, e o inspetor diz propriedade a propriedade o que aquele checkout
+  aceita. O adaptador Classic continua a aplicar etiqueta, descrição, placeholder, largura e ordem;
+  o Blocks não aplica nada a um campo nativo — e, desde esta fatia, também não o registra como campo
+  adicional. Ou seja: num checkout Blocks, editar um campo nativo é hoje uma declaração de intenção
+  que a loja não honra, e o ecrã di-lo; honrá-la exige uma integração com a API de endereços do
+  Blocks, que não está aberta por filtro nesta versão.
+- **O obrigatório e o tipo nunca são tomados.** Nos dois checkouts, `required` e o tipo continuam a
+  ser do WooCommerce e de quem mais os leia (shipping, tax, payment). O inspetor di-lo; o adaptador
+  Classic não os escreve.
 - **A adoção é explícita, secção a secção ou campo a campo.** Não há «adotar tudo»: §6.2 pede que a
   tela mostre o checkout real, não que o tome por conta própria — e um documento que passasse a
   gerenciar vinte campos nativos de uma vez seria uma alteração grande que ninguém reviu.

@@ -11,6 +11,8 @@ import {
 	adoptCoreSection,
 	coreCheckout,
 	hasCoreCheckout,
+	nativeFieldSummary,
+	nativeFieldSupport,
 	typeWasRemapped,
 	unmanagedCoreFields,
 } from '../../../resources/admin/app/schema/coreCheckout';
@@ -244,5 +246,48 @@ describe( 'adopting a section of the store checkout', () => {
 
 		expect( result.ok ).toBe( false );
 		expect( result.document.fields ).toHaveLength( 2 );
+	} );
+} );
+
+describe( 'what an edit of a native field changes', () => {
+	it( 'says which properties the classic checkout writes onto the real field', () => {
+		const support = nativeFieldSupport( 'classic' );
+		const applied = support
+			.filter( ( property ) => property.applied )
+			.map( ( property ) => property.key );
+
+		// Exactly what ClassicAdapter::apply_to_core() writes, and nothing else.
+		expect( applied ).toEqual( [
+			'label',
+			'description',
+			'placeholder',
+			'width',
+			'position',
+		] );
+		const byKey = ( /** @type {string} */ key ) =>
+			support.find( ( property ) => key === property.key );
+
+		expect( byKey( 'required' )?.applied ).toBe( false );
+		expect( byKey( 'type' )?.applied ).toBe( false );
+	} );
+
+	it( 'says the Blocks checkout keeps its native fields', () => {
+		const support = nativeFieldSupport( 'blocks' );
+
+		expect( support.every( ( property ) => ! property.applied ) ).toBe(
+			true
+		);
+		expect( nativeFieldSummary( 'blocks' ) ).toContain(
+			'dono dos campos nativos'
+		);
+	} );
+
+	it( 'states the classic limits without claiming more', () => {
+		const summary = nativeFieldSummary( 'classic' );
+
+		expect( summary ).toContain( 'escritas no campo real' );
+		expect( summary ).toContain(
+			'obrigatório continuam a ser da plataforma'
+		);
 	} );
 } );

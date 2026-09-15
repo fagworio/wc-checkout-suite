@@ -37,6 +37,7 @@ import {
 } from '../schema/bindings';
 import { Icon } from '../design/icons';
 import { typeGlyph } from '../design/typeGlyph';
+import { nativeFieldSummary, nativeFieldSupport } from '../schema/coreCheckout';
 
 /**
  * Viewports a width can be set for.
@@ -126,6 +127,7 @@ function SwitchRow( { id, label, help, checked, disabled = false, onToggle } ) {
  * @param {Function}                                            [props.onDuplicate]  Duplicate the field.
  * @param {Function}                                            [props.onArchive]    Archive the field.
  * @param {Function}                                            [props.onProtect]    Explain why it is protected.
+ * @param {string}                                              [props.reference]    Checkout the merchant is looking at (`blocks` or `classic`).
  * @return {*} Rendered element tree.
  */
 export default function FieldProperties( {
@@ -138,6 +140,7 @@ export default function FieldProperties( {
 	onDuplicate,
 	onArchive,
 	onProtect,
+	reference = '',
 } ) {
 	const [ tab, setTab ] = useState( 'general' );
 
@@ -467,6 +470,47 @@ export default function FieldProperties( {
 			<div className="inspector-body">
 				{ 'general' === tab ? (
 					<>
+						{ /* §6.7: what this checkout will and will not take from an edit of a
+						     native field, said before the merchant types, not after saving. */ }
+						{ protectedField ? (
+							<div
+								className="native-support"
+								id="wccs-native-support"
+							>
+								<p className="muted small">
+									{ nativeFieldSummary( reference ) }
+								</p>
+								<ul>
+									{ nativeFieldSupport( reference ).map(
+										( property ) => (
+											<li
+												key={ property.key }
+												id={ `wccs-native-${ property.key }` }
+											>
+												<span aria-hidden="true">
+													{ property.applied
+														? '✓'
+														: '—' }
+												</span>{ ' ' }
+												{ property.label }
+												<small className="muted">
+													{ property.applied
+														? __(
+																'aplicado',
+																'wc-checkoutsuite'
+														  )
+														: __(
+																'da plataforma',
+																'wc-checkoutsuite'
+														  ) }
+												</small>
+											</li>
+										)
+									) }
+								</ul>
+							</div>
+						) : null }
+
 						<Group
 							id="wccs-field-label"
 							label={ __( 'Nome do campo', 'wc-checkoutsuite' ) }

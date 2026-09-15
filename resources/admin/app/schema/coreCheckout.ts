@@ -210,3 +210,63 @@ export function typeWasRemapped(
 ): boolean {
 	return Boolean( entry?.typeRemapped );
 }
+
+/**
+ * One property of a native field, and whether this plugin can change it where the store runs.
+ */
+export interface NativeProperty {
+	key: string;
+	label: string;
+	applied: boolean;
+}
+
+/**
+ * What this plugin can change about a native field, on the checkout the store runs.
+ *
+ * §6.7: "a edição deve modificar o campo real nos limites suportados pela integração… se uma
+ * propriedade não puder ser alterada no Blocks, informar imediatamente." This is that answer,
+ * read from what the adapters actually do and nothing else:
+ *
+ * - **Classic** (`ClassicAdapter::apply_to_core()`): the label, the description, the
+ *   placeholder, the row width and the order are written onto WooCommerce's own field. The
+ *   type and the required flag are deliberately left alone — shipping, tax and payment read
+ *   them, and "a WooCommerce field keeps its contract".
+ * - **Blocks**: nothing here is applied. The Blocks checkout owns its native fields, and the
+ *   plugin's adapter is built to *add* fields — handing it `billing_first_name` would ask the
+ *   platform to draw a second field with the name of the real one, which is the silent copy
+ *   §6.7 forbids. So the adapter refuses it and this says so.
+ *
+ * `mode` is the checkout the merchant is looking at, which starts as the one the store runs.
+ *
+ * @param mode `blocks` or `classic`.
+ * @return Properties in the order the inspector shows them.
+ */
+export function nativeFieldSupport( mode: string ): NativeProperty[] {
+	const classic = 'blocks' !== mode;
+
+	return [
+		{ key: 'label', label: 'Etiqueta', applied: classic },
+		{ key: 'description', label: 'Descrição', applied: classic },
+		{ key: 'placeholder', label: 'Placeholder', applied: classic },
+		{ key: 'width', label: 'Largura da linha', applied: classic },
+		{ key: 'position', label: 'Ordem', applied: classic },
+		// Never taken over, on either checkout, and for the same reason: they are the
+		// contract shipping, tax and payment read.
+		{ key: 'required', label: 'Obrigatório', applied: false },
+		{ key: 'type', label: 'Tipo', applied: false },
+	];
+}
+
+/**
+ * A sentence stating what the current checkout will and will not take from an edit.
+ *
+ * @param mode `blocks` or `classic`.
+ * @return The sentence.
+ */
+export function nativeFieldSummary( mode: string ): string {
+	if ( 'blocks' !== mode ) {
+		return 'Neste checkout, a etiqueta, a descrição, o placeholder, a largura e a ordem são escritas no campo real do WooCommerce. O tipo e o obrigatório continuam a ser da plataforma.';
+	}
+
+	return 'No checkout Blocks o WooCommerce é dono dos campos nativos: este plugin não os altera nem cria uma cópia. O campo continua a cobrar como sempre, com a etiqueta e a ordem da plataforma.';
+}

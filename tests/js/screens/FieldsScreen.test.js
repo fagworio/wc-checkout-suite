@@ -224,7 +224,8 @@ describe( 'loading', () => {
 } );
 
 describe( 'the schema', () => {
-	it( 'lists the stored fields', async () => {		render(
+	it( 'lists the stored fields', async () => {
+		render(
 			<FieldsScreen
 				client={ client( {
 					draft: doc( [
@@ -255,9 +256,7 @@ describe( 'the schema', () => {
 		// §6.7: what a native field may be changed into depends on the checkout that will
 		// render it, and the merchant should not have to tell the screen which one their
 		// store runs — the server read it.
-		render(
-			<FieldsScreen client={ client() } checkoutMode="blocks" />
-		);
+		render( <FieldsScreen client={ client() } checkoutMode="blocks" /> );
 
 		await screen.findByText( 'CPF' );
 
@@ -267,9 +266,7 @@ describe( 'the schema', () => {
 	} );
 
 	it( 'does not warn about Blocks on a store that runs the classic checkout', async () => {
-		render(
-			<FieldsScreen client={ client() } checkoutMode="classic" />
-		);
+		render( <FieldsScreen client={ client() } checkoutMode="classic" /> );
 
 		await screen.findByText( 'CPF' );
 

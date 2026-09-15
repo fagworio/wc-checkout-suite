@@ -307,6 +307,26 @@ final class BlocksAdapter {
 		$type = isset( $definition['type'] ) ? (string) $definition['type'] : '';
 		$note = array();
 
+		// A field WooCommerce owns is not registered here. The additional-fields API exists
+		// to add fields, and handing it `billing_first_name` would ask the platform to draw a
+		// *second* field with the name of the real one — a silent copy, which is exactly what
+		// §6.7 forbids. The refusal is reported so the merchant is told which property the
+		// Blocks checkout will not take, instead of believing the edit was applied.
+		if ( 'core' === ( $definition['origin'] ?? '' ) ) {
+			return array(
+				'report' => array(
+					$this->entry(
+						$id,
+						'core_field_not_registered',
+						sprintf(
+							'The Blocks checkout owns the field "%s". This plugin does not register a field of the platform as an additional one: the native field keeps its label, its order and its required flag as WooCommerce sets them.',
+							$id
+						)
+					),
+				),
+			);
+		}
+
 		// A native type can still require a controlled component when the
 		// definition carries behaviour the additional-fields API cannot express,
 		// such as a mask. Keep the native and controlled paths mutually exclusive.
