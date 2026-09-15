@@ -74,7 +74,7 @@ final class PrivacyPolicy {
 
 		$paragraphs[] = sprintf(
 			'<p>%s</p>',
-			esc_html__( 'A field collected at checkout is kept with the order it was given on, not on your account: changing your account does not rewrite a past order, and a past order does not change when your account does.', 'wc-checkoutsuite' )
+			esc_html__( 'Where a value is kept follows where it was given. A field collected at checkout is kept with the order it was given on, as a copy taken at that moment: changing your account does not rewrite a past order, and a past order does not change when your account does. A field you fill in on a page of your account is kept on your account, and it is used to fill in a later checkout only when the store asked for that; the order then keeps its own copy of what you gave it.', 'wc-checkoutsuite' )
 		);
 
 		$sensitivities = array();

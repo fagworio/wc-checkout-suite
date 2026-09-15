@@ -10,8 +10,8 @@ declare( strict_types = 1 );
 namespace WCCheckoutSuite\Privacy;
 
 use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
+use WCCheckoutSuite\Domain\Customers\CustomerFieldsService;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
-use WCCheckoutSuite\Domain\Orders\OrderFieldEntry;
 use WCCheckoutSuite\Domain\Orders\OrderFieldsService;
 use WC_Order;
 
@@ -93,7 +93,7 @@ final class OrderFieldsExporter {
 
 				$items[] = array(
 					'name'  => $entry->label(),
-					'value' => self::value( $entry, $personal[ $entry->id() ] ),
+					'value' => self::value( $entry->value(), $personal[ $entry->id() ] ),
 				);
 			}
 
@@ -111,6 +111,40 @@ final class OrderFieldsExporter {
 				'item_id'     => self::ID . '-' . $order->get_id(),
 				'data'        => $items,
 			);
+		}
+
+		// What the store keeps on the account rather than on an order. A value
+		// collected on a My Account page has no order to be found through, so an
+		// export built only from orders would tell the person their data is not
+		// held while the store holds it. The same definition of personal data
+		// decides what is listed, and the same formatter renders it.
+		$customer = DataSubjectCustomer::for_email( $email );
+
+		if ( $customer instanceof \WP_User ) {
+			$values = ( new CustomerFieldsService() )->values( $customer->ID );
+			$items  = array();
+
+			foreach ( $personal as $id => $definition ) {
+				if ( ! array_key_exists( $id, $values ) ) {
+					continue;
+				}
+
+				$label = isset( $definition['label'] ) ? trim( (string) $definition['label'] ) : '';
+
+				$items[] = array(
+					'name'  => '' !== $label ? $label : $id,
+					'value' => self::value( $values[ $id ], $definition, 'account' ),
+				);
+			}
+
+			if ( array() !== $items ) {
+				$data[] = array(
+					'group_id'    => self::ID . '-customer-' . $customer->ID,
+					'group_label' => __( 'Checkout fields (customer account)', 'wc-checkoutsuite' ),
+					'item_id'     => self::ID . '-customer-' . $customer->ID,
+					'data'        => $items,
+				);
+			}
 		}
 
 		return array(
@@ -157,16 +191,17 @@ final class OrderFieldsExporter {
 	/**
 	 * What the export says for one value.
 	 *
-	 * @param OrderFieldEntry      $entry      Entry.
+	 * @param mixed                $value      Stored value.
 	 * @param array<string, mixed> $definition Definition.
+	 * @param string               $context    Where the value is kept: `order` or `account`.
 	 * @return string
 	 */
-	private static function value( OrderFieldEntry $entry, array $definition ): string {
+	private static function value( mixed $value, array $definition, string $context = 'order' ): string {
 		if ( 'file' === (string) ( $definition['type'] ?? '' ) ) {
-			return __( 'A document was provided with this order. Ask the store for a copy.', 'wc-checkoutsuite' );
+			return 'account' === $context
+				? __( 'A document is kept in this customer account. Ask the store for a copy.', 'wc-checkoutsuite' )
+				: __( 'A document was provided with this order. Ask the store for a copy.', 'wc-checkoutsuite' );
 		}
-
-		$value = $entry->value();
 
 		if ( is_array( $value ) ) {
 			return implode( ', ', array_map( 'strval', $value ) );

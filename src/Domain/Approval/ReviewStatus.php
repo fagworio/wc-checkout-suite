@@ -44,6 +44,18 @@ final class ReviewStatus {
 	public const HOOK_API = 'woocommerce_payment_complete';
 
 	/**
+	 * Order meta recording that this order already entered its review state.
+	 *
+	 * The hold is a one-time event in the life of an order, not a property of its
+	 * current status. Without a record of it, every later transition into a
+	 * post-payment status — the approval itself, shipping the order, refunding it —
+	 * would read as a fresh order carrying documents and put it back in review,
+	 * silently undoing the merchant's decision and leaving the order in a state only
+	 * this plugin could take it out of.
+	 */
+	public const META_HELD = '_wccs_review_held';
+
+	/**
 	 * Registers the review state for the store that configured one.
 	 *
 	 * @return void
@@ -124,30 +136,6 @@ final class ReviewStatus {
 	}
 
 	/**
-	 * Holds a classic checkout's order when its documents need reviewing.
-	 *
-	 * @param mixed $order_id    Order identifier.
-	 * @param mixed $posted_data Posted data, unused.
-	 * @param mixed $order       Order WooCommerce built, when it passes one.
-	 * @return void
-	 */
-	public static function hold_classic( $order_id = 0, $posted_data = null, $order = null ): void {
-		unset( $posted_data );
-
-		if ( $order instanceof WC_Order ) {
-			self::apply( $order );
-
-			return;
-		}
-
-		$found = function_exists( 'wc_get_order' ) ? wc_get_order( $order_id ) : null;
-
-		if ( $found instanceof WC_Order ) {
-			self::apply( $found );
-		}
-	}
-
-	/**
 	 * Holds a Store API checkout's order when its documents need reviewing.
 	 *
 	 * @param mixed $order Order the checkout created.
@@ -204,11 +192,17 @@ final class ReviewStatus {
 	/**
 	 * Whether WooCommerce has reached a state after the gateway's decision.
 	 *
+	 * `on-hold` is deliberately **not** one of them. WooCommerce uses it for an order
+	 * whose payment has not arrived — a bank transfer or a cheque the store is still
+	 * waiting for — and moving an unpaid order into a review state would take it out
+	 * of the payment flow the customer was told about. Such an order is held when the
+	 * payment does arrive and the store moves it to `processing`.
+	 *
 	 * @param string $status Order status without the `wc-` prefix.
 	 * @return bool
 	 */
 	public static function is_post_payment_status( string $status ): bool {
-		return in_array( $status, array( 'processing', 'completed', 'on-hold' ), true );
+		return in_array( $status, array( 'processing', 'completed' ), true );
 	}
 
 	/**
@@ -222,6 +216,13 @@ final class ReviewStatus {
 	 * @return bool Whether the order was held.
 	 */
 	public static function apply( WC_Order $order ): bool {
+		if ( '' !== (string) $order->get_meta( self::META_HELD ) ) {
+			// This order already waited in the review state. Where it is now is the
+			// merchant's decision, and a later status change is not a reason to
+			// revisit it.
+			return false;
+		}
+
 		$definitions = PublishedDocument::read()->fields();
 		$flows       = ApprovalFlow::enabled_in( $definitions );
 
@@ -245,6 +246,10 @@ final class ReviewStatus {
 			if ( '' === $status || $order->get_status() === $status ) {
 				return false;
 			}
+
+			// Recorded before the transition, so the status change this very call
+			// fires cannot be read as a new order needing review.
+			$order->update_meta_data( self::META_HELD, '1' );
 
 			$order->update_status(
 				$status,

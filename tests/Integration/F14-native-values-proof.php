@@ -334,6 +334,43 @@ function wccs_proof_html( callable $render ): string {
 	return (string) ob_get_clean();
 }
 
+// Both seams that can draw this panel fire on the legacy posts screen: WooCommerce
+// prints the order-data panel the inline hooks attach to *inside* the metabox screen
+// that also draws the box. Two copies would show the merchant the same table twice and
+// submit every field name twice, so the panel is drawn once per order per request —
+// and it has to be once whichever seam gets there first.
+$wccs_seam_orders = array();
+
+foreach ( array( 'inline first', 'box first' ) as $wccs_seam ) {
+	$wccs_seam_order = wc_create_order();
+	$wccs_seam_order->set_status( 'processing' );
+	$wccs_seam_order->save();
+	$wccs_seam_order  = wc_get_order( $wccs_seam_order->get_id() );
+	$wccs_seam_orders[] = $wccs_seam_order->get_id();
+
+	$wccs_seam_markup = wccs_proof_html(
+		static function () use ( $wccs_seam_order, $wccs_seam ): void {
+			$box = array( 'args' => array( 'order' => $wccs_seam_order ) );
+
+			if ( 'inline first' === $wccs_seam ) {
+				\WCCheckoutSuite\Admin\Orders\OrderFieldsPanel::render_inline( $wccs_seam_order );
+				\WCCheckoutSuite\Admin\Orders\OrderFieldsPanel::render( $wccs_seam_order, $box );
+
+				return;
+			}
+
+			\WCCheckoutSuite\Admin\Orders\OrderFieldsPanel::render( $wccs_seam_order, $box );
+			\WCCheckoutSuite\Admin\Orders\OrderFieldsPanel::render_inline( $wccs_seam_order );
+		}
+	);
+
+	wccs_proof_check(
+		'The order screen draws the panel once when both seams fire, ' . $wccs_seam,
+		1 === substr_count( $wccs_seam_markup, 'wccs-order-fields"' ),
+		'panels=' . substr_count( $wccs_seam_markup, 'wccs-order-fields"' )
+	);
+}
+
 $wccs_panel_html = wccs_proof_html( static fn() => \WCCheckoutSuite\Admin\Orders\OrderFieldsPanel::render( $wccs_order ) );
 $wccs_panel      = trim( (string) preg_replace( '/\s+/', ' ', wp_strip_all_tags( $wccs_panel_html ) ) );
 $wccs_email = $wccs_render( static fn() => \WCCheckoutSuite\Checkout\OrderEmailFields::render( $wccs_order, false, false, null ) );
@@ -406,7 +443,7 @@ wccs_proof_check(
 wccs_proof_out( '' );
 wccs_proof_out( '4. What the harness left behind' );
 
-foreach ( array( $wccs_order->get_id(), $wccs_quiet->get_id() ) as $wccs_id ) {
+foreach ( array_merge( array( $wccs_order->get_id(), $wccs_quiet->get_id() ), $wccs_seam_orders ) as $wccs_id ) {
 	$wccs_created = wc_get_order( $wccs_id );
 
 	if ( $wccs_created instanceof WC_Order ) {

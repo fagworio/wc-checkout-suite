@@ -65,6 +65,26 @@ record(
 	'.wccs-order-fields'
 );
 
+// The meta box and the two WooCommerce order-data hooks can all fire for one screen.
+// The panel has to be drawn once: two tables would show the same values twice and
+// submit every field name twice, and the last of them would decide.
+const panels = await box.count();
+const nonces = await page
+	.locator( 'input[name="wccs_save_order_fields_nonce"]' )
+	.count();
+const names = await page
+	.locator( 'input[name^="wccs_order_field_"]' )
+	.evaluateAll( ( nodes ) => nodes.map( ( node ) => node.name ) );
+const duplicated = names.filter(
+	( name, index ) => names.indexOf( name ) !== index
+);
+
+record(
+	'And it is drawn exactly once, so no value is submitted twice',
+	1 === panels && nonces <= 1 && names.length > 0 && 0 === duplicated.length,
+	`panels=${ panels } nonces=${ nonces } fields=${ names.length } duplicates=${ duplicated.join( ',' ) }`
+);
+
 const text = ( await box.count() ) > 0 ? ( await box.first().innerText() ).replace( /\s+/g, ' ' ) : '';
 
 const isE2E = text.includes( 'E2E Admin Order' );

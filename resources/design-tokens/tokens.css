@@ -46,6 +46,8 @@
 	--wccs-success: #087f70;
 	--wccs-warning: #9a5b00;
 	--wccs-danger: #b42338;
+	--wccs-warning-subtle: #fff9e8;
+	--wccs-warning-border: #ead49a;
 
 	/* Focus. */
 	--wccs-focus-ring: #6d28d9;
@@ -53,6 +55,8 @@
 	/* Elevation. */
 	--wccs-elevation-raised: 0 12px 40px rgba(32, 35, 52, 0.07);
 	--wccs-elevation-overlay: 0 30px 90px rgba(0, 0, 0, 0.2);
+
+	--wccs-elevation-scrim: rgba(18, 23, 40, 0.5);
 
 	/* Shape. */
 	--wccs-radius-control: 9px;
@@ -141,9 +145,12 @@
 	--wccs-success: #6ae0c4;
 	--wccs-warning: #f0bf70;
 	--wccs-danger: #ff9baa;
+	--wccs-warning-subtle: #3a2f14;
+	--wccs-warning-border: #6b5620;
 
 	--wccs-focus-ring: #b99aff;
 
 	--wccs-elevation-raised: 0 12px 40px rgba(0, 0, 0, 0.2);
 	--wccs-elevation-overlay: 0 30px 90px rgba(0, 0, 0, 0.2);
+	--wccs-elevation-scrim: rgba(6, 8, 14, 0.6);
 }

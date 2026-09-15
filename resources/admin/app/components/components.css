@@ -131,7 +131,7 @@
 }
 
 .wccs-admin .wccs-dialog::backdrop {
-  background: rgba(18, 23, 40, 0.5);
+  background: var(--wccs-elevation-scrim);
 }
 
 .wccs-admin .wccs-dialog__header {
@@ -270,7 +270,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--wccs-accent);
+  color: var(--wccs-brand);
   font: inherit;
   font-weight: var(--wccs-weight-semibold);
   cursor: pointer;
@@ -290,16 +290,16 @@
 
 .wccs-admin .wccs-editor-areas button {
   padding: var(--wccs-space-12);
-  border: 1px solid var(--wccs-border);
-  border-radius: var(--wccs-radius);
+  border: 1px solid var(--wccs-border-control);
+  border-radius: var(--wccs-radius-control);
   background: var(--wccs-surface);
   text-align: left;
   cursor: pointer;
 }
 
 .wccs-admin .wccs-editor-areas button.active {
-  border-color: var(--wccs-accent);
-  box-shadow: inset 0 0 0 1px var(--wccs-accent);
+  border-color: var(--wccs-brand);
+  box-shadow: inset 0 0 0 1px var(--wccs-brand);
 }
 
 .wccs-admin .wccs-editor-areas strong,
@@ -655,9 +655,9 @@
   gap: var(--wccs-space-4);
   margin: var(--wccs-space-12) 0;
   padding: var(--wccs-space-12) var(--wccs-space-16);
-  border: 1px solid #ead49a;
+  border: 1px solid var(--wccs-warning-border);
   border-radius: var(--wccs-radius-control);
-  background: #fff9e8;
+  background: var(--wccs-warning-subtle);
   color: var(--wccs-ink);
   font-size: var(--wccs-text-help);
 }

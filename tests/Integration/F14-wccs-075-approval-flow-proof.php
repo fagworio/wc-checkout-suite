@@ -483,6 +483,34 @@ wccs_proof_check(
 	'notes=' . wccs_proof_note_count( wc_get_order( $wccs_held->get_id() ) )
 );
 
+// The merchant reviews the documents and moves the order on. That transition is a
+// post-payment one too, so without a record of the hold the plugin would read the
+// approved order as a fresh one, put it back in review, and the merchant could never
+// take it out: the decision would undo itself.
+$wccs_approved = wc_get_order( $wccs_held->get_id() );
+$wccs_approved->update_status( 'processing', 'Documentos aprovados.' );
+
+wccs_proof_check(
+	'An order the staff already reviewed is not put back in review by their own decision',
+	'processing' === wc_get_order( $wccs_held->get_id() )->get_status(),
+	'status=' . wc_get_order( $wccs_held->get_id() )->get_status()
+);
+
+$wccs_review_notes = 0;
+
+foreach ( wc_get_order_notes( array( 'order_id' => $wccs_held->get_id() ) ) as $wccs_note ) {
+	if ( str_contains( (string) $wccs_note->content, 'Waiting for review' ) ) {
+		++$wccs_review_notes;
+	}
+}
+
+wccs_proof_check(
+	'And it carries the record that it waited, which is what makes the rule a fact',
+	'1' === (string) wc_get_order( $wccs_held->get_id() )->get_meta( \WCCheckoutSuite\Domain\Approval\ReviewStatus::META_HELD )
+		&& 1 === $wccs_review_notes,
+	'notes=' . wccs_proof_note_count( wc_get_order( $wccs_held->get_id() ) ) . ' review notes=' . $wccs_review_notes
+);
+
 $wccs_order_empty = wccs_proof_order( $wccs_definitions, array() );
 $wccs_orders[]    = $wccs_order_empty;
 

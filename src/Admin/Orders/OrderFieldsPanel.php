@@ -61,11 +61,24 @@ use WC_Order;
 final class OrderFieldsPanel {
 
 	/**
-	 * Orders already rendered by an inline compatibility hook in this request.
+	 * Orders this request has already drawn the panel for.
+	 *
+	 * Two seams can draw the same panel: the meta box, and the two WooCommerce
+	 * order-data hooks that exist because some WooCommerce versions render the order
+	 * form without ever running the meta-box registration action. On the legacy
+	 * posts screen **both** fire — the order-data panel the hooks attach to is printed
+	 * inside the very metabox screen that also draws the box — so without a shared
+	 * record the merchant sees the same table twice, and a form submitted twice
+	 * carries the same field name twice.
+	 *
+	 * The decision is made where it can be observed: `render()` marks the order as it
+	 * starts drawing, and whichever seam gets there first owns the panel. Registering
+	 * a meta box is deliberately *not* the signal, because the case the inline hooks
+	 * exist for is precisely a registered box that is never drawn.
 	 *
 	 * @var array<int, bool>
 	 */
-	private static array $inline_rendered = array();
+	private static array $rendered = array();
 
 	/**
 	 * Screen identifier of the legacy posts-based orders screen.
@@ -122,12 +135,6 @@ final class OrderFieldsPanel {
 		if ( ! $order instanceof WC_Order || ! self::may_edit( $order ) ) {
 			return;
 		}
-
-		if ( isset( self::$inline_rendered[ $order->get_id() ] ) ) {
-			return;
-		}
-
-		self::$inline_rendered[ $order->get_id() ] = true;
 
 		self::render( $order, array( 'args' => array( 'order' => $order ) ) );
 	}
@@ -317,6 +324,13 @@ final class OrderFieldsPanel {
 		if ( ! $order instanceof WC_Order ) {
 			return;
 		}
+
+		// One panel per order per request, whichever seam asked for it.
+		if ( isset( self::$rendered[ $order->get_id() ] ) ) {
+			return;
+		}
+
+		self::$rendered[ $order->get_id() ] = true;
 
 		$document    = PublishedDocument::read();
 		$definitions = $document->fields();

@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace WCCheckoutSuite\Privacy;
 
 use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
+use WCCheckoutSuite\Domain\Customers\CustomerFieldsService;
 use WCCheckoutSuite\Domain\Orders\OrderFieldsService;
 
 /**
@@ -113,7 +114,52 @@ final class OrderFieldsEraser {
 			}
 		}
 
+		// The account the person's values live on, when the address has one. A value
+		// collected on a My Account page has no order to be reached through, so an
+		// erasure built only from orders would tell the person their data is gone
+		// while it is still on their account.
+		$customer         = DataSubjectCustomer::for_email( $email );
+		$account_removed  = 0;
+		$account_document = false;
+
+		if ( $customer instanceof \WP_User ) {
+			$customer_service = new CustomerFieldsService();
+			$values           = $customer_service->values( $customer->ID );
+			$keep             = array();
+
+			foreach ( $values as $id => $value ) {
+				if ( ! isset( $personal[ $id ] ) ) {
+					$keep[ $id ] = $value;
+
+					continue;
+				}
+
+				if ( 'file' === (string) ( $personal[ $id ]['type'] ?? '' ) ) {
+					$account_document = true;
+				}
+
+				++$account_removed;
+			}
+
+			if ( $account_removed > 0 ) {
+				$customer_service->replace( $customer->ID, $keep );
+			}
+		}
+
 		$messages = array();
+
+		if ( $account_removed > 0 ) {
+			$messages[] = sprintf(
+				/* translators: %d: number of values. */
+				_n(
+					'%d checkout value was erased from the customer account.',
+					'%d checkout values were erased from the customer account.',
+					$account_removed,
+					'wc-checkoutsuite'
+				),
+				$account_removed
+			);
+		}
 
 		if ( $removed > 0 ) {
 			$messages[] = sprintf(
@@ -127,6 +173,10 @@ final class OrderFieldsEraser {
 				$removed,
 				count( $touched )
 			);
+		}
+
+		if ( $account_document ) {
+			$messages[] = __( 'A document kept in the customer account is kept while the store\'s retention has it; ask the store to delete it if it must go now.', 'wc-checkoutsuite' );
 		}
 
 		$retained = array() !== $orders;
@@ -148,8 +198,8 @@ final class OrderFieldsEraser {
 		}
 
 		return array(
-			'items_removed'  => $removed > 0,
-			'items_retained' => $retained || array() !== $documents,
+			'items_removed'  => $removed > 0 || $account_removed > 0,
+			'items_retained' => $retained || array() !== $documents || $account_document,
 			'messages'       => $messages,
 			'done'           => true,
 		);

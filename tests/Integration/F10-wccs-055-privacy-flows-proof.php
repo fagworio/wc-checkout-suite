@@ -195,6 +195,10 @@ function wccs_proof_export_text( array $export ): string {
 	$text = '';
 
 	foreach ( (array) ( $export['data'] ?? array() ) as $group ) {
+		// The group label is part of the answer too: it is what tells the person which
+		// part of the store's record each value came from.
+		$text .= ( $group['group_label'] ?? '' ) . "\n";
+
 		foreach ( (array) ( $group['data'] ?? array() ) as $item ) {
 			$text .= ( $item['name'] ?? '' ) . ': ' . ( $item['value'] ?? '' ) . "\n";
 		}
@@ -310,6 +314,17 @@ $wccs_account_order = wccs_proof_order(
 	(int) $wccs_user
 );
 
+// A value the store keeps on the account rather than on an order. It has no order to be
+// found through, which is exactly why the flows have to look for it separately.
+$wccs_customer_store = new \WCCheckoutSuite\Domain\Customers\CustomerFieldsService();
+$wccs_customer_store->update(
+	(int) $wccs_user,
+	array(
+		'wccs_document' => '39053344705',
+		'wccs_consent'  => 'yes',
+	)
+);
+
 $wccs_export = wccs_proof_export( $wccs_exporter::ID, $wccs_email );
 $wccs_exported = wccs_proof_export_text( $wccs_export );
 
@@ -341,6 +356,12 @@ wccs_proof_check(
 wccs_proof_check(
 	'And the export is finished in one pass rather than paginated',
 	true === ( $wccs_export['done'] ?? false )
+);
+
+wccs_proof_check(
+	'And carries what the store keeps on the account, which no order would have found',
+	str_contains( $wccs_exported, '39053344705' ) && str_contains( $wccs_exported, 'customer account' ),
+	'the account value is in the person\'s data'
 );
 
 wccs_proof_check(
@@ -401,6 +422,20 @@ wccs_proof_check(
 	'a search by address alone would have left this one behind'
 );
 
+$wccs_account_values = $wccs_customer_store->values( (int) $wccs_user );
+
+wccs_proof_check(
+	'The personal value is gone from the account as well',
+	! array_key_exists( 'wccs_document', $wccs_account_values ),
+	'account=' . wp_json_encode( array_keys( $wccs_account_values ) )
+);
+
+wccs_proof_check(
+	'And the account keeps what the vocabulary does not call personal',
+	'yes' === ( $wccs_account_values['wccs_consent'] ?? null ),
+	'consent: ' . wp_json_encode( $wccs_account_values['wccs_consent'] ?? null )
+);
+
 // The explanation, which is the acceptance's third clause.
 $wccs_messages = implode( ' ', array_map( 'strval', (array) ( $wccs_erasure['messages'] ?? array() ) ) );
 
@@ -415,6 +450,12 @@ wccs_proof_check(
 	str_contains( $wccs_messages, 'record of the purchase' )
 		&& str_contains( $wccs_messages, 'upload retention' ),
 	'the person is told the order stays and the document goes with it'
+);
+
+wccs_proof_check(
+	'And names the account it also erased from',
+	str_contains( $wccs_messages, 'customer account' ),
+	'messages=' . substr( $wccs_messages, 0, 200 )
 );
 
 wccs_proof_check(
