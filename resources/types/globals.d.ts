@@ -37,6 +37,13 @@ declare global {
 		rest?: WccsAdminRest;
 		/** Storefront addresses the editor links to after a save. */
 		urls?: Record< string, string >;
+		/**
+		 * Which checkout the store runs, read from the store by the server.
+		 *
+		 * `blocks` or `classic`. The context bar starts on it, because what a native
+		 * field may be changed into depends on the checkout that will render it.
+		 */
+		checkoutMode?: string;
 	}
 
 	/**

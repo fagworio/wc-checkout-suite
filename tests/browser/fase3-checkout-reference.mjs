@@ -1,0 +1,361 @@
+/**
+ * Fase 3 observation — the store's own checkout, in the administration.
+ *
+ * `roadmap/WC-CheckoutSuite-Especificacao-Completa-com-Referencias-Visuais` §6.2: the screen
+ * loads the real checkout and does not start empty. The harness proves the server half
+ * (`tests/Integration/FASE3-checkout-reference-proof.php`); this drives the screen a merchant
+ * uses and reads what it offers and what it does:
+ *
+ *   1. **The store's checkout is on screen**: the sections WooCommerce declares, their native
+ *      fields with their real keys and labels, each marked `Nativo`.
+ *   2. **It says which checkout the store runs** (§6.7): the capability banner matches the
+ *      store, read from the store rather than chosen by the merchant.
+ *   3. **A whole section is adopted in one action**, so the merchant never rebuilds a
+ *      checkout that already exists — and adopting it writes the fields under WooCommerce's
+ *      own identity, in the order the store runs them.
+ *   4. **What is managed stops being offered**, and the panel says how much of the section is
+ *      managed instead.
+ *
+ * It writes: the adoption is saved and published, which is what the screen does. The store
+ * is left with the adopted native fields in its draft.
+ *
+ * Usage:
+ *   WCCS_COOKIE="name=value" WCCS_AUTH_COOKIE="name=value" node tests/browser/fase3-checkout-reference.mjs
+ *
+ * The cookies come from `wp eval-file tests/Integration/support/admin-session.php create`.
+ *
+ * It needs the store on the clean fixture, because it adopts a section of the real checkout
+ * and adoption is durable:
+ *
+ *   wp option delete wccs_schema_draft wccs_schema_published wccs_schema_revisions
+ *   wp eval-file tests/Integration/support/seed-f14-links.php draft
+ *
+ * @package WCCheckoutSuite
+ */
+
+import { chromium } from 'playwright';
+
+const ORIGIN = 'http://wpagf.dvl.to:8080';
+const URL = `${ ORIGIN }/wp-admin/admin.php?page=wccs-checkoutsuite&section=fields`;
+const OUT = process.env.WCCS_OUT || 'tests/design/shots';
+const SECTION = 'billing';
+const NATIVE_FIELD = 'billing_first_name';
+
+const findings = [];
+const notes = [];
+const record = ( label, ok, detail = '' ) =>
+	findings.push( { label, ok: Boolean( ok ), detail } );
+const note = ( message ) => notes.push( message );
+
+const browser = await chromium.launch( {
+	executablePath: '/usr/bin/google-chrome',
+	args: [
+		'--no-sandbox',
+		`--unsafely-treat-insecure-origin-as-secure=${ ORIGIN }`,
+	],
+} );
+const page = await browser.newPage( { viewport: { width: 1600, height: 1100 } } );
+
+for ( const pair of [
+	process.env.WCCS_COOKIE,
+	process.env.WCCS_AUTH_COOKIE,
+].filter( Boolean ) ) {
+	const i = pair.indexOf( '=' );
+
+	await page.context().addCookies( [
+		{
+			name: pair.slice( 0, i ),
+			value: pair.slice( i + 1 ),
+			domain: 'wpagf.dvl.to',
+			path: '/',
+			expires: -1,
+			httpOnly: true,
+			secure: false,
+			sameSite: 'Lax',
+		},
+	] );
+}
+
+const errors = [];
+
+page.on( 'pageerror', ( e ) => errors.push( e.message ) );
+
+/**
+ * Runs one step, reporting a failure rather than aborting the run.
+ *
+ * @param {string}   label Step name.
+ * @param {Function} run   Step body.
+ * @return {Promise<void>} Resolves either way.
+ */
+async function step( label, run ) {
+	try {
+		await run();
+	} catch ( error ) {
+		record(
+			label,
+			false,
+			String( error && error.message ? error.message : error ).split(
+				'\n'
+			)[ 0 ]
+		);
+	}
+}
+
+/**
+ * The draft the store holds, read through the route the screen reads it with.
+ *
+ * @return {Promise<any>} The draft document.
+ */
+async function storedDraft() {
+	return page.evaluate( async () => {
+		const boot = /** @type {any} */ ( window ).wccsAdmin;
+		const response = await fetch(
+			boot.rest.root + boot.rest.namespace + boot.rest.routes.draft,
+			{ headers: { 'X-WP-Nonce': boot.rest.nonce } }
+		);
+
+		return response.json();
+	} );
+}
+
+/**
+ * The store's own checkout, read through the route the screen reads it with.
+ *
+ * The panel is a report of this: comparing the two is what proves the screen shows the
+ * store's checkout rather than a list of its own.
+ *
+ * @return {Promise<any>} The inventory.
+ */
+async function storedInventory() {
+	return page.evaluate( async () => {
+		const boot = /** @type {any} */ ( window ).wccsAdmin;
+		const response = await fetch(
+			boot.rest.root + boot.rest.namespace + boot.rest.routes.coreFields,
+			{ headers: { 'X-WP-Nonce': boot.rest.nonce } }
+		);
+
+		return response.json();
+	} );
+}
+
+await page.goto( URL, { waitUntil: 'domcontentloaded' } );
+await page.waitForTimeout( 3000 );
+
+// ---------------------------------------------------------------------------
+// 1. The store's checkout, on screen.
+// ---------------------------------------------------------------------------
+await step( 'The screen loads the store checkout', async () => {
+	const panel = page.getByRole( 'region', { name: 'Checkout padrão' } );
+
+	record(
+		'The store checkout is on screen, not an empty editor',
+		( await panel.count() ) > 0,
+		( await panel.count() ) + ' panel(s)'
+	);
+
+	// The server's own answers, so the assertion is "the screen shows the store's checkout"
+	// and not "the screen shows a number this test remembered". The panel lists the sections
+	// that still have something to take over, which is what a report of the store says.
+	const inventory = await storedInventory();
+	const draft = await storedDraft();
+	const managed = new Set(
+		( draft?.fields ?? [] ).map( ( field ) => field?.id )
+	);
+	const expected = ( inventory?.sections ?? [])
+		.filter( ( section ) =>
+			( section.fields ?? [] ).some(
+				( field ) => ! managed.has( field.id )
+			)
+		)
+		.map( ( section ) => section.key );
+	const shown = await page
+		.locator( '.core-checkout-section' )
+		.evaluateAll( ( nodes ) =>
+			nodes.map( ( node ) =>
+				( node.getAttribute( 'id' ) || '' ).replace(
+					'wccs-core-section-',
+					''
+				)
+			)
+		);
+
+	record(
+		'With the sections the store declares, as the server reports them',
+		expected.length > 0 && expected.join( ',' ) === shown.join( ',' ),
+		'server=' + expected.join( ',' ) + ' screen=' + shown.join( ',' )
+	);
+
+	record(
+		'And the native fields of the store, with their own keys',
+		( await page.locator( `#wccs-core-adopt-${ NATIVE_FIELD }` ).count() ) >
+			0 &&
+			( await page.locator( `text=${ NATIVE_FIELD }` ).count() ) > 0,
+		'field=' + NATIVE_FIELD
+	);
+
+	const native = await page
+		.locator( '.core-checkout-fields .wccs-badge' )
+		.count();
+
+	record(
+		'Each of them says it belongs to the platform',
+		native >= 10,
+		'native badges=' + native
+	);
+
+	await page.screenshot( { path: `${ OUT }/fase3-store-checkout.png` } );
+} );
+
+await step( 'It says which checkout the store runs', async () => {
+	const mode = await page.evaluate( () =>
+		( /** @type {any} */ ( window ).wccsAdmin ?? {} ).checkoutMode
+	);
+
+	const banner = await page
+		.locator( '.mode-banner' )
+		.count();
+
+	record(
+		'The server read the store, and the banner matches it',
+		'blocks' === mode ? banner > 0 : 0 === banner,
+		'mode=' + mode + ' banners=' + banner
+	);
+} );
+
+// ---------------------------------------------------------------------------
+// 2. Adopting a whole section.
+// ---------------------------------------------------------------------------
+await step( 'A whole section of the store checkout is adopted', async () => {
+	const card = page.locator( `#wccs-core-section-${ SECTION }` );
+
+	await card.getByRole( 'button', { name: 'Usar esta seção' } ).click();
+	await page.waitForTimeout( 800 );
+
+	record(
+		'The section is taken over in one action',
+		( await page
+			.locator( `#wccs-core-adopt-${ NATIVE_FIELD }` )
+			.count() ) === 0,
+		'the section no longer offers every field one by one'
+	);
+
+	await page.evaluate( () => window.sessionStorage.clear() );
+	await page.waitForTimeout( 200 );
+
+	const saveButton = page
+		.getByRole( 'button', { name: /Salvar alterações|Save changes/ } )
+		.first();
+
+	await saveButton.click();
+	await page.waitForTimeout( 4500 );
+
+	const draft = await storedDraft();
+	const stored = ( draft?.fields ?? [] ).filter(
+		( field ) => field?.origin === 'core'
+	);
+
+	record(
+		'The adopted fields are stored under the identity WooCommerce uses',
+		stored.some( ( field ) => field.id === NATIVE_FIELD ) &&
+			stored.every( ( field ) => field.integration_id === field.id ),
+		'core fields=' + stored.length
+	);
+
+	const first = stored.find( ( field ) => field.id === NATIVE_FIELD ) ?? {};
+
+	record(
+		'With the order and the label the store runs them at',
+		10 === Number( first.position ) && '' !== ( first.label ?? '' ),
+		`position=${ first.position } label=${ first.label }`
+	);
+
+	record(
+		'And the document still holds what it had before',
+		( draft?.fields ?? [] ).some(
+			( field ) => field?.id === 'arquivo_autorizacao'
+		),
+		'the fields this store configured are still there'
+	);
+} );
+
+// ---------------------------------------------------------------------------
+// 3. What is managed stops being offered.
+// ---------------------------------------------------------------------------
+await step( 'The panel stops offering what is managed', async () => {
+	await page.goto( URL, { waitUntil: 'domcontentloaded' } );
+	await page.waitForTimeout( 3000 );
+
+	record(
+		'The section that was taken over is no longer offered',
+		( await page.locator( `#wccs-core-section-${ SECTION }` ).count() ) === 0,
+		'nothing is left to adopt in it'
+	);
+
+	// What is still unmanaged stays on offer: the panel reports the store, it does not
+	// disappear after the first adoption.
+	const remaining = await page
+		.getByRole( 'region', { name: 'Checkout padrão' } )
+		.count();
+
+	record(
+		'While the rest of the store checkout is still there to take over',
+		remaining > 0 &&
+			( await page
+				.getByRole( 'button', { name: 'Usar esta seção' } )
+				.count() ) > 0,
+		'panels=' + remaining
+	);
+
+	await page.screenshot( { path: `${ OUT }/fase3-section-managed.png` } );
+} );
+
+record(
+	'No page error was raised while the screen was used',
+	errors.length === 0,
+	errors.join( ' | ' )
+);
+
+if ( errors.length > 0 ) {
+	note( 'Page errors: ' + errors.join( ' | ' ) );
+}
+
+await browser.close();
+
+// ---------------------------------------------------------------------------
+// Report.
+// ---------------------------------------------------------------------------
+console.log(
+	'====================================================================='
+);
+console.log( 'Fase 3 observation — the checkout the store already runs' );
+console.log(
+	'====================================================================='
+);
+
+for ( const finding of findings ) {
+	console.log(
+		`  ${ finding.ok ? 'PASS' : 'FAIL' }  ${ finding.label }${
+			finding.detail ? `  [${ finding.detail }]` : ''
+		}`
+	);
+}
+
+for ( const message of notes ) {
+	console.log( `  NOTE  ${ message }` );
+}
+
+const failed = findings.filter( ( finding ) => ! finding.ok ).length;
+
+console.log(
+	'====================================================================='
+);
+console.log(
+	`RESULT: ${ findings.length - failed } passed, ${ failed } failed, ${
+		notes.length
+	} notes`
+);
+console.log(
+	'====================================================================='
+);
+
+process.exit( failed > 0 ? 1 : 0 );

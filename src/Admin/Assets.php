@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace WCCheckoutSuite\Admin;
 
 use WCCheckoutSuite\Admin\Routes;
+use WCCheckoutSuite\Checkout\Blocks\BlocksRenderer;
 
 /**
  * Loads the admin bundle on the suite screen and nowhere else.
@@ -165,13 +166,13 @@ final class Assets {
 	 */
 	public static function bootstrap_data(): array {
 		return array(
-			'version'  => WCCS_VERSION,
-			'mountId'  => AdminMenu::MOUNT_ID,
-			'sections' => AdminMenu::sections(),
+			'version'      => WCCS_VERSION,
+			'mountId'      => AdminMenu::MOUNT_ID,
+			'sections'     => AdminMenu::sections(),
 			// The shell's column states the store it is configuring and the version
 			// doing the configuring, which is the pair a support conversation needs.
-			'siteName' => wp_specialchars_decode( (string) get_bloginfo( 'name' ), ENT_QUOTES ),
-			'rest'     => array(
+			'siteName'     => wp_specialchars_decode( (string) get_bloginfo( 'name' ), ENT_QUOTES ),
+			'rest'         => array(
 				'root'      => esc_url_raw( rest_url() ),
 				'namespace' => WCCS_REST_NAMESPACE,
 				'nonce'     => wp_create_nonce( 'wp_rest' ),
@@ -182,7 +183,11 @@ final class Assets {
 			// the account page and an account endpoint are all WooCommerce's own URLs,
 			// and a screen that built them itself would be a second opinion about where
 			// the store keeps its pages.
-			'urls'     => self::surface_urls(),
+			'urls'         => self::surface_urls(),
+			// Which checkout the store runs, read from the store (§6.2, §6.7): what a
+			// native field may be changed into depends on it, and the merchant should not
+			// have to tell the screen what their own checkout is.
+			'checkoutMode' => BlocksRenderer::store_checkout_mode(),
 		);
 	}
 

@@ -157,14 +157,15 @@ function navigation( serverSections ) {
 /**
  * Renders the content of the active section.
  *
- * @param {Object} props            Component properties.
- * @param {string} props.section    Active section identifier.
- * @param {Object} [props.client]   REST client, when the section needs one.
- * @param {string} [props.siteName] Store name, for the screens that draw it.
- * @param {Object} [props.urls]     Storefront addresses the screens link to.
+ * @param {Object} props                Component properties.
+ * @param {string} props.section        Active section identifier.
+ * @param {Object} [props.client]       REST client, when the section needs one.
+ * @param {string} [props.siteName]     Store name, for the screens that draw it.
+ * @param {Object} [props.urls]         Storefront addresses the screens link to.
+ * @param {string} [props.checkoutMode] Which checkout the store runs.
  * @return {*} Rendered element tree.
  */
-function SectionContent( { section, client, siteName, urls } ) {
+function SectionContent( { section, client, siteName, urls, checkoutMode } ) {
 	// The design's four destinations are views of one document: the editor, the checkout
 	// preview, the archive and the rules. They share the screen that owns the draft, so
 	// switching between them keeps the work in progress and reloads nothing.
@@ -175,6 +176,7 @@ function SectionContent( { section, client, siteName, urls } ) {
 				view={ section }
 				siteName={ siteName }
 				urls={ urls }
+				checkoutMode={ checkoutMode }
 			/>
 		);
 	}
@@ -213,12 +215,13 @@ function SectionContent( { section, client, siteName, urls } ) {
  * The return type is left to inference on purpose: annotating it as `Object`
  * makes TypeScript refuse to treat the component as a JSX element.
  *
- * @param {Object}                          props            Component properties.
- * @param {{ id: string, label: string }[]} props.sections   Navigation sections.
- * @param {string}                          props.version    Plugin version.
- * @param {string}                          [props.siteName] Store name, for the column's foot.
- * @param {Object}                          [props.client]   REST client.
- * @param {Object}                          [props.urls]     Storefront addresses the screens link to.
+ * @param {Object}                          props                Component properties.
+ * @param {{ id: string, label: string }[]} props.sections       Navigation sections.
+ * @param {string}                          props.version        Plugin version.
+ * @param {string}                          [props.siteName]     Store name, for the column's foot.
+ * @param {Object}                          [props.client]       REST client.
+ * @param {Object}                          [props.urls]         Storefront addresses the screens link to.
+ * @param {string}                          [props.checkoutMode] Which checkout the store runs.
  */
 export default function AppShell( {
 	sections,
@@ -226,6 +229,7 @@ export default function AppShell( {
 	siteName,
 	client,
 	urls = {},
+	checkoutMode = '',
 } ) {
 	const items = useMemo( () => navigation( sections ), [ sections ] );
 	const ids = items.map( ( item ) => item.id );
@@ -495,6 +499,7 @@ export default function AppShell( {
 							client={ client }
 							siteName={ siteName }
 							urls={ urls }
+							checkoutMode={ checkoutMode }
 						/>
 					</main>
 				</div>

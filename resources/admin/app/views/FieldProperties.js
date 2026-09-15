@@ -252,7 +252,7 @@ export default function FieldProperties( {
 						</span>
 						<button
 							type="button"
-							className="link-button"
+							className="text-btn"
 							id={ `wccs-link-remove-${ entry.value }${ suffix }` }
 							onClick={ () =>
 								changeBindings(
@@ -949,7 +949,7 @@ export default function FieldProperties( {
 
 												<button
 													type="button"
-													className="link-button"
+													className="text-btn"
 													id={ `wccs-link-add-${ entry.value }` }
 													onClick={ () =>
 														changeBindings(

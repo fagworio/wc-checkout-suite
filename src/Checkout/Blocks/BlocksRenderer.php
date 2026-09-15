@@ -89,6 +89,20 @@ final class BlocksRenderer {
 			return false;
 		}
 
+		return self::store_uses_blocks_checkout();
+	}
+
+	/**
+	 * Whether the store's checkout is the Blocks one, whoever is asking.
+	 *
+	 * The same question as {@see self::is_blocks_checkout()}, without the request guard: the
+	 * admin screen needs the answer while the merchant is in wp-admin, and a screen that
+	 * assumed the classic checkout would tell them a native field can be reordered here when
+	 * the store's checkout cannot honour it (§6.7).
+	 *
+	 * @return bool
+	 */
+	public static function store_uses_blocks_checkout(): bool {
 		if ( ! function_exists( 'has_block' ) || ! function_exists( 'wc_get_page_id' ) ) {
 			return false;
 		}
@@ -110,6 +124,15 @@ final class BlocksRenderer {
 		$page = get_post( wc_get_page_id( 'checkout' ) );
 
 		return $page instanceof \WP_Post && has_block( 'woocommerce/checkout', $page );
+	}
+
+	/**
+	 * Which checkout the store runs, in the words the admin screen uses.
+	 *
+	 * @return string `blocks` or `classic`.
+	 */
+	public static function store_checkout_mode(): string {
+		return self::store_uses_blocks_checkout() ? 'blocks' : 'classic';
 	}
 
 	/**

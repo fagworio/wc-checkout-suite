@@ -48,6 +48,7 @@ import {
 	offeredInSentence,
 } from './design/destinations';
 import { Icon } from './design/icons';
+import { adoptCoreSection } from './schema/coreCheckout';
 import useDocumentHistory from './schema/useDocumentHistory';
 import {
 	classifyFailure,
@@ -215,12 +216,14 @@ function AccountSectionPresentation( { section, document, apply } ) {
 /**
  * Fields screen.
  *
- * @param {Object} props            Component properties.
- * @param {any}    props.client     REST client.
- * @param {string} [props.view]     View the frame is showing: `fields`,
- *                                  `appearance`, `archive` or `rules`.
- * @param {string} [props.siteName] Store name, for the preview's mock header.
- * @param {Object} [props.urls]     Storefront addresses the success message links to.
+ * @param {Object} props                Component properties.
+ * @param {any}    props.client         REST client.
+ * @param {string} [props.view]         View the frame is showing: `fields`,
+ *                                      `appearance`, `archive` or `rules`.
+ * @param {string} [props.siteName]     Store name, for the preview's mock header.
+ * @param {Object} [props.urls]         Storefront addresses the success message links to.
+ * @param {string} [props.checkoutMode] Which checkout the store runs (`blocks` or
+ *                                      `classic`), read from the store by the server.
  * @return {*} Rendered element tree.
  */
 export default function FieldsScreen( {
@@ -228,6 +231,7 @@ export default function FieldsScreen( {
 	view = 'fields',
 	siteName = '',
 	urls = {},
+	checkoutMode = '',
 } ) {
 	/**
 	 * The document and its local edit history.
@@ -305,9 +309,14 @@ export default function FieldsScreen( {
 	 * capability matrix that says so is per adapter. It is view state: the document
 	 * is the same one either way.
 	 *
+	 * It starts on the checkout **the store actually runs**, which the server reads
+	 * (§6.2): a screen that assumed the classic checkout would tell a merchant that a
+	 * native field can be reordered here when their own checkout cannot honour it
+	 * (§6.7). Switching it is a preview of the other one, and changes nothing stored.
+	 *
 	 * @type {[string, Function]}
 	 */
-	const [ mode, setMode ] = useState( 'classic' );
+	const [ mode, setMode ] = useState( checkoutMode || 'classic' );
 	const [ area, setArea ] = useState( 'checkout' );
 	const [ linkDialogOpen, setLinkDialogOpen ] = useState( false );
 	const [ linkFieldId, setLinkFieldId ] = useState( '' );
@@ -1200,6 +1209,8 @@ export default function FieldsScreen( {
 					},
 					onAdoptCore: ( /** @type {any} */ core ) =>
 						apply( adoptCoreField( document, core ) ),
+					onAdoptCoreSection: ( /** @type {any} */ coreSection ) =>
+						apply( adoptCoreSection( document, coreSection ) ),
 					onChangeField: (
 						/** @type {Partial<import('./schema/types').FieldDefinition>} */ changes
 					) =>

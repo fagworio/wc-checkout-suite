@@ -24,6 +24,7 @@ import { useEffect, useMemo, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 
 import Dialog from '../components/Dialog';
+import CoreCheckoutPanel from '../components/CoreCheckoutPanel';
 import FieldPicker from '../components/FieldPicker';
 import ArchiveView from './ArchiveView';
 import FieldProperties from './FieldProperties';
@@ -132,6 +133,7 @@ export default function FieldManagerView( { model } ) {
 		onProtect,
 		onCreateField,
 		onAdoptCore,
+		onAdoptCoreSection,
 		edits,
 		onSave,
 		report,
@@ -945,6 +947,19 @@ export default function FieldManagerView( { model } ) {
 							) }
 						</p>
 					</div>
+				) : null }
+
+				{ /* The store's own checkout, above the document that configures it (§6.2).
+				     It is offered where fields are collected: the native fields and their
+				     order belong to the checkout, and a screen for a display destination
+				     would be promising a management it cannot perform. */ }
+				{ 'checkout' === area ? (
+					<CoreCheckoutPanel
+						inventory={ coreFields }
+						document={ doc }
+						onAdoptField={ onAdoptCore }
+						onAdoptSection={ onAdoptCoreSection }
+					/>
 				) : null }
 
 				<div className="editor-grid">

@@ -224,8 +224,7 @@ describe( 'loading', () => {
 } );
 
 describe( 'the schema', () => {
-	it( 'lists the stored fields', async () => {
-		render(
+	it( 'lists the stored fields', async () => {		render(
 			<FieldsScreen
 				client={ client( {
 					draft: doc( [
@@ -250,6 +249,94 @@ describe( 'the schema', () => {
 		expect(
 			screen.getByText( /Adicione campos complementares/ )
 		).toBeInTheDocument();
+	} );
+
+	it( 'starts on the checkout the store actually runs', async () => {
+		// §6.7: what a native field may be changed into depends on the checkout that will
+		// render it, and the merchant should not have to tell the screen which one their
+		// store runs — the server read it.
+		render(
+			<FieldsScreen client={ client() } checkoutMode="blocks" />
+		);
+
+		await screen.findByText( 'CPF' );
+
+		expect(
+			screen.getByText( 'Modo Blocks · matriz de capacidades.' )
+		).toBeInTheDocument();
+	} );
+
+	it( 'does not warn about Blocks on a store that runs the classic checkout', async () => {
+		render(
+			<FieldsScreen client={ client() } checkoutMode="classic" />
+		);
+
+		await screen.findByText( 'CPF' );
+
+		expect(
+			screen.queryByText( 'Modo Blocks · matriz de capacidades.' )
+		).not.toBeInTheDocument();
+	} );
+
+	it( 'shows the store checkout on a first entry instead of starting empty', async () => {
+		// §6.2: the screen loads the real checkout of the store. A document with nothing in
+		// it is not a store with no checkout, and the merchant must see what the store runs
+		// before deciding what to change.
+		const native = {
+			id: 'billing_first_name',
+			section: 'billing',
+			label: 'Nome',
+			type: 'text',
+			nativeType: 'text',
+			typeRemapped: false,
+			required: true,
+			priority: 10,
+			classes: [],
+			layout: { desktop: 6, tablet: 6, mobile: 12 },
+			protected: true,
+		};
+
+		render(
+			<FieldsScreen
+				client={ client( {
+					draft: doc( [] ),
+					coreFields: jest.fn( async () => ( {
+						available: true,
+						reason: '',
+						sections: [
+							{
+								key: 'billing',
+								label: 'Cobrança',
+								fields: [ native ],
+							},
+						],
+						fields: [ native ],
+					} ) ),
+				} ) }
+			/>
+		);
+
+		const panel = await screen.findByRole( 'region', {
+			name: 'Checkout padrão',
+		} );
+
+		expect( within( panel ).getByText( 'Cobrança' ) ).toBeInTheDocument();
+		expect( within( panel ).getByText( 'Nome' ) ).toBeInTheDocument();
+		expect(
+			within( panel ).getByText( 'billing_first_name' )
+		).toBeInTheDocument();
+		expect( within( panel ).getByText( 'Nativo' ) ).toBeInTheDocument();
+
+		// And it can be taken over in one action, without rebuilding the section by hand.
+		await userEvent
+			.setup()
+			.click( screen.getByRole( 'button', { name: 'Usar esta seção' } ) );
+
+		// The field is part of the document now, and the panel has nothing left to offer.
+		await screen.findByText( /1 de 1 ativos/ );
+		expect(
+			screen.queryByRole( 'button', { name: 'Usar esta seção' } )
+		).not.toBeInTheDocument();
 	} );
 
 	it( 'groups the fields by the section they are in', async () => {

@@ -806,3 +806,125 @@ body:has(.wccs-admin) #wpfooter {
 		min-height: calc(100vh - 46px);
 	}
 }
+
+/*
+ * The store's own checkout, above the document that configures it.
+ *
+ * It is a report, not a form: it states what WooCommerce runs and what this document already
+ * manages, and every action belongs to one field or one section of it. The surface is
+ * quieter than the editor's own panels on purpose — it is the store's, not the merchant's.
+ */
+.wccs-admin .core-checkout {
+	margin-bottom: 20px;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: color-mix(in srgb, var(--soft) 22%, var(--surface));
+	overflow: hidden;
+}
+
+.wccs-admin .core-checkout-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 15px 18px;
+	border-bottom: 1px solid var(--border);
+}
+
+.wccs-admin .core-checkout-head h3 {
+	font-size: 13px;
+	font-weight: 700;
+	margin: 0 0 4px;
+}
+
+.wccs-admin .core-checkout-head p {
+	font-size: 10px;
+	line-height: 1.7;
+	color: var(--muted);
+	max-width: 70ch;
+	margin: 0;
+}
+
+.wccs-admin .core-checkout-count {
+	font-size: 10px;
+	font-weight: 650;
+	color: var(--brand);
+	background: var(--soft);
+	border-radius: 999px;
+	padding: 4px 10px;
+	white-space: nowrap;
+}
+
+.wccs-admin .core-checkout-sections {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	gap: 14px;
+	padding: 14px 18px 18px;
+}
+
+.wccs-admin .core-checkout-section {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	padding: 12px 14px;
+	min-width: 0;
+}
+
+.wccs-admin .core-checkout-section-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	margin-bottom: 10px;
+}
+
+.wccs-admin .core-checkout-section-head strong {
+	font-size: 11px;
+	margin-right: 6px;
+}
+
+.wccs-admin .core-checkout-section-head small {
+	display: block;
+	font-size: 9px;
+	margin-top: 2px;
+}
+
+.wccs-admin .core-checkout-fields {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+}
+
+.wccs-admin .core-checkout-fields li {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 10px;
+	min-width: 0;
+	flex-wrap: wrap;
+	border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+	padding-top: 7px;
+}
+
+.wccs-admin .core-checkout-fields li:first-child {
+	border-top: 0;
+	padding-top: 0;
+}
+
+.wccs-admin .core-checkout-fields code {
+	font-size: 9px;
+	color: var(--muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.wccs-admin .core-checkout-label {
+	font-weight: 600;
+}
+
+.wccs-admin .core-checkout-fields .text-btn {
+	margin-left: auto;
+}
