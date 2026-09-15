@@ -356,6 +356,16 @@ final class DocumentMigrator {
 			$projected[ (string) $destination ] = $binding->to_link();
 		}
 
+		// The map is a projection of the list, so it carries what the list justifies and
+		// nothing else: a destination the list no longer uses is not left saying it is on,
+		// which is what turning a destination off has to mean. A link that is *off* stays —
+		// that is configuration the merchant typed, inert, and still theirs.
+		foreach ( $map as $key => $link ) {
+			if ( is_array( $link ) && ! empty( $link['enabled'] ) && ! isset( $projected[ (string) $key ] ) ) {
+				unset( $map[ $key ] );
+			}
+		}
+
 		$field['destinations'] = array_merge( $map, $projected );
 		$field['bindings']     = $bindings;
 

@@ -99,6 +99,34 @@ errada:
   seria lido como uma colocação que nenhum adaptador sabe fazer — com o `location` ao lado a
   parecer correto.
 
+**O editor escreve a lista de usos** (§3.3, §2) — até aqui o ecrã gravava o mapa, que é uma entrada
+por destino e portanto não sabe dizer que um campo é usado duas vezes no mesmo sítio:
+
+- `resources/admin/app/schema/bindings.ts` (novo) é a única camada que lê e escreve usos:
+  `bindingsOf()` lê a lista que o servidor mandou e **deriva-a do mapa** quando o documento é anterior
+  à divisão (um vínculo ligado por destino, `mode` a decidir `editable`, `actions` a serem as
+  permissões); `addBinding()` acrescenta um uso com o identificador derivado do campo, do destino e do
+  container, numerado quando colidiria; `updateBinding()` renomeia o uso quando o container muda;
+  `removeBinding()`/`removeDestinationBindings()` removem um uso ou todos os de um destino;
+  `withBindings()` escreve **as duas formas juntas** — a lista e o mapa projetado dela — para não
+  haver duas verdades; e `rebindFor()` reescreve os usos de uma cópia para o campo novo.
+- `mapOf()` é uma projeção e nada mais: um destino que a lista já não usa **não fica a dizer que está
+  ligado** — é isso que "desligar um destino" tem de significar —, enquanto um vínculo que está
+  *desligado* se mantém, porque é configuração que o lojista escreveu e é inerte.
+- `FieldProperties.js` deixou de ter um interruptor por destino com um só vínculo por baixo: o
+  interruptor significa "há pelo menos um uso" (§3.3 — mostrar ali e usar ali são a mesma afirmação),
+  e cada destino desenha a sua **lista de usos**, cada um com o seu container, título, ordem,
+  decisão de editável e ações. O primeiro uso mantém os identificadores que o painel sempre teve
+  (`wccs-link-<destino>`, `wccs-link-section-<destino>`, …), para o que o lojista vê não mudar quando
+  aparece um segundo; os seguintes são numerados, e cada um tem «Remover uso» e o destino tem
+  «Adicionar uso nesta área».
+- As operações do documento acompanharam a mudança no mesmo passo: duplicar um campo **religa** os
+  usos ao campo novo (o servidor recusa um uso listado sob outro campo), apagar um container apaga os
+  usos que o nomeavam, e a ação em massa por destino escreve a lista em vez do mapa.
+- `DocumentMigrator` completa a regra do lado do servidor: no caminho canônico o mapa passa a ser
+  estritamente a projeção da lista — um destino que nenhum uso justifica **deixa de estar ligado**, e
+  um vínculo desligado mantém-se.
+
 ## 2. Prova
 
 | Prova | Resultado |
@@ -108,16 +136,20 @@ errada:
 | `tests/Unit/Domain/Schema/DocumentMigratorTest.php` (novo) | 6 testes: divisão do container, bindings apontados à variante certa, **idempotência**, documento canônico intocado, chave ambígua preservada, e nada além de configuração alterado |
 | `tests/Unit/Domain/Customers/CustomerSectionFieldsTest.php` (novo) | 6 testes: um campo usado duas vezes é desenhado duas vezes, só os usos do container, posição com fallback, link guardado lido como um uso, submissão escreve uma vez, uso só-de-leitura não aceita nada |
 | `tests/Unit/Domain/Uploads/FilePermissionsTest.php` (novo) | 7 testes: link guardado, união dos usos da área, cada uso responde por si dentro do que o destino desempenha, omissões de um uso vazio, uso invisível não permite nada, tipo sem ficheiro não tem permissões, um binding responde sozinho |
+| `tests/js/schema/bindings.test.js` (novo) | 12 testes: ler a lista e derivá-la do mapa, nome de um uso, acrescentar (numerando), renomear ao mudar de container, remover um uso, desligar um destino, ligar um destino, religar uma cópia, projetar o mapa, o mapa não deixa um destino ligado sem uso |
 | `AreaProjectionTest` (4 testes novos) | um campo usado duas vezes aparece duas vezes; dois usos no mesmo container mantêm ordem estável; uso invisível é saltado; uso de ficheiro sem `show_metadata` não é listado |
 | `FieldDefinitionTest` (3 testes novos) | mapa guardado → bindings; dois bindings no mesmo destino; escrita consistente das duas formas |
 | `DefinitionValidatorTest` (7 testes novos) | um uso responde pelas suas ações; sem ações de ficheiro num tipo sem ficheiro; dois usos não partilham identificador; um uso pertence ao campo onde está listado; um uso que não é mapa é recusado; ordem negativa recusada; um mapa guardado continua a ser validado ligação a ligação |
 | `SectionValidatorTest` (4 testes novos) | um uso num container que a área não oferece é recusado; o segundo uso da área é perguntado por si; cada uso visível numa superfície de cliente é perguntado sobre o storage (e um uso invisível não); um `target` fora dos conceitos do domínio é recusado |
-| `DocumentMigratorTest` (2 testes novos) | a lista não é reconstruída do mapa (dois usos sobrevivem, a projeção é a do último); um mapa editado chega ao uso que descreve, e não decide onde há dois usos |
+| `DocumentMigratorTest` (3 testes novos) | a lista não é reconstruída do mapa (dois usos sobrevivem, a projeção é a do último); um mapa editado chega ao uso que descreve, e não decide onde há dois usos; um destino que nenhum uso justifica deixa de estar ligado |
+| `FieldProperties.test.js` (4 testes novos) | o interruptor escreve um uso e o mapa; dois usos desenhados e um terceiro acrescentado; remover um uso deixa os outros; desligar um destino remove os usos **e** o mapa deixa de o dizer |
+| `fieldOperations.test.js` (1 teste atualizado) | a ação em massa por destino escreve a lista e o mapa que dela se projeta |
 | `tests/Integration/FASE2-binding-validation-proof.php` (novo) | **8/0** pela rota real: dois usos do mesmo campo no mesmo destino são aceites e voltam os dois; um uso com `approve` no destino do cliente é recusado (`invalid_destination_action`); um uso num container da equipa dentro do destino do cliente é recusado (`destination_section_not_offered`); a recusa não substitui o documento guardado |
-| `npx jest` / `npx tsc --noEmit` / `npm run lint:js` / `npm run build` | limpos (647 testes) |
-| `composer check` | phpcs e phpstan sem erros; **501 testes, 1821 asserções** |
+| `npx jest` / `npx tsc --noEmit` / `npm run lint:js` / `npm run build` | limpos (**662 testes**, 43 suites) |
+| `composer check` | phpcs e phpstan sem erros; **502 testes, 1824 asserções** |
 | Varredura de integração | **68 harnesses, 1550 asserções, 0 falhas** |
-| `tests/browser/f14-links-observation.mjs` | **22/0** com o documento migrado (o editor lê a seção da variante do destino, que é o comportamento novo) |
+| `tests/browser/f14-bindings-observation.mjs` (novo) | **13/0**: um segundo uso é acrescentado no mesmo destino (mesmo container), com o seu título, ordem e decisão de só-leitura; a gravação guarda **dois usos com identificadores distintos** (`…#2`) e o mapa projetado; os outros destinos ficam intactos; o painel volta a mostrar os dois usos |
+| `tests/browser/f14-links-observation.mjs` | **22/0** com o painel reescrito: vínculos, ações por destino, fluxo de aprovação, barra de destinos e a gravação pela interface |
 | `tests/browser/my-account-sections-flow.mjs` | **6/6** com o documento migrado: o campo aparece sem pedido, o cliente grava o próprio valor, o valor persiste no acesso seguinte, e o campo de Minha conta não aparece no checkout |
 
 `tests/Integration/F14-wccs-073-section-areas-proof.php` passou a provar a **divisão**: uma seção
@@ -126,19 +158,19 @@ container da sua área (13/0).
 
 ## 3. Limites que ficam registados
 
-- **A escrita ainda não é canônica em todos os caminhos.** Um documento guardado na forma antiga
-  mantém a forma antiga até a gravação seguinte (a migração corre na leitura), e o editor ainda
-  escreve `destinations` por dentro. `to_array()` escreve `bindings` só quando o documento é
-  canônico, para não haver duas verdades: a lista e o mapa não podem discordar. A migração dos
-  ecrãs para bindings (editor e formulários) é o passo seguinte da fase.
+- **A escrita é canônica no editor, e a leitura continua a aceitar o que existia.** O painel escreve
+  `bindings[]` e o mapa projetado dele; um documento guardado por uma versão anterior mantém a forma
+  antiga até à gravação seguinte (a migração corre na leitura e é idempotente), e `to_array()` só
+  escreve `bindings` quando o documento é canônico, para a lista e o mapa não poderem discordar.
+- **Um destino com um uso ainda segue o mapa na leitura.** É a regra que deixou o editor antigo
+  continuar a funcionar enquanto o novo foi escrito: enquanto houver clientes que gravam só o mapa,
+  um destino com um único uso aceita a edição que vier por ele. Quando nenhum cliente escrever o mapa,
+  a regra pode cair — mas cai por não ser necessária, não por ser esquecida.
+- **Um uso invisível não tem controlo no painel.** `visible` é lido e escrito pelo modelo, e nenhuma
+  superfície o ignora, mas o painel escreve sempre `true`: esconder um uso condicionalmente é
+  configuração de condições, e as condições unificadas são a Fase 8.
 - **`presentation.account` continua guardado dentro de `presentation`** enquanto o renderer de
   Minha Conta o lê; as chaves canônicas `display_title`/`icon` já são preenchidas a partir dele.
-- **O validador conhece a lista, mas o editor ainda escreve o mapa.** `DefinitionValidator` e
-  `SectionValidator` já validam `bindings[]` uso a uso (e é isso que a rota real prova), mas o ecrã de
-  configuração continua a gravar `destinations` e ainda não oferece um segundo uso do mesmo campo no
-  mesmo destino. A regra de reconciliação do migrador existe precisamente para os dois conviverem: um
-  destino com um uso segue o mapa (a edição do editor), um destino com dois usos segue a lista. É o
-  item (a) do passo seguinte, a par do (b) `target`.
 - **`target` está validado por lista fechada, mas ainda não por destino.** Hoje a lista é a dos
   conceitos do domínio (`billing`, `shipping`, `contact`, `account`, `order`), que é a linguagem que
   os adaptadores falam; apertar a regra por destino só faz sentido quando cada superfície passar a
@@ -148,5 +180,5 @@ container da sua área (13/0).
   seguir é a lista de valores do pedido (um por campo). Um campo usado duas vezes no mesmo destino
   aparece portanto **uma vez** nessa lista, e quem decide se aparece é a **união** dos usos da área
   (`FilePermissions::allows()`): é a resposta correta para "esta área pode mostrar este valor?", mas
-  não é a resposta por uso que o `AreaProjection` já dá. Migrar estas duas listas para bindings faz
-  parte do passo do editor.
+  não é a resposta por uso que o `AreaProjection` já dá. Migrar estas duas listas para bindings é o
+  passo seguinte da Fase 2, a par das telas que as desenham.

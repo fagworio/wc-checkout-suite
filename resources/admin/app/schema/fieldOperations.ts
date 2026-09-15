@@ -17,6 +17,13 @@
 
 import { __, sprintf } from '@wordpress/i18n';
 
+import {
+	bindingsOf,
+	ensureBinding,
+	rebindFor,
+	removeDestinationBindings,
+	withBindings,
+} from './bindings';
 import { references } from './conditions';
 import type { ConditionNode } from './conditions';
 import type {
@@ -811,6 +818,10 @@ export function duplicateField(
 
 	const copyId = uniqueIdentifier( document, `${ id }_copy` );
 
+	// The uses are the copy's own: they name the field they belong to, and the server
+	// refuses a use listed under a field other than the one it names.
+	const copyBindings = rebindFor( bindingsOf( source ), copyId );
+
 	const copy: FieldDefinition = {
 		...source,
 		id: copyId,
@@ -825,6 +836,7 @@ export function duplicateField(
 		),
 		enabled: false,
 		position: nextPosition( document, source.section ),
+		...withBindings( source, copyBindings ),
 	};
 
 	return {
@@ -1634,19 +1646,15 @@ export function removeSectionWithDependents(
 			fields: ( document.fields ?? [] )
 				.filter( ( field ) => ! impact.fields.includes( field.id ) )
 				.map( ( field ) => {
-					const destinations = { ...( field.destinations ?? {} ) };
-
-					Object.entries( destinations ).forEach(
-						( [ area, link ] ) => {
-							if ( link?.enabled && link.section === id ) {
-								delete destinations[ area ];
-							}
-						}
+					// The container is being deleted, so the uses that named it go with it —
+					// and the map is projected from the list, so the two never disagree.
+					const bindings = bindingsOf( field ).filter(
+						( binding ) => binding.container_id !== id
 					);
 
 					return {
 						...field,
-						destinations,
+						...withBindings( field, bindings ),
 						approval:
 							field.approval?.require_review &&
 							field.approval.section === id
@@ -1903,15 +1911,14 @@ export function setFieldsDestinations(
 			return __( 'It is already set that way.', 'wc-checkoutsuite' );
 		}
 
-		return {
-			destinations: {
-				...( field.destinations ?? {} ),
-				[ destination ]: {
-					...( field.destinations?.[ destination ] ?? {} ),
-					enabled: allowed,
-				},
-			},
-		};
+		// "Shown there" and "used there" are the same statement in the final model, so the
+		// bulk action writes the list the surfaces read and lets the map follow it.
+		return withBindings(
+			field,
+			allowed
+				? ensureBinding( field, destination )
+				: removeDestinationBindings( field, destination )
+		);
 	} );
 }
 

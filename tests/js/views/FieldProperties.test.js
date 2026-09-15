@@ -305,8 +305,171 @@ describe( 'the links and display tab', () => {
 
 		await user.click( first );
 
-		expect( onChange ).toHaveBeenCalledWith( {
-			destinations: { admin_order: { enabled: true } },
+		// Turning a destination on is the same statement as using the field there (§3.3),
+		// so what is written is one use — and the map, projected from it, so the two cannot
+		// disagree. The other destination is not mentioned at all.
+		expect( onChange ).toHaveBeenCalledTimes( 1 );
+
+		const written = onChange.mock.calls[ 0 ][ 0 ];
+
+		expect( written.bindings ).toHaveLength( 1 );
+		expect( written.bindings[ 0 ] ).toEqual(
+			expect.objectContaining( {
+				field_id: 'billing_document',
+				destination: 'admin_order',
+				container_id: '',
+				visible: true,
+			} )
+		);
+		expect( written.destinations ).toEqual( {
+			admin_order: expect.objectContaining( { enabled: true } ),
+		} );
+	} );
+
+	it( 'shows every use of a destination and adds another one', async () => {
+		const user = userEvent.setup();
+		const { onChange } = renderInspector( {
+			field: field( {
+				bindings: [
+					{
+						id: 'billing_document@admin_order',
+						field_id: 'billing_document',
+						container_id: '',
+						destination: 'admin_order',
+						position: 10,
+						visible: true,
+						editable: true,
+						label_override: 'Autorização',
+						permissions: [],
+					},
+					{
+						id: 'billing_document@admin_order/billing#2',
+						field_id: 'billing_document',
+						container_id: 'billing',
+						destination: 'admin_order',
+						position: 20,
+						visible: true,
+						editable: true,
+						label_override: 'Conferido',
+						permissions: [],
+					},
+				],
+			} ),
+		} );
+
+		await user.click( screen.getByRole( 'button', { name: 'Vínculos' } ) );
+
+		// Both uses are on screen, each with its own controls, and each can be removed
+		// because neither is the only one.
+		expect(
+			screen.getAllByLabelText( 'Seção neste destino' )
+		).toHaveLength( 2 );
+		expect( screen.getAllByLabelText( 'Título apresentado' ) ).toHaveLength(
+			2
+		);
+		expect( screen.getByDisplayValue( 'Autorização' ) ).toBeInTheDocument();
+		expect( screen.getByDisplayValue( 'Conferido' ) ).toBeInTheDocument();
+		expect(
+			screen.getAllByRole( 'button', { name: 'Remover uso' } )
+		).toHaveLength( 2 );
+
+		await user.click(
+			screen.getByRole( 'button', {
+				name: 'Adicionar uso nesta área',
+			} )
+		);
+
+		const written = onChange.mock.calls[ 0 ][ 0 ];
+
+		expect( written.bindings ).toHaveLength( 3 );
+		expect( written.bindings[ 2 ] ).toEqual(
+			expect.objectContaining( {
+				destination: 'admin_order',
+				container_id: '',
+			} )
+		);
+		expect( written.bindings[ 2 ].id ).not.toBe( written.bindings[ 0 ].id );
+	} );
+
+	it( 'removes one use, leaving the others where they are', async () => {
+		const user = userEvent.setup();
+		const { onChange } = renderInspector( {
+			field: field( {
+				bindings: [
+					{
+						id: 'billing_document@admin_order',
+						field_id: 'billing_document',
+						container_id: '',
+						destination: 'admin_order',
+						position: 10,
+						visible: true,
+						editable: true,
+					},
+					{
+						id: 'billing_document@admin_order/billing#2',
+						field_id: 'billing_document',
+						container_id: 'billing',
+						destination: 'admin_order',
+						position: 20,
+						visible: true,
+						editable: true,
+					},
+				],
+			} ),
+		} );
+
+		await user.click( screen.getByRole( 'button', { name: 'Vínculos' } ) );
+
+		const [ , second ] = screen.getAllByRole( 'button', {
+			name: 'Remover uso',
+		} );
+
+		await user.click( second );
+
+		const written = onChange.mock.calls[ 0 ][ 0 ];
+
+		expect( written.bindings ).toHaveLength( 1 );
+		expect( written.bindings[ 0 ].id ).toBe(
+			'billing_document@admin_order'
+		);
+	} );
+
+	it( 'turns a destination off by removing its uses, map included', async () => {
+		const user = userEvent.setup();
+		const { onChange } = renderInspector( {
+			field: field( {
+				destinations: {
+					admin_order: { enabled: true, mode: 'edit' },
+					customer_order: { enabled: false },
+				},
+				bindings: [
+					{
+						id: 'billing_document@admin_order',
+						field_id: 'billing_document',
+						container_id: '',
+						destination: 'admin_order',
+						position: 10,
+						visible: true,
+						editable: true,
+					},
+				],
+			} ),
+		} );
+
+		await user.click( screen.getByRole( 'button', { name: 'Vínculos' } ) );
+
+		await user.click(
+			screen.getByRole( 'checkbox', { name: 'Mostrar em Pedido' } )
+		);
+
+		const written = onChange.mock.calls[ 0 ][ 0 ];
+
+		expect( written.bindings ).toEqual( [] );
+		// No use justifies the destination any more, so the map must not go on saying it
+		// is on. The link that was already off stays: it is inert configuration.
+		expect( written.destinations.admin_order ).toBeUndefined();
+		expect( written.destinations.customer_order ).toEqual( {
+			enabled: false,
 		} );
 	} );
 

@@ -26,6 +26,15 @@ import { destination as destinationEntry } from '../design/destinations';
 import ConditionBuilder from '../components/ConditionBuilder';
 import { SettingsControls } from '../components/SettingsControls';
 import { isProtected, protectionReason } from '../schema/fieldOperations';
+import {
+	addBinding,
+	bindingsFor,
+	ensureBinding,
+	removeBinding,
+	removeDestinationBindings,
+	updateBinding,
+	withBindings,
+} from '../schema/bindings';
 import { Icon } from '../design/icons';
 import { typeGlyph } from '../design/typeGlyph';
 
@@ -185,33 +194,6 @@ export default function FieldProperties( {
 		{ id: 'advanced', label: __( 'Exibição', 'wc-checkoutsuite' ) },
 	];
 
-	/**
-	 * Everything the field knows about one destination, or nothing.
-	 *
-	 * @param {string} destination Destination key.
-	 * @return {any} The link, or a disabled one.
-	 */
-	const linkFor = ( destination ) =>
-		field.destinations?.[ destination ] ?? { enabled: false };
-
-	/**
-	 * Writes one destination, keeping the others as they were.
-	 *
-	 * @param {string} destination Destination key.
-	 * @param {any}    changes     What changed for it.
-	 * @return {void}
-	 */
-	const changeLink = ( destination, changes ) =>
-		onChange( {
-			destinations: {
-				...( field.destinations ?? {} ),
-				[ destination ]: {
-					...linkFor( destination ),
-					...changes,
-				},
-			},
-		} );
-
 	/** The approval flow, or the empty one. */
 	const approval = field.approval ?? {};
 
@@ -225,6 +207,215 @@ export default function FieldProperties( {
 		onChange( {
 			approval: { ...approval, ...changes },
 		} );
+
+	/**
+	 * Writes the uses of this field, and the map they project to.
+	 *
+	 * The list is the authority and the map is derived from it, so the two are written
+	 * together and cannot disagree — which is the rule the server keeps too.
+	 *
+	 * @param {Array<any>} bindings The uses.
+	 * @return {void}
+	 */
+	const changeBindings = ( bindings ) =>
+		onChange( withBindings( field, bindings ) );
+
+	/**
+	 * The controls of one use of the field in one destination.
+	 *
+	 * The first use keeps the identifiers the panel always had, so what the merchant sees
+	 * and what a test addresses do not change when a second use appears; the ones after it
+	 * are numbered.
+	 *
+	 * @param {any}    entry   Vocabulary entry of the destination.
+	 * @param {any}    binding The use.
+	 * @param {number} index   Position in this destination's list.
+	 * @param {number} total   How many uses this destination has.
+	 * @return {*} Rendered use.
+	 */
+	const renderUse = ( entry, binding, index, total ) => {
+		const suffix = 0 === index ? '' : `-${ index + 1 }`;
+
+		return (
+			<div
+				className="binding-row"
+				key={ binding.id ?? `${ entry.value }-${ index }` }
+			>
+				{ total > 1 ? (
+					<div className="binding-row-head">
+						<span>
+							{ sprintf(
+								/* translators: %d: position of the use in the list. */
+								__( 'Uso %d', 'wc-checkoutsuite' ),
+								index + 1
+							) }
+						</span>
+						<button
+							type="button"
+							className="link-button"
+							id={ `wccs-link-remove-${ entry.value }${ suffix }` }
+							onClick={ () =>
+								changeBindings(
+									removeBinding( field, binding.id )
+								)
+							}
+						>
+							{ __( 'Remover uso', 'wc-checkoutsuite' ) }
+						</button>
+					</div>
+				) : null }
+
+				<Group
+					id={ `wccs-link-section-${ entry.value }${ suffix }` }
+					label={ __( 'Seção neste destino', 'wc-checkoutsuite' ) }
+				>
+					<select
+						id={ `wccs-link-section-${ entry.value }${ suffix }` }
+						className="input"
+						value={ binding.container_id ?? '' }
+						onChange={ (
+							/** @type {{target: {value: string}}} */ event
+						) =>
+							changeBindings(
+								updateBinding( field, binding.id, {
+									container_id: event.target.value,
+								} )
+							)
+						}
+					>
+						<option value="">
+							{ __( 'Seção do campo', 'wc-checkoutsuite' ) }
+						</option>
+						{ /* Only the sections offered in this destination's
+						     area: a section from another area would be
+						     accepted by the form and refused by the server. */ }
+						{ linkSections
+							.filter( ( /** @type {any} */ option ) =>
+								( option.areas ?? [] ).includes( entry.value )
+							)
+							.map( ( /** @type {any} */ option ) => (
+								<option key={ option.id } value={ option.id }>
+									{ option.label ?? option.id }
+								</option>
+							) ) }
+					</select>
+				</Group>
+
+				<Group
+					id={ `wccs-link-title-${ entry.value }${ suffix }` }
+					label={ __( 'Título apresentado', 'wc-checkoutsuite' ) }
+					help={ __(
+						'Como o campo é chamado neste destino.',
+						'wc-checkoutsuite'
+					) }
+				>
+					<input
+						id={ `wccs-link-title-${ entry.value }${ suffix }` }
+						className="input"
+						type="text"
+						value={ binding.label_override ?? '' }
+						onChange={ (
+							/** @type {{target: {value: string}}} */ event
+						) =>
+							changeBindings(
+								updateBinding( field, binding.id, {
+									label_override: event.target.value,
+								} )
+							)
+						}
+					/>
+				</Group>
+
+				<Group
+					id={ `wccs-link-position-${ entry.value }${ suffix }` }
+					label={ __( 'Ordem de exibição', 'wc-checkoutsuite' ) }
+				>
+					<input
+						id={ `wccs-link-position-${ entry.value }${ suffix }` }
+						className="input"
+						type="number"
+						min={ 0 }
+						step={ 10 }
+						value={ binding.position ?? 0 }
+						onChange={ (
+							/** @type {{target: {value: string}}} */ event
+						) =>
+							changeBindings(
+								updateBinding( field, binding.id, {
+									position: Number( event.target.value ),
+								} )
+							)
+						}
+					/>
+				</Group>
+
+				{ /* Editable is a decision of the use, not of the field: the same
+				     definition may be written here and only read there. */ }
+				<SwitchRow
+					id={ `wccs-link-editable-${ entry.value }${ suffix }` }
+					label={ __( 'Quem lê pode alterar', 'wc-checkoutsuite' ) }
+					help={ __(
+						'Desligado, o valor é apenas mostrado neste destino.',
+						'wc-checkoutsuite'
+					) }
+					checked={ false !== binding.editable }
+					onToggle={ ( /** @type {boolean} */ next ) =>
+						changeBindings(
+							updateBinding( field, binding.id, {
+								editable: next,
+							} )
+						)
+					}
+				/>
+
+				{ storesFile ? (
+					<>
+						<div className="form-label">
+							{ __( 'Ações permitidas', 'wc-checkoutsuite' ) }
+						</div>
+						{ ( vocabulary.destinationActions ?? [] )
+							.filter( ( /** @type {any} */ action ) =>
+								( entry.actions ?? [] ).includes( action.value )
+							)
+							.map( ( /** @type {any} */ action ) => (
+								<SwitchRow
+									key={ action.value }
+									id={ `wccs-link-action-${ entry.value }-${ action.value }${ suffix }` }
+									label={ action.label }
+									help={ action.description ?? '' }
+									checked={ (
+										binding.permissions ?? []
+									).includes( action.value ) }
+									onToggle={ (
+										/** @type {boolean} */ next
+									) => {
+										const current =
+											binding.permissions ?? [];
+
+										changeBindings(
+											updateBinding( field, binding.id, {
+												permissions: next
+													? [
+															...current,
+															action.value,
+													  ]
+													: current.filter(
+															(
+																/** @type {string} */ key
+															) =>
+																key !==
+																action.value
+													  ),
+											} )
+										);
+									} }
+								/>
+							) ) }
+					</>
+				) : null }
+			</div>
+		);
+	};
 
 	return (
 		<>
@@ -693,7 +884,8 @@ export default function FieldProperties( {
 
 						{ ( vocabulary.destinations ?? [] ).map(
 							( /** @type {any} */ entry ) => {
-								const link = linkFor( entry.value );
+								const uses = bindingsFor( field, entry.value );
+								const on = uses.length > 0;
 
 								return (
 									<div
@@ -708,6 +900,9 @@ export default function FieldProperties( {
 											</span>
 										</div>
 
+										{ /* Using the field there and showing it there are
+										     the same statement (§3.3): the switch adds the
+										     first use, and turning it off removes them all. */ }
 										<SwitchRow
 											id={ `wccs-link-${ entry.value }` }
 											label={ sprintf(
@@ -719,231 +914,58 @@ export default function FieldProperties( {
 												destinationLabel( entry )
 											) }
 											help={ entry.description ?? '' }
-											checked={ Boolean( link.enabled ) }
+											checked={ on }
 											onToggle={ (
 												/** @type {boolean} */ next
 											) =>
-												changeLink( entry.value, {
-													enabled: next,
-												} )
+												changeBindings(
+													next
+														? ensureBinding(
+																field,
+																entry.value
+														  )
+														: removeDestinationBindings(
+																field,
+																entry.value
+														  )
+												)
 											}
 										/>
 
-										{ link.enabled ? (
+										{ on ? (
 											<>
-												<Group
-													id={ `wccs-link-section-${ entry.value }` }
-													label={ __(
-														'Seção neste destino',
-														'wc-checkoutsuite'
-													) }
-												>
-													<select
-														id={ `wccs-link-section-${ entry.value }` }
-														className="input"
-														value={
-															link.section ?? ''
-														}
-														onChange={ (
-															/** @type {{target: {value: string}}} */ event
-														) =>
-															changeLink(
-																entry.value,
-																{
-																	section:
-																		event
-																			.target
-																			.value,
-																}
-															)
-														}
-													>
-														<option value="">
-															{ __(
-																'Seção do campo',
-																'wc-checkoutsuite'
-															) }
-														</option>
-														{ /* Only the sections offered in this
-														     destination's area: a section
-														     from another area would be
-														     accepted by the form and refused
-														     by the server. */ }
-														{ linkSections
-															.filter(
-																(
-																	/** @type {any} */ option
-																) =>
-																	(
-																		option.areas ??
-																		[]
-																	).includes(
-																		entry.value
-																	)
-															)
-															.map(
-																(
-																	/** @type {any} */ option
-																) => (
-																	<option
-																		key={
-																			option.id
-																		}
-																		value={
-																			option.id
-																		}
-																	>
-																		{ option.label ??
-																			option.id }
-																	</option>
-																)
-															) }
-													</select>
-												</Group>
-
-												<Group
-													id={ `wccs-link-title-${ entry.value }` }
-													label={ __(
-														'Título apresentado',
-														'wc-checkoutsuite'
-													) }
-													help={ __(
-														'Como o campo é chamado neste destino.',
-														'wc-checkoutsuite'
-													) }
-												>
-													<input
-														id={ `wccs-link-title-${ entry.value }` }
-														className="input"
-														type="text"
-														value={
-															link.title ?? ''
-														}
-														onChange={ (
-															/** @type {{target: {value: string}}} */ event
-														) =>
-															changeLink(
-																entry.value,
-																{
-																	title: event
-																		.target
-																		.value,
-																}
-															)
-														}
-													/>
-												</Group>
-
-												<Group
-													id={ `wccs-link-position-${ entry.value }` }
-													label={ __(
-														'Ordem de exibição',
-														'wc-checkoutsuite'
-													) }
-												>
-													<input
-														id={ `wccs-link-position-${ entry.value }` }
-														className="input"
-														type="number"
-														min={ 0 }
-														step={ 10 }
-														value={
-															link.position ?? 0
-														}
-														onChange={ (
-															/** @type {{target: {value: string}}} */ event
-														) =>
-															changeLink(
-																entry.value,
-																{
-																	position:
-																		Number(
-																			event
-																				.target
-																				.value
-																		),
-																}
-															)
-														}
-													/>
-												</Group>
-
-												{ storesFile ? (
-													<>
-														<div className="form-label">
-															{ __(
-																'Ações permitidas',
-																'wc-checkoutsuite'
-															) }
-														</div>
-														{ (
-															vocabulary.destinationActions ??
-															[]
+												{ uses.map(
+													(
+														/** @type {any} */ binding,
+														/** @type {number} */ index
+													) =>
+														renderUse(
+															entry,
+															binding,
+															index,
+															uses.length
 														)
-															.filter(
-																(
-																	/** @type {any} */ action
-																) =>
-																	(
-																		entry.actions ??
-																		[]
-																	).includes(
-																		action.value
-																	)
-															)
-															.map(
-																(
-																	/** @type {any} */ action
-																) => (
-																	<SwitchRow
-																		key={
-																			action.value
-																		}
-																		id={ `wccs-link-action-${ entry.value }-${ action.value }` }
-																		label={
-																			action.label
-																		}
-																		help={
-																			action.description ??
-																			''
-																		}
-																		checked={ (
-																			link.actions ??
-																			[]
-																		).includes(
-																			action.value
-																		) }
-																		onToggle={ (
-																			/** @type {boolean} */ next
-																		) => {
-																			const current =
-																				link.actions ??
-																				[];
+												) }
 
-																			changeLink(
-																				entry.value,
-																				{
-																					actions:
-																						next
-																							? [
-																									...current,
-																									action.value,
-																							  ]
-																							: current.filter(
-																									(
-																										/** @type {string} */ key
-																									) =>
-																										key !==
-																										action.value
-																							  ),
-																				}
-																			);
-																		} }
-																	/>
-																)
-															) }
-													</>
-												) : null }
+												<button
+													type="button"
+													className="link-button"
+													id={ `wccs-link-add-${ entry.value }` }
+													onClick={ () =>
+														changeBindings(
+															addBinding(
+																field,
+																entry.value,
+																''
+															)
+														)
+													}
+												>
+													{ __(
+														'Adicionar uso nesta área',
+														'wc-checkoutsuite'
+													) }
+												</button>
 											</>
 										) : null }
 									</div>

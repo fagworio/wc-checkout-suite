@@ -46,6 +46,11 @@ export interface FieldDefinition {
 	hidden_value_policy: string;
 	storage: { scope: string; sensitivity: string };
 	destinations: Record< string, DestinationLink >;
+	/**
+	 * Every use of the field, in the final model. Read as the authority when the server
+	 * sends it; the map above is then its projection, and both are written back together.
+	 */
+	bindings?: FieldBinding[];
 	collection_surface?: 'checkout' | 'my_account';
 	approval?: ApprovalFlow | null;
 	validators?: unknown[];
@@ -250,6 +255,33 @@ export interface DestinationLink {
 	title?: string;
 	position?: number;
 	actions?: string[];
+	/**
+	 * How the value behaves where it is shown: `view` is read-only and `edit` lets the
+	 * person reading it change it. Kept because the map is what the surfaces read.
+	 */
+	mode?: 'edit' | 'view';
+}
+
+/**
+ * One use of a field: the field, the container it sits in, and how it appears there.
+ *
+ * This is the final model (§3.3). A definition may be used several times, each use with
+ * its own container, order, title, visible/editable decision and permissions — which is
+ * what the destination map cannot express, because it holds one entry per destination.
+ */
+export interface FieldBinding {
+	id?: string;
+	field_id?: string;
+	container_id: string;
+	destination: string;
+	position?: number | null;
+	visible?: boolean;
+	editable?: boolean;
+	required_override?: boolean;
+	label_override?: string;
+	description_override?: string;
+	permissions?: string[];
+	conditions?: Record< string, unknown >;
 }
 
 /**

@@ -347,6 +347,61 @@ final class DocumentMigratorTest extends TestCase {
 	}
 
 	/**
+	 * A destination no use justifies is not left saying it is on.
+	 *
+	 * The list is the authority, so a document whose map claims a destination the list does
+	 * not use is promising a panel that nothing inserts. A link that is *off* is kept: that
+	 * is configuration the merchant typed, and it is inert.
+	 *
+	 * @return void
+	 */
+	public function test_a_destination_no_use_justifies_is_dropped(): void {
+		$document = array(
+			'revision' => 1,
+			'fields'   => array(
+				array(
+					'id'           => 'documento',
+					'type'         => 'text',
+					'label'        => 'Documento',
+					'bindings'     => array(
+						array(
+							'field_id'     => 'documento',
+							'container_id' => 'cliente',
+							'destination'  => 'customer_order',
+							'visible'      => true,
+						),
+					),
+					'destinations' => array(
+						// Nothing uses it, and the map still says "on".
+						'admin_order'    => array(
+							'enabled' => true,
+							'section' => 'equipa',
+						),
+						// Off, and it stays: inert configuration is still configuration.
+						'customer_email' => array( 'enabled' => false ),
+					),
+				),
+			),
+			'sections' => array(),
+			'settings' => array(),
+		);
+
+		$migrated = DocumentMigrator::migrate( $document )['document']['fields'][0];
+
+		self::assertArrayNotHasKey(
+			'admin_order',
+			$migrated['destinations'],
+			'the promise goes with the use that justified it'
+		);
+		self::assertArrayHasKey( 'customer_order', $migrated['destinations'] );
+		self::assertArrayHasKey(
+			'customer_email',
+			$migrated['destinations'],
+			'a link that is off is kept'
+		);
+	}
+
+	/**
 	 * A destination that meant two places is not guessed: it is left for the validator.
 	 *
 	 * @return void

@@ -1382,14 +1382,32 @@ describe( 'bulk operations', () => {
 			true
 		);
 
-		expect( result.document.fields[ 0 ].destinations ).toEqual( {
-			admin_order: { enabled: true },
-			public_api: { enabled: true },
-		} );
-		expect( result.document.fields[ 1 ].destinations ).toEqual( {
-			admin_order: { enabled: true },
-			public_api: { enabled: true },
-		} );
+		// Turning a destination on for many fields is the same statement as using each of
+		// them there, so the use is written and the map follows it. The link the field
+		// already had is read as a use of its own — which is what writing the list means —
+		// and the destination it named keeps its link, untouched.
+		const [ first, second ] = result.document.fields;
+
+		expect(
+			first?.bindings?.map( ( binding ) => binding.destination )
+		).toEqual( [ 'admin_order', 'public_api' ] );
+		expect( first?.bindings?.[ 1 ] ).toEqual(
+			expect.objectContaining( {
+				field_id: 'a',
+				destination: 'public_api',
+				container_id: '',
+				visible: true,
+			} )
+		);
+		expect( first?.destinations?.admin_order ).toEqual(
+			expect.objectContaining( { enabled: true } )
+		);
+		expect( first?.destinations?.public_api ).toEqual(
+			expect.objectContaining( { enabled: true } )
+		);
+		expect(
+			second?.bindings?.map( ( binding ) => binding.destination )
+		).toEqual( [ 'admin_order', 'public_api' ] );
 	} );
 
 	it( 'reports the impact before anything is applied', () => {
