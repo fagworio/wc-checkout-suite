@@ -39,7 +39,7 @@ import Notice from './components/Notice';
 import { TextField, SelectField, CheckboxField } from './components/controls';
 import FieldManagerView from './views/FieldManagerView';
 import useUnsavedChanges from './api/useUnsavedChanges';
-import { sectionHref } from './sectionUrl';
+import { areaHref, readArea, sectionHref } from './sectionUrl';
 import {
 	collectsAt,
 	containerWords,
@@ -98,6 +98,19 @@ import {
  * @type {string}
  */
 const FALLBACK_SECTION = 'order';
+
+/**
+ * Every destination the editor can open, for the address bar.
+ *
+ * Read from the same vocabulary the strip is drawn from, so a link can only name a
+ * destination this build has — and a destination added to the design is linkable
+ * the moment it exists, without a second list to keep in step.
+ *
+ * @type {Array<string>}
+ */
+const AREA_IDS = navigation().flatMap( ( /** @type {any} */ entry ) =>
+	( entry.members ?? [] ).map( ( /** @type {any} */ member ) => member.id )
+);
 
 /**
  * Whether the work area the merchant is in holds the customer's own values.
@@ -385,7 +398,18 @@ export default function FieldsScreen( {
 	 * @type {[string, Function]}
 	 */
 	const [ mode, setMode ] = useState( checkoutMode || 'classic' );
-	const [ area, setArea ] = useState( 'checkout' );
+	/**
+	 * The destination the editor is open on.
+	 *
+	 * The address bar decides it, for the same reason it decides the section: «abre
+	 * o pedido no admin» is a link a colleague can be sent, and a tab whose click
+	 * leaves the address alone is a tab nobody can link to.
+	 *
+	 * @type {[string, Function]}
+	 */
+	const [ area, setArea ] = useState(
+		() => readArea( window.location?.search ?? '', AREA_IDS ) || 'checkout'
+	);
 	/**
 	 * The checkout the strip is showing: an empty string is the store's own
 	 * composition, and anything else is a profile's id (§6.3).
@@ -518,6 +542,29 @@ export default function FieldsScreen( {
 				  )
 				: [ ...current, id ]
 		);
+
+	/**
+	 * Opens another destination and keeps the address in step with it.
+	 *
+	 * Replacing rather than pushing, like the shell does for the section: choosing
+	 * a destination is not navigation, and the back button is for leaving.
+	 *
+	 * @param {string} id Destination identifier.
+	 * @return {void}
+	 */
+	const selectArea = useCallback( ( /** @type {string} */ id ) => {
+		setArea( id );
+
+		if ( ! window.history?.replaceState ) {
+			return;
+		}
+
+		window.history.replaceState(
+			null,
+			'',
+			areaHref( window.location.href, id, AREA_IDS )
+		);
+	}, [] );
 
 	/**
 	 * Sends the merchant to another screen of the suite.
@@ -1281,7 +1328,7 @@ export default function FieldsScreen( {
 					linkSections: declaredSections,
 					area,
 					areas: navigation(),
-					onAreaChange: setArea,
+					onAreaChange: selectArea,
 					loading,
 					dirty,
 					saving,

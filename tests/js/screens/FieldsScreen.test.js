@@ -16,6 +16,7 @@
  */
 
 import {
+	cleanup,
 	configure,
 	fireEvent,
 	render,
@@ -36,6 +37,23 @@ import FieldsScreen from '../../../resources/admin/app/FieldsScreen';
  * suite exists to catch. The assertions are unchanged; only the patience is.
  */
 configure( { asyncUtilTimeout: 5000 } );
+
+/**
+ * Puts the address back, and unmounts what the last test rendered.
+ *
+ * The screen keeps its destination in the address bar, and jsdom gives every test
+ * in a file the same `window` — so a test that opens the admin profile would leave
+ * the next one rendering the admin profile. That is the feature working, not a
+ * defect: the address is the merchant's, and it outlives the component. What has
+ * to be reset is the test's, not the screen's.
+ */
+beforeEach( () => {
+	window.history.replaceState( null, '', '/' );
+} );
+
+afterEach( () => {
+	cleanup();
+} );
 
 /**
  * Builds a field definition.

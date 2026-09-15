@@ -5,9 +5,15 @@
  * silence: a link to a tab opens that tab, and the address bar always shows the
  * tab on screen. A URL that opens the wrong section is worse than no URL, because
  * the person who follows it believes what they see.
+ *
+ * The destination inside a screen is the same promise one level down — «abre o
+ * pedido no admin» — and it is written by its own pair of functions so that the
+ * two parameters never overwrite each other.
  */
 
 import {
+	areaHref,
+	readArea,
 	readSection,
 	sectionHref,
 	sectionUrl,
@@ -19,6 +25,19 @@ import {
  * @type {string[]}
  */
 const IDS = [ 'fields', 'sections', 'rules', 'appearance' ];
+
+/**
+ * The destinations a build has.
+ *
+ * @type {string[]}
+ */
+const AREAS = [
+	'checkout',
+	'customer_account',
+	'customer_order',
+	'admin_order',
+	'admin_customer_profile',
+];
 
 describe( 'reading a section from a URL', () => {
 	it( 'finds the canonical parameter', () => {
@@ -93,6 +112,52 @@ describe( 'writing a section into a URL', () => {
 				readSection( sectionUrl( '?page=wccs', id, IDS ), IDS )
 			).toBe( id );
 		}
+	} );
+} );
+
+describe( 'the destination inside a screen', () => {
+	it( 'reads the destination the link names', () => {
+		expect(
+			readArea(
+				'?page=wccs-checkoutsuite&section=fields&area=admin_order',
+				AREAS
+			)
+		).toBe( 'admin_order' );
+	} );
+
+	it( 'ignores a destination this build does not have', () => {
+		expect( readArea( '?area=sidebar', AREAS ) ).toBe( '' );
+		expect( readArea( '', AREAS ) ).toBe( '' );
+	} );
+
+	it( 'writes the destination and leaves the screen it is on alone', () => {
+		const href = areaHref(
+			'https://example.test/wp-admin/admin.php?page=wccs-checkoutsuite&section=fields',
+			'admin_customer_profile',
+			AREAS
+		);
+
+		expect( href ).toContain( 'section=fields' );
+		expect( href ).toContain( 'page=wccs-checkoutsuite' );
+		expect( href ).toContain( 'area=admin_customer_profile' );
+	} );
+
+	it( 'does not put a destination the build does not have in the address', () => {
+		const href = 'https://example.test/wp-admin/admin.php?page=wccs';
+
+		expect( areaHref( href, 'sidebar', AREAS ) ).toBe( href );
+	} );
+
+	it( 'survives a round trip', () => {
+		const href = areaHref(
+			'https://example.test/wp-admin/admin.php?page=wccs-checkoutsuite&section=fields',
+			'customer_order',
+			AREAS
+		);
+
+		expect( readArea( new URL( href ).search, AREAS ) ).toBe(
+			'customer_order'
+		);
 	} );
 } );
 

@@ -15,6 +15,14 @@
  * one canonical form means one thing to parse, and the shorthand is rewritten the
  * first time the section changes.
  *
+ * 3. **The destination inside the screen as well.** `section` says which screen,
+ *    and the screen has its own tabs: the checkout, Minha conta, the customer's
+ *    order, the store's order, the admin profile. Those are `area`, and they are
+ *    kept in the address for the same reason — «abre o pedido no admin» should be
+ *    one link and not four clicks. The two parameters are written independently:
+ *    each helper touches its own and leaves the rest of the query alone, so
+ *    switching a destination never loses the screen it is on.
+ *
  * `replaceState` is used rather than `pushState`. Tab switching is not
  * navigation, and filling the back button with a dozen tab clicks would make
  * leaving the screen a chore.
@@ -26,6 +34,11 @@
  * Query parameter the screen writes.
  */
 export const SECTION_PARAM = 'section';
+
+/**
+ * Query parameter for the destination inside a screen.
+ */
+export const AREA_PARAM = 'area';
 
 /**
  * Reads the section named in a query string.
@@ -124,4 +137,67 @@ export function sectionHref( href, id, ids ) {
 	// The origin is kept: this returns an address, and an address without one is
 	// only usable by a caller that already knows where it is.
 	return `${ url.origin }${ url.pathname }${ query }${ url.hash }`;
+}
+
+/**
+ * Reads the destination named in a query string.
+ *
+ * Same contract as `readSection`: an unknown value is ignored rather than
+ * returned, so a link written against another build opens the screen it names
+ * instead of an empty area.
+ *
+ * @param {string}   search Query string, with or without the leading `?`.
+ * @param {string[]} ids    Destination identifiers this build has.
+ * @return {string} Destination identifier, or an empty string.
+ */
+export function readArea( search, ids ) {
+	const known = Array.isArray( ids ) ? ids : [];
+
+	if ( '' === ( search ?? '' ) ) {
+		return '';
+	}
+
+	let params;
+
+	try {
+		params = new URLSearchParams( search );
+	} catch {
+		return '';
+	}
+
+	const explicit = params.get( AREA_PARAM );
+
+	return explicit && known.includes( explicit ) ? explicit : '';
+}
+
+/**
+ * Returns the page URL with the destination set.
+ *
+ * The query is carried through untouched — the screen the merchant is on, and
+ * anything else the page put there — because a destination is a place inside a
+ * screen and not a place of its own.
+ *
+ * @param {string}   href Current URL.
+ * @param {string}   id   Destination identifier.
+ * @param {string[]} ids  Destination identifiers this build has.
+ * @return {string} New URL.
+ */
+export function areaHref( href, id, ids ) {
+	let url;
+
+	try {
+		url = new URL( href );
+	} catch {
+		return href;
+	}
+
+	const known = Array.isArray( ids ) ? ids : [];
+
+	if ( ! known.includes( id ) ) {
+		return href;
+	}
+
+	url.searchParams.set( AREA_PARAM, id );
+
+	return `${ url.origin }${ url.pathname }${ url.search }${ url.hash }`;
 }

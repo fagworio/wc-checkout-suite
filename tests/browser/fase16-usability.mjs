@@ -300,7 +300,76 @@ await step( 'O ecrã de automação responde quando a cobrança acontece', async
 } );
 
 // ---------------------------------------------------------------------------
-// 5. The vocabulary: the code says container, the interface does not.
+// 5. A destination is an address: choosing one writes it, and the address reopens it.
+// ---------------------------------------------------------------------------
+await step( 'O destino fica no endereço e o endereço reabre-o', async () => {
+	await open( 'fields', '.section-tabs' );
+
+	await page
+		.locator( '.wccs-editor-areas button', { hasText: 'Admin' } )
+		.first()
+		.click();
+	await page.waitForSelector( '.wccs-editor-subareas', { timeout: 10000 } );
+
+	const url = page.url();
+
+	record(
+		'Escolher um destino escreve-o no endereço, sem perder a tela',
+		/area=/.test( url ) && /section=fields/.test( url ),
+		url.replace( ORIGIN, '' )
+	);
+
+	// The strip the design draws for the destinations inside a group. Without a rule of its own the
+	// buttons fall back to the browser's own chrome and the name and the path run together on one
+	// line, which is what this asserts against.
+	const strip = await page.evaluate( () => {
+		const button = document.querySelector(
+			'.wccs-editor-subareas button'
+		);
+		const style = getComputedStyle( button );
+
+		return {
+			strong: getComputedStyle( button.querySelector( 'strong' ) )
+				.display,
+			small: getComputedStyle( button.querySelector( 'small' ) )
+				.display,
+			border: style.borderStyle,
+			background: style.backgroundColor,
+			decoration: style.textDecorationLine,
+		};
+	} );
+
+	record(
+		'O destino mostra o nome e o caminho em linhas próprias',
+		'block' === strip.strong && 'block' === strip.small,
+		JSON.stringify( strip )
+	);
+
+	record(
+		'E não é o botão do browser: veste o sistema de desenho',
+		'solid' === strip.border &&
+			'rgb(239, 239, 239)' !== strip.background &&
+			'none' === strip.decoration,
+		JSON.stringify( strip )
+	);
+
+	await page.goto( url, { waitUntil: 'networkidle' } );
+	await page.waitForSelector( '.wccs-editor-subareas', { timeout: 30000 } );
+
+	const selected = await page
+		.locator( '.wccs-editor-subareas [aria-selected="true"]' )
+		.first()
+		.innerText();
+
+	record(
+		'E o endereço abre o mesmo destino quando seguido por outra pessoa',
+		/Pedido/i.test( selected ),
+		selected.replace( /\s+/g, ' ' )
+	);
+} );
+
+// ---------------------------------------------------------------------------
+// 6. The vocabulary: the code says container, the interface does not.
 // ---------------------------------------------------------------------------
 await step( 'A interface não usa as palavras do código', async () => {
 	const offenders = [];
