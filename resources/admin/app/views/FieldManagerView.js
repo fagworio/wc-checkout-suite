@@ -99,6 +99,7 @@ function typeLabel( field, catalog ) {
 export default function FieldManagerView( { model } ) {
 	const {
 		document: doc,
+		composition,
 		groups,
 		section,
 		onSectionChange,
@@ -988,7 +989,7 @@ export default function FieldManagerView( { model } ) {
 				{ 'checkout' === area ? (
 					<CoreCheckoutPanel
 						inventory={ coreFields }
-						document={ doc }
+						document={ composition ?? doc }
 						onAdoptField={ onAdoptCore }
 						onAdoptSection={ onAdoptCoreSection }
 					/>

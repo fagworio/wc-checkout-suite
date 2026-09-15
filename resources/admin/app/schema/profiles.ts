@@ -71,6 +71,110 @@ export const PROFILE_SOURCES: ProfileSource[] = [
 /** The source that may not be duplicated without naming a profile to copy. */
 export const DUPLICATION_SOURCE: ProfileSource = 'duplicate_profile';
 
+/** The area a profile composes. §6.4 composes the checkout, and only the checkout. */
+export const COMPOSED_AREA = 'checkout';
+
+/**
+ * Whether a stored container is offered in the checkout.
+ *
+ * Exported and single, because two readers ask it and they must not answer differently: the minimal
+ * checklist and the composition of §6.4 both need to know which containers the checkout owns. A
+ * container with no `areas` at all is a checkout container — that is how the editor's own
+ * `sectionGroups()` reads it, and every container this screen writes carries the list explicitly.
+ *
+ * @param section Stored container.
+ * @return Whether the checkout receives it.
+ */
+export function isCheckoutSection( section: SectionDefinition ): boolean {
+	return ! Array.isArray( section.areas )
+		? true
+		: section.areas.includes( COMPOSED_AREA );
+}
+
+/**
+ * The containers of one composition, in the order the checkout receives them.
+ *
+ * The mirror of `CheckoutProfileResolver::compose()` on the server, and deliberately so: the screen
+ * has to show the same composition the cart will get, and two rules for one question is how the
+ * screen ends up editing something other than what the storefront renders. The rule is the one
+ * §6.4 draws — a profile owns its checkout containers, the document keeps the containers of the
+ * other destinations — so a container offered to the checkout belongs to the profile.
+ *
+ * @param document Document.
+ * @param profile  Composition, or null for the store's own.
+ * @return Containers in cart order.
+ */
+export function compositionSections(
+	document: SchemaDocument,
+	profile: CheckoutProfile | null
+): SectionDefinition[] {
+	const declared = document?.sections ?? [];
+
+	if ( ! profile ) {
+		return declared;
+	}
+
+	return [
+		...( profile.sections ?? [] ),
+		...declared.filter( ( section ) => ! isCheckoutSection( section ) ),
+	];
+}
+
+/**
+ * The document as the editor shows it while one composition is selected.
+ *
+ * A copy and not a mutation: `document` stays the single stored draft the screen owns, and the
+ * composition is what the section list, the section inspector and the store's-checkout panel read
+ * while a profile is on the strip. Without a profile this is the document itself, which is what
+ * keeps the store's own checkout behaving exactly as it did before profiles existed.
+ *
+ * @param document Document.
+ * @param profile  Composition, or null for the store's own.
+ * @return Document to edit.
+ */
+export function compositionOf(
+	document: SchemaDocument,
+	profile: CheckoutProfile | null
+): SchemaDocument {
+	if ( ! profile ) {
+		return document;
+	}
+
+	return { ...document, sections: compositionSections( document, profile ) };
+}
+
+/**
+ * Writes an edited composition back into the draft.
+ *
+ * The checkout containers go to the profile and nothing else moves: the document's own containers,
+ * its fields, its bindings and its other destinations are the merchant's work and are not a
+ * composition's to rewrite. Without a profile the edited document is the draft, which is the case
+ * §6.2 has always described.
+ *
+ * @param document  Draft the edit started from.
+ * @param profileId Composition being edited, or an empty string for the store's own.
+ * @param composed  Document the edit produced.
+ * @return Draft with the composition updated.
+ */
+export function withComposition(
+	document: SchemaDocument,
+	profileId: string,
+	composed: SchemaDocument
+): SchemaDocument {
+	if ( ! profileId ) {
+		return composed;
+	}
+
+	const owned = ( composed?.sections ?? [] ).filter( isCheckoutSection );
+
+	return {
+		...document,
+		profiles: ( document?.profiles ?? [] ).map( ( entry ) =>
+			entry.id === profileId ? { ...entry, sections: owned } : entry
+		),
+	};
+}
+
 /**
  * The profiles of a document.
  *
@@ -185,11 +289,7 @@ export function checkoutSections(
 		? document.sections
 		: [];
 
-	return sections.filter(
-		( section ) =>
-			! Array.isArray( section.areas ) ||
-			section.areas.includes( 'checkout' )
-	);
+	return sections.filter( isCheckoutSection );
 }
 
 /**

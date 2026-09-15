@@ -62,6 +62,8 @@ import {
 	removeProfile,
 	setFallback,
 	updateProfile,
+	withComposition,
+	compositionOf,
 	withProfiles,
 } from './schema/profiles';
 import {
@@ -390,6 +392,36 @@ export default function FieldsScreen( {
 	 */
 	const [ activeProfile, setActiveProfile ] = useState( '' );
 	/**
+	 * The composition the section list is editing.
+	 *
+	 * §6.4: a checkout profile owns its own containers, and the strip above the list is what decides
+	 * whose they are. With a profile selected the screen reads and writes `profiles[i].sections`;
+	 * with none it reads and writes the document, which is the store's own checkout.
+	 *
+	 * @type {import('./schema/profiles').CheckoutProfile|null}
+	 */
+	const composingProfile = useMemo(
+		() =>
+			'checkout' === area && '' !== activeProfile
+				? ( document?.profiles ?? [] ).find(
+						( /** @type {any} */ entry ) =>
+							entry.id === activeProfile
+				  ) ?? null
+				: null,
+		[ document, area, activeProfile ]
+	);
+
+	/**
+	 * The document as the section editor sees it.
+	 *
+	 * @type {import('./schema/types').SchemaDocument}
+	 */
+	const composition = useMemo(
+		() => compositionOf( document, composingProfile ),
+		[ document, composingProfile ]
+	);
+
+	/**
 	 * The code of the last refusal the profile rules answered with.
 	 *
 	 * A code and not a sentence: the rule belongs to `schema/profiles` and the
@@ -429,10 +461,10 @@ export default function FieldsScreen( {
 	 */
 	const editingSection = useMemo(
 		() =>
-			document?.sections?.find(
+			composition?.sections?.find(
 				( /** @type {any} */ entry ) => entry.id === editingSectionId
 			) ?? null,
-		[ document, editingSectionId ]
+		[ composition, editingSectionId ]
 	);
 
 	/** @type {[string, Function]} */
@@ -696,6 +728,42 @@ export default function FieldsScreen( {
 	 * @param {string}     label History label.
 	 * @return {void}
 	 */
+	/**
+	 * Applies an operation to the composition being edited (§6.4).
+	 *
+	 * Section edits run against the composed document and are written back to their owner, so the
+	 * store's own checkout and each profile keep their own list while the screen shows one of them.
+	 *
+	 * @param {import('./schema/types').OperationResult} result  Operation result.
+	 * @param {string}                                   [label] What the edit was.
+	 * @return {void}
+	 */
+	const applyComposed = useCallback(
+		(
+			/** @type {import('./schema/types').OperationResult} */ result,
+			label = ''
+		) => {
+			if ( ! result.ok ) {
+				apply( result, label );
+
+				return;
+			}
+
+			apply(
+				{
+					...result,
+					document: withComposition(
+						document,
+						composingProfile ? composingProfile.id : '',
+						result.document
+					),
+				},
+				label
+			);
+		},
+		[ apply, document, composingProfile ]
+	);
+
 	const applyProfiles = useCallback(
 		( /** @type {Array<any>} */ next, /** @type {string} */ label ) => {
 			if ( ! document ) {
@@ -749,8 +817,8 @@ export default function FieldsScreen( {
 	 * @type {import('./schema/types').SectionGroup[]}
 	 */
 	const groups = useMemo(
-		() => ( document ? sectionGroups( document, area ) : [] ),
-		[ document, area ]
+		() => ( composition ? sectionGroups( composition, area ) : [] ),
+		[ composition, area ]
 	);
 
 	/**
@@ -1198,6 +1266,7 @@ export default function FieldsScreen( {
 			<FieldManagerView
 				model={ {
 					document,
+					composition,
 					groups,
 					section,
 					onSectionChange: setSection,
@@ -1395,11 +1464,11 @@ export default function FieldsScreen( {
 										onClick={ () => {
 											const result =
 												removeSectionWithDependents(
-													document,
+													composition,
 													sectionRemoval.id
 												);
 											if ( result.ok ) {
-												apply( result );
+												applyComposed( result );
 												setEditingSectionId( null );
 												setSectionRemoval( null );
 											} else {
@@ -1665,7 +1734,7 @@ export default function FieldsScreen( {
 											const title =
 												newSectionTitle.trim();
 											const result = createSection(
-												document,
+												composition,
 												{
 													title,
 													location:
@@ -1716,10 +1785,10 @@ export default function FieldsScreen( {
 												return;
 											}
 
-											apply( result );
+											applyComposed( result );
 											setSection(
 												uniqueSectionId(
-													document,
+													composition,
 													title
 												)
 											);
@@ -1970,9 +2039,9 @@ export default function FieldsScreen( {
 										onChange={ (
 											/** @type {{ target: { value: string } }} */ event
 										) =>
-											apply(
+											applyComposed(
 												updateSection(
-													document,
+													composition,
 													editingSection.id,
 													{
 														title: event.target
@@ -2001,9 +2070,9 @@ export default function FieldsScreen( {
 										onChange={ (
 											/** @type {{ target: { value: string } }} */ event
 										) =>
-											apply(
+											applyComposed(
 												updateSection(
-													document,
+													composition,
 													editingSection.id,
 													{
 														location:
@@ -2029,8 +2098,8 @@ export default function FieldsScreen( {
 									) ? (
 										<AccountSectionPresentation
 											section={ editingSection }
-											document={ document }
-											apply={ apply }
+											document={ composition }
+											apply={ applyComposed }
 											surfaces={
 												catalog?.accountSurfaces ?? []
 											}
@@ -2046,9 +2115,9 @@ export default function FieldsScreen( {
 												'wc-checkoutsuite'
 											) }
 											onClick={ () =>
-												apply(
+												applyComposed(
 													moveSection(
-														document,
+														composition,
 														editingSection.id,
 														'up'
 													)
@@ -2065,9 +2134,9 @@ export default function FieldsScreen( {
 												'wc-checkoutsuite'
 											) }
 											onClick={ () =>
-												apply(
+												applyComposed(
 													moveSection(
-														document,
+														composition,
 														editingSection.id,
 														'down'
 													)
@@ -2082,16 +2151,16 @@ export default function FieldsScreen( {
 										variant="secondary"
 										onClick={ () => {
 											const impact = sectionImpact(
-												document,
+												composition,
 												editingSection.id
 											);
 											const result = removeSection(
-												document,
+												composition,
 												editingSection.id
 											);
 
 											if ( result.ok ) {
-												apply( result );
+												applyComposed( result );
 												setEditingSectionId( null );
 											} else {
 												setSectionRemoval( {

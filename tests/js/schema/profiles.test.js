@@ -8,6 +8,9 @@
 
 import {
 	checkoutSections,
+	compositionOf,
+	compositionSections,
+	isCheckoutSection,
 	createProfile,
 	fallbacks,
 	hasRule,
@@ -23,6 +26,7 @@ import {
 	setFallback,
 	uniqueProfileId,
 	updateProfile,
+	withComposition,
 	withProfiles,
 } from '../../../resources/admin/app/schema/profiles';
 
@@ -480,6 +484,111 @@ describe( 'profiles', () => {
 			} );
 
 			expect( checklist.every( ( entry ) => entry.met ) ).toBe( true );
+		} );
+	} );
+	describe( 'the composition one checkout edits (§6.4)', () => {
+		/** A document with a checkout container, a shared one and an account-only one. */
+		const document = {
+			revision: 7,
+			fields: [],
+			settings: {},
+			sections: [
+				section( { id: 'contato', position: 10 } ),
+				section( {
+					id: 'documentacao',
+					title: 'Documentação',
+					position: 20,
+					areas: [ 'customer_account' ],
+				} ),
+			],
+			profiles: [],
+		};
+
+		test( 'a container with no areas belongs to the checkout', () => {
+			expect( isCheckoutSection( section( { areas: undefined } ) ) ).toBe(
+				true
+			);
+			expect(
+				isCheckoutSection(
+					section( { areas: [ 'customer_account' ] } )
+				)
+			).toBe( false );
+		} );
+
+		test( 'without a profile the composition is the document itself', () => {
+			expect( compositionOf( document, null ) ).toBe( document );
+			expect( compositionSections( document, null ) ).toBe(
+				document.sections
+			);
+		} );
+
+		test( 'a profile owns the checkout containers and the document keeps the rest', () => {
+			const digital = profile( {
+				id: 'digital',
+				sections: [
+					section( {
+						id: 'contato',
+						title: 'Contacto (digital)',
+						position: 10,
+					} ),
+				],
+			} );
+
+			const composed = compositionOf( document, digital );
+
+			expect( composed.sections.map( ( entry ) => entry.id ) ).toEqual( [
+				'contato',
+				'documentacao',
+			] );
+			expect( composed.sections[ 0 ].title ).toBe( 'Contacto (digital)' );
+			// A copy: the draft the screen owns is not rewritten by simply looking at it.
+			expect( document.sections[ 0 ].title ).toBe( 'Contato' );
+		} );
+
+		test( 'editing a composed document writes back to that profile and nobody else', () => {
+			const digital = profile( { id: 'digital' } );
+			const other = profile( { id: 'restrito', name: 'Restrito' } );
+			const draft = withProfiles( document, [ digital, other ] );
+
+			const composed = compositionOf( draft, digital );
+			const edited = {
+				...composed,
+				sections: [
+					...composed.sections,
+					section( {
+						id: 'entrega_propria',
+						title: 'Entrega própria',
+					} ),
+				],
+			};
+
+			const written = withComposition( draft, 'digital', edited );
+
+			expect(
+				(
+					profilesOf( written ).find(
+						( entry ) => entry.id === 'digital'
+					)?.sections ?? []
+				).map( ( entry ) => entry.id )
+			).toEqual( [ 'contato', 'entrega_propria' ] );
+			expect(
+				(
+					profilesOf( written ).find(
+						( entry ) => entry.id === 'restrito'
+					)?.sections ?? []
+				).map( ( entry ) => entry.id )
+			).toEqual( [ 'contato' ] );
+			// The store's own checkout is untouched by editing a profile.
+			expect( written.sections.map( ( entry ) => entry.id ) ).toEqual( [
+				'contato',
+				'documentacao',
+			] );
+		} );
+
+		test( 'without a profile the edit is the draft itself, as it always was', () => {
+			const edited = { ...document, settings: { columns: 2 } };
+
+			expect( withComposition( document, '', edited ) ).toBe( edited );
 		} );
 	} );
 } );

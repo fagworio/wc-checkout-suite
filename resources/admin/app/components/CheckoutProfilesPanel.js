@@ -274,12 +274,14 @@ export default function CheckoutProfilesPanel( {
 							  ) }
 					</p>
 
-					{ /* The list of sections beside this panel is the store's own checkout. Saying so
-					     is the difference between a merchant editing this checkout and a merchant
-					     believing they are editing a composition they are not. */ }
+					{ /* §6.4: with this checkout selected, the list of sections beside this panel is
+					     *this* checkout's composition — the one the cart receives — and the store's own
+					     list is the one the strip's own tab shows. Saying which is which is the
+					     difference between a merchant editing this composition and a merchant believing
+					     they are editing the other one. */ }
 					<Notice status="info">
 						{ __(
-							'A composição de secções deste checkout foi copiada quando ele foi criado, e é a que o carrinho recebe. A lista à esquerda é a do checkout da própria loja.',
+							'As secções à esquerda são a composição deste checkout, e é ela que o carrinho recebe. O checkout da própria loja guarda a sua, no separador sem nome de checkout.',
 							'wc-checkoutsuite'
 						) }
 					</Notice>
