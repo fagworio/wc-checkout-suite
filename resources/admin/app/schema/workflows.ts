@@ -7,10 +7,12 @@
  * 1. **One vocabulary, read from the server.** The triggers, the decisions, the events and the
  *    strategies come from the route, not from a list written here. The editor offers exactly what
  *    the validator accepts, which is the only way the two cannot disagree.
- * 2. **What the store cannot execute is not offered.** The stock and payment strategies exist in the
- *    vocabulary and only `none` is executable, so the selects carry the executable ones and the
- *    screen says why the others are not there (§30.1). A select offering "autorizar agora" would be
- *    promising an authorisation nothing performs — and the validator refuses it by name anyway.
+ * 2. **What the store cannot execute is not offered.** A strategy lives in the vocabulary as soon as
+ *    it has a name; whether the store runs it is a separate answer the route gives in `executable`.
+ *    The selects carry the executable ones and the screen says which it withheld and why (§30.1). A
+ *    select offering "autorizar agora" would be promising an authorisation nothing performs — and the
+ *    validator refuses it by name anyway. Since Fase 13 both vocabularies are fully executable, so
+ *    nothing is withheld today; the projection is kept honest by the two lists staying separate.
  *
  * @see ROADMAP.md sections 13.2, 13.3, 13.6
  */
@@ -180,6 +182,15 @@ export function workflowIssues( workflow: WorkflowEntry ): Array< string > {
 	) {
 		found.push(
 			'Um workflow que conta as horas precisa de dizer para que estado o pedido expira.'
+		);
+	}
+
+	if (
+		'hours' === workflow?.inventory_strategy &&
+		Number( workflow?.inventory_hours ) <= 0
+	) {
+		found.push(
+			'A reserva de estoque por horas precisa do número de horas: sem ele nada é reservado.'
 		);
 	}
 

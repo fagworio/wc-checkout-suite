@@ -268,25 +268,31 @@ foreach ( array( 'capture_after_approval', 'authorize_now', 'request_after_appro
 	);
 }
 
-$wccs_proof_stock = $wccs_proof_repository->save(
-	array(
+// The stock strategies are checked the same way, and for the same reason: since Fase 13 the
+// reservation service exists, so they are accepted and a write that succeeded here would replace the
+// workflow the rest of this harness runs on.
+$wccs_proof_accepted_stock = \WCCheckoutSuite\Domain\Workflow\WorkflowValidator::validate_one(
+	\WCCheckoutSuite\Domain\Workflow\WorkflowDefinition::from_array(
 		array(
 			'id'                 => 'com_estoque',
 			'name'               => 'Com reserva',
 			'initial_status'     => 'analise_pendente',
 			'inventory_strategy' => 'until_decision',
-		),
-	)
+		)
+	),
+	\WCCheckoutSuite\Domain\Statuses\OrderStatusRegistry::known_ids(),
+	array_values( array_map( 'strval', (array) wc_get_is_paid_statuses() ) )
 );
 
 wccs_proof_check(
-	'E a reserva de estoque também, porque nada a executa ainda',
-	! $wccs_proof_stock->is_valid() && in_array( 'inventory_strategy_not_available', $wccs_proof_stock->error_codes(), true ),
-	implode( ',', $wccs_proof_stock->error_codes() )
+	'E a reserva de estoque também, porque o serviço que a executa existe desde a fase 13',
+	$wccs_proof_accepted_stock->is_valid()
+		&& ! in_array( 'inventory_strategy_not_available', $wccs_proof_accepted_stock->error_codes(), true ),
+	implode( ',', $wccs_proof_accepted_stock->error_codes() )
 );
 
 wccs_proof_check(
-	'E uma recusa não altera o que está guardado',
+	'E nenhuma destas verificações escreveu por cima do que está guardado',
 	1 === count( $wccs_proof_repository->raw() )
 		&& 'produtos_quimicos' === (string) ( $wccs_proof_repository->raw()[0]['id'] ?? '' ),
 	'stored=' . count( $wccs_proof_repository->raw() )

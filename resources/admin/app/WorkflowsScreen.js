@@ -451,6 +451,35 @@ export default function WorkflowsScreen( { client } ) {
 									}
 								/>
 
+								{ 'hours' === current.inventory_strategy && (
+									<TextField
+										id="wccs-workflow-inventory-hours"
+										label={ __(
+											'Reservar por (horas)',
+											'wc-checkoutsuite'
+										) }
+										type="number"
+										value={ String(
+											current.inventory_hours ?? 0
+										) }
+										help={ __(
+											'A unidade fica guardada durante este número de horas. Zero não reserva nada, e a automação é recusada com esse motivo.',
+											'wc-checkoutsuite'
+										) }
+										onChange={ (
+											/** @type {any} */ event
+										) =>
+											change( {
+												inventory_hours:
+													parseInt(
+														event.target.value,
+														10
+													) || 0,
+											} )
+										}
+									/>
+								) }
+
 								<h3>
 									{ __(
 										'Passo 4 — Pagamento',
@@ -475,18 +504,28 @@ export default function WorkflowsScreen( { client } ) {
 										} )
 									}
 								/>
-								<Notice status="info">
-									{ sprintf(
-										/* translators: %s: comma separated list of strategy names the store cannot carry out yet. */
-										__(
-											'As restantes estratégias de estoque e de pagamento (%s) não são oferecidas porque esta versão não as executa: a reserva de estoque chega na fase da reserva e a ação de pagamento depende do registo de capabilities do gateway.',
-											'wc-checkoutsuite'
-										),
-										[ ...stockMissing, ...paymentMissing ]
-											.map( ( entry ) => entry.label )
-											.join( ', ' )
-									) }
-								</Notice>
+								{ /* §30.1: a strategy the store cannot carry out is not drawn, and the
+								   screen says which one it is withholding and why. Since Fase 13 there is
+								   none in either vocabulary, so this is silent — and it stays for the next
+								   strategy to be described before a service performs it. */ }
+								{ stockMissing.length + paymentMissing.length >
+									0 && (
+									<Notice status="info">
+										{ sprintf(
+											/* translators: %s: comma separated list of strategy names the store cannot carry out yet. */
+											__(
+												'As restantes estratégias de estoque e de pagamento (%s) não são oferecidas porque esta versão ainda não as executa. O pedido entra no estado escolhido e nem o estoque nem o pagamento são tocados por elas.',
+												'wc-checkoutsuite'
+											),
+											[
+												...stockMissing,
+												...paymentMissing,
+											]
+												.map( ( entry ) => entry.label )
+												.join( ', ' )
+										) }
+									</Notice>
+								) }
 
 								<h3>
 									{ __(

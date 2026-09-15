@@ -154,6 +154,26 @@ describe( 'workflows', () => {
 			).toContain( 'horas' );
 		} );
 
+		it( 'says a stock reservation by the hour needs its number', () => {
+			expect(
+				workflowIssues(
+					workflow( {
+						inventory_strategy: 'hours',
+						inventory_hours: 0,
+					} )
+				)[ 0 ]
+			).toContain( 'número de horas' );
+
+			expect(
+				workflowIssues(
+					workflow( {
+						inventory_strategy: 'hours',
+						inventory_hours: 6,
+					} )
+				)
+			).toEqual( [] );
+		} );
+
 		it( 'says nothing about an automation that is complete', () => {
 			expect(
 				workflowIssues(

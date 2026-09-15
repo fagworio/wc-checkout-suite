@@ -15,6 +15,7 @@ use WCCheckoutSuite\Domain\Conditions\CheckoutConditionContext;
 use WCCheckoutSuite\Domain\Customers\CustomerFieldsService;
 use WCCheckoutSuite\Domain\Fields\FieldContext;
 use WCCheckoutSuite\Domain\Orders\OrderFieldsService;
+use WCCheckoutSuite\Domain\Stock\InventoryReservationService;
 
 /**
  * The engine §13.7 names, with the gate of this phase built into it.
@@ -142,6 +143,11 @@ final class WorkflowEngine {
 
 		$moved = self::move( $found, $workflow->initial_status(), $workflow->name() );
 
+		// §21: the hold is taken when the workflow takes the order, not when the checkout created it
+		// — the order may wait for hours, and the platform's default hold is one hour. The service
+		// reads the length from this workflow, so a strategy of `none` holds nothing.
+		$reservation = ( new InventoryReservationService( $repository ) )->reserve( $found );
+
 		if ( $hours > 0 ) {
 			WorkflowScheduler::schedule( $found, $workflow, $deadline );
 		}
@@ -153,6 +159,7 @@ final class WorkflowEngine {
 			'applied'  => $moved,
 			'reason'   => $moved ? 'entered' : 'already_in_status',
 			'status'   => $workflow->initial_status(),
+			'stock'    => $reservation,
 			'event'    => $workflow->tells( Workflows::EVENT_RECEIVED ) ? Workflows::EVENT_RECEIVED : '',
 			// What the workflow asked for and this build does not do. Reported rather than hidden:
 			// the screen and the audit read the same answer.

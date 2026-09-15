@@ -22,6 +22,7 @@ const VOCABULARY = {
 	inventory: [
 		{ value: 'none', label: 'Não reservar' },
 		{ value: 'until_decision', label: 'Reservar até decisão' },
+		{ value: 'hours', label: 'Reservar por X horas' },
 	],
 	payment: [
 		{ value: 'none', label: 'Não iniciar pagamento' },
@@ -32,8 +33,17 @@ const VOCABULARY = {
 		{ value: 'capture_after_approval', label: 'Capturar após aprovação' },
 	],
 	events: [ { value: 'received', label: 'Pedido recebido para análise' } ],
-	// The stock strategies stay unavailable until the phase that reserves stock exists; the payment
-	// ones are executable since the payment action service does, each falling back per gateway.
+	// Since Fase 13 every strategy in both vocabularies is executable: the reservation service holds
+	// stock and the payment action service performs the payment strategies, falling back per gateway.
+	executable: {
+		inventory: [ 'none', 'until_decision', 'hours' ],
+		payment: [ 'none', 'request_after_approval', 'capture_after_approval' ],
+	},
+};
+
+/** The same vocabulary with one strategy the store does not carry out. */
+const WITHHELD = {
+	...VOCABULARY,
 	executable: {
 		inventory: [ 'none' ],
 		payment: [ 'none', 'request_after_approval', 'capture_after_approval' ],
@@ -67,7 +77,7 @@ function client( options = {} ) {
 					fallbacks: [],
 				},
 			],
-			vocabulary: VOCABULARY,
+			vocabulary: options.vocabulary ?? VOCABULARY,
 			statuses: [
 				{ value: 'analise_pendente', label: 'Análise pendente' },
 				{ value: 'aprovado', label: 'Aprovado' },
@@ -127,7 +137,7 @@ describe( 'WorkflowsScreen', () => {
 		);
 	} );
 
-	it( 'offers only the strategies the store can execute, and names the others', async () => {
+	it( 'offers the strategies the store can execute', async () => {
 		render( <WorkflowsScreen client={ client() } /> );
 
 		await waitFor( () =>
@@ -143,7 +153,7 @@ describe( 'WorkflowsScreen', () => {
 
 		expect(
 			Array.from( stock.options ).map( ( option ) => option.value )
-		).toEqual( [ 'none' ] );
+		).toEqual( [ 'none', 'until_decision', 'hours' ] );
 		expect(
 			Array.from( payment.options ).map( ( option ) => option.value )
 		).toEqual( [
@@ -151,9 +161,60 @@ describe( 'WorkflowsScreen', () => {
 			'request_after_approval',
 			'capture_after_approval',
 		] );
-		// The stock strategy nothing executes is absent from the select and named in the notice.
+	} );
+
+	it( 'asks for the number of hours when the strategy needs one', async () => {
+		render( <WorkflowsScreen client={ client() } /> );
+
+		await waitFor( () =>
+			expect( screen.getByLabelText( 'Estoque' ) ).toBeInTheDocument()
+		);
+
+		// The strategy that holds for a number of hours cannot work without the number, so the
+		// field is not drawn until it is chosen — and it is drawn as soon as it is.
+		expect(
+			screen.queryByLabelText( 'Reservar por (horas)' )
+		).not.toBeInTheDocument();
+
+		fireEvent.change( screen.getByLabelText( 'Estoque' ), {
+			target: { value: 'until_decision' },
+		} );
+		expect(
+			screen.queryByLabelText( 'Reservar por (horas)' )
+		).not.toBeInTheDocument();
+
+		fireEvent.change( screen.getByLabelText( 'Estoque' ), {
+			target: { value: 'hours' },
+		} );
+		expect(
+			screen.getByLabelText( 'Reservar por (horas)' )
+		).toBeInTheDocument();
+	} );
+
+	it( 'withholds a strategy the store cannot execute, and names it', async () => {
+		render(
+			<WorkflowsScreen client={ client( { vocabulary: WITHHELD } ) } />
+		);
+
+		await waitFor( () =>
+			expect( screen.getByLabelText( 'Estoque' ) ).toBeInTheDocument()
+		);
+
+		// Absent from the select, so it cannot be chosen…
+		expect(
+			Array.from(
+				/** @type {HTMLSelectElement} */ (
+					screen.getByLabelText( 'Estoque' )
+				).options
+			).map( ( option ) => option.value )
+		).toEqual( [ 'none' ] );
+
+		// …and named where the merchant can read why it is not there.
 		expect(
 			screen.getByText( /Reservar até decisão/ )
+		).toBeInTheDocument();
+		expect(
+			screen.getByText( /esta versão ainda não as executa/ )
 		).toBeInTheDocument();
 	} );
 

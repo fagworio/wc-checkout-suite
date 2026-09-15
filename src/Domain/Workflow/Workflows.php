@@ -101,7 +101,9 @@ final class Workflows {
 	/**
 	 * Every stock strategy, keyed by its stable key.
 	 *
-	 * The three §13.2 draws are here; only `none` can run in this build.
+	 * The three §13.2 draws are here, and since Fase 13 all three run: the reservation service holds
+	 * stock through the platform's own rows for `until_decision` and `hours`, and `none` holds
+	 * nothing.
 	 *
 	 * @return array<string, string>
 	 */
@@ -272,15 +274,24 @@ final class Workflows {
 	/**
 	 * The strategies this build can execute.
 	 *
+	 * Written out rather than derived from the vocabularies above, and that is the point: a
+	 * vocabulary may describe a strategy this version does not carry out, and then the editor must
+	 * not offer it and the validator must refuse it **by name with a reason** (§30.1). Deriving the
+	 * two from each other would make that refusal impossible to express — and Fases 10 and 13 each
+	 * lifted one of these lists when the service behind it arrived.
+	 *
 	 * @return array<string, array<int, string>>
 	 */
 	public static function executable_strategies(): array {
 		return array(
-			// Stock stays refused until the phase that reserves it exists; the payment strategies
-			// are all executable now, each one falling back to the pay-for-order link where the
-			// gateway has not proven what it needs.
-			'inventory' => array( self::INVENTORY_NONE ),
-			'payment'   => array_keys( self::payment_strategies() ),
+			// Since Fase 13 the reservation service exists, so all three hold stock: `none` holds
+			// nothing, `until_decision` holds for the workflow's own clock and `hours` for the
+			// number the merchant chose.
+			'inventory' => array( self::INVENTORY_NONE, 'until_decision', 'hours' ),
+			// Since Fase 10 the payment action service performs all five; where a gateway has not
+			// proven the capability the engine falls back to the platform's own link rather than
+			// charging twice.
+			'payment'   => array( self::PAYMENT_NONE, 'authorize_now', 'capture_after_approval', 'request_after_approval', 'generate_after_approval' ),
 		);
 	}
 

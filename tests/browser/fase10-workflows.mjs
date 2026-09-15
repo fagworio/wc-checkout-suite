@@ -1,8 +1,11 @@
 /**
  * Fase 10 observation — the automation screen, as a merchant meets it.
  *
- * Updated in Fase 12: the payment strategies are offered now that the payment action service exists,
- * and what stays unoffered is the stock strategy nothing executes yet.
+ * Updated in Fase 12 for the payment strategies, and in Fase 13 for the stock ones: the reservation
+ * service exists, so the three strategies §13.2 draws are offered and nothing is withheld any more.
+ * What the proof adds in Fase 13 is the number the third strategy needs — «Reservar por X horas»
+ * without a number would reserve nothing, so the field appears with the strategy and the store keeps
+ * what was typed.
  *
  * The harness drives the engine against a real order; the unit and screen suites prove the model
  * and the component. What neither shows is the screen against the real server: that the vocabulary
@@ -163,10 +166,10 @@ await step( 'The screen draws the design steps', async () => {
 	);
 	record(
 		'And it says which strategies the store can execute today',
-		// The stock strategies stay refused until the phase that reserves stock exists; the payment
-		// ones are executable since the payment action service does, each falling back per gateway.
+		// Since Fase 13 every strategy in both vocabularies is executable: the reservation service
+		// holds stock and the payment action service performs the payment strategies.
 		JSON.stringify( ( vocabulary.executable ?? {} ).inventory ) ===
-			JSON.stringify( [ 'none' ] ) &&
+			JSON.stringify( [ 'none', 'until_decision', 'hours' ] ) &&
 			( vocabulary.executable ?? {} ).payment?.includes(
 				'capture_after_approval'
 			),
@@ -214,8 +217,8 @@ await step( 'A new automation is created and its steps are drawn', async () => {
 		.evaluateAll( ( nodes ) => nodes.map( ( node ) => node.value ) );
 
 	record(
-		'The stock select offers only what the store can execute',
-		[ 'none' ].join() === stock.join(),
+		'The stock select offers the three strategies of the design',
+		[ 'none', 'until_decision', 'hours' ].join() === stock.join(),
 		'stock=' + stock.join( ',' )
 	);
 	record(
@@ -226,10 +229,30 @@ await step( 'A new automation is created and its steps are drawn', async () => {
 		'payment=' + payment.join( ',' )
 	);
 	record(
-		'And the ones that cannot run are named, with the reason',
-		body.includes( 'não são oferecidas' ) &&
-			body.includes( 'capabilities do gateway' )
+		'And nothing is withheld, so the notice that names what is missing is not drawn',
+		! body.includes( 'não são oferecidas' )
 	);
+
+	// §13.2's third stock strategy needs a number of its own: without it the store would reserve
+	// zero minutes and the merchant would have been told the unit was held.
+	record(
+		'The number of hours is asked for only once the strategy asks for it',
+		( await page.locator( '#wccs-workflow-inventory-hours' ).count() ) === 0
+	);
+
+	await page
+		.locator( '#wccs-workflow-inventory' )
+		.selectOption( 'hours' );
+	await page.waitForSelector( '#wccs-workflow-inventory-hours', {
+		timeout: 10000,
+	} );
+
+	record(
+		'And the field appears with the strategy, ready for the number',
+		( await page.locator( '#wccs-workflow-inventory-hours' ).count() ) === 1
+	);
+
+	await page.locator( '#wccs-workflow-inventory-hours' ).fill( '6' );
 } );
 
 // ---------------------------------------------------------------------------
@@ -264,9 +287,13 @@ await step(
 			stored.map( ( entry ) => entry.id ).join( ',' )
 		);
 		record(
-			'And it carries no strategy the store cannot execute',
-			'none' === stored[ 0 ]?.payment_strategy &&
-				'none' === stored[ 0 ]?.inventory_strategy
+			'And the store kept the strategy and the number the merchant chose',
+			'hours' === stored[ 0 ]?.inventory_strategy &&
+				6 === stored[ 0 ]?.inventory_hours,
+			'inventory=' +
+				stored[ 0 ]?.inventory_strategy +
+				' hours=' +
+				stored[ 0 ]?.inventory_hours
 		);
 
 		await page.screenshot( { path: `${ OUT }/fase10-workflows.png` } );

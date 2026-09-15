@@ -19,17 +19,23 @@ use WCCheckoutSuite\Domain\Fields\ValidationResult;
  * vocabulary, a rule tree the shared validator accepts (§14), and a status that exists.
  *
  * The two that matter most are the ones that **refuse what this build cannot execute**, and they are
- * the gate of this phase written as a rule:
+ * the gate of phase 10 written as a rule:
  *
- * - A stock strategy other than `none` is refused with `inventory_strategy_not_available`, because
- *   nothing reserves stock yet.
- * - A payment strategy other than `none` is refused with `payment_strategy_not_available`, because
- *   nothing performs a payment action yet.
+ * - A stock strategy that is not executable is refused with `inventory_strategy_not_available`.
+ * - A payment strategy that is not executable is refused with `payment_strategy_not_available`.
  *
- * The alternative — accepting them and recording them as intent — was rejected on the principle the
- * rest of this plugin follows: configuration that cannot work is refused **by name with a reason**
- * rather than accepted and ignored. A merchant who chose "autorizar agora e capturar após aprovação"
- * and got nothing would have been told, by the interface, that their card would be authorised.
+ * Both vocabularies are fully executable as of Fase 13 — the reservation service holds stock and the
+ * payment action service performs every payment strategy — so neither code fires today, and the unit
+ * test asserts exactly that: every strategy the vocabulary names is one the store runs, so the editor
+ * cannot advertise work nothing does. The refusals stay as the seam for the next strategy to be
+ * described before it can run, which is why `executable_strategies()` is written out separately from
+ * the vocabularies instead of derived from them.
+ *
+ * The alternative — accepting everything the vocabulary names and recording it as intent — was
+ * rejected on the principle the rest of this plugin follows: configuration that cannot work is
+ * refused **by name with a reason** rather than accepted and ignored. A merchant who chose "autorizar
+ * agora e capturar após aprovação" and got nothing would have been told, by the interface, that their
+ * card would be authorised.
  *
  * @see \ROADMAP.md sections 12.4, 13.2 and 13.7
  */
@@ -274,6 +280,22 @@ final class WorkflowValidator {
 						__( 'A reserva de estoque («%s») ainda não é executada por esta versão. O pedido entra no estado escolhido e o estoque fica como a WooCommerce o deixou.', 'wc-checkoutsuite' ),
 						Workflows::inventory_strategies()[ $workflow->inventory_strategy() ]
 					),
+					array(
+						'workflow' => $id,
+						'strategy' => $workflow->inventory_strategy(),
+					)
+				)
+			);
+		}
+
+		// A strategy that holds stock for a number of hours is refused when there is no number: the
+		// hold would be zero minutes, which is the same as never reserving and the opposite of what
+		// the merchant chose. Refused by name with the reason, as §30.1 asks.
+		if ( 'hours' === $workflow->inventory_strategy() && $workflow->inventory_hours() <= 0 ) {
+			$result = $result->merge(
+				ValidationResult::invalid(
+					'workflow_inventory_hours_required',
+					__( 'A reserva de estoque por horas precisa do número de horas: sem ele nada é reservado e o pedido espera por uma decisão sem unidade guardada.', 'wc-checkoutsuite' ),
 					array(
 						'workflow' => $id,
 						'strategy' => $workflow->inventory_strategy(),

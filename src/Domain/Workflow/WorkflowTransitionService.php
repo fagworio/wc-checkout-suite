@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace WCCheckoutSuite\Domain\Workflow;
 
 use WC_Order;
+use WCCheckoutSuite\Domain\Stock\InventoryReservationService;
 
 /**
  * The decisions of §13.4 and §13.5, and the clock behind the last of them.
@@ -92,10 +93,14 @@ final class WorkflowTransitionService {
 		// payment. A strategy that performs no action — `none`, or asking the customer to pay
 		// through WooCommerce's own page — runs nothing, which is a decision and not a gap.
 		$payment = self::perform_payment( $found, $workflow, $decision );
+		$stock   = self::settle_stock( $found, $decision, $workflow );
 
 		return array_merge(
 			self::report( $id, $decision, $moved, $moved ? 'applied' : 'already_in_status', $workflow ),
-			array( 'payment_action' => $payment )
+			array(
+				'payment_action' => $payment,
+				'stock'          => $stock,
+			)
 		);
 	}
 
@@ -141,6 +146,34 @@ final class WorkflowTransitionService {
 				'strategy' => $strategy,
 				'amount'   => (float) $order->get_total(),
 			)
+		);
+	}
+
+	/**
+	 * Settles the stock a decision ends the wait for.
+	 *
+	 * §21: the hold is released on rejection and on expiration, and **never** after a payment has been
+	 * concluded — after payment the platform has already converted the hold into a real reduction, and
+	 * releasing it again would put back a unit that was sold. Approval therefore does not touch the
+	 * hold at all: the platform's own `payment_complete` hook releases it.
+	 *
+	 * @param WC_Order           $order    Order.
+	 * @param string             $decision Decision key.
+	 * @param WorkflowDefinition $workflow Workflow.
+	 * @return array<string, mixed> Report.
+	 */
+	private static function settle_stock( WC_Order $order, string $decision, WorkflowDefinition $workflow ): array {
+		if ( ! in_array( $decision, array( Workflows::DECISION_REJECT, Workflows::DECISION_EXPIRE ), true ) ) {
+			return array(
+				'strategy' => $workflow->inventory_strategy(),
+				'released' => false,
+				'reason'   => 'decision_does_not_release',
+			);
+		}
+
+		return array_merge(
+			array( 'strategy' => $workflow->inventory_strategy() ),
+			( new InventoryReservationService() )->release( $order, $decision )
 		);
 	}
 

@@ -103,28 +103,95 @@ final class WorkflowDefinitionTest extends TestCase {
 	}
 
 	/**
-	 * **A workflow cannot ask for what this build cannot execute.**
+	 * **Every strategy the vocabulary names is one this build executes.**
+	 *
+	 * §30.1 from the other side: the editor draws what the server lists, so the server must not list
+	 * work nothing does. Fase 10 made every payment strategy executable and Fase 13 did the same for
+	 * the stock reservations, so both vocabularies are now fully executable and neither refusal
+	 * fires — and a strategy no service carries out is still not executable, which is the seam those
+	 * refusals exist for.
 	 *
 	 * @return void
 	 */
-	public function test_a_strategy_that_cannot_run_is_refused_by_name(): void {
-		// The payment strategies are executable since the payment action service exists, so what is
-		// refused is the one thing nothing performs yet: a stock reservation.
-		$payment = WorkflowValidator::validate_one(
-			self::workflow( array( 'payment_strategy' => 'capture_after_approval' ) ),
-			array( 'analise_pendente', 'aprovado' ),
-			array( 'processing', 'completed' )
+	public function test_every_strategy_the_vocabulary_names_can_run(): void {
+		$statuses = array( 'analise_pendente', 'aprovado' );
+		$paid     = array( 'processing', 'completed' );
+
+		foreach ( array( 'until_decision', 'hours' ) as $strategy ) {
+			self::assertTrue( Workflows::can_execute( 'inventory', $strategy ), $strategy );
+			self::assertNotContains(
+				'inventory_strategy_not_available',
+				WorkflowValidator::validate_one(
+					self::workflow( array( 'inventory_strategy' => $strategy ) ),
+					$statuses,
+					$paid
+				)->error_codes()
+			);
+		}
+
+		foreach ( array( 'authorize_now', 'capture_after_approval', 'request_after_approval', 'generate_after_approval' ) as $strategy ) {
+			self::assertTrue( Workflows::can_execute( 'payment', $strategy ), $strategy );
+			self::assertNotContains(
+				'payment_strategy_not_available',
+				WorkflowValidator::validate_one(
+					self::workflow( array( 'payment_strategy' => $strategy ) ),
+					$statuses,
+					$paid
+				)->error_codes()
+			);
+		}
+
+		self::assertFalse( Workflows::can_execute( 'inventory', 'reservar_para_sempre' ) );
+		self::assertFalse( Workflows::can_execute( 'payment', 'cobrar_duas_vezes' ) );
+	}
+
+	/**
+	 * **A reservation calculated in hours needs the number of hours.**
+	 *
+	 * The third stock strategy is the only one that carries a quantity of its own; with none, the
+	 * hold would be zero minutes — the merchant would have chosen to reserve and the store would
+	 * reserve nothing, silently. §30.1's rule, and the reason `until_decision` is not refused for
+	 * having no number: its window is the workflow's own clock, and the platform's when there is none.
+	 *
+	 * @return void
+	 */
+	public function test_a_stock_reservation_by_the_hour_needs_its_number(): void {
+		$statuses = array( 'analise_pendente', 'aprovado' );
+		$paid     = array( 'processing', 'completed' );
+
+		$missing = WorkflowValidator::validate_one(
+			self::workflow(
+				array(
+					'inventory_strategy' => 'hours',
+					'inventory_hours'    => 0,
+				)
+			),
+			$statuses,
+			$paid
 		);
 
-		self::assertNotContains( 'payment_strategy_not_available', $payment->error_codes() );
+		self::assertContains( 'workflow_inventory_hours_required', $missing->error_codes() );
 
-		$stock = WorkflowValidator::validate_one(
+		$given = WorkflowValidator::validate_one(
+			self::workflow(
+				array(
+					'inventory_strategy' => 'hours',
+					'inventory_hours'    => 6,
+				)
+			),
+			$statuses,
+			$paid
+		);
+
+		self::assertNotContains( 'workflow_inventory_hours_required', $given->error_codes() );
+
+		$until_decision = WorkflowValidator::validate_one(
 			self::workflow( array( 'inventory_strategy' => 'until_decision' ) ),
-			array( 'analise_pendente', 'aprovado' ),
-			array( 'processing', 'completed' )
+			$statuses,
+			$paid
 		);
 
-		self::assertContains( 'inventory_strategy_not_available', $stock->error_codes() );
+		self::assertNotContains( 'workflow_inventory_hours_required', $until_decision->error_codes() );
 	}
 
 	/**
@@ -354,7 +421,7 @@ final class WorkflowDefinitionTest extends TestCase {
 
 		self::assertSame( array( Workflows::TRIGGER_CHECKOUT_SUBMITTED ), array_column( $vocabulary['triggers'], 'value' ) );
 		self::assertSame( array_keys( Workflows::decisions() ), array_column( $vocabulary['decisions'], 'value' ) );
-		self::assertSame( array( Workflows::INVENTORY_NONE ), $vocabulary['executable']['inventory'] );
+		self::assertSame( array_keys( Workflows::inventory_strategies() ), $vocabulary['executable']['inventory'] );
 		self::assertSame( array_keys( Workflows::payment_strategies() ), $vocabulary['executable']['payment'] );
 		self::assertSame( array_keys( Workflows::events() ), array_column( $vocabulary['events'], 'value' ) );
 	}

@@ -36,6 +36,7 @@ use WCCheckoutSuite\Account\MyAccountSections;
 use WCCheckoutSuite\Checkout\OrderEmailFields;
 use WCCheckoutSuite\Domain\Approval\ReviewStatus;
 use WCCheckoutSuite\Domain\Statuses\OrderStatusRegistry;
+use WCCheckoutSuite\Domain\Stock\InventoryReservationService;
 use WCCheckoutSuite\Domain\Workflow\WorkflowEngine;
 use WCCheckoutSuite\Domain\Workflow\WorkflowScheduler;
 use WCCheckoutSuite\Http\Admin\SchemaController;
@@ -320,6 +321,9 @@ final class Plugin {
 		// wants no automation keeps exactly the order flow WooCommerce gave it.
 		WorkflowEngine::register();
 		WorkflowScheduler::register();
+		// §21's reservation, built on the platform's own: the store answers how long to hold and
+		// what is available, and never writes the reservation table itself.
+		InventoryReservationService::register();
 
 		// The optional approval flow. Registered unconditionally, and does nothing at
 		// all until a published field enables a complete flow: a store that does not
