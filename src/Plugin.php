@@ -40,6 +40,7 @@ use WCCheckoutSuite\Domain\Stock\InventoryReservationService;
 use WCCheckoutSuite\Domain\Workflow\WorkflowEngine;
 use WCCheckoutSuite\Domain\Workflow\WorkflowScheduler;
 use WCCheckoutSuite\Http\Admin\SchemaController;
+use WCCheckoutSuite\Support\PlatformCompatibility;
 use WCCheckoutSuite\Http\Admin\SettingsController;
 use WCCheckoutSuite\Http\Admin\StatusController;
 use WCCheckoutSuite\Http\Admin\WorkflowController;
@@ -111,6 +112,11 @@ final class Plugin {
 		// build with an old table would otherwise be discovered one failed upload at
 		// a time.
 		UploadsTable::maybe_install();
+
+		// What WooCommerce asks a plugin to declare about itself (§22, Fase 15). An answer
+		// rather than a promise: the storage the declaration is about is what every order
+		// read in this plugin already goes through.
+		PlatformCompatibility::register();
 
 		// Administrative schema endpoints. The repository reports outcomes; the
 		// controller is the only layer that turns them into HTTP statuses.

@@ -16,6 +16,7 @@
  */
 
 import {
+	configure,
 	fireEvent,
 	render,
 	screen,
@@ -25,6 +26,16 @@ import {
 import userEvent from '@testing-library/user-event';
 
 import FieldsScreen from '../../../resources/admin/app/FieldsScreen';
+
+/**
+ * How long a query waits for the screen to arrive.
+ *
+ * This suite renders the whole editor, and it runs beside the PHP static analysis and the
+ * integration sweep. The default of one second is enough on an idle machine and is not enough on a
+ * loaded one, and a flake here is read as a regression in the screen — which is the one thing this
+ * suite exists to catch. The assertions are unchanged; only the patience is.
+ */
+configure( { asyncUtilTimeout: 5000 } );
 
 /**
  * Builds a field definition.
