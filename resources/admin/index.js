@@ -38,6 +38,7 @@ if ( mount ) {
 			sections={ config.sections ?? [] }
 			version={ config.version ?? '' }
 			siteName={ config.siteName ?? '' }
+			urls={ config.urls ?? {} }
 			client={ client }
 		/>,
 		mount

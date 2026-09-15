@@ -161,9 +161,10 @@ function navigation( serverSections ) {
  * @param {string} props.section    Active section identifier.
  * @param {Object} [props.client]   REST client, when the section needs one.
  * @param {string} [props.siteName] Store name, for the screens that draw it.
+ * @param {Object} [props.urls]     Storefront addresses the screens link to.
  * @return {*} Rendered element tree.
  */
-function SectionContent( { section, client, siteName } ) {
+function SectionContent( { section, client, siteName, urls } ) {
 	// The design's four destinations are views of one document: the editor, the checkout
 	// preview, the archive and the rules. They share the screen that owns the draft, so
 	// switching between them keeps the work in progress and reloads nothing.
@@ -173,6 +174,7 @@ function SectionContent( { section, client, siteName } ) {
 				client={ client }
 				view={ section }
 				siteName={ siteName }
+				urls={ urls }
 			/>
 		);
 	}
@@ -216,8 +218,15 @@ function SectionContent( { section, client, siteName } ) {
  * @param {string}                          props.version    Plugin version.
  * @param {string}                          [props.siteName] Store name, for the column's foot.
  * @param {Object}                          [props.client]   REST client.
+ * @param {Object}                          [props.urls]     Storefront addresses the screens link to.
  */
-export default function AppShell( { sections, version, siteName, client } ) {
+export default function AppShell( {
+	sections,
+	version,
+	siteName,
+	client,
+	urls = {},
+} ) {
 	const items = useMemo( () => navigation( sections ), [ sections ] );
 	const ids = items.map( ( item ) => item.id );
 	const first = ids.length > 0 ? ids[ 0 ] : '';
@@ -485,6 +494,7 @@ export default function AppShell( { sections, version, siteName, client } ) {
 							section={ current }
 							client={ client }
 							siteName={ siteName }
+							urls={ urls }
 						/>
 					</main>
 				</div>

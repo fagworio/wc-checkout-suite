@@ -365,7 +365,7 @@ describe( 'editing', () => {
 		expect( stub.saveDraft ).not.toHaveBeenCalled();
 	} );
 
-	it( 'saves the whole document when asked', async () => {
+	it( 'saves the whole document and puts it to work in one action', async () => {
 		const user = userEvent.setup();
 		const stub = client();
 
@@ -375,7 +375,7 @@ describe( 'editing', () => {
 
 		await duplicateField( user, 'CPF' );
 		await user.click(
-			screen.getByRole( 'button', { name: 'Atualizar campos' } )
+			screen.getByRole( 'button', { name: 'Salvar alterações' } )
 		);
 
 		await waitFor( () =>
@@ -386,9 +386,17 @@ describe( 'editing', () => {
 
 		expect( saved.fields ).toHaveLength( 2 );
 		expect( revision ).toBe( 3 );
+
+		// The second write is what makes «Salvar alterações» one action: without it the
+		// merchant would have saved a draft the store does not run.
+		await waitFor( () =>
+			expect( stub.publish ).toHaveBeenCalledTimes( 1 )
+		);
+		expect( stub.publish.mock.calls[ 0 ][ 0 ] ).toBe( 3 );
+		await screen.findByText( 'Alterações salvas com sucesso.' );
 	} );
 
-	it( 'writes the draft over the draft route, and writes nothing else', async () => {
+	it( 'writes the draft and publishes it over their own routes, in that order', async () => {
 		const user = userEvent.setup();
 		const { createClient } = await import(
 			'../../../resources/admin/app/api/client'
@@ -397,11 +405,12 @@ describe( 'editing', () => {
 		/** @type {string[]} */
 		const requests = [];
 		const document = doc( [ field() ] );
+
 		const transport = createClient( {
 			root: 'https://example.test/wp-json/',
 			namespace: 'wc-checkoutsuite/v1',
 			nonce: 'nonce-value',
-			routes: { draft: '/schema/draft' },
+			routes: { draft: '/schema/draft', publish: '/schema/publish' },
 			fetchImpl: async (
 				/** @type {string} */ url,
 				/** @type {{ method?: string }} */ options = {}
@@ -417,9 +426,12 @@ describe( 'editing', () => {
 			sleep: async () => {},
 		} );
 
-		// The reads keep their own stub: what is under test is where the save lands,
-		// and that it is the only write the screen performs.
-		const stub = client( { saveDraft: transport.saveDraft } );
+		// The reads keep their own stub: what is under test is which writes the screen
+		// performs, in which order, and to which addresses.
+		const stub = client( {
+			saveDraft: transport.saveDraft,
+			publish: transport.publish,
+		} );
 
 		render( <FieldsScreen client={ stub } /> );
 
@@ -427,14 +439,46 @@ describe( 'editing', () => {
 
 		await duplicateField( user, 'CPF' );
 		await user.click(
-			screen.getByRole( 'button', { name: 'Atualizar campos' } )
+			screen.getByRole( 'button', { name: 'Salvar alterações' } )
 		);
 
-		await waitFor( () => expect( requests ).toHaveLength( 1 ) );
+		await waitFor( () => expect( requests ).toHaveLength( 2 ) );
 
-		expect( requests[ 0 ] ).toBe(
-			'PUT https://example.test/wp-json/wc-checkoutsuite/v1/schema/draft'
+		expect( requests ).toEqual( [
+			'PUT https://example.test/wp-json/wc-checkoutsuite/v1/schema/draft',
+			'POST https://example.test/wp-json/wc-checkoutsuite/v1/schema/publish',
+		] );
+	} );
+
+	it( 'says the store still runs the previous revision when only the publication fails', async () => {
+		const user = userEvent.setup();
+		const { ApiError } = await import(
+			'../../../resources/admin/app/api/client'
 		);
+
+		const stub = client( {
+			publish: jest.fn( async () => {
+				throw new ApiError( {
+					status: 0,
+					message: 'The network is down.',
+				} );
+			} ),
+		} );
+
+		render( <FieldsScreen client={ stub } /> );
+
+		await screen.findByText( 'CPF' );
+
+		await duplicateField( user, 'CPF' );
+		await user.click(
+			screen.getByRole( 'button', { name: 'Salvar alterações' } )
+		);
+
+		await screen.findByText( /ainda corre a revisão anterior/ );
+
+		// The work is stored, and the screen does not pretend the storefront changed.
+		expect( stub.saveDraft ).toHaveBeenCalledTimes( 1 );
+		expect( stub.publish ).toHaveBeenCalledTimes( 1 );
 	} );
 } );
 
@@ -460,7 +504,7 @@ describe( 'a failure does not discard work', () => {
 
 		await duplicateField( user, 'CPF' );
 		await user.click(
-			screen.getByRole( 'button', { name: 'Atualizar campos' } )
+			screen.getByRole( 'button', { name: 'Salvar alterações' } )
 		);
 
 		await screen.findByText( /could not be reached/ );
@@ -493,7 +537,7 @@ describe( 'a failure does not discard work', () => {
 
 		await duplicateField( user, 'CPF' );
 		await user.click(
-			screen.getByRole( 'button', { name: 'Atualizar campos' } )
+			screen.getByRole( 'button', { name: 'Salvar alterações' } )
 		);
 
 		await screen.findByText( /Someone else saved first/ );

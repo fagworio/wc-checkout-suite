@@ -104,21 +104,24 @@ function SwitchRow( { id, label, help, checked, disabled = false, onToggle } ) {
 /**
  * The field's properties panel.
  *
- * @param {Object}                                      props               Component properties.
- * @param {import('../schema/types').FieldDefinition}   props.field         Field being edited.
- * @param {import('../schema/types').FieldCatalog|null} props.catalog       Field catalogue.
- * @param {Array<{id: string, label: string}>}          props.sections      Sections the field may move to.
- * @param {Function}                                    props.onChange      Called with a partial definition.
- * @param {Array<{id: string, label: string}>}          [props.fields]      Fields a rule may read.
- * @param {Function}                                    [props.onDuplicate] Duplicate the field.
- * @param {Function}                                    [props.onArchive]   Archive the field.
- * @param {Function}                                    [props.onProtect]   Explain why it is protected.
+ * @param {Object}                                              props                Component properties.
+ * @param {import('../schema/types').FieldDefinition}           props.field          Field being edited.
+ * @param {import('../schema/types').FieldCatalog|null}         props.catalog        Field catalogue.
+ * @param {Array<{id: string, label: string}>}                  props.sections       Sections the field may move to.
+ * @param {Array<{id: string, label: string, areas: string[]}>} [props.linkSections]
+ *                                                                                   Sections each destination may point at.
+ * @param {Function}                                            props.onChange       Called with a partial definition.
+ * @param {Array<{id: string, label: string}>}                  [props.fields]       Fields a rule may read.
+ * @param {Function}                                            [props.onDuplicate]  Duplicate the field.
+ * @param {Function}                                            [props.onArchive]    Archive the field.
+ * @param {Function}                                            [props.onProtect]    Explain why it is protected.
  * @return {*} Rendered element tree.
  */
 export default function FieldProperties( {
 	field,
 	catalog,
 	sections = [],
+	linkSections = [],
 	onChange,
 	fields = [],
 	onDuplicate,
@@ -748,7 +751,7 @@ export default function FieldProperties( {
 														     from another area would be
 														     accepted by the form and refused
 														     by the server. */ }
-														{ sections
+														{ linkSections
 															.filter(
 																(
 																	/** @type {any} */ option

@@ -177,6 +177,55 @@ final class Assets {
 				'nonce'     => wp_create_nonce( 'wp_rest' ),
 				'routes'    => Routes::all(),
 			),
+			// Where the merchant can look at what was just saved. They are read here,
+			// from the store, rather than assembled in the browser: the checkout page,
+			// the account page and an account endpoint are all WooCommerce's own URLs,
+			// and a screen that built them itself would be a second opinion about where
+			// the store keeps its pages.
+			'urls'     => self::surface_urls(),
 		);
+	}
+
+	/**
+	 * The storefront addresses the editor links to.
+	 *
+	 * The endpoint is the one the *published* document configures, because that is the
+	 * page the store is running right now: a link into a page that only exists in the
+	 * draft would send the merchant to a 404 and make the save look broken.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function surface_urls(): array {
+		$urls = array(
+			'checkout' => '',
+			'account'  => '',
+		);
+
+		if ( ! function_exists( 'wc_get_checkout_url' ) ) {
+			return $urls;
+		}
+
+		$urls['checkout'] = esc_url_raw( wc_get_checkout_url() );
+		$urls['account']  = esc_url_raw( wc_get_page_permalink( 'myaccount' ) );
+
+		foreach ( \WCCheckoutSuite\Checkout\Classic\PublishedDocument::read()->sections() as $raw ) {
+			if ( ! is_array( $raw ) ) {
+				continue;
+			}
+
+			$section = \WCCheckoutSuite\Domain\Sections\SectionDefinition::from_array( $raw );
+			$account = $section->account();
+			$slug    = isset( $account['slug'] ) ? sanitize_title( (string) $account['slug'] ) : '';
+
+			if ( '' === $slug || ! $section->is_offered_in( 'customer_account' ) ) {
+				continue;
+			}
+
+			$urls['account'] = esc_url_raw( wc_get_account_endpoint_url( $slug ) );
+
+			break;
+		}
+
+		return $urls;
 	}
 }

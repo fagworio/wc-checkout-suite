@@ -73,30 +73,14 @@ page.on( 'pageerror', ( e ) =>
 await page.goto( ADMIN, { waitUntil: 'networkidle', timeout: 45000 } );
 await page.waitForTimeout( 1200 );
 
-// The publication review, from the topbar.
-await page.getByRole( 'button', { name: 'Revisar publicação' } ).click();
-await page.waitForTimeout( 500 );
-await page.screenshot( {
-	path: `${ OUT }/admin-publish.png`,
-	fullPage: false,
-} );
-const publish = await page.evaluate( () => ( {
-	stats: Array.from( document.querySelectorAll( '.publish-stat' ) ).map(
-		( s ) => s.textContent
-	),
-	rows: Array.from( document.querySelectorAll( '.diff-row' ) ).map(
-		( r ) => r.textContent
-	),
-	subtitle: document.querySelector( '.publish-subtitle' )?.textContent ?? '',
-} ) );
-
-// Closed through its own button: the browser's Escape reaches the native dialog
-// before React sees it, and the probe needs the surface gone, not just cancelled.
-await page
-	.locator( '.wccs-dialog.publish-dialog .dialog-footer button' )
-	.first()
-	.click();
-await page.waitForTimeout( 300 );
+// The editor's own actions, from the topbar. There is no publication review to open:
+// saving writes and publishes in one action (`roadmap/ESPECIFICACAO-SECOES-WCCS.md` §16),
+// so what the probe reads here is the single action beside the preview.
+const actions = await page.evaluate( () =>
+	Array.from(
+		document.querySelectorAll( '.wccs-admin .topbar-actions button' )
+	).map( ( button ) => button.textContent.trim() )
+);
 
 // The history, from the editor's footer, with a real click: the footer used to sit
 // over this strip, and a click that only works through the DOM is a click a merchant
@@ -237,7 +221,7 @@ const adminMobile = await mobile.evaluate( () => ( {
 console.log(
 	JSON.stringify(
 		{
-			publish,
+			actions,
 			history,
 			footer,
 			conditions,

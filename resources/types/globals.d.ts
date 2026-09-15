@@ -35,6 +35,8 @@ declare global {
 		siteName?: string;
 		sections?: WccsAdminSection[];
 		rest?: WccsAdminRest;
+		/** Storefront addresses the editor links to after a save. */
+		urls?: Record< string, string >;
 	}
 
 	/**

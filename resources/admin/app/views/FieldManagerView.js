@@ -30,7 +30,6 @@ import FieldProperties from './FieldProperties';
 import PreviewView from './PreviewView';
 import RulesView from './RulesView';
 import Notice from '../components/Notice';
-import PublishPanel from '../components/PublishPanel';
 import RevisionsList from '../components/RevisionsList';
 import Button from '../components/Button';
 import { Toast } from '../design/Toast';
@@ -99,6 +98,7 @@ export default function FieldManagerView( { model } ) {
 		coreFields,
 		sectionOptions,
 		sections,
+		linkSections,
 		area,
 		areas,
 		onAreaChange,
@@ -128,9 +128,6 @@ export default function FieldManagerView( { model } ) {
 		onAdoptCore,
 		edits,
 		onSave,
-		onPublish,
-		publishing,
-		publishError,
 		report,
 		revisions,
 		restoring,
@@ -173,9 +170,6 @@ export default function FieldManagerView( { model } ) {
 		/** @type {'enable'|'disable'|'archive'|null} */ ( null )
 	);
 	const [ historyOpen, setHistoryOpen ] = useState( false );
-
-	/** Whether the publication review is open. */
-	const [ publishOpen, setPublishOpen ] = useState( false );
 
 	/**
 	 * The design's toast: the message on screen and a counter that restarts its
@@ -523,20 +517,20 @@ export default function FieldManagerView( { model } ) {
 		announceMove( field.label, to + 1 );
 	};
 
-	// The topbar carries the two actions that matter to the normal configuration flow:
-	// inspect the checkout and apply the complete editor document.
+	// The topbar carries the one action that changes the storefront and the one that shows
+	// it. Saving writes and publishes in the same press (`roadmap/ESPECIFICACAO-SECOES-WCCS.md`
+	// §16): there is no draft to review afterwards, so a second button for it would be a
+	// step the merchant has to take for the first one to mean anything.
 	/** @type {string} */
-	let saveLabel = __( 'Salvar campos', 'wc-checkoutsuite' );
+	let saveLabel = __( 'Salvar alterações', 'wc-checkoutsuite' );
 	if ( saving ) {
 		saveLabel = __( 'Salvando…', 'wc-checkoutsuite' );
-	} else if ( Number( doc?.revision ?? 0 ) > 0 ) {
-		saveLabel = __( 'Atualizar campos', 'wc-checkoutsuite' );
 	}
 	const topbarActions = (
 		<TopbarActions>
 			<button
 				type="button"
-				className="btn"
+				className="btn btn-primary"
 				disabled={ ! dirty || saving }
 				onClick={ onSave }
 			>
@@ -547,64 +541,7 @@ export default function FieldManagerView( { model } ) {
 				<span>{ __( 'Ver checkout', 'wc-checkoutsuite' ) }</span>
 				<Icon name="arrow" />
 			</button>
-			<button
-				type="button"
-				className="btn btn-primary"
-				onClick={ () => setPublishOpen( true ) }
-			>
-				<span>{ __( 'Revisar publicação', 'wc-checkoutsuite' ) }</span>
-				<Icon name="arrow" />
-			</button>
 		</TopbarActions>
-	);
-
-	// The publication review is where the draft becomes what the store runs: the panel
-	// shows what publishing changes, what it refuses and what it only warns about, and
-	// the button applies it. Without this the editor could only write a draft, and the
-	// store would never receive the configuration the merchant just made.
-	const publishDialog = (
-		<Dialog
-			open={ publishOpen }
-			size="publish"
-			eyebrow={ __( 'PUBLICAR', 'wc-checkoutsuite' ) }
-			title={ __( 'Revisar publicação', 'wc-checkoutsuite' ) }
-			subtitle={ __(
-				'O rascunho vira a versão que a loja corre. Publicar cria uma revisão nova e mantém a anterior.',
-				'wc-checkoutsuite'
-			) }
-			onClose={ () => setPublishOpen( false ) }
-			footer={
-				<>
-					<Button
-						variant="secondary"
-						onClick={ () => setPublishOpen( false ) }
-					>
-						{ __( 'Fechar', 'wc-checkoutsuite' ) }
-					</Button>
-					<Button
-						variant="primary"
-						busy={ publishing }
-						disabled={ publishing }
-						onClick={ onPublish }
-					>
-						{ __( 'Publicar alterações', 'wc-checkoutsuite' ) }
-					</Button>
-				</>
-			}
-		>
-			<PublishPanel
-				report={ report }
-				enabled={
-					( doc?.fields ?? [] ).filter(
-						( /** @type {any} */ field ) => field.enabled
-					).length
-				}
-				dirty={ dirty }
-				publishing={ publishing }
-				error={ publishError }
-				onPublish={ onPublish }
-			/>
-		</Dialog>
 	);
 
 	// The field properties are one element with two homes, as the design draws them: the
@@ -615,6 +552,7 @@ export default function FieldManagerView( { model } ) {
 			field={ editingField }
 			catalog={ catalog }
 			sections={ sections }
+			linkSections={ linkSections }
 			fields={ ( doc?.fields ?? [] ).map(
 				( /** @type {any} */ entry ) => ( {
 					id: entry.id,
@@ -872,13 +810,43 @@ export default function FieldManagerView( { model } ) {
 					<Notice status="success">
 						<p>
 							<strong>{ saved }</strong>{ ' ' }
-							<button
-								type="button"
-								className="wccs-notice__link"
-								onClick={ model.onPreview }
-							>
-								{ __( 'Ver checkout', 'wc-checkoutsuite' ) }
-							</button>
+							{ ( model.urls?.checkout ?? '' ) !== '' ? (
+								// The address the store actually serves, not a copy drawn
+								// in the admin: the merchant asked to see the result of a
+								// save, and the result is the storefront.
+								<a
+									className="wccs-notice__link"
+									href={ model.urls.checkout }
+									target="_blank"
+									rel="noreferrer"
+								>
+									{ __( 'Ver checkout', 'wc-checkoutsuite' ) }
+								</a>
+							) : (
+								<button
+									type="button"
+									className="wccs-notice__link"
+									onClick={ model.onPreview }
+								>
+									{ __( 'Ver checkout', 'wc-checkoutsuite' ) }
+								</button>
+							) }
+							{ ( model.urls?.account ?? '' ) !== '' ? (
+								<>
+									{ ' ' }
+									<a
+										className="wccs-notice__link"
+										href={ model.urls.account }
+										target="_blank"
+										rel="noreferrer"
+									>
+										{ __(
+											'Abrir em Minha Conta',
+											'wc-checkoutsuite'
+										) }
+									</a>
+								</>
+							) : null }
 						</p>
 					</Notice>
 				) : null }
@@ -1976,7 +1944,6 @@ export default function FieldManagerView( { model } ) {
 			</section>
 
 			{ /* The dialogs the design opens from the bar and the panel. */ }
-			{ publishDialog }
 			<Dialog
 				open={ pickerOpen }
 				size="picker"

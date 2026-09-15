@@ -14,33 +14,45 @@
 import { chromium } from 'playwright';
 
 const ORIGIN = 'http://wpagf.dvl.to:8080';
-const ADMIN = `${ORIGIN}/wp-admin/admin.php?page=wccs-checkoutsuite&section=fields`;
+const ADMIN = `${ ORIGIN }/wp-admin/admin.php?page=wccs-checkoutsuite&section=fields`;
 const browser = await chromium.launch( {
 	executablePath: '/usr/bin/google-chrome',
-	args: [ '--no-sandbox', `--unsafely-treat-insecure-origin-as-secure=${ORIGIN}` ],
+	args: [
+		'--no-sandbox',
+		`--unsafely-treat-insecure-origin-as-secure=${ ORIGIN }`,
+	],
 } );
-const page = await browser.newPage( { viewport: { width: 1440, height: 950 } } );
+const page = await browser.newPage( {
+	viewport: { width: 1440, height: 950 },
+} );
 
-for ( const pair of [ process.env.WCCS_COOKIE, process.env.WCCS_AUTH_COOKIE ].filter( Boolean ) ) {
+for ( const pair of [
+	process.env.WCCS_COOKIE,
+	process.env.WCCS_AUTH_COOKIE,
+].filter( Boolean ) ) {
 	const i = pair.indexOf( '=' );
 
-	await page.context().addCookies( [ {
-		name: pair.slice( 0, i ),
-		value: pair.slice( i + 1 ),
-		domain: 'wpagf.dvl.to',
-		path: '/',
-		expires: -1,
-		httpOnly: true,
-		secure: false,
-		sameSite: 'Lax',
-	} ] );
+	await page.context().addCookies( [
+		{
+			name: pair.slice( 0, i ),
+			value: pair.slice( i + 1 ),
+			domain: 'wpagf.dvl.to',
+			path: '/',
+			expires: -1,
+			httpOnly: true,
+			secure: false,
+			sameSite: 'Lax',
+		},
+	] );
 }
 
 /** @type {Record<string, any>} */
 const report = {};
 const errors = [];
 
-page.on( 'pageerror', ( e ) => errors.push( String( e.message ).slice( 0, 200 ) ) );
+page.on( 'pageerror', ( e ) =>
+	errors.push( String( e.message ).slice( 0, 200 ) )
+);
 
 /**
  * Runs one step, recording what it observed or why it could not.
@@ -119,27 +131,32 @@ await step( 'the editor opens on a section with rows', async () => ( {
 	tabs: await page.$$eval( '.wccs-admin .section-tabs button', ( nodes ) =>
 		nodes.map( ( node ) => node.textContent.trim() )
 	),
-	status: await page
-		.locator( '.wccs-admin .bottom-status' )
-		.textContent(),
+	status: await page.locator( '.wccs-admin .bottom-status' ).textContent(),
 } ) );
 
-await step( 'a row moves with its handle and says where it landed', async () => {
-	const before = await rowOrder();
-	const handle = page.locator( '.wccs-admin .field-row .drag-handle' ).first();
+await step(
+	'a row moves with its handle and says where it landed',
+	async () => {
+		const before = await rowOrder();
+		const handle = page
+			.locator( '.wccs-admin .field-row .drag-handle' )
+			.first();
 
-	await handle.focus();
-	await page.keyboard.press( 'Alt+ArrowDown' );
-	await page.waitForTimeout( 300 );
+		await handle.focus();
+		await page.keyboard.press( 'Alt+ArrowDown' );
+		await page.waitForTimeout( 300 );
 
-	return {
-		before,
-		after: await rowOrder(),
-		toast: await toast(),
-		// The row keeps the focus, so the next Alt+Arrow moves the same field.
-		focused: await page.evaluate( () => document.activeElement?.id ?? '' ),
-	};
-} );
+		return {
+			before,
+			after: await rowOrder(),
+			toast: await toast(),
+			// The row keeps the focus, so the next Alt+Arrow moves the same field.
+			focused: await page.evaluate(
+				() => document.activeElement?.id ?? ''
+			),
+		};
+	}
+);
 
 await step( 'the keyboard shortcut moves it back', async () => {
 	const handle = page
@@ -196,10 +213,7 @@ await step( 'duplicating a field announces the undo that follows', async () => {
 
 	const count = await page.locator( '.wccs-admin .field-row' ).count();
 
-	await page
-		.locator( '.wccs-admin .row-menu-trigger' )
-		.first()
-		.click();
+	await page.locator( '.wccs-admin .row-menu-trigger' ).first().click();
 	await page
 		.getByRole( 'button', { name: 'Duplicar como personalizado' } )
 		.click();
@@ -207,16 +221,12 @@ await step( 'duplicating a field announces the undo that follows', async () => {
 
 	const afterAdd = await page.locator( '.wccs-admin .field-row' ).count();
 
-	await page
-		.getByRole( 'button', { name: 'Desfazer alteração' } )
-		.click();
+	await page.getByRole( 'button', { name: 'Desfazer alteração' } ).click();
 	await page.waitForTimeout( 300 );
 
 	const said = await toast();
 
-	await page
-		.getByRole( 'button', { name: 'Refazer alteração' } )
-		.click();
+	await page.getByRole( 'button', { name: 'Refazer alteração' } ).click();
 	await page.waitForTimeout( 300 );
 
 	const forward = await toast();
@@ -257,9 +267,7 @@ await step( 'the mask lives in the second tab', async () => {
 			.locator( '.wccs-admin .inspector-note' )
 			.first()
 			.textContent(),
-		mask: await page
-			.locator( '#wccs-field-mask' )
-			.count(),
+		mask: await page.locator( '#wccs-field-mask' ).count(),
 		conditions: await page.locator( '.wccs-conditions' ).count(),
 	};
 } );
@@ -273,9 +281,7 @@ await step( 'a bulk action asks before it changes anything', async () => {
 	await page.waitForTimeout( 400 );
 
 	const stats = await page.$$eval( '.wccs-admin .publish-stat', () => [] );
-	const impact = await page
-		.locator( '.wccs-admin .impact-list' )
-		.count();
+	const impact = await page.locator( '.wccs-admin .impact-list' ).count();
 	const acknowledgement = await page
 		.locator( '.wccs-admin .confirm-check' )
 		.count();
@@ -301,24 +307,12 @@ await step( 'a bulk action asks before it changes anything', async () => {
 	};
 } );
 
-await step( 'the publication review and the history open', async () => {
-	await page.getByRole( 'button', { name: 'Revisar publicação' } ).click();
-	await page.waitForTimeout( 400 );
-
-	const publish = {
-		stats: await page.$$eval( '.wccs-admin .publish-stat', ( nodes ) =>
-			nodes.map( ( node ) => node.textContent )
-		),
-		diffs: await page.$$eval( '.wccs-admin .diff-row', ( nodes ) =>
-			nodes.map( ( node ) => node.textContent )
-		),
-	};
-
-	await page
-		.locator( '.wccs-dialog[open] .dialog-footer button' )
-		.first()
-		.click();
-	await page.waitForTimeout( 400 );
+// The history is still there — a revision can be published again — and the review step
+// is not: saving and publishing are one action (`roadmap/ESPECIFICACAO-SECOES-WCCS.md` §16).
+await step( 'the history opens, and there is no review step', async () => {
+	const review = await page
+		.getByRole( 'button', { name: 'Revisar publicação' } )
+		.count();
 
 	await page.getByRole( 'button', { name: 'Revisões' } ).click();
 	await page.waitForTimeout( 400 );
@@ -333,31 +327,34 @@ await step( 'the publication review and the history open', async () => {
 		.click();
 	await page.waitForTimeout( 300 );
 
-	return { publish, history };
+	return { reviewButtons: review, history };
 } );
 
-await step( 'the archive and the rules are views of the same document', async () => {
-	await page.getByRole( 'button', { name: 'Arquivados' } ).click();
-	await page.waitForTimeout( 400 );
+await step(
+	'the archive and the rules are views of the same document',
+	async () => {
+		await page.getByRole( 'button', { name: 'Arquivados' } ).click();
+		await page.waitForTimeout( 400 );
 
-	const archive = {
-		rows: await page.locator( '.wccs-admin .archive-row' ).count(),
-		empty: await page.locator( '.wccs-admin .empty-state' ).count(),
-		saveStillThere: await page
-			.getByRole( 'button', { name: 'Salvar rascunho' } )
-			.count(),
-	};
+		const archive = {
+			rows: await page.locator( '.wccs-admin .archive-row' ).count(),
+			empty: await page.locator( '.wccs-admin .empty-state' ).count(),
+			saveStillThere: await page
+				.getByRole( 'button', { name: 'Salvar alterações' } )
+				.count(),
+		};
 
-	await page.getByRole( 'button', { name: 'Regras do editor' } ).click();
-	await page.waitForTimeout( 400 );
+		await page.getByRole( 'button', { name: 'Regras do editor' } ).click();
+		await page.waitForTimeout( 400 );
 
-	const rules = await page.locator( '.wccs-admin .rule-card' ).count();
+		const rules = await page.locator( '.wccs-admin .rule-card' ).count();
 
-	await page.getByRole( 'button', { name: 'Editor de campos' } ).click();
-	await page.waitForTimeout( 400 );
+		await page.getByRole( 'button', { name: 'Editor de campos' } ).click();
+		await page.waitForTimeout( 400 );
 
-	return { archive, rules, backOnEditor: await rowOrder() };
-} );
+		return { archive, rules, backOnEditor: await rowOrder() };
+	}
+);
 
 await step( 'the preview is generated from the draft', async () => {
 	await page.getByRole( 'button', { name: 'Prévia do checkout' } ).click();
@@ -376,7 +373,9 @@ await step( 'the preview is generated from the draft', async () => {
 } );
 
 await step( 'the properties open in a dialog on a narrow window', async () => {
-	const mobile = await browser.newPage( { viewport: { width: 390, height: 844 } } );
+	const mobile = await browser.newPage( {
+		viewport: { width: 390, height: 844 },
+	} );
 
 	await mobile.context().addCookies( await page.context().cookies() );
 	mobile.on( 'pageerror', ( e ) =>
@@ -388,10 +387,11 @@ await step( 'the properties open in a dialog on a narrow window', async () => {
 	await mobile.waitForTimeout( 400 );
 
 	const observed = {
-		column: await mobile.evaluate( () =>
-			getComputedStyle(
-				document.querySelector( '.wccs-admin .inspector' )
-			).display
+		column: await mobile.evaluate(
+			() =>
+				getComputedStyle(
+					document.querySelector( '.wccs-admin .inspector' )
+				).display
 		),
 		dialogOpen: await mobile.evaluate( () =>
 			Boolean( document.querySelector( '.mobile-inspector' )?.open )
@@ -419,7 +419,9 @@ await step( 'wp-admin keeps its footer out of the screen', async () => {
 
 		return {
 			footerPosition: footer ? getComputedStyle( footer ).position : '',
-			footerTop: footer ? Math.round( footer.getBoundingClientRect().top ) : 0,
+			footerTop: footer
+				? Math.round( footer.getBoundingClientRect().top )
+				: 0,
 			stripBottom: strip
 				? Math.round( strip.getBoundingClientRect().bottom )
 				: 0,

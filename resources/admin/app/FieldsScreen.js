@@ -7,9 +7,11 @@
  *
  * Two boundaries are deliberate at this stage:
  *
- * - **Only the draft is touched.** Nothing here reaches the storefront; saving
- *   writes the draft and publishing is a separate, later decision. That is what
- *   keeps an accidental drag from changing a live checkout.
+ * - **Saving is one action.** «Salvar alterações» writes the draft and publishes it, so
+ *   the store runs what the merchant just configured without a second step
+ *   (`roadmap/ESPECIFICACAO-SECOES-WCCS.md` §16). The draft slot stays the editing
+ *   buffer under the interface, which is what keeps the compare-and-swap conflict check
+ *   and the revision history working; the vocabulary of a two-step flow is not shown.
  * - **The per-type inspector is WCCS-017.** Editing here covers what every field
  *   has — its label, whether it is required, whether it is active — and not the
  *   settings a particular type declares.
@@ -300,12 +302,14 @@ function AccountSectionPresentation( { section, document, apply } ) {
  * @param {string} [props.view]     View the frame is showing: `fields`,
  *                                  `appearance`, `archive` or `rules`.
  * @param {string} [props.siteName] Store name, for the preview's mock header.
+ * @param {Object} [props.urls]     Storefront addresses the success message links to.
  * @return {*} Rendered element tree.
  */
 export default function FieldsScreen( {
 	client,
 	view = 'fields',
 	siteName = '',
+	urls = {},
 } ) {
 	/**
 	 * The document and its local edit history.
@@ -526,7 +530,6 @@ export default function FieldsScreen( {
 
 	const onOpenRules = () => goTo( 'rules' );
 
-	const [ publishing, setPublishing ] = useState( false );
 	const [ restoring, setRestoring ] = useState( false );
 	const [ publishError, setPublishError ] = useState( '' );
 	const [ restored, setRestored ] = useState( '' );
@@ -770,6 +773,30 @@ export default function FieldsScreen( {
 	 *
 	 * @type {Array<{id: string, label: string}>}
 	 */
+	/**
+	 * Every section the document declares, with the areas it is offered in.
+	 *
+	 * The links tab asks a different question from the section tabs. A destination's
+	 * section select has to offer the sections offered *there*, and that may be a section
+	 * the active work area does not group — the order screen's own section, while the
+	 * merchant is looking at Checkout. Offering only the active area's groups left those
+	 * selects with no options at all, so a link whose section was already stored showed
+	 * as empty and could not be pointed anywhere.
+	 *
+	 * @type {Array<{id: string, label: string, areas: string[]}>}
+	 */
+	const declaredSections = useMemo(
+		() =>
+			( document?.sections ?? [] )
+				.filter( ( /** @type {any} */ entry ) => entry && entry.id )
+				.map( ( /** @type {any} */ entry ) => ( {
+					id: entry.id,
+					label: entry.title ?? entry.id,
+					areas: entry.areas ?? [ 'checkout' ],
+				} ) ),
+		[ document ]
+	);
+
 	const sectionOptions = useMemo( () => {
 		/** @type {Array<{id: string, label: string}>} */
 		const options = [];
@@ -849,7 +876,18 @@ export default function FieldsScreen( {
 	}, [ client ] );
 
 	/**
-	 * Applies the current editor document to the active checkout configuration.
+	 * Saves the current document and puts it to work in one action.
+	 *
+	 * Two writes under one button. The draft is the editing buffer — the compare-and-swap
+	 * against its revision is what stops two editors from overwriting each other, and the
+	 * revision history is built from what publishing produces — so the save writes it and
+	 * then publishes it. That is one action for the merchant and no second timeline.
+	 *
+	 * The two writes can come apart, and the interface says so instead of choosing:
+	 * a save whose publication failed leaves the work stored but the store still running
+	 * the previous revision, which is a state the merchant has to be able to see and
+	 * retry. Reporting "saved" would be a lie about the storefront, and refusing the
+	 * whole save would throw away work the server accepted.
 	 *
 	 * @return {Promise<void>} Resolves when saving settles.
 	 */
@@ -861,47 +899,51 @@ export default function FieldsScreen( {
 		setSaving( true );
 		setProblems( [] );
 		setSaved( '' );
+		setPublishError( '' );
 
 		try {
-			// Saving writes the draft and nothing else. The store keeps serving the
-			// published revision until the merchant publishes, which is what the
-			// interface says in Regras and what section 13 of the roadmap requires:
-			// a save that reached the live checkout would make the review step a
-			// formality and the draft a second, competing timeline.
 			const result = await client.saveDraft(
 				document,
 				document.revision
 			);
-
-			if ( ! mounted.current ) {
-				return;
-			}
 
 			// The server is authoritative after the write: it owns the revision.
 			const stored = result?.fields ? result : await client.getDraft();
 			resetDocument( stored );
 			setSavedDocument( stored );
 			window.sessionStorage?.removeItem( LOCAL_DRAFT_KEY );
+
+			// The second write does not depend on this screen still being on page. The two
+			// writes are one action, and stopping between them because a screen was
+			// replaced would leave the work stored, the store on the previous revision and
+			// nobody told — the one outcome this flow cannot accept.
+			try {
+				await client.publish( stored.revision );
+			} catch ( publication ) {
+				setPublishError( classifyFailure( publication ).message );
+				setSaved(
+					__(
+						'Alterações guardadas, mas a loja ainda corre a revisão anterior. Tente guardar de novo para publicar.',
+						'wc-checkoutsuite'
+					)
+				);
+				await refreshPublication();
+
+				return;
+			}
+
 			setSaved(
-				document.revision > 0
-					? __(
-							'Rascunho atualizado. A loja continua a correr a revisão publicada.',
-							'wc-checkoutsuite'
-					  )
-					: __(
-							'Rascunho salvo. A loja continua a correr a revisão publicada.',
-							'wc-checkoutsuite'
-					  )
+				__( 'Alterações salvas com sucesso.', 'wc-checkoutsuite' )
 			);
 
 			// The report compares the draft with the published document, so a save
 			// makes the one on screen stale.
 			await refreshPublication();
 		} catch ( caught ) {
-			if ( ! mounted.current ) {
-				return;
-			}
-
+			// A refused save says so, on the screen the merchant is looking at. Reporting
+			// it only when this instance is still mounted is how a refusal becomes silence:
+			// the request reached the server, was refused, and the person who pressed the
+			// button is told nothing at all.
 			const state = classifyFailure( caught );
 
 			setFailure( state );
@@ -915,40 +957,6 @@ export default function FieldsScreen( {
 			}
 		}
 	}, [ client, document, refreshPublication, resetDocument ] );
-
-	/**
-	 * Publishes the draft.
-	 *
-	 * @return {Promise<void>} Resolves when publication settles.
-	 */
-	const publish = useCallback( async () => {
-		if ( ! document || dirty ) {
-			return;
-		}
-
-		setPublishing( true );
-		setPublishError( '' );
-		setRestored( '' );
-
-		try {
-			await client.publish( document.revision );
-
-			if ( ! mounted.current ) {
-				return;
-			}
-
-			setSaved( __( 'Published.', 'wc-checkoutsuite' ) );
-			await refreshPublication();
-		} catch ( caught ) {
-			if ( mounted.current ) {
-				setPublishError( classifyFailure( caught ).message );
-			}
-		} finally {
-			if ( mounted.current ) {
-				setPublishing( false );
-			}
-		}
-	}, [ client, document, dirty, refreshPublication ] );
 
 	/**
 	 * Publishes an earlier revision again.
@@ -1175,6 +1183,7 @@ export default function FieldsScreen( {
 						label: group.section.title ?? group.section.id,
 						areas: group.section.areas ?? [ 'checkout' ],
 					} ) ),
+					linkSections: declaredSections,
 					area,
 					areas: EDITOR_AREAS,
 					onAreaChange: setArea,
@@ -1290,10 +1299,9 @@ export default function FieldsScreen( {
 						),
 					edits,
 					onSave: save,
-					publishing,
 					publishError,
+					urls,
 					report,
-					onPublish: publish,
 					revisions,
 					restoring,
 					restored,

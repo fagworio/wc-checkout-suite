@@ -590,7 +590,7 @@ wccs_proof_check(
 );
 
 // ---------------------------------------------------------------------------
-// 8. The publication surface reached the bundle.
+// 8. What the shipped screen offers, and what it no longer offers.
 // ---------------------------------------------------------------------------
 wccs_proof_out( '' );
 wccs_proof_out( '8. Build output' );
@@ -598,24 +598,32 @@ wccs_proof_out( '8. Build output' );
 $wccs_built_js  = (string) file_get_contents( WCCS_PLUGIN_DIR . 'build/admin/index.js' );
 $wccs_built_css = (string) file_get_contents( WCCS_PLUGIN_DIR . 'build/admin/index.css' );
 
+// The save and the publication are one action for the merchant
+// (`roadmap/ESPECIFICACAO-SECOES-WCCS.md` §16). The REST contract this harness proves
+// above is unchanged — the draft still exists, and publishing is still what writes the
+// published slot — so what is checked here is the interface: one button that does both,
+// and no vocabulary of a two-step flow for the merchant to read.
 wccs_proof_check(
-	'The publication panel reached the shipped bundle',
-	false !== strpos( $wccs_built_js, 'publish-stats' )
-		&& false !== strpos( $wccs_built_css, 'diff-row' ),
-	'panel markup and styles present'
+	'The single save action reached the shipped bundle',
+	false !== strpos( $wccs_built_js, 'Salvar alterações' )
+		&& false !== strpos( $wccs_built_js, 'Alterações salvas com sucesso.' ),
+	'save wording present'
 );
 
 wccs_proof_check(
-	'The history reached the bundle too',
-	false !== strpos( $wccs_built_js, 'history-row' ),
-	'history markup present'
+	'And the draft-and-publication vocabulary did not',
+	false === strpos( $wccs_built_js, 'Revisar publicação' )
+		&& false === strpos( $wccs_built_js, 'Publicar alterações' )
+		&& false === strpos( $wccs_built_js, 'do not block publication' )
+		&& false === strpos( $wccs_built_js, 'Corrija antes de publicar' ),
+	'no review step is offered'
 );
 
 wccs_proof_check(
-	'The three kinds of answer are worded apart in the shipped code',
-	false !== strpos( $wccs_built_js, 'do not block publication' )
-		&& false !== strpos( $wccs_built_js, 'Corrija antes de publicar' ),
-	'wording present'
+	'The history reached the bundle, because a revision can still be restored',
+	false !== strpos( $wccs_built_js, 'history-row' )
+		&& false !== strpos( $wccs_built_css, 'history-row' ),
+	'history markup and styles present'
 );
 
 // ---------------------------------------------------------------------------

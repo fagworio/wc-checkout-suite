@@ -127,6 +127,13 @@ function renderInspector( overrides = {} ) {
 			field={ field() }
 			catalog={ catalog() }
 			sections={ [ { id: 'billing', label: 'Cobrança' } ] }
+			linkSections={ [
+				{
+					id: 'billing',
+					label: 'Cobrança',
+					areas: [ 'checkout', 'admin_order' ],
+				},
+			] }
 			fields={ [ { id: 'billing_document', label: 'CPF' } ] }
 			onChange={ onChange }
 			onDuplicate={ onDuplicate }
@@ -409,7 +416,9 @@ describe( 'a section offered per area', () => {
 		const user = userEvent.setup();
 
 		renderInspector( {
-			sections: [
+			// The links tab reads the sections the document declares, with the areas each
+			// one is offered in — not the list of places this field may move to.
+			linkSections: [
 				{
 					id: 'checkout_only',
 					label: 'Só no checkout',

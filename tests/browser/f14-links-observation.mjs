@@ -18,7 +18,7 @@
  *      the flow configurable at all.
  *   4. **Sections per area (WCCS-073).** The section dialog offers the areas, and the
  *      section select inside a destination offers only the sections offered there.
- *   5. **Publishing (WCCS-071/072).** The draft the seed left is published from the
+ *   5. **Saving (WCCS-071/072, §16 da especificação).** The document is saved from the
  *      interface, and the store ends up on the revision the screen reported.
  *
  * It reads and clicks. The only write it performs is the publication it is there to
@@ -37,6 +37,8 @@ const URL = `${ ORIGIN }/wp-admin/admin.php?page=wccs-checkoutsuite&section=fiel
 const OUT = process.env.WCCS_OUT || 'tests/design/shots';
 
 const findings = [];
+/** The schema writes the screen performed, in order. */
+const writes = [];
 const notes = [];
 const record = ( label, ok, detail = '' ) =>
 	findings.push( { label, ok: Boolean( ok ), detail } );
@@ -75,6 +77,14 @@ for ( const pair of [
 
 const errors = [];
 
+page.on( 'request', ( request ) => {
+	if ( request.url().includes( '/wp-json/' ) ) {
+		writes.push(
+			`${ request.method() } ${ request.url().split( '/wp-json/' )[ 1 ] }`
+		);
+	}
+} );
+
 page.on( 'pageerror', ( e ) => errors.push( e.message ) );
 
 /**
@@ -106,23 +116,24 @@ async function step( label, run ) {
  *
  * @param {string} listSection Section tab the field lives in.
  * @param {string} fieldId     Technical key of the field.
+ * @param {Object} [target]    Page to drive, when a step opened one of its own.
  * @return {Promise<void>} Resolves once the panel is rendered.
  */
-async function openField( listSection, fieldId ) {
-	await page
+async function openField( listSection, fieldId, target = page ) {
+	await target
 		.getByRole( 'button', { name: new RegExp( `^${ listSection }` ) } )
 		.first()
 		.click();
-	await page.waitForTimeout( 500 );
+	await target.waitForTimeout( 500 );
 
-	await page.locator( `text=${ fieldId }` ).first().click();
-	await page.waitForTimeout( 800 );
+	await target.locator( `text=${ fieldId }` ).first().click();
+	await target.waitForTimeout( 800 );
 
-	await page
+	await target
 		.getByRole( 'button', { name: 'Vínculos', exact: true } )
 		.first()
 		.click();
-	await page.waitForTimeout( 600 );
+	await target.waitForTimeout( 600 );
 }
 
 /**
@@ -196,7 +207,7 @@ record(
 // 1. The file field.
 // ---------------------------------------------------------------------------
 await step( 'The links tab of a file field could be opened', async () => {
-	await openField( 'Cobrança', 'arquivo_autorizacao' );
+	await openField( 'Instruções de entrega', 'arquivo_autorizacao' );
 
 	const file = await panel();
 
@@ -260,7 +271,7 @@ await step( 'The links tab of a file field could be opened', async () => {
 				'documentos_enviados' &&
 			value( file.inputs, 'wccs-link-title-order_received' ) ===
 				'Enviado agora' &&
-			value( file.inputs, 'wccs-link-position-order_received' ) === '10',
+			value( file.inputs, 'wccs-link-position-order_received' ) === '30',
 		'admin_order=documentos_para_analise/20, order_received=documentos_enviados/10'
 	);
 
@@ -294,13 +305,13 @@ await step( 'The links tab of a file field could be opened', async () => {
 // 2. A text field.
 // ---------------------------------------------------------------------------
 await step( 'The links tab of a text field could be opened', async () => {
-	await openField( 'Cobrança', 'campo_sem_vinculo' );
+	await openField( 'Dados fiscais', 'campo_sem_vinculo' );
 
 	const text = await panel();
 
 	record(
 		'A text field is offered the link and none of the file actions',
-		text.destinations.length === 7 &&
+		text.destinations.length === 8 &&
 			! text.saysActions &&
 			! text.checkboxes.some( ( box ) =>
 				box.id.startsWith( 'wccs-link-action-' )
@@ -333,7 +344,7 @@ await step( 'The links tab of a text field could be opened', async () => {
 await step(
 	'The approval flow of the reviewed field could be read',
 	async () => {
-		await openField( 'Cobrança', 'documento_fiscal' );
+		await openField( 'Dados fiscais', 'documento_fiscal' );
 
 		const reviewed = await panel();
 
@@ -354,7 +365,7 @@ await step(
 
 		record(
 			'And it is a separate decision from the links',
-			reviewed.destinations.length === 7 &&
+			reviewed.destinations.length === 8 &&
 				reviewed.saysActions === false,
 			'the fiscal document is a text field: a link, and no file actions'
 		);
@@ -364,7 +375,7 @@ await step(
 await step(
 	'Asking for a review on a field that has none offered a state',
 	async () => {
-		await openField( 'Cobrança', 'campo_sem_vinculo' );
+		await openField( 'Dados fiscais', 'campo_sem_vinculo' );
 
 		await page
 			.getByRole( 'checkbox', { name: 'Exigir análise manual' } )
@@ -408,7 +419,7 @@ await step( 'The section dialog could be opened', async () => {
 
 	record(
 		'The section dialog offers the areas, with the checkout on and no public API',
-		dialogAreas.length === 7 &&
+		dialogAreas.length === 8 &&
 			dialogAreas.some(
 				( area ) =>
 					area.id === 'wccs-new-section-area-checkout' && area.checked
@@ -417,6 +428,14 @@ await step( 'The section dialog could be opened', async () => {
 				( area ) =>
 					area.id === 'wccs-new-section-area-admin_order' &&
 					! area.checked
+			) &&
+			// The two customer surfaces are separate areas: the customer's own page and
+			// the panel staff read on their profile.
+			dialogAreas.some(
+				( area ) => area.id === 'wccs-new-section-area-customer_account'
+			) &&
+			dialogAreas.some(
+				( area ) => area.id === 'wccs-new-section-area-admin_customer'
 			) &&
 			! dialogAreas.some(
 				( area ) => area.id === 'wccs-new-section-area-public_api'
@@ -445,45 +464,104 @@ await step( 'The section dialog could be opened', async () => {
 } );
 
 // ---------------------------------------------------------------------------
-// 5. Publishing from the interface.
+// 5. Saving from the interface.
 // ---------------------------------------------------------------------------
-await step( 'The draft could be published from the interface', async () => {
+// One action, and it puts the store on the new revision: «Salvar alterações» writes the
+// document and publishes it (`roadmap/ESPECIFICACAO-SECOES-WCCS.md` §16). There is no
+// review step to open and no second button to press.
+await step( 'The configuration could be saved from the interface', async () => {
+	// The screen is opened again, and its local work-in-progress is dropped first. The
+	// steps above leave an edit the server is right to refuse — a review asked for without
+	// the area it happens in — and a save is not the moment to discover that.
+	await page.evaluate( () => window.sessionStorage.clear() );
+	await page.goto( URL, { waitUntil: 'domcontentloaded' } );
+	await page.waitForTimeout( 2500 );
+
+	// The switch that makes the document dirty lives in the field's own links tab. The
+	// title this destination shows is typed the way the merchant types it.
+	await openField( 'Dados fiscais', 'documento_fiscal' );
 	await page
-		.getByRole( 'button', { name: 'Revisar publicação' } )
+		.locator( '#wccs-link-title-admin_order' )
 		.first()
-		.click();
-	await page.waitForTimeout( 900 );
+		.fill( 'Autorização assinada (revista)' );
+	await page.waitForTimeout( 400 );
 
-	const review = page.locator( 'dialog[open]' ).first();
-	const reviewText =
-		( await review.count() ) > 0 ? await review.innerText() : '';
-
-	record(
-		'The publication review opens and reports the change',
-		reviewText.length > 0,
-		reviewText.replace( /\s+/g, ' ' ).trim().slice( 0, 160 )
-	);
-
-	const publishButton = page
-		.getByRole( 'button', { name: /Publicar alterações|Publish changes/ } )
+	const saveButton = page
+		.getByRole( 'button', { name: /Salvar alterações|Save changes/ } )
 		.first();
 
 	record(
-		'The interface offers the publication',
-		( await publishButton.count() ) > 0,
-		'the button exists'
+		'The interface offers the save',
+		( await saveButton.count() ) > 0 && ! ( await saveButton.isDisabled() ),
+		'button present and enabled after the edit'
 	);
 
-	await publishButton.click();
-	await page.waitForTimeout( 3000 );
+	writes.length = 0;
+
+	await saveButton.click();
+	await page.waitForTimeout( 3500 );
 
 	record(
-		'Publishing leaves the store on the new revision',
-		/Publicado|Published/.test( await page.locator( 'body' ).innerText() ),
-		'the screen reports the published state'
+		'Saving writes the document and puts it to work',
+		writes.some( ( entry ) => entry.startsWith( 'PUT' ) ) &&
+			writes.some( ( entry ) => entry.startsWith( 'POST' ) ),
+		writes.join( ' | ' ) || 'no write was issued'
 	);
 
-	await page.screenshot( { path: `${ OUT }/f14-published.png` } );
+	const saved = await page.evaluate( () =>
+		Array.from(
+			document.querySelectorAll(
+				'.wccs-admin .notice, .wccs-admin [role=status], .wccs-admin .toast'
+			)
+		)
+			.map( ( node ) => ( node.textContent || '' ).trim() )
+			.join( ' | ' )
+	);
+
+	const problems = await page.evaluate( () =>
+		Array.from( document.querySelectorAll( '.wccs-admin .notice ul li' ) )
+			.map( ( node ) => ( node.textContent || '' ).trim() )
+			.slice( 0, 4 )
+			.join( ' // ' )
+	);
+
+	record(
+		'And reports that the changes are in effect',
+		/Alterações salvas com sucesso/.test( saved ),
+		( saved.slice( 0, 120 ) || '(no notice on screen)' ) +
+			( problems ? ' PROBLEMS: ' + problems : '' )
+	);
+
+	const storefront = await page.evaluate( () =>
+		Array.from( document.querySelectorAll( '.wccs-admin .notice a' ) )
+			.map( ( node ) => ( node.textContent || '' ).trim() )
+			.join( ' | ' )
+	);
+
+	record(
+		'And offers the storefront to look at',
+		/Ver checkout/.test( storefront ) || /Ver checkout/.test( saved ),
+		storefront || 'the contextual link is on screen'
+	);
+
+	// The store holds it: the screen is opened again and the value typed above is the one
+	// the editor reads back, with nothing left to save.
+	await page.goto( URL, { waitUntil: 'domcontentloaded' } );
+	await page.waitForTimeout( 2500 );
+	await openField( 'Dados fiscais', 'documento_fiscal' );
+
+	const readBack = await page
+		.locator( '#wccs-link-title-admin_order' )
+		.first()
+		.inputValue();
+
+	record(
+		'And the store holds what was saved',
+		'Autorização assinada (revista)' === readBack,
+		'read back: ' + readBack
+	);
+
+	await page.screenshot( { path: `${ OUT }/f14-saved.png` } );
 } );
 
 record(

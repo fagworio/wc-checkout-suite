@@ -11,7 +11,7 @@ resultado. Quatro instrumentos, todos reproduzíveis:
 
 | Instrumento | O que faz | Resultado |
 |---|---|---|
-| `tests/browser/f14-links-observation.mjs` | Entra no admin, abre o inspetor, percorre a aba Vínculos de um campo de arquivo e de um campo de texto, lê o bloco de aprovação, o diálogo de seções, e publica pelo próprio botão | **18 passaram, 0 falharam** |
+| `tests/browser/f14-links-observation.mjs` | Entra no admin, abre o inspetor, percorre a aba Vínculos de um campo de arquivo e de um campo de texto, lê o bloco de aprovação, o diálogo de seções, e grava pelo próprio botão | **20 passaram, 0 falharam** (reobservado depois da ação única de salvamento) |
 | `tests/browser/f14-customer-flow.mjs` (`WCCS_MODE=place`) | Entra como cliente, esvazia o carrinho, preenche o checkout Blocks da loja — com os campos que o plugin regista lá — escolhe o meio de pagamento e faz o pedido | **6 passaram, 0 falharam** |
 | `tests/browser/f14-customer-flow.mjs` (`WCCS_MODE=observe`) | Abre a página de agradecimento e o detalhe do pedido na conta, para o mesmo pedido | **10 passaram, 0 falharam** |
 | `tests/Integration/support/f14-observe-order.php` | Desenha o painel do pedido e as duas projeções de e-mail do pedido real, e pergunta a cada área se mostrou o que lhe pertence | **tudo passou** |
@@ -40,8 +40,10 @@ foram apagados.
 - **O fluxo de aprovação é opcional como prometido.** Desligado por omissão; ligá-lo
   escreve um estado que o lojista vê e edita; o rascunho incompleto é recusado pelo
   servidor em vez de completado.
-- **A publicação pelo ecrã funciona.** O diálogo diz "9 alterações prontas" e o store fica
-  na revisão publicada (conferido na base).
+- **A publicação pelo ecrã funciona.** Na altura desta passagem era um passo à parte (o diálogo
+  dizia "9 alterações prontas" e o store ficava na revisão publicada, conferido na base). Hoje é
+  a mesma ação que grava: «Salvar alterações» escreve o rascunho e publica, e a observação de
+  browser do editor corre 20/0 (`docs/validation/SALVAMENTO-UNICO-SECOES-WCCS.md`).
 - **Cada área mostra o que lhe foi vinculado, e só isso.** No pedido real: a página de
   agradecimento mostrou o campo vinculado a `order_received` (com a seção e o título
   configurados) e não o vinculado a `customer_order`; a conta mostrou o contrário; os

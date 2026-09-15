@@ -34,6 +34,12 @@ vocabulário).
 voltou a ter a superfície de publicação (o painel de revisão com «Publicar alterações»), que
 é o passo que transforma o rascunho na revisão publicada.
 
+> **Nota posterior.** A especificação que se seguiu (`roadmap/ESPECIFICACAO-SECOES-WCCS.md` §16)
+> substituiu esse passo por **uma** ação, «Salvar alterações», que grava o rascunho e publica. O
+> contrato do servidor descrito aqui — rascunho como buffer, publicação como única escrita no
+> documento que a loja corre — é o mesmo; o que mudou foi a interface.
+> Ver `docs/validation/SALVAMENTO-UNICO-SECOES-WCCS.md`.
+
 | Prova | Resultado |
 |---|---|
 | `tests/Integration/F01-wccs-008-schema-repository-proof.php` | 38 passaram, 0 falharam |
