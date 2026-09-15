@@ -95,6 +95,13 @@ no cabeçalho e no resultado.
 - **O envio pelo painel de administração não existe.** O painel mostra o documento e di-lo; enviar
   ou substituir por conta do cliente é a Fase 5 (perfil do cliente para a equipa), onde as permissões
   de editar/ver por uso passam a ser configuráveis.
+- **§7.4 — a página nativa ainda não recebe secções.** Hoje uma secção de cliente vive numa página
+  própria (endpoint) ou não vive. O documento pede também o contrário: uma secção dentro de uma
+  superfície nativa homologada («Detalhes da conta»), e a implementação tem de **declarar quais as
+  páginas nativas que podem receber conteúdo em segurança** — inserir um formulário na lista de
+  pedidos ou nos downloads não é o mesmo que inseri-lo em «Detalhes da conta». É o passo seguinte
+  desta fase: a lista fechada com o motivo de cada página, a apresentação a poder apontar para uma
+  delas, e a validação a recusar as outras pelo nome.
 - **Nesta máquina o upload está desligado** porque o `.htaccess` do diretório privado é ignorado pelo
   Apache do devilbox (`AllowOverride`). A prova de browser injecta a observação — e di-lo no
   cabeçalho, na nota e no fixture — como o harness faz; a proteção real do diretório é uma decisão de
