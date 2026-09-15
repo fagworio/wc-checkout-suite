@@ -165,7 +165,7 @@ $wccs_fields = array(
 			'admin_email'    => $wccs_link( 'email', 'Cópia para a loja', 20 ),
 			'public_api'     => array( 'enabled' => true ),
 			'order_received' => $wccs_off,
-			'customer_profile' => $wccs_off,
+			'customer_account' => $wccs_off,
 		),
 		array(
 			'approval' => array(
@@ -187,7 +187,7 @@ $wccs_fields = array(
 			'customer_email' => $wccs_off,
 			'admin_email'    => $wccs_off,
 			'public_api'     => $wccs_off,
-			'customer_profile' => $wccs_off,
+			'customer_account' => $wccs_off,
 		)
 	),
 	wccs_proof_field(
@@ -199,7 +199,7 @@ $wccs_fields = array(
 			'customer_email'   => $wccs_off,
 			'admin_email'      => $wccs_off,
 			'public_api'       => $wccs_off,
-			'customer_profile' => $wccs_off,
+			'customer_account' => $wccs_off,
 			'order_received'   => $wccs_off,
 		)
 	),

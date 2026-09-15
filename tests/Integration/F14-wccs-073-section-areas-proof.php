@@ -239,7 +239,8 @@ wccs_proof_check(
 		&& in_array( 'order_received', $wccs_areas, true )
 		&& in_array( 'customer_email', $wccs_areas, true )
 		&& in_array( 'admin_email', $wccs_areas, true )
-		&& in_array( 'customer_profile', $wccs_areas, true ),
+		&& in_array( 'customer_account', $wccs_areas, true )
+		&& in_array( 'admin_customer', $wccs_areas, true ),
 	'count=' . count( $wccs_areas )
 );
 

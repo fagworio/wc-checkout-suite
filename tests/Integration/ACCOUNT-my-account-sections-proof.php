@@ -4,12 +4,12 @@
  *
  * What this harness proves, in order:
  *
- * 1. **The page exists.** A section whose areas include `customer_profile` and whose
+ * 1. **The page exists.** A section whose areas include `customer_account` and whose
  *    presentation names an account slug registers a WooCommerce account endpoint, an
  *    account menu entry under the configured label and at the configured position, and
  *    renders through the endpoint action WooCommerce itself calls.
  * 2. **The page shows the links, not the document.** Each field appears under the title
- *    its `customer_profile` link configured, in the link's order, and a field whose link
+ *    its `customer_account` link configured, in the link's order, and a field whose link
  *    belongs to another area — or to nothing — does not appear at all.
  * 3. **The customer's value round-trips.** A submitted form saves to the customer and
  *    comes back on the next render; an omitted value is preserved; a section rendered in
@@ -148,7 +148,7 @@ function wccs_acct_section( string $id, string $title, string $description, int 
 		'description' => $description,
 		'position'    => $position,
 		'location'    => 'order',
-		'areas'       => array( 'customer_profile' ),
+		'areas'       => array( 'customer_account' ),
 	);
 
 	if ( array() !== $account ) {
@@ -188,7 +188,7 @@ function wccs_acct_document( bool $customer_storage = true ): array {
 				'text',
 				10,
 				array(
-					'customer_profile' => array(
+					'customer_account' => array(
 						'enabled'  => true,
 						'section'  => 'perfil_conta',
 						'title'    => 'Como quer ser chamado',
@@ -209,7 +209,7 @@ function wccs_acct_document( bool $customer_storage = true ): array {
 				'textarea',
 				20,
 				array(
-					'customer_profile' => array(
+					'customer_account' => array(
 						'enabled'  => true,
 						'section'  => 'perfil_conta',
 						'title'    => 'Notas da conta',
@@ -225,7 +225,7 @@ function wccs_acct_document( bool $customer_storage = true ): array {
 				'text',
 				30,
 				array(
-					'customer_profile' => array(
+					'customer_account' => array(
 						'enabled'  => true,
 						'section'  => 'historico_conta',
 						'title'    => 'Plano atual',
@@ -830,7 +830,7 @@ $wccs_acct_own_slugs = array();
 foreach ( \WCCheckoutSuite\Checkout\Classic\PublishedDocument::read()->sections() as $wccs_acct_section ) {
 	$wccs_acct_account = (array) ( $wccs_acct_section['presentation']['account'] ?? array() );
 
-	if ( in_array( 'customer_profile', (array) ( $wccs_acct_section['areas'] ?? array() ), true ) && '' !== (string) ( $wccs_acct_account['slug'] ?? '' ) ) {
+	if ( in_array( 'customer_account', (array) ( $wccs_acct_section['areas'] ?? array() ), true ) && '' !== (string) ( $wccs_acct_account['slug'] ?? '' ) ) {
 		$wccs_acct_own_slugs[] = sanitize_title( (string) $wccs_acct_account['slug'] );
 	}
 }

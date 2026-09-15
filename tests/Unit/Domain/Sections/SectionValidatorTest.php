@@ -137,7 +137,7 @@ final class SectionValidatorTest extends TestCase {
 			SectionDefinition::from_array(
 				$this->section(
 					array(
-						'areas' => array( 'customer_profile' ),
+						'areas' => array( 'customer_account' ),
 					)
 				)
 			)
@@ -166,7 +166,7 @@ final class SectionValidatorTest extends TestCase {
 			array(
 				$this->section(
 					array(
-						'areas'        => array( 'customer_profile' ),
+						'areas'        => array( 'customer_account' ),
 						'presentation' => $presentation,
 					)
 				),
@@ -174,7 +174,7 @@ final class SectionValidatorTest extends TestCase {
 					array(
 						'id'           => 'outros_documentos',
 						'title'        => 'Outros documentos',
-						'areas'        => array( 'customer_profile' ),
+						'areas'        => array( 'customer_account' ),
 						'presentation' => $presentation,
 					)
 				),
@@ -200,7 +200,7 @@ final class SectionValidatorTest extends TestCase {
 			array(
 				'id'           => 'preferencias_do_perfil',
 				'title'        => 'Preferências',
-				'areas'        => array( 'customer_profile' ),
+				'areas'        => array( 'customer_account' ),
 				'presentation' => array(
 					'account' => array(
 						'slug'       => 'preferencias',
@@ -221,7 +221,7 @@ final class SectionValidatorTest extends TestCase {
 						'section'      => 'preferencias_do_perfil',
 						'storage'      => array( 'scope' => 'customer' ),
 						'destinations' => array(
-							'customer_profile' => array(
+							'customer_account' => array(
 								'enabled' => true,
 								'section' => 'preferencias_do_perfil',
 								'mode'    => 'edit',
@@ -258,30 +258,73 @@ final class SectionValidatorTest extends TestCase {
 	}
 
 	/**
-	 * The same link pointing at a section that is not an account page is ordinary
-	 * configuration: there is no page to write from, so there is nothing to require.
+	 * The rule belongs to the surfaces that write to the customer, not to a shape of
+	 * section: a panel offered to staff writes the same store as the customer's page, so
+	 * a field linked into either has to keep its value there.
 	 *
 	 * @return void
 	 */
-	public function test_a_profile_link_to_a_section_without_a_page_is_not_an_account_link(): void {
+	public function test_both_customer_surfaces_require_customer_storage(): void {
+		$sections = array(
+			$this->section(
+				array(
+					'id'    => 'documentos_do_cliente',
+					'areas' => array( 'admin_customer' ),
+				)
+			),
+		);
+
+		foreach ( array( 'customer_account', 'admin_customer' ) as $surface ) {
+			$refused = SectionValidator::validate_references(
+				$sections,
+				array(
+					array(
+						'id'           => 'preferencia_perfil',
+						'section'      => 'documentos_do_cliente',
+						'storage'      => array( 'scope' => 'order' ),
+						'destinations' => array(
+							$surface => array(
+								'enabled' => true,
+								'section' => 'documentos_do_cliente',
+							),
+						),
+					),
+				)
+			);
+
+			self::assertContains(
+				'account_section_requires_customer_storage',
+				$refused->error_codes(),
+				$surface
+			);
+		}
+	}
+
+	/**
+	 * A link that is not into a customer surface is ordinary configuration: the value
+	 * travels with the order, and there is nothing to require of it.
+	 *
+	 * @return void
+	 */
+	public function test_a_link_outside_the_customer_surfaces_is_not_subject_to_the_rule(): void {
 		$result = SectionValidator::validate_references(
 			array(
 				$this->section(
 					array(
-						'id'    => 'documentos_do_perfil',
-						'areas' => array( 'customer_profile' ),
+						'id'    => 'documentos_enviados',
+						'areas' => array( 'customer_order' ),
 					)
 				),
 			),
 			array(
 				array(
 					'id'           => 'preferencia_perfil',
-					'section'      => 'documentos_do_perfil',
+					'section'      => 'documentos_enviados',
 					'storage'      => array( 'scope' => 'order' ),
 					'destinations' => array(
-						'customer_profile' => array(
+						'customer_order' => array(
 							'enabled' => true,
-							'section' => 'documentos_do_perfil',
+							'section' => 'documentos_enviados',
 						),
 					),
 				),

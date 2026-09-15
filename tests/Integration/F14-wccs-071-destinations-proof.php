@@ -268,13 +268,13 @@ $wccs_catalogue = \WCCheckoutSuite\Domain\Fields\DefinitionVocabulary::to_array(
 
 wccs_proof_check(
 	'The catalogue publishes the destinations',
-	is_array( $wccs_catalogue['destinations'] ?? null ) && 7 === count( $wccs_catalogue['destinations'] ),
+	is_array( $wccs_catalogue['destinations'] ?? null ) && 8 === count( $wccs_catalogue['destinations'] ),
 	'count=' . ( is_array( $wccs_catalogue['destinations'] ?? null ) ? count( $wccs_catalogue['destinations'] ) : -1 )
 );
 
 wccs_proof_check(
 	'Every destination declares the actions it may perform',
-	7 === count( array_filter( $wccs_catalogue['destinations'], static fn( $entry ) => ! empty( $entry['actions'] ) ) ),
+	8 === count( array_filter( $wccs_catalogue['destinations'], static fn( $entry ) => ! empty( $entry['actions'] ) ) ),
 	'actions present on every destination'
 );
 
@@ -347,7 +347,8 @@ $wccs_configured_field = wccs_proof_field(
 			'customer_email'   => array( 'enabled' => false ),
 			'admin_email'      => array( 'enabled' => false ),
 			'order_received'   => array( 'enabled' => false ),
-			'customer_profile' => array( 'enabled' => false ),
+			'customer_account' => array( 'enabled' => false ),
+			'admin_customer'   => array( 'enabled' => false ),
 			'public_api'       => array( 'enabled' => false ),
 		),
 	)
@@ -379,7 +380,8 @@ wccs_proof_check(
 	true === ( $wccs_dest['customer_order']['enabled'] ?? null )
 		&& false === ( $wccs_dest['customer_email']['enabled'] ?? null )
 		&& false === ( $wccs_dest['order_received']['enabled'] ?? null )
-		&& false === ( $wccs_dest['customer_profile']['enabled'] ?? null ),
+		&& false === ( $wccs_dest['customer_account']['enabled'] ?? null )
+		&& false === ( $wccs_dest['admin_customer']['enabled'] ?? null ),
 	'email=' . wp_json_encode( $wccs_dest['customer_email']['enabled'] ?? null )
 );
 

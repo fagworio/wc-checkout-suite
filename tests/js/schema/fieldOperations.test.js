@@ -29,10 +29,12 @@ import {
 	isProtected,
 	nextPosition,
 	protectionReason,
+	ambiguousDestinations,
 	removeField,
 	removeSection,
 	reorderField,
 	repairLegacyDraft,
+	resolveAmbiguousDestinations,
 	sectionGroups,
 	setFieldEnabled,
 	setFieldSection,
@@ -855,6 +857,111 @@ describe( 'section groups', () => {
 	} );
 } );
 
+describe( 'the retired destination key', () => {
+	it( 'is reported by name, with the surfaces that replaced it', () => {
+		const document = doc( [
+			custom( {
+				id: 'registo',
+				destinations: {
+					customer_profile: {
+						enabled: true,
+						section: 'billing',
+					},
+				},
+			} ),
+		] );
+
+		expect( ambiguousDestinations( document ) ).toEqual( [
+			'customer_profile',
+		] );
+		expect( ambiguousDestinations( doc() ) ).toEqual( [] );
+	} );
+
+	it( 'is rewritten to the surface the merchant chose, links and areas alike', () => {
+		const document = doc(
+			[
+				custom( {
+					id: 'registo',
+					destinations: {
+						customer_profile: {
+							enabled: true,
+							section: 'dados_profissionais',
+							title: 'Registo profissional',
+							position: 10,
+							mode: 'edit',
+						},
+					},
+				} ),
+			],
+			[
+				{
+					id: 'dados_profissionais',
+					title: 'Dados profissionais',
+					description: '',
+					position: 10,
+					location: 'account',
+					areas: [ 'customer_profile' ],
+				},
+			]
+		);
+
+		const staff = resolveAmbiguousDestinations(
+			document,
+			'admin_customer'
+		);
+
+		expect( staff.changed ).toBe( true );
+		expect(
+			Object.keys( staff.document.fields[ 0 ].destinations )
+		).toEqual( [ 'admin_customer' ] );
+		expect(
+			staff.document.fields[ 0 ].destinations.admin_customer
+		).toEqual( {
+			enabled: true,
+			section: 'dados_profissionais',
+			title: 'Registo profissional',
+			position: 10,
+			mode: 'edit',
+		} );
+		expect( staff.document.sections[ 0 ].areas ).toEqual( [
+			'admin_customer',
+		] );
+		expect( ambiguousDestinations( staff.document ) ).toEqual( [] );
+
+		// The same document can answer the other way, and nothing else changes.
+		const customer = resolveAmbiguousDestinations(
+			document,
+			'customer_account'
+		);
+
+		expect(
+			Object.keys( customer.document.fields[ 0 ].destinations )
+		).toEqual( [ 'customer_account' ] );
+		expect( customer.document.sections[ 0 ].areas ).toEqual( [
+			'customer_account',
+		] );
+	} );
+
+	it( 'refuses an answer that is not one of the replacements', () => {
+		const document = doc( [
+			custom( {
+				id: 'registo',
+				destinations: {
+					customer_profile: { enabled: true, section: 'billing' },
+				},
+			} ),
+		] );
+
+		const unchanged = resolveAmbiguousDestinations(
+			document,
+			'admin_order'
+		);
+
+		expect( unchanged.changed ).toBe( false );
+		expect( unchanged.document ).toBe( document );
+	} );
+} );
+
 describe( 'sections', () => {
 	it( 'keeps My Account collection fields out of checkout groups', () => {
 		const document = doc(
@@ -864,7 +971,7 @@ describe( 'sections', () => {
 					section: 'customer_notes',
 					collection_surface: 'my_account',
 					destinations: {
-						my_account: {
+						customer_account: {
 							enabled: true,
 							section: 'customer_notes',
 							mode: 'edit',
@@ -879,14 +986,14 @@ describe( 'sections', () => {
 					description: '',
 					position: 10,
 					location: 'account',
-					areas: [ 'my_account' ],
+					areas: [ 'customer_account' ],
 				},
 			]
 		);
 
 		expect( sectionGroups( document, 'checkout' ) ).toEqual( [] );
 		expect(
-			sectionGroups( document, 'my_account' )[ 0 ].fields.map(
+			sectionGroups( document, 'customer_account' )[ 0 ].fields.map(
 				( entry ) => entry.id
 			)
 		).toEqual( [ 'customer_note' ] );
@@ -906,7 +1013,7 @@ describe( 'sections', () => {
 		const result = createSection( doc(), {
 			title: 'Meus documentos',
 			location: 'account',
-			areas: [ 'my_account' ],
+			areas: [ 'customer_account' ],
 			presentation,
 		} );
 

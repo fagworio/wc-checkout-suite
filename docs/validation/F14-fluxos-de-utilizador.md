@@ -206,7 +206,10 @@ Os dois caminhos a seguir, na ordem em que fazem diferença:
    Minha Conta que grava no cliente, com o título e a ordem do vínculo; prova em
    `tests/Integration/ACCOUNT-my-account-sections-proof.php` (30/0) e no percurso de browser
    `tests/browser/my-account-sections-flow.mjs` (6/6).
-3. **O que fica por fazer na conta** — upload privado sem pedido, reuso de uma página de conta
-   existente, exclusão que só desvincula, e a separação entre «Minha Conta» e «Admin → Perfil
-   do cliente». Está na especificação (`roadmap/ESPECIFICACAO-SECOES-WCCS.md`) e não nesta
-   fase.
+3. **A separação entre «Minha Conta» e «Admin → Perfil do cliente» — feita.** O destino
+   `customer_profile` foi dividido em `customer_account` e `admin_customer`, e o painel de equipa
+   passou a existir no ecrã de perfil do utilizador; a auditoria desta fase cobre-o (25/0) e a
+   observação na loja está em `docs/validation/DESTINOS-MINHA-CONTA-E-PERFIL-ADMIN.md`.
+4. **O que fica por fazer na conta** — upload privado sem pedido, reuso de uma página de conta
+   existente, e exclusão que só desvincula. Está na especificação
+   (`roadmap/ESPECIFICACAO-SECOES-WCCS.md`) e não nesta fase.

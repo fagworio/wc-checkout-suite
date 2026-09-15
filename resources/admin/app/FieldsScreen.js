@@ -47,6 +47,7 @@ import {
 } from './schema/failureState';
 import {
 	adoptCoreField,
+	ambiguousDestinations,
 	bulkImpact,
 	conditionDependents,
 	createField,
@@ -59,6 +60,7 @@ import {
 	protectionReason,
 	removeField,
 	removeSection,
+	resolveAmbiguousDestinations,
 	removeSectionWithDependents,
 	repairLegacyDraft,
 	sectionImpact,
@@ -95,10 +97,18 @@ const EDITOR_AREAS = [
 		),
 	},
 	{
-		id: 'my_account',
+		id: 'customer_account',
 		label: __( 'Minha conta', 'wc-checkoutsuite' ),
 		description: __(
 			'Nova aba com formulário e dados próprios do cliente.',
+			'wc-checkoutsuite'
+		),
+	},
+	{
+		id: 'admin_customer',
+		label: __( 'Perfil do cliente', 'wc-checkoutsuite' ),
+		description: __(
+			'Admin → Usuários → editar cliente.',
 			'wc-checkoutsuite'
 		),
 	},
@@ -111,6 +121,24 @@ const EDITOR_AREAS = [
 		),
 	},
 ];
+
+/**
+ * The work areas whose values belong to the customer, not to an order.
+ *
+ * They are two surfaces over one store: the customer's own page in My Account, and the
+ * panel staff read on the customer's profile screen.
+ */
+const CUSTOMER_AREAS = [ 'customer_account', 'admin_customer' ];
+
+/**
+ * Whether a work area collects the customer's own data.
+ *
+ * @param {string} area Editor work area.
+ * @return {boolean} Whether it is a customer surface.
+ */
+function isCustomerArea( area ) {
+	return CUSTOMER_AREAS.includes( area );
+}
 
 /** Human location shown beside each section area choice. */
 /** @type {Record<string, string>} */
@@ -139,8 +167,12 @@ const SECTION_AREA_REFERENCE = {
 		'Exibido nos e-mails internos enviados para a loja.',
 		'wc-checkoutsuite'
 	),
-	customer_profile: __(
-		'Exibido na conta do cliente, fora de um pedido: uma seção oferecida aqui e com apresentação de conta vira uma aba autenticada em Minha conta.',
+	customer_account: __(
+		'Página própria do cliente em Minha conta, fora de um pedido. Uma seção oferecida aqui vira uma página autenticada que ele mesmo preenche.',
+		'wc-checkoutsuite'
+	),
+	admin_customer: __(
+		'Painel no perfil do cliente, dentro do admin, fora de um pedido. Os valores são os mesmos que o cliente vê em Minha conta.',
 		'wc-checkoutsuite'
 	),
 	public_api: __(
@@ -163,7 +195,7 @@ function defaultSectionLocation( area ) {
 		return 'billing';
 	}
 
-	if ( 'my_account' === area ) {
+	if ( isCustomerArea( area ) ) {
 		return 'account';
 	}
 
@@ -329,6 +361,19 @@ export default function FieldsScreen( {
 	 * @type {[boolean, Function]}
 	 */
 	const [ sectionDraftOpen, setSectionDraftOpen ] = useState( false );
+
+	/**
+	 * The retired destination keys this document still carries.
+	 *
+	 * `customer_profile` was one destination and is now two, so a stored link cannot be
+	 * migrated on the merchant's behalf: only they know which surface was meant.
+	 */
+	const [ legacyDestinations, setLegacyDestinations ] = useState(
+		/** @type {string[]} */ ( [] )
+	);
+
+	/** Whether the migration choice is on screen. */
+	const [ legacyPromptOpen, setLegacyPromptOpen ] = useState( false );
 
 	/**
 	 * The checkout the screen is configuring for.
@@ -535,9 +580,14 @@ export default function FieldsScreen( {
 					? local.document
 					: draft;
 			const repaired = repairLegacyDraft( candidate );
+			const applied = repaired.changed ? repaired.document : candidate;
+			const legacy = ambiguousDestinations( applied );
+
+			setLegacyDestinations( legacy );
+			setLegacyPromptOpen( legacy.length > 0 );
 
 			if ( repaired.changed ) {
-				resetDocument( repaired.document );
+				resetDocument( applied );
 				setSaved(
 					__(
 						'Encontramos dados antigos incompletos nesta edição local e os corrigimos. Revise e salve para continuar.',
@@ -548,7 +598,7 @@ export default function FieldsScreen( {
 				local?.baseRevision === draft.revision &&
 				local.document
 			) {
-				resetDocument( local.document );
+				resetDocument( applied );
 				setSaved(
 					__(
 						'Há uma edição local não salva preservada nesta sessão.',
@@ -557,7 +607,7 @@ export default function FieldsScreen( {
 				);
 			} else {
 				window.sessionStorage?.removeItem( LOCAL_DRAFT_KEY );
-				resetDocument( draft );
+				resetDocument( applied );
 			}
 			setSavedDocument( draft );
 			setCatalog( types );
@@ -633,6 +683,35 @@ export default function FieldsScreen( {
 			commitDocument( result.document, label );
 		},
 		[ commitDocument ]
+	);
+
+	/**
+	 * Applies the merchant's answer to a retired destination key.
+	 *
+	 * @param {string} chosen Destination the merchant chose.
+	 * @return {void}
+	 */
+	const chooseDestination = useCallback(
+		( /** @type {string} */ chosen ) => {
+			if ( ! document ) {
+				return;
+			}
+
+			const resolved = resolveAmbiguousDestinations( document, chosen );
+
+			setLegacyDestinations( [] );
+			setLegacyPromptOpen( false );
+
+			if ( ! resolved.changed ) {
+				return;
+			}
+
+			apply(
+				{ ok: true, document: resolved.document, reason: '' },
+				__( 'Destino da configuração antiga', 'wc-checkoutsuite' )
+			);
+		},
+		[ apply, document ]
 	);
 
 	/**
@@ -1159,10 +1238,10 @@ export default function FieldsScreen( {
 						id && apply( removeField( document, id ) ),
 					onProtect: explainProtection,
 					onCreateField: ( /** @type {any} */ choice ) => {
-						if ( ! [ 'checkout', 'my_account' ].includes( area ) ) {
+						if ( 'checkout' !== area && ! isCustomerArea( area ) ) {
 							setRefusal(
 								__(
-									'Nesta área, vincule um campo existente. Campos novos podem ser criados no Checkout ou em Minha conta.',
+									'Nesta área, vincule um campo existente. Campos novos podem ser criados no Checkout, em Minha conta ou no perfil do cliente.',
 									'wc-checkoutsuite'
 								)
 							);
@@ -1176,15 +1255,20 @@ export default function FieldsScreen( {
 								section,
 								settings: choice.settings,
 								layout: choice.defaults?.layout,
-								collectionSurface: area,
-								...( 'my_account' === area
+								// Where a value is collected is a property of the field, and the
+								// two customer surfaces write the same store: the value lives
+								// with the customer and is offered again on the next order.
+								collectionSurface: isCustomerArea( area )
+									? 'my_account'
+									: 'checkout',
+								...( isCustomerArea( area )
 									? {
 											storage: {
 												scope: 'customer',
 												sensitivity: 'personal',
 											},
 											destinations: {
-												my_account: {
+												[ area ]: {
 													enabled: true,
 													section,
 													mode: 'edit',
@@ -1242,7 +1326,7 @@ export default function FieldsScreen( {
 						setNewSectionLocation( defaultSectionLocation( area ) );
 						setNewSectionIcon( 'user' );
 						setNewSectionMode( 'edit' );
-						setNewSectionShowTitle( 'my_account' === area );
+						setNewSectionShowTitle( isCustomerArea( area ) );
 						setSectionDraftOpen( true );
 					},
 					onLinkExisting: () => {
@@ -1471,7 +1555,7 @@ export default function FieldsScreen( {
 							}
 						>
 							<p>
-								{ 'my_account' === area
+								{ isCustomerArea( area )
 									? __(
 											'Nesta área, somente campos armazenados no cliente podem ser vinculados. Eles ficam independentes de pedidos.',
 											'wc-checkoutsuite'
@@ -1497,7 +1581,7 @@ export default function FieldsScreen( {
 										.filter(
 											( /** @type {any} */ field ) =>
 												field.enabled &&
-												( 'my_account' !== area ||
+												( ! isCustomerArea( area ) ||
 													'customer' ===
 														field.storage?.scope )
 										)
@@ -1548,8 +1632,9 @@ export default function FieldsScreen( {
 													presentation: {
 														show_title:
 															newSectionShowTitle,
-														...( 'my_account' ===
-														area
+														...( isCustomerArea(
+															area
+														)
 															? {
 																	account: {
 																		slug: title
@@ -1690,7 +1775,7 @@ export default function FieldsScreen( {
 									) }
 								</>
 							) : null }
-							{ 'my_account' === area ? (
+							{ isCustomerArea( area ) ? (
 								<>
 									<Notice status="info">
 										{ __(
@@ -1774,9 +1859,8 @@ export default function FieldsScreen( {
 									/>
 								</>
 							) : null }
-							{ ! [ 'checkout', 'my_account' ].includes(
-								area
-							) ? (
+							{ 'checkout' !== area &&
+							! isCustomerArea( area ) ? (
 								<Notice status="info">
 									{ __(
 										'Esta seção será usada apenas para organizar a exibição nesta área. Para mostrar valores nela, vincule campos existentes.',
@@ -1794,6 +1878,72 @@ export default function FieldsScreen( {
 							) : null }
 						</Dialog>
 					),
+					migrationDialog: legacyPromptOpen ? (
+						<Dialog
+							open
+							size="default"
+							eyebrow={ __( 'MIGRAÇÃO', 'wc-checkoutsuite' ) }
+							title={ __(
+								'Escolha o destino desta configuração antiga',
+								'wc-checkoutsuite'
+							) }
+							subtitle={ __(
+								'A área «Perfil do cliente» foi separada em duas: a página do próprio cliente em Minha conta e o painel que a equipa vê no perfil dele. Nada é adivinhado — escolha onde estes campos devem aparecer.',
+								'wc-checkoutsuite'
+							) }
+							// There is nothing to decide later: the server refuses a document
+							// that still carries the retired key, so closing this without an
+							// answer would leave a store that cannot save its own fields.
+							onClose={ () => setLegacyPromptOpen( true ) }
+							footer={
+								<>
+									<Button
+										variant="secondary"
+										onClick={ () =>
+											chooseDestination(
+												'customer_account'
+											)
+										}
+									>
+										{ __(
+											'Minha conta (o cliente)',
+											'wc-checkoutsuite'
+										) }
+									</Button>
+									<Button
+										variant="primary"
+										onClick={ () =>
+											chooseDestination(
+												'admin_customer'
+											)
+										}
+									>
+										{ __(
+											'Perfil do cliente (a equipa)',
+											'wc-checkoutsuite'
+										) }
+									</Button>
+								</>
+							}
+						>
+							<Notice status="warning">
+								{ sprintf(
+									/* translators: %s: comma separated destination keys. */
+									__(
+										'Esta configuração usa %s, que já não existe. Os campos, os valores guardados e as seções permanecem; o que muda é onde aparecem.',
+										'wc-checkoutsuite'
+									),
+									legacyDestinations.join( ', ' )
+								) }
+							</Notice>
+							<p>
+								{ __(
+									'Escolha «Minha conta» para os valores que o próprio cliente preenche e vê. Escolha «Perfil do cliente» para os valores que a equipa lê e edita no perfil do cliente. Pode vincular o mesmo campo aos dois depois de escolher.',
+									'wc-checkoutsuite'
+								) }
+							</p>
+						</Dialog>
+					) : null,
 					sectionEditor: (
 						<Dialog
 							open={ null !== editingSectionId }
@@ -1929,8 +2079,9 @@ export default function FieldsScreen( {
 											/>
 										)
 									) }
-									{ ( editingSection.areas ?? [] ).includes(
-										'my_account'
+									{ ( editingSection.areas ?? [] ).some(
+										( /** @type {string} */ offered ) =>
+											isCustomerArea( offered )
 									) ? (
 										<AccountSectionPresentation
 											section={ editingSection }

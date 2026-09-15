@@ -347,7 +347,7 @@ final class DefinitionValidatorTest extends TestCase {
 						'sensitivity' => 'personal',
 					),
 					'destinations' => array(
-						'customer_profile' => array(
+						'customer_account' => array(
 							'enabled' => true,
 							'section' => 'preferencias',
 							'mode'    => $mode,
@@ -370,7 +370,7 @@ final class DefinitionValidatorTest extends TestCase {
 					'sensitivity' => 'personal',
 				),
 				'destinations' => array(
-					'customer_profile' => array(
+					'customer_account' => array(
 						'enabled' => true,
 						'section' => 'preferencias',
 						'mode'    => 'publish',
@@ -380,6 +380,69 @@ final class DefinitionValidatorTest extends TestCase {
 		);
 
 		self::assertContains( 'invalid_account_field_mode', $refused->error_codes() );
+	}
+
+	/**
+	 * A destination that was split in two is refused by name, not as an unknown key.
+	 *
+	 * `customer_profile` meant the customer's own page and the panel staff read on their
+	 * profile, and only the merchant can say which one a stored link meant. The code and
+	 * its replacements are what let the editor ask instead of guessing.
+	 *
+	 * @return void
+	 */
+	public function test_a_retired_destination_is_refused_by_name(): void {
+		foreach ( array( 'customer_profile', 'my_account' ) as $retired ) {
+			$result = $this->validator()->validate_array(
+				array(
+					'id'           => 'preferencia_perfil',
+					'origin'       => 'custom',
+					'type'         => 'text',
+					'label'        => 'Preferência',
+					'storage'      => array(
+						'scope'       => 'customer',
+						'sensitivity' => 'personal',
+					),
+					'destinations' => array(
+						$retired => array(
+							'enabled' => true,
+							'section' => 'preferencias',
+							'mode'    => 'edit',
+						),
+					),
+				)
+			);
+
+			self::assertContains( 'ambiguous_destination', $result->error_codes(), $retired );
+			self::assertNotContains( 'unknown_destination', $result->error_codes(), $retired );
+		}
+	}
+
+	/**
+	 * A destination nobody ever defined is still refused as unknown, and the two codes do
+	 * not swallow each other.
+	 *
+	 * @return void
+	 */
+	public function test_an_unknown_destination_is_still_unknown(): void {
+		$result = $this->validator()->validate_array(
+			array(
+				'id'           => 'preferencia_perfil',
+				'origin'       => 'custom',
+				'type'         => 'text',
+				'label'        => 'Preferência',
+				'storage'      => array(
+					'scope'       => 'customer',
+					'sensitivity' => 'personal',
+				),
+				'destinations' => array(
+					'twitter' => array( 'enabled' => true ),
+				),
+			)
+		);
+
+		self::assertContains( 'unknown_destination', $result->error_codes() );
+		self::assertNotContains( 'ambiguous_destination', $result->error_codes() );
 	}
 
 	/**

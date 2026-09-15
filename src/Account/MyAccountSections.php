@@ -11,9 +11,8 @@ namespace WCCheckoutSuite\Account;
 
 use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
 use WCCheckoutSuite\Domain\Customers\CustomerFieldsService;
-use WCCheckoutSuite\Domain\Fields\FieldContext;
+use WCCheckoutSuite\Domain\Customers\CustomerSectionFields;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
-use WCCheckoutSuite\Domain\Registries;
 use WCCheckoutSuite\Domain\Sections\SectionDefinition;
 
 /** Registers and renders Suite-owned WooCommerce My Account pages. */
@@ -22,27 +21,13 @@ final class MyAccountSections {
 	private const SIGNATURE_OPTION = 'wccs_account_endpoint_signature';
 
 	/**
-	 * The field controls the first account delivery can truthfully collect.
+	 * The destination this surface serves.
 	 *
-	 * File upload has its own private-media lifecycle and heading/hidden fields do
-	 * not represent customer-owned values. They remain unavailable here until that
-	 * lifecycle is implemented for My Account too.
-	 *
-	 * @var array<int,string>
+	 * The customer's own page and the panel staff read on the customer's profile are
+	 * two destinations over the same stored values; this class is the one the customer
+	 * sees and writes themselves.
 	 */
-	private const RENDERABLE_TYPES = array(
-		'text',
-		'textarea',
-		'email',
-		'tel',
-		'url',
-		'number',
-		'date',
-		'time',
-		'select',
-		'radio',
-		'checkbox',
-	);
+	public const DESTINATION = 'customer_account';
 
 	/** Endpoint definitions keyed by their public slug.
 	 *
@@ -119,7 +104,11 @@ final class MyAccountSections {
 			return;
 		}
 
-		$fields   = self::fields( (string) $section['id'] );
+		$fields   = CustomerSectionFields::entries(
+			PublishedDocument::read()->fields(),
+			self::DESTINATION,
+			(string) $section['id']
+		);
 		$service  = new CustomerFieldsService();
 		$values   = $service->values( get_current_user_id() );
 		$errors   = array();
@@ -144,7 +133,7 @@ final class MyAccountSections {
 				$posted  = isset( $_POST['wccs_account_fields'] ) && is_array( $_POST['wccs_account_fields'] )
 					? map_deep( wp_unslash( $_POST['wccs_account_fields'] ), 'sanitize_textarea_field' )
 					: array();
-				$updates = self::process_submission( $fields, $values, $posted, $errors );
+				$updates = CustomerSectionFields::submission( $fields, self::DESTINATION, $values, $posted, $errors );
 				if ( array() === $errors ) {
 					$service->update( get_current_user_id(), $updates );
 					$values = array_merge( $values, $updates );
@@ -207,7 +196,7 @@ final class MyAccountSections {
 			$section = SectionDefinition::from_array( $raw );
 			$account = $section->account();
 			$slug    = isset( $account['slug'] ) ? sanitize_title( (string) $account['slug'] ) : '';
-			if ( ! $section->is_offered_in( 'customer_profile' ) || '' === $slug || isset( $found[ $slug ] ) ) {
+			if ( ! $section->is_offered_in( self::DESTINATION ) || '' === $slug || isset( $found[ $slug ] ) ) {
 				continue;
 			}
 			$found[ $slug ] = $section->to_array();
@@ -226,102 +215,6 @@ final class MyAccountSections {
 	}
 
 	/**
-	 * Resolves the fields rendered in one account section.
-	 *
-	 * The section, the title and the order are the *link* the merchant configured for
-	 * this destination, exactly as every other area reads them: a field named
-	 * differently for the account page is named that way here, and the link's position
-	 * decides where it sits in the form.
-	 *
-	 * @param string $section_id Section identifier.
-	 * @return array<int, array{field: FieldDefinition, title: string, position: int}> Renderable entries.
-	 */
-	private static function fields( string $section_id ): array {
-		$fields = array();
-		foreach ( PublishedDocument::read()->fields() as $raw ) {
-			if ( ! is_array( $raw ) ) {
-				continue;
-			}
-			$field = FieldDefinition::from_array( $raw );
-			$link  = $field->destinations()['customer_profile'] ?? array();
-			if (
-				! $field->is_enabled() ||
-				! in_array( $field->type(), self::RENDERABLE_TYPES, true ) ||
-				empty( $link['enabled'] ) ||
-				(string) ( $link['section'] ?? '' ) !== $section_id
-			) {
-				continue;
-			}
-			$title    = isset( $link['title'] ) && '' !== trim( (string) $link['title'] )
-				? (string) $link['title']
-				: $field->label();
-			$position = isset( $link['position'] ) && is_numeric( $link['position'] )
-				? (int) $link['position']
-				: $field->position();
-			$fields[] = array(
-				'field'    => $field,
-				'title'    => $title,
-				'position' => $position,
-			);
-		}
-		usort( $fields, static fn( array $a, array $b ): int => $a['position'] <=> $b['position'] );
-		return $fields;
-	}
-
-	/**
-	 * Validates customer input after the endpoint nonce has been checked.
-	 *
-	 * @param array<int, array{field: FieldDefinition, title: string, position: int}> $fields Rendered entries.
-	 * @param array<string,mixed>                                                     $values Current customer values.
-	 * @param array<string,mixed>                                                     $posted Sanitized submitted values.
-	 * @param array<int,string>                                                       $errors Validation errors, by reference.
-	 * @return array<string,mixed> Canonical updates.
-	 */
-	private static function process_submission( array $fields, array $values, array $posted, array &$errors ): array {
-		$updates   = array();
-		$canonical = array();
-		foreach ( $fields as $entry ) {
-			$field = $entry['field'];
-			$link  = $field->destinations()['customer_profile'] ?? array();
-			if ( 'edit' !== ( $link['mode'] ?? 'edit' ) ) {
-				continue;
-			}
-			// The page renders every editable field, so a key that never reached the
-			// request was not part of this submission: it is left alone rather than
-			// read as empty and used to erase what the customer had stored. The one
-			// exception is the checkbox, where the browser's own convention is that an
-			// absent box means unchecked.
-			$is_checkbox = 'checkbox' === $field->type();
-
-			if ( ! $is_checkbox && ! array_key_exists( $field->id(), $posted ) ) {
-				continue;
-			}
-
-			$raw       = $posted[ $field->id() ] ?? false;
-			$processed = Registries::instance()->value_processor()->process(
-				$field,
-				$raw,
-				new FieldContext(
-					array(
-						'customer_logged_in' => true,
-						'fields'             => array_merge( $values, $canonical ),
-					),
-					'account'
-				)
-			);
-			if ( ! $processed->result()->is_valid() ) {
-				foreach ( $processed->result()->errors() as $error ) {
-					$errors[] = (string) $error['message'];
-				}
-				continue;
-			}
-			$updates[ $field->id() ]   = $processed->value();
-			$canonical[ $field->id() ] = $processed->value();
-		}
-		return $updates;
-	}
-
-	/**
 	 * Renders one value as an editable WooCommerce form field or read-only text.
 	 *
 	 * @param FieldDefinition $field    Field definition.
@@ -335,7 +228,7 @@ final class MyAccountSections {
 			printf(
 				'<p class="form-row wccs-account-value"><strong>%1$s</strong><br />%2$s</p>',
 				esc_html( $title ),
-				esc_html( self::display_value( $field, $value ) )
+				esc_html( CustomerSectionFields::display_value( $field, $value ) )
 			);
 			return;
 		}
@@ -351,24 +244,5 @@ final class MyAccountSections {
 		// The WooCommerce helper builds escaped field markup from the escaped arguments above.
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo woocommerce_form_field( 'wccs_account_fields[' . $field->id() . ']', $args, $value );
-	}
-
-	/**
-	 * Converts a stored value to a safe, readable value-only representation.
-	 *
-	 * @param FieldDefinition $field Field definition.
-	 * @param mixed           $value Stored customer value.
-	 * @return string Display value.
-	 */
-	private static function display_value( FieldDefinition $field, mixed $value ): string {
-		if ( 'checkbox' === $field->type() ) {
-			return ! empty( $value ) ? __( 'Sim', 'wc-checkoutsuite' ) : __( 'Não', 'wc-checkoutsuite' );
-		}
-
-		if ( is_array( $value ) ) {
-			return implode( ', ', array_map( 'strval', $value ) );
-		}
-
-		return is_scalar( $value ) ? (string) $value : '';
 	}
 }

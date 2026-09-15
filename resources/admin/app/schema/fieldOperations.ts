@@ -20,6 +20,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import { references } from './conditions';
 import type { ConditionNode } from './conditions';
 import type {
+	DestinationLink,
 	CoreFieldEntry,
 	FieldDefinition,
 	FieldLayout,
@@ -83,9 +84,134 @@ const REPAIRABLE_DESTINATION_AREAS = new Set( [
 	'order_received',
 	'customer_email',
 	'admin_email',
-	'customer_profile',
+	'customer_account',
+	'admin_customer',
 	'public_api',
 ] );
+
+/**
+ * The destinations a retired key stood for.
+ *
+ * `customer_profile` was one destination and is now two — the customer's own page in
+ * My Account and the panel staff read on the customer's profile — so a stored link
+ * cannot be migrated on the merchant's behalf: only they know which surface was meant.
+ * The editor asks, and the answer is applied to the links and to the sections offered
+ * in the areas the same key named.
+ */
+export const AMBIGUOUS_DESTINATION_REPLACEMENTS: Record< string, string[] > = {
+	customer_profile: [ 'customer_account', 'admin_customer' ],
+	my_account: [ 'customer_account', 'admin_customer' ],
+};
+
+/**
+ * The ambiguous destinations a document still carries.
+ *
+ * @param document Candidate document.
+ * @return Keys found, in a stable order.
+ */
+export function ambiguousDestinations( document: SchemaDocument ): string[] {
+	const found = new Set< string >();
+
+	for ( const field of document?.fields ?? [] ) {
+		for ( const key of Object.keys( field?.destinations ?? {} ) ) {
+			if ( AMBIGUOUS_DESTINATION_REPLACEMENTS[ key ] ) {
+				found.add( key );
+			}
+		}
+
+		const approvalArea = field?.approval?.area ?? '';
+
+		if ( AMBIGUOUS_DESTINATION_REPLACEMENTS[ approvalArea ] ) {
+			found.add( approvalArea );
+		}
+	}
+
+	for ( const section of document?.sections ?? [] ) {
+		for ( const area of section?.areas ?? [] ) {
+			if ( AMBIGUOUS_DESTINATION_REPLACEMENTS[ area ] ) {
+				found.add( area );
+			}
+		}
+	}
+
+	return [ ...found ].sort();
+}
+
+/**
+ * Rewrites every ambiguous key to the destination the merchant chose.
+ *
+ * Nothing else about the document changes: the field keeps its storage, the link keeps
+ * its section, title, position and mode, and a section keeps the other areas it was
+ * offered in. The choice is applied to the links, to the approval area when it named the
+ * retired key, and to the areas of the sections, because a section offered in a retired
+ * area would otherwise keep a link and lose its place.
+ *
+ * @param document Candidate document.
+ * @param chosen   Destination the merchant chose.
+ * @return Repaired document and whether anything changed.
+ */
+export function resolveAmbiguousDestinations(
+	document: SchemaDocument,
+	chosen: string
+): { document: SchemaDocument; changed: boolean } {
+	if (
+		! Object.values( AMBIGUOUS_DESTINATION_REPLACEMENTS ).some( ( list ) =>
+			list.includes( chosen )
+		)
+	) {
+		return { document, changed: false };
+	}
+
+	let changed = false;
+
+	const migrate = ( value: string ): string => {
+		const replacements = AMBIGUOUS_DESTINATION_REPLACEMENTS[ value ];
+
+		if ( ! replacements || ! replacements.includes( chosen ) ) {
+			return value;
+		}
+
+		changed = true;
+
+		return chosen;
+	};
+
+	const fields = ( document?.fields ?? [] ).map(
+		( field ): FieldDefinition => {
+			const destinations: Record< string, DestinationLink > = {};
+
+			for ( const [ key, link ] of Object.entries(
+				field?.destinations ?? {}
+			) ) {
+				destinations[ migrate( key ) ] = link;
+			}
+
+			const approvalArea = field?.approval?.area;
+
+			return {
+				...field,
+				destinations,
+				...( approvalArea
+					? {
+							approval: {
+								...field.approval,
+								area: migrate( approvalArea ),
+							},
+					  }
+					: {} ),
+			};
+		}
+	);
+
+	const sections = ( document?.sections ?? [] ).map( ( section ) => ( {
+		...section,
+		areas: ( section?.areas ?? [] ).map( ( area: string ) =>
+			migrate( area )
+		),
+	} ) );
+
+	return { document: { ...document, fields, sections }, changed };
+}
 
 /**
  * Whether a condition tree contains a reference with no field selected.

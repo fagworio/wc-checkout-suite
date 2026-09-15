@@ -200,7 +200,7 @@ function wccs_proof_document(): array {
 					'customer_email'   => $link( 'email', 'Anexo do e-mail', 20 ),
 					'admin_email'      => $link( 'email', 'Cópia da loja', 20 ),
 					'public_api'       => array( 'enabled' => true ),
-					'customer_profile' => array( 'enabled' => false ),
+					'customer_account' => array( 'enabled' => false ),
 					'order_received'   => array( 'enabled' => false ),
 				)
 			),
@@ -214,7 +214,7 @@ function wccs_proof_document(): array {
 					'customer_email'   => array( 'enabled' => false ),
 					'admin_email'      => array( 'enabled' => false ),
 					'public_api'       => array( 'enabled' => false ),
-					'customer_profile' => array( 'enabled' => false ),
+					'customer_account' => array( 'enabled' => false ),
 					'order_received'   => $link( 'enviados', 'Enviado no checkout', 10 ),
 				)
 			),
@@ -228,7 +228,7 @@ function wccs_proof_document(): array {
 					'customer_email'   => array( 'enabled' => false ),
 					'admin_email'      => array( 'enabled' => false ),
 					'public_api'       => array( 'enabled' => false ),
-					'customer_profile' => array( 'enabled' => false ),
+					'customer_account' => array( 'enabled' => false ),
 					'order_received'   => array( 'enabled' => false ),
 				)
 			),
@@ -242,7 +242,8 @@ function wccs_proof_document(): array {
 					'customer_email'   => array( 'enabled' => false ),
 					'admin_email'      => array( 'enabled' => false ),
 					'public_api'       => array( 'enabled' => false ),
-					'customer_profile' => $link( 'perfil', 'Preferência do perfil', 10 ),
+					'customer_account' => $link( 'perfil', 'Preferência do perfil', 10 ),
+					'admin_customer'   => $link( 'perfil', 'Preferência (equipa)', 10 ),
 					'order_received'   => array( 'enabled' => false ),
 				),
 				// The profile area is the customer's own page, so the value it
@@ -264,7 +265,7 @@ function wccs_proof_document(): array {
 					'customer_email'   => array( 'enabled' => false ),
 					'admin_email'      => array( 'enabled' => false ),
 					'public_api'       => array( 'enabled' => false ),
-					'customer_profile' => array( 'enabled' => false ),
+					'customer_account' => array( 'enabled' => false ),
 					'order_received'   => array( 'enabled' => false ),
 				)
 			),
@@ -277,7 +278,7 @@ function wccs_proof_document(): array {
 				'perfil',
 				'Documentos do perfil',
 				40,
-				array( 'customer_profile' ),
+				array( 'customer_account', 'admin_customer' ),
 				array(
 					'slug'       => 'preferencias',
 					'menu_label' => 'Preferências',
@@ -585,7 +586,7 @@ $wccs_profile_field = \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array
 
 wccs_proof_check(
 	'The profile link is stored and read by the model',
-	$wccs_profile_field->shows_in( 'customer_profile' )
+	$wccs_profile_field->shows_in( 'customer_account' )
 		&& false === $wccs_profile_field->shows_in( 'customer_order' )
 		&& false === $wccs_profile_field->shows_in( 'public_api' ),
 	'a destination nobody else lends to'
@@ -641,6 +642,28 @@ wccs_proof_check(
 	'menu=' . implode( ', ', array_keys( $wccs_menu ) )
 );
 
+// The other half of the same area: the panel staff read on the customer's own profile
+// screen. One section, one field, its own link and its own title — the audit asks the same
+// two questions of it, because an area is audited, not assumed.
+$wccs_staff_panel = wccs_proof_render(
+	static fn() => \WCCheckoutSuite\Admin\Customers\CustomerProfilePanel::render( wp_get_current_user() )
+);
+
+wccs_proof_check(
+	'The staff panel shows the field under the title its own link configured',
+	str_contains( $wccs_staff_panel, 'Preferência (equipa)' )
+		&& str_contains( $wccs_staff_panel, 'Documentos do perfil' ),
+	'admin_customer'
+);
+
+wccs_proof_check(
+	'And nothing that belongs to another area or to the other surface',
+	! str_contains( $wccs_staff_panel, 'Primeiro na análise' )
+		&& ! str_contains( $wccs_staff_panel, $wccs_unlinked )
+		&& ! str_contains( $wccs_staff_panel, $wccs_profile_title ),
+	'the order screen, the unlinked field and the customer\'s own title stay out'
+);
+
 wccs_proof_check(
 	'The other areas did not start showing the profile field',
 	! str_contains( $wccs_admin, $wccs_profile_title )
@@ -658,7 +681,7 @@ wccs_proof_check(
 );
 
 wccs_proof_note(
-	'customer_profile owns a page and writes to the customer',
+	'customer_account owns a page and writes to the customer',
 	'A section offered in the profile area becomes a WooCommerce My Account endpoint and the fields linked to it render there under the link titles. Because that page belongs to the customer and not to an order, the document is refused when such a field does not store on the customer (account_section_requires_customer_storage): the page would otherwise offer a form that saves nowhere. The round trip of a submitted value is proved in tests/Integration/ACCOUNT-my-account-sections-proof.php.'
 );
 
@@ -674,7 +697,7 @@ $wccs_silent = array(
 			'customer_email'   => array( 'enabled' => false ),
 			'admin_email'      => array( 'enabled' => false ),
 			'public_api'       => array( 'enabled' => false ),
-			'customer_profile' => array( 'enabled' => false ),
+			'customer_account' => array( 'enabled' => false ),
 			'order_received'   => array( 'enabled' => false ),
 		)
 	),

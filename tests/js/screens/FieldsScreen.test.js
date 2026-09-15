@@ -402,7 +402,10 @@ describe( 'editing', () => {
 			namespace: 'wc-checkoutsuite/v1',
 			nonce: 'nonce-value',
 			routes: { draft: '/schema/draft' },
-			fetchImpl: async ( url, options = {} ) => {
+			fetchImpl: async (
+				/** @type {string} */ url,
+				/** @type {{ method?: string }} */ options = {}
+			) => {
 				requests.push( `${ options.method } ${ url }` );
 
 				return {

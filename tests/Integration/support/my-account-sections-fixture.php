@@ -58,7 +58,7 @@ function wccs_account_flow_document(): SchemaDocument {
 	// what puts this field on it, with the title the page shows.
 	$destinations = DefinitionVocabulary::default_destinations();
 
-	$destinations['customer_profile'] = array(
+	$destinations['customer_account'] = array(
 		'enabled'  => true,
 		'section'  => 'wccs_e2e_profile',
 		'title'    => 'Nota do perfil E2E',
@@ -97,7 +97,7 @@ function wccs_account_flow_document(): SchemaDocument {
 					'description' => 'Dados independentes de pedidos.',
 					'position'    => 10,
 					'location'    => 'order',
-					'areas'       => array( 'customer_profile' ),
+					'areas'       => array( 'customer_account' ),
 					'presentation' => array(
 						'show_title' => true,
 						'account'    => array(

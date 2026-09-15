@@ -147,6 +147,7 @@ export default function FieldManagerView( { model } ) {
 		sectionDraft,
 		linkDialog,
 		removalDialog,
+		migrationDialog,
 	} = model;
 
 	/** The design's own view state: the search box and the origin filter. */
@@ -2162,6 +2163,7 @@ export default function FieldManagerView( { model } ) {
 
 			{ linkDialog }
 			{ removalDialog }
+			{ migrationDialog }
 
 			{ problems.length > 0 ? (
 				<Notice status="error">

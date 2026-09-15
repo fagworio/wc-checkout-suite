@@ -29,6 +29,7 @@ use WCCheckoutSuite\Checkout\Classic\ClassicOrderFields;
 use WCCheckoutSuite\Checkout\Classic\ClassicOrderUploads;
 use WCCheckoutSuite\Checkout\Classic\ClassicValidation;
 use WCCheckoutSuite\Http\Admin\CatalogController;
+use WCCheckoutSuite\Admin\Customers\CustomerProfilePanel;
 use WCCheckoutSuite\Admin\Orders\OrderFieldsPanel;
 use WCCheckoutSuite\Checkout\CustomerOrderFields;
 use WCCheckoutSuite\Account\MyAccountSections;
@@ -286,6 +287,10 @@ final class Plugin {
 		// A customer profile is not an order projection. These endpoints create
 		// authenticated My Account pages backed by customer-owned values.
 		MyAccountSections::register();
+
+		// The staff half of the same values: the panel on the profile screen WordPress
+		// already renders, which WooCommerce itself uses for the customer's addresses.
+		CustomerProfilePanel::register();
 
 		// The order e-mails. The hook every order e-mail template fires carries which
 		// audience the message is for and which format part is being rendered, so the two

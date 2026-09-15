@@ -143,8 +143,10 @@ decisão, tomada no mesmo sítio.
   tipos de ficheiro, e a razão está escrita no próprio código: o ciclo de vida do ficheiro
   privado da conta não existe.
 - **Usar uma página existente da conta** (Detalhes da conta e afins) em vez de criar uma nova.
-- **Separar os destinos**: «Minha Conta» e «Admin → Perfil do cliente» continuam unificados em
-  `customer_profile`; a separação e a migração assistida pertencem à especificação.
+- **Separar os destinos**: feito depois desta passagem. `customer_profile` deu lugar a
+  `customer_account` (a página do cliente em Minha Conta) e `admin_customer` (o painel no perfil do
+  utilizador, para a equipa), com recusa pelo nome da chave retirada e escolha no editor. Ver
+  `docs/validation/DESTINOS-MINHA-CONTA-E-PERFIL-ADMIN.md`.
 - **Exclusão que só desvincula**, `show_title` por omissão no checkout, e o editor por destino
   sem o modal de áreas.
 - **A rota `/schema/update` não voltou.** Se um dia voltar, volta com o mesmo problema: dois

@@ -76,9 +76,11 @@ O gate da F14 pede três coisas, e as três estão provadas por um harness cada:
 
 **Limites que ficam registados:**
 
-- **`customer_profile`** tem superfície e dados desde a passagem de recuperação (§2.3): a área é servida por
-  páginas de Minha Conta que gravam no cliente. O que ainda não existe ali é upload (o ciclo de vida do
-  ficheiro privado da conta) e o reuso de uma página de conta que já exista.
+- **`customer_profile`** tem superfície e dados desde a passagem de recuperação (§2.3): a área era servida por
+  páginas de Minha Conta que gravam no cliente. Esse destino foi depois dividido em `customer_account` (a
+  página do cliente) e `admin_customer` (o painel no perfil do utilizador, para a equipa), com a migração
+  assistida descrita em `docs/validation/DESTINOS-MINHA-CONTA-E-PERFIL-ADMIN.md`. O que ainda não existe ali é
+  upload (o ciclo de vida do ficheiro privado da conta) e o reuso de uma página de conta que já exista.
 - **As ações por destino** (aprovar, pedir correção, reenviar) estão modeladas, validadas e aplicadas como
   *permissões* (WCCS-074); o acto que as executa não pertence a nenhuma tarefa do roadmap e não é prometido em
   superfície nenhuma (WCCS-075, §4).

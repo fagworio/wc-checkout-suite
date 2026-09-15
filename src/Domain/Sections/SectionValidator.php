@@ -59,6 +59,21 @@ final class SectionValidator {
 	private const ACCOUNT_ICONS = array( 'user', 'fields', 'file', 'mail' );
 
 	/**
+	 * The area served by the customer's own page in My Account.
+	 */
+	private const ACCOUNT_AREA = 'customer_account';
+
+	/**
+	 * The destinations whose values belong to the customer.
+	 *
+	 * Both are surfaces the customer's own data is read from or written to, with no
+	 * order in hand, so a field linked into either has to store on the customer.
+	 *
+	 * @var array<int,string>
+	 */
+	private const CUSTOMER_SURFACES = array( 'customer_account', 'admin_customer' );
+
+	/**
 	 * Validates a section definition on its own.
 	 *
 	 * @param SectionDefinition $section Section.
@@ -178,7 +193,7 @@ final class SectionValidator {
 			);
 		}
 
-		if ( $section->is_offered_in( 'customer_profile' ) ) {
+		if ( $section->is_offered_in( self::ACCOUNT_AREA ) ) {
 			$result = $result->merge( self::validate_account_presentation( $section ) );
 		}
 
@@ -322,7 +337,7 @@ final class SectionValidator {
 				$seen[ $id ] = true;
 			}
 
-			if ( $section->is_offered_in( 'customer_profile' ) ) {
+			if ( $section->is_offered_in( self::ACCOUNT_AREA ) ) {
 				$account = $section->account();
 				$slug    = isset( $account['slug'] ) ? trim( (string) $account['slug'] ) : '';
 
@@ -462,35 +477,40 @@ final class SectionValidator {
 				}
 			}
 
-			// An account page is the customer's own data, and it writes where the
-			// customer lives. A field linked to the profile area whose section is an
-			// account page therefore has to store on the customer: the page would
-			// otherwise offer a form that saves to a scope nothing provides, which is
-			// configuration the merchant believes is in place and which does nothing.
-			$account = $definition->destinations()['customer_profile'] ?? array();
-			$target  = isset( $account['section'] ) ? (string) $account['section'] : '';
+			// A customer surface reads and writes the customer's own data, and it does
+			// so with no order in hand. A field linked into one of them therefore has to
+			// store on the customer: the page or the panel would otherwise offer a form
+			// that saves to a scope nothing provides, which is configuration the merchant
+			// believes is in place and which does nothing.
+			foreach ( self::CUSTOMER_SURFACES as $surface ) {
+				$link   = $definition->destinations()[ $surface ] ?? array();
+				$target = isset( $link['section'] ) ? (string) $link['section'] : '';
 
-			if ( ! empty( $account['enabled'] ) && '' !== $target && isset( $declared[ $target ] ) ) {
-				$page = $declared[ $target ]->account();
-
-				if ( '' !== (string) ( $page['slug'] ?? '' ) && 'customer' !== (string) ( $definition->to_array()['storage']['scope'] ?? '' ) ) {
-					$result = $result->merge(
-						ValidationResult::invalid(
-							'account_section_requires_customer_storage',
-							sprintf(
-								/* translators: 1: section id, 2: field id */
-								__( 'The account page "%1$s" writes to the customer, so the field "%2$s" must store its value on the customer.', 'wc-checkoutsuite' ),
-								$target,
-								$definition->id()
-							),
-							array(
-								'field'       => $definition->id(),
-								'destination' => 'customer_profile',
-								'section'     => $target,
-							)
-						)
-					);
+				if ( empty( $link['enabled'] ) || '' === $target || ! isset( $declared[ $target ] ) ) {
+					continue;
 				}
+
+				if ( 'customer' === (string) ( $definition->to_array()['storage']['scope'] ?? '' ) ) {
+					continue;
+				}
+
+				$result = $result->merge(
+					ValidationResult::invalid(
+						'account_section_requires_customer_storage',
+						sprintf(
+							/* translators: 1: destination key, 2: section id, 3: field id */
+							__( 'The surface "%1$s" writes to the customer, so the field "%3$s" linked into the section "%2$s" must store its value on the customer.', 'wc-checkoutsuite' ),
+							$surface,
+							$target,
+							$definition->id()
+						),
+						array(
+							'field'       => $definition->id(),
+							'destination' => $surface,
+							'section'     => $target,
+						)
+					)
+				);
 			}
 
 			// The approval flow names an area and a section too, and they are checked

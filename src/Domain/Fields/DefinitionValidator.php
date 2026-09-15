@@ -204,22 +204,29 @@ final class DefinitionValidator {
 		// be allowed to perform, or a malformed entry is refused rather than dropped.
 		$result = $result->merge( $this->validate_destinations( $id, $destinations, $stores_value, $stores_file ) );
 
-		// A profile link that says how the field behaves there must say something the
-		// account page can carry out. Whether the *value* may live with the customer is a
-		// question about the section the link points at, and it is asked where both parts
-		// are known: {@see SectionValidator::validate_references()}. Asking it here would
-		// refuse a link whose section the document has not been consulted for, which is
-		// how a configuration that is fine in the document becomes invalid in isolation.
-		$account_link = $destinations['customer_profile'] ?? null;
-		if ( is_array( $account_link ) && ! empty( $account_link['enabled'] ) && isset( $account_link['mode'] ) ) {
-			$mode = (string) $account_link['mode'];
+		// A link into a customer surface that says how the field behaves there must say
+		// something that surface can carry out. Whether the *value* may live with the
+		// customer is a question about the section the link points at, and it is asked
+		// where both parts are known: {@see SectionValidator::validate_references()}.
+		// Asking it here would refuse a link whose section the document has not been
+		// consulted for, which is how a configuration that is fine in the document
+		// becomes invalid in isolation.
+		foreach ( self::customer_surfaces() as $surface ) {
+			$surface_link = $destinations[ $surface ] ?? null;
 
-			if ( ! in_array( $mode, array( 'edit', 'view' ), true ) ) {
+			if ( ! is_array( $surface_link ) || empty( $surface_link['enabled'] ) || ! isset( $surface_link['mode'] ) ) {
+				continue;
+			}
+
+			if ( ! in_array( (string) $surface_link['mode'], array( 'edit', 'view' ), true ) ) {
 				$result = $result->merge(
 					ValidationResult::invalid(
 						'invalid_account_field_mode',
-						__( 'A My Account field must be editable or read-only.', 'wc-checkoutsuite' ),
-						array( 'field' => $id )
+						__( 'A field on a customer surface must be editable or read-only.', 'wc-checkoutsuite' ),
+						array(
+							'field'       => $id,
+							'destination' => $surface,
+						)
 					)
 				);
 			}
@@ -249,6 +256,19 @@ final class DefinitionValidator {
 	}
 
 	/**
+	 * The destinations whose values belong to the customer rather than to an order.
+	 *
+	 * They share the two rules that only make sense together: the field has to store on
+	 * the customer, because neither surface has an order to write to, and the link may
+	 * say the customer edits the value or only reads it.
+	 *
+	 * @return array<int, string>
+	 */
+	public static function customer_surfaces(): array {
+		return array( 'customer_account', 'admin_customer' );
+	}
+
+	/**
 	 * Validates the destinations of a field.
 	 *
 	 * The actions are the file's: showing a name, opening it, taking a copy, approving
@@ -267,6 +287,34 @@ final class DefinitionValidator {
 
 		foreach ( $destinations as $key => $entry ) {
 			$key = (string) $key;
+
+			$replacements = DefinitionVocabulary::replacements_for_ambiguous_destination( $key );
+
+			if ( array() !== $replacements ) {
+				// Two surfaces were one, and only the merchant can say which one a
+				// stored link meant. Refusing it by name is what lets the editor ask;
+				// choosing for them would either publish the customer's own page to
+				// staff or hide it from them without anybody deciding.
+				$result = $result->merge(
+					ValidationResult::invalid(
+						'ambiguous_destination',
+						sprintf(
+							/* translators: 1: destination key, 2: field id, 3: comma separated destination keys */
+							__( 'The destination "%1$s" was split into two and the field "%2$s" has to say which one it means: %3$s.', 'wc-checkoutsuite' ),
+							$key,
+							$id,
+							implode( ', ', $replacements )
+						),
+						array(
+							'field'        => $id,
+							'destination'  => $key,
+							'replacements' => $replacements,
+						)
+					)
+				);
+
+				continue;
+			}
 
 			if ( ! in_array( $key, DefinitionVocabulary::destination_values(), true ) ) {
 				$result = $result->merge(

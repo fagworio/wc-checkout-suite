@@ -160,10 +160,19 @@ final class DefinitionVocabulary {
 				'actions'     => array( 'show_metadata', 'view', 'download' ),
 			),
 			array(
-				'value'       => 'customer_profile',
-				'label'       => __( 'Customer profile', 'wc-checkoutsuite' ),
+				'value'       => 'customer_account',
+				'label'       => __( 'My Account page, for the customer', 'wc-checkoutsuite' ),
 				'description' => __(
-					'Shown in the customer account, outside one order. A section offered here and given an account presentation becomes its own authenticated page in My Account.',
+					'The customer\'s own page inside My Account, outside any order. A section offered here and given an account presentation becomes its own authenticated page that the customer fills in.',
+					'wc-checkoutsuite'
+				),
+				'actions'     => array( 'show_metadata', 'view' ),
+			),
+			array(
+				'value'       => 'admin_customer',
+				'label'       => __( 'Customer profile, for staff', 'wc-checkoutsuite' ),
+				'description' => __(
+					'Shown to staff on the customer\'s own profile screen, outside any order. The values belong to the customer, not to an order.',
 					'wc-checkoutsuite'
 				),
 				'actions'     => array( 'show_metadata', 'view' ),
@@ -300,6 +309,34 @@ final class DefinitionVocabulary {
 		}
 
 		return array();
+	}
+
+	/**
+	 * The retired destination whose stored links are ambiguous.
+	 *
+	 * `customer_profile` meant two different surfaces at once — the customer's own
+	 * page in My Account, and the panel staff read on the customer's profile — and a
+	 * stored link cannot say which one the merchant meant. `my_account` is the other
+	 * key an intermediate version wrote for the first of them.
+	 *
+	 * A stored configuration is not reinterpreted on the store's behalf: a link with
+	 * either key is refused with its own code, and the editor asks which surface was
+	 * meant before it rewrites anything.
+	 *
+	 * @var array<int, string>
+	 */
+	public const AMBIGUOUS_DESTINATIONS = array( 'customer_profile', 'my_account' );
+
+	/**
+	 * The destinations that replace one ambiguous destination.
+	 *
+	 * @param string $destination Destination key found in a stored definition.
+	 * @return array<int, string> Replacements, or an empty array when the key is not ambiguous.
+	 */
+	public static function replacements_for_ambiguous_destination( string $destination ): array {
+		return in_array( $destination, self::AMBIGUOUS_DESTINATIONS, true )
+			? array( 'customer_account', 'admin_customer' )
+			: array();
 	}
 
 	/**

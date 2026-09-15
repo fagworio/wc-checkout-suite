@@ -23,9 +23,11 @@
  *   `admin_order` and `customer_order`. That pair is what makes "the page decides the
  *   area" observable: the same order shows one field on the thank-you page and the other
  *   in the account, never both.
- * - `campo_sem_vinculo` is linked nowhere, and `preferencia_perfil` only to
- *   `customer_profile`, which has no surface yet. Both are filled at checkout, so the
- *   negative half of the audit can be observed on a real page.
+ * - `campo_sem_vinculo` is linked nowhere, and `preferencia_perfil` to the two customer
+ *   surfaces — the page the customer fills in inside Minha Conta, and the panel staff read
+ *   on the customer's profile — under two different titles, which is one store with two
+ *   readers. Both fields are filled at checkout, so the negative half of the audit can be
+ *   observed on a real page.
  * - `arquivo_autorizacao` is a **file** field linked to five destinations with different
  *   actions each, which is the per-destination matrix of section 12 on a real screen. It
  *   cannot be uploaded on this store (its private directory is served over HTTP, recorded
@@ -193,12 +195,19 @@ $wccs_fields = array(
 		'settings'       => array(),
 		'destinations'   => wccs_seed_destinations(
 			array(
-				'customer_profile' => array(
+				'customer_account' => array(
 					'enabled'  => true,
 					'section'  => 'preferencias_do_perfil',
 					'title'    => 'Como prefere ser contactado',
 					'position' => 10,
 					'mode'     => 'edit',
+				),
+				'admin_customer'   => array(
+					'enabled'  => true,
+					'section'  => 'preferencias_do_perfil',
+					'title'    => 'Preferência de contacto (equipa)',
+					'position' => 10,
+					'mode'     => 'view',
 				),
 			)
 		),
@@ -340,7 +349,7 @@ $wccs_sections = array(
 		'title'        => 'Preferências',
 		'position'     => 60,
 		'location'     => 'order',
-		'areas'        => array( 'customer_profile' ),
+		'areas'        => array( 'customer_account', 'admin_customer' ),
 		// A section offered in the profile area is an authenticated page in My Account:
 		// its own address, its own entry in the account menu, and the icon the design
 		// draws for it.
