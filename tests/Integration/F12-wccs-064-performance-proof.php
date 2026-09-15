@@ -486,8 +486,8 @@ wccs_proof_check(
 $wccs_document_keys = array_keys( (array) json_decode( $wccs_raw, true ) );
 
 wccs_proof_check(
-	'It is the documented shape: revision, version, timestamp, author, fields, sections, settings',
-	array() === array_diff( $wccs_document_keys, array( 'revision', 'schema_version', 'updated_at', 'updated_by', 'fields', 'sections', 'settings', 'migration_history' ) ),
+	'It is the documented shape: revision, version, timestamp, author, fields, sections, settings, checkouts',
+	array() === array_diff( $wccs_document_keys, array( 'revision', 'schema_version', 'updated_at', 'updated_by', 'fields', 'sections', 'settings', 'migration_history', 'profiles' ) ),
 	'keys=' . wp_json_encode( $wccs_document_keys )
 );
 

@@ -68,6 +68,11 @@ final class SchemaTransfer {
 	public const MAX_SECTIONS = 50;
 
 	/**
+	 * Most checkout profiles a file may carry.
+	 */
+	public const MAX_PROFILES = 20;
+
+	/**
 	 * Builds the export envelope.
 	 *
 	 * @param SchemaDocument $document Document to export.
@@ -93,6 +98,7 @@ final class SchemaTransfer {
 				'fields'         => $array['fields'] ?? array(),
 				'sections'       => $array['sections'] ?? array(),
 				'settings'       => $array['settings'] ?? array(),
+				'profiles'       => $array['profiles'] ?? array(),
 			),
 		);
 	}
@@ -198,17 +204,20 @@ final class SchemaTransfer {
 
 		$fields   = isset( $schema['fields'] ) && is_array( $schema['fields'] ) ? $schema['fields'] : array();
 		$sections = isset( $schema['sections'] ) && is_array( $schema['sections'] ) ? $schema['sections'] : array();
+		$profiles = isset( $schema['profiles'] ) && is_array( $schema['profiles'] ) ? array_values( $schema['profiles'] ) : array();
 
-		if ( count( $fields ) > self::MAX_FIELDS || count( $sections ) > self::MAX_SECTIONS ) {
+		if ( count( $fields ) > self::MAX_FIELDS || count( $sections ) > self::MAX_SECTIONS || count( $profiles ) > self::MAX_PROFILES ) {
 			$report['errors'][] = self::error(
 				'too_many_things',
 				sprintf(
-					/* translators: 1: field count, 2: largest accepted, 3: section count, 4: largest accepted. */
-					__( 'The file carries %1$d fields and %3$d sections; the limits are %2$d and %4$d.', 'wc-checkoutsuite' ),
+					/* translators: 1: field count, 2: largest accepted, 3: section count, 4: largest accepted section count, 5: profile count, 6: largest accepted profile count. */
+					__( 'The file carries %1$d fields, %3$d sections and %5$d checkouts; the limits are %2$d, %4$d and %6$d.', 'wc-checkoutsuite' ),
 					count( $fields ),
 					self::MAX_FIELDS,
 					count( $sections ),
-					self::MAX_SECTIONS
+					self::MAX_SECTIONS,
+					count( $profiles ),
+					self::MAX_PROFILES
 				)
 			);
 
@@ -224,6 +233,7 @@ final class SchemaTransfer {
 				'fields'         => $fields,
 				'sections'       => $sections,
 				'settings'       => isset( $schema['settings'] ) && is_array( $schema['settings'] ) ? $schema['settings'] : array(),
+				'profiles'       => $profiles,
 			)
 		);
 
@@ -261,6 +271,7 @@ final class SchemaTransfer {
 			'bytes'    => self::MAX_BYTES,
 			'fields'   => self::MAX_FIELDS,
 			'sections' => self::MAX_SECTIONS,
+			'profiles' => self::MAX_PROFILES,
 		);
 	}
 

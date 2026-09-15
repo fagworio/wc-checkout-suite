@@ -127,10 +127,14 @@ final class StoreApiExtension {
 	/**
 	 * The fields the namespace carries.
 	 *
+	 * Read for the cart, not for the store: the Store API schema is built per request and the
+	 * profile decides which containers this cart's checkout has, so a field whose container the
+	 * resolved profile does not declare is not part of this checkout's payload.
+	 *
 	 * @return array<int, array<string, mixed>>
 	 */
 	public static function fields(): array {
-		$document = PublishedDocument::read();
+		$document = PublishedDocument::for_cart( 'blocks' );
 
 		$sections = array();
 
@@ -228,19 +232,27 @@ final class StoreApiExtension {
 	/**
 	 * The definitions a submission can carry values for, keyed by field id.
 	 *
+	 * The definitions come from the same cart-scoped read the payload did, so the two halves of the
+	 * namespace cannot disagree about which fields this checkout has.
+	 *
 	 * @return array<string, array<string, mixed>>
 	 */
 	public static function definitions(): array {
+		$published = array();
+
+		foreach ( PublishedDocument::for_cart( 'blocks' )->fields() as $raw ) {
+			if ( is_array( $raw ) && isset( $raw['id'] ) ) {
+				$published[ (string) $raw['id'] ] = $raw;
+			}
+		}
+
 		$definitions = array();
 
 		foreach ( self::fields() as $field ) {
 			$id = (string) $field['name'];
 
-			foreach ( PublishedDocument::read()->fields() as $raw ) {
-				if ( is_array( $raw ) && isset( $raw['id'] ) && $id === (string) $raw['id'] ) {
-					$definitions[ $id ] = $raw;
-					break;
-				}
+			if ( isset( $published[ $id ] ) ) {
+				$definitions[ $id ] = $published[ $id ];
 			}
 		}
 

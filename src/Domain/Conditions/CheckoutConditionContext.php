@@ -93,11 +93,15 @@ final class CheckoutConditionContext {
 	/**
 	 * Builds the context.
 	 *
-	 * @param array<string, mixed> $fields Canonical values of the fields already
-	 *                                     processed in this submission.
+	 * @param array<string, mixed> $fields  Canonical values of the fields already
+	 *                                      processed in this submission.
+	 * @param string               $adapter Checkout the rule is being asked for. The entries are the
+	 *                                      same in both — a cart total is a cart total — and the
+	 *                                      adapter travels so that a rule written for one checkout
+	 *                                      can be told which one it is answering.
 	 * @return FieldContext
 	 */
-	public function context( array $fields = array() ): FieldContext {
+	public function context( array $fields = array(), string $adapter = 'classic' ): FieldContext {
 		return new FieldContext(
 			array(
 				'country'            => $this->country(),
@@ -110,7 +114,7 @@ final class CheckoutConditionContext {
 				'cart_total'         => $this->cart_total(),
 				'fields'             => $fields,
 			),
-			'classic'
+			$adapter
 		);
 	}
 

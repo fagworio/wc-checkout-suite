@@ -14,6 +14,7 @@ use WCCheckoutSuite\Domain\Fields\DefinitionValidator;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Fields\ValidationResult;
 use WCCheckoutSuite\Domain\Conditions\ConditionValidator;
+use WCCheckoutSuite\Domain\Checkout\ProfileValidator;
 use WCCheckoutSuite\Domain\Sections\SectionValidator;
 
 /**
@@ -175,6 +176,14 @@ final class SchemaRepository {
 			return WriteResult::invalid( $sections->errors() );
 		}
 
+		// And the profiles, which decide which composition a cart is served by. A profile is not a
+		// label on the document: it is the thing that selects it, so it is checked here too.
+		$profiles = $this->check_profiles( $document );
+
+		if ( ! $profiles->is_valid() ) {
+			return WriteResult::invalid( $profiles->errors() );
+		}
+
 		// And the destination rules, for the same reason the origin rule is here: a
 		// link to a destination that does not exist, an action a destination may not
 		// perform, or an approval flow that does not say where the review happens is
@@ -235,11 +244,26 @@ final class SchemaRepository {
 	}
 
 	/**
+	 * Applies the profile rules to a document.
+	 *
+	 * Here for the same reason the section rules are: a profile whose containers are not checkout
+	 * containers, or two profiles both claiming to be the fallback, are not work in progress — they
+	 * are configuration the merchant believes is deciding something. Letting them sit in the draft
+	 * would only move the refusal to publication, where the reason is already three screens away.
+	 *
+	 * @param SchemaDocument $document Document to check.
+	 * @return ValidationResult
+	 */
+	private function check_profiles( SchemaDocument $document ): ValidationResult {
+		return ProfileValidator::validate_profiles( $document->profiles() );
+	}
+
+	/**
 	 * Applies the origin rule to every field of a document.
 	 *
-	 * This is the only rule from full validation that a draft write enforces.
-	 * Everything else is deliberately left alone so a half-finished field can be
-	 * saved and continued later.
+	 * This is the only field rule from full validation that a draft write enforces. Everything else
+	 * about a field is deliberately left alone so a half-finished one can be saved and continued
+	 * later.
 	 *
 	 * @param SchemaDocument $document Document to check.
 	 * @return ValidationResult
@@ -305,7 +329,8 @@ final class SchemaRepository {
 			$draft->fields(),
 			$draft->sections(),
 			$draft->settings(),
-			$draft->migration_history()
+			$draft->migration_history(),
+			$draft->profiles()
 		);
 
 		$result = $this->write( self::SLOT_PUBLISHED, $document, $published->revision() );
@@ -388,6 +413,11 @@ final class SchemaRepository {
 		// what it holds, do two fields depend on each other — can only be answered
 		// with the whole document in hand.
 		$result = $result->merge( ConditionValidator::validate_document( $document->fields() ) );
+
+		// A profile decides which composition a cart is served by, so it is validated with the
+		// document rather than on save: a profile that cannot answer is a checkout the merchant
+		// believes is running and that never runs (§6.11).
+		$result = $result->merge( ProfileValidator::validate_profiles( $document->profiles() ) );
 
 		foreach ( $document->fields() as $index => $raw_field ) {
 			if ( ! is_array( $raw_field ) ) {

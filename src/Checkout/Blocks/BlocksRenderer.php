@@ -138,10 +138,15 @@ final class BlocksRenderer {
 	/**
 	 * The fields that need a component of ours.
 	 *
+	 * Read for the cart, not for the store: a profile composes the checkout per cart (§6.9), and the
+	 * shape of the payload follows the composition — a container the resolved profile does not
+	 * declare takes its fields out of this checkout instead of leaving them in a place the
+	 * composition does not have.
+	 *
 	 * @return array{fields: array<int, array<string, mixed>>, report: array<int, array{field: string, code: string, reason: string}>}
 	 */
 	public static function fields(): array {
-		$document = PublishedDocument::read();
+		$document = PublishedDocument::for_cart( 'blocks' );
 		$masks    = \WCCheckoutSuite\Domain\Registries::instance()->masks();
 
 		$sections = array();

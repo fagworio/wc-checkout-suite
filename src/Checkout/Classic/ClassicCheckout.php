@@ -44,7 +44,9 @@ final class ClassicCheckout {
 	 * @return array<string, mixed>
 	 */
 	public static function filter_fields( array $fields ): array {
-		$document = PublishedDocument::read();
+		// The cart-scoped read, not the store-wide one: which composition runs is decided before
+		// the effective schema is assembled (§1844), and this is the moment it is assembled.
+		$document = PublishedDocument::for_cart( 'classic' );
 
 		if ( array() === $document->fields() ) {
 			return $fields;

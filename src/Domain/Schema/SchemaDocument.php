@@ -35,6 +35,7 @@ final class SchemaDocument {
 	 * @param array<int, array<string,mixed>> $sections       Section definitions.
 	 * @param array<string, mixed>            $settings          Store-wide schema settings.
 	 * @param array<int, array<string,mixed>> $migration_history Applied migrations.
+	 * @param array<int, array<string,mixed>> $profiles          Checkout profiles.
 	 */
 	public function __construct(
 		private int $revision,
@@ -44,7 +45,8 @@ final class SchemaDocument {
 		private array $fields,
 		private array $sections,
 		private array $settings,
-		private array $migration_history
+		private array $migration_history,
+		private array $profiles = array()
 	) {
 	}
 
@@ -72,7 +74,8 @@ final class SchemaDocument {
 			isset( $data['fields'] ) && is_array( $data['fields'] ) ? array_values( $data['fields'] ) : array(),
 			isset( $data['sections'] ) && is_array( $data['sections'] ) ? array_values( $data['sections'] ) : array(),
 			isset( $data['settings'] ) && is_array( $data['settings'] ) ? $data['settings'] : array(),
-			isset( $data['migration_history'] ) && is_array( $data['migration_history'] ) ? array_values( $data['migration_history'] ) : array()
+			isset( $data['migration_history'] ) && is_array( $data['migration_history'] ) ? array_values( $data['migration_history'] ) : array(),
+			isset( $data['profiles'] ) && is_array( $data['profiles'] ) ? array_values( $data['profiles'] ) : array()
 		);
 	}
 
@@ -131,6 +134,15 @@ final class SchemaDocument {
 	}
 
 	/**
+	 * Checkout profiles.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function profiles(): array {
+		return $this->profiles;
+	}
+
+	/**
 	 * Returns the next revision of this document.
 	 *
 	 * @param int    $user_id   User producing the revision.
@@ -146,7 +158,8 @@ final class SchemaDocument {
 			$this->fields,
 			$this->sections,
 			$this->settings,
-			$this->migration_history
+			$this->migration_history,
+			$this->profiles
 		);
 	}
 
@@ -157,7 +170,7 @@ final class SchemaDocument {
 	 * @return self
 	 */
 	public function with_fields( array $fields ): self {
-		return new self( $this->revision, $this->schema_version, $this->updated_at, $this->updated_by, array_values( $fields ), $this->sections, $this->settings, $this->migration_history );
+		return new self( $this->revision, $this->schema_version, $this->updated_at, $this->updated_by, array_values( $fields ), $this->sections, $this->settings, $this->migration_history, $this->profiles );
 	}
 
 	/**
@@ -167,7 +180,7 @@ final class SchemaDocument {
 	 * @return self
 	 */
 	public function with_sections( array $sections ): self {
-		return new self( $this->revision, $this->schema_version, $this->updated_at, $this->updated_by, $this->fields, array_values( $sections ), $this->settings, $this->migration_history );
+		return new self( $this->revision, $this->schema_version, $this->updated_at, $this->updated_by, $this->fields, array_values( $sections ), $this->settings, $this->migration_history, $this->profiles );
 	}
 
 	/**
@@ -177,7 +190,17 @@ final class SchemaDocument {
 	 * @return self
 	 */
 	public function with_settings( array $settings ): self {
-		return new self( $this->revision, $this->schema_version, $this->updated_at, $this->updated_by, $this->fields, $this->sections, $settings, $this->migration_history );
+		return new self( $this->revision, $this->schema_version, $this->updated_at, $this->updated_by, $this->fields, $this->sections, $settings, $this->migration_history, $this->profiles );
+	}
+
+	/**
+	 * Returns a copy with different checkout profiles.
+	 *
+	 * @param array<int, array<string, mixed>> $profiles Checkout profiles.
+	 * @return self
+	 */
+	public function with_profiles( array $profiles ): self {
+		return new self( $this->revision, $this->schema_version, $this->updated_at, $this->updated_by, $this->fields, $this->sections, $this->settings, $this->migration_history, array_values( $profiles ) );
 	}
 
 	/**
@@ -187,7 +210,7 @@ final class SchemaDocument {
 	 * @return self
 	 */
 	public function with_migration_history( array $history ): self {
-		return new self( $this->revision, $this->schema_version, $this->updated_at, $this->updated_by, $this->fields, $this->sections, $this->settings, array_values( $history ) );
+		return new self( $this->revision, $this->schema_version, $this->updated_at, $this->updated_by, $this->fields, $this->sections, $this->settings, array_values( $history ), $this->profiles );
 	}
 
 	/**
@@ -205,6 +228,7 @@ final class SchemaDocument {
 			'sections'          => $this->sections,
 			'settings'          => $this->settings,
 			'migration_history' => $this->migration_history,
+			'profiles'          => $this->profiles,
 		);
 	}
 

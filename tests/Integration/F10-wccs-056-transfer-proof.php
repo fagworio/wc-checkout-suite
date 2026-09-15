@@ -261,7 +261,9 @@ wccs_proof_check(
 wccs_proof_check(
 	'And carries only the document: no option, no environment record, no order',
 	array( 'format', 'version', 'exported_at', 'exported_from', 'schema' ) === array_keys( (array) $wccs_envelope )
-		&& array( 'schema_version', 'fields', 'sections', 'settings' ) === array_keys( (array) ( $wccs_envelope['schema'] ?? array() ) )
+		// `profiles` is part of the document since Fase 7: a store that exports its configuration
+		// and imports it elsewhere would otherwise lose the checkouts it wrote.
+		&& array( 'schema_version', 'fields', 'sections', 'settings', 'profiles' ) === array_keys( (array) ( $wccs_envelope['schema'] ?? array() ) )
 );
 
 // ---------------------------------------------------------------------------

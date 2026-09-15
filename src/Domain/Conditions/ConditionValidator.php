@@ -80,6 +80,36 @@ final class ConditionValidator {
 	}
 
 	/**
+	 * Validates a rule tree that is stored bare, without the envelope a field uses.
+	 *
+	 * A field stores `{ visible: <tree> }` because the envelope names what the rule decides, and a
+	 * field can decide more than one thing. Nothing else does: a profile's rule decides which
+	 * checkout runs and a status rule decides when a status is reached (§3.5), so those carry the
+	 * tree itself. That is the only difference — the tree is the same tree, walked by the same
+	 * code, against the same vocabularies, which is what "there is no second rule dialect" (§14)
+	 * has to mean in practice.
+	 *
+	 * @param string $owner Identifier of whatever the rule belongs to, for the error context.
+	 * @param mixed  $tree  Rule tree, or nothing at all.
+	 * @return ValidationResult
+	 */
+	public static function validate_tree( string $owner, mixed $tree ): ValidationResult {
+		if ( null === $tree || array() === $tree ) {
+			return ValidationResult::valid();
+		}
+
+		if ( ! is_array( $tree ) ) {
+			return ValidationResult::invalid(
+				'invalid_conditions',
+				__( 'The conditions must be a rule, not a value of another kind.', 'wc-checkoutsuite' ),
+				array( 'field' => $owner )
+			);
+		}
+
+		return self::walk( $owner, $tree, 'conditions' );
+	}
+
+	/**
 	 * Validates one rule tree.
 	 *
 	 * @param string $field_id Field the rules belong to.

@@ -9,6 +9,8 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Checkout\Classic;
 
+use WCCheckoutSuite\Domain\Checkout\CheckoutProfileResolver;
+use WCCheckoutSuite\Domain\Conditions\CheckoutConditionContext;
 use WCCheckoutSuite\Domain\Registries;
 use WCCheckoutSuite\Domain\Schema\CoreFieldGuard;
 use WCCheckoutSuite\Domain\Schema\SchemaDocument;
@@ -55,5 +57,34 @@ final class PublishedDocument {
 		);
 
 		return $repository->read( SchemaRepository::SLOT_PUBLISHED );
+	}
+
+	/**
+	 * Reads the published schema as one cart is served by it.
+	 *
+	 * Section 1844 puts profile selection **before** the effective schema is assembled, so this is
+	 * the reader every cart-scoped surface uses: it resolves the profile against the trusted cart
+	 * context the server holds (§11) and returns the composition that follows.
+	 *
+	 * What it is not is a different document. The fields are the published ones, the store's own
+	 * composition is still the answer when no profile matches, and a store that never wrote a
+	 * profile pays one `count()` for the call. `read()` stays for every reader that is not serving a
+	 * cart — the order panel, the emails, the admin screens — because those are not the checkout and
+	 * a profile has nothing to say about them.
+	 *
+	 * @param string $adapter Checkout asking.
+	 * @return SchemaDocument
+	 */
+	public static function for_cart( string $adapter = 'classic' ): SchemaDocument {
+		$document = self::read();
+
+		if ( array() === $document->profiles() ) {
+			return $document;
+		}
+
+		$context = ( new CheckoutConditionContext() )->context( array(), $adapter );
+		$profile = CheckoutProfileResolver::resolve( $document->profiles(), $context );
+
+		return CheckoutProfileResolver::compose( $document, $profile );
 	}
 }

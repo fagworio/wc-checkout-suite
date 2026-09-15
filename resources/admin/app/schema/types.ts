@@ -138,6 +138,14 @@ export interface SchemaDocument {
 	sections: SectionDefinition[];
 	settings: Record< string, unknown >;
 	migration_history?: unknown[];
+	/**
+	 * The checkouts this store runs beyond its own.
+	 *
+	 * The store's own composition is the document itself and always exists; a profile is an
+	 * additional one, selected by the cart (§3.4, §6.9). Declared as a loose shape here and
+	 * narrowed by `schema/profiles` so this module does not depend on the profiles module.
+	 */
+	profiles?: Array< Record< string, unknown > >;
 }
 
 /**

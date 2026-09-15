@@ -290,7 +290,8 @@ final class SchemaController {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function update_draft( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$incoming = SchemaDocument::from_array( (array) $request->get_param( 'schema' ) );
+		$payload  = (array) $request->get_param( 'schema' );
+		$incoming = SchemaDocument::from_array( $payload );
 		$expected = $this->expected_revision( $request );
 
 		// The revision is owned by the server, never by the request body.
@@ -301,8 +302,16 @@ final class SchemaController {
 		$document = $current
 			->with_fields( $incoming->fields() )
 			->with_sections( $incoming->sections() )
-			->with_settings( $incoming->settings() )
-			->bumped( get_current_user_id(), gmdate( 'c' ) );
+			->with_settings( $incoming->settings() );
+
+		// An absent key means the client does not speak about profiles, not that it wants them
+		// gone. A save from a screen that has no profile editor must not delete the checkouts the
+		// merchant wrote elsewhere, so the list is only replaced when it is sent.
+		if ( array_key_exists( 'profiles', $payload ) ) {
+			$document = $document->with_profiles( $incoming->profiles() );
+		}
+
+		$document = $document->bumped( get_current_user_id(), gmdate( 'c' ) );
 
 		// Saving a draft never validates against the published schema and never
 		// touches what the storefront is currently serving.
