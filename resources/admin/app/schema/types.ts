@@ -52,6 +52,17 @@ export interface FieldDefinition {
 	 */
 	bindings?: FieldBinding[];
 	collection_surface?: 'checkout' | 'my_account';
+	/**
+	 * Which ways a customer's value flows (§7.7, §10.4).
+	 *
+	 * `to_checkout` fills the checkout with the value the customer already has; `from_checkout`
+	 * keeps what they type at the checkout on their profile. Named separately on purpose: one
+	 * direction never implies the other.
+	 */
+	sync?: {
+		to_checkout?: boolean;
+		from_checkout?: boolean;
+	};
 	approval?: ApprovalFlow | null;
 	validators?: unknown[];
 	schema_version?: number;

@@ -46,6 +46,7 @@ final class FieldDefinition {
 	 * @param array<string, mixed>             $destinations       Where the answer may be shown, per destination.
 	 * @param array<string, mixed>|null        $approval           Optional approval flow, or null.
 	 * @param string                           $collection_surface Where the field is collected.
+	 * @param array<string, bool>              $sync               Which ways a customer value flows.
 	 * @param array<int, mixed>                $bindings           Every use of the field, as stored.
 	 * @param bool                             $canonical          Whether the document stored `bindings`.
 	 */
@@ -73,6 +74,7 @@ final class FieldDefinition {
 		private array $destinations = array(),
 		private ?array $approval = null,
 		private string $collection_surface = 'checkout',
+		private array $sync = array(),
 		private array $bindings = array(),
 		private bool $canonical = false
 	) {
@@ -90,6 +92,37 @@ final class FieldDefinition {
 	 * @param array<string, mixed> $data Raw definition.
 	 * @return array<string, mixed>
 	 */
+	/**
+	 * Which ways a customer's value flows, read from a stored definition.
+	 *
+	 * `roadmap/WC-CheckoutSuite-Especificacao-Completa-com-Referencias-Visuais` §10.4 lists the
+	 * directions separately and says not to assume bidirectional synchronisation. Two of them are
+	 * decisions this key carries:
+	 *
+	 * - `to_checkout` — **perfil → checkout**: the checkout starts with the value the customer
+	 *   already has on their profile.
+	 * - `from_checkout` — **checkout → perfil**: what the customer types at the checkout is kept
+	 *   on their profile for the next order.
+	 *
+	 * The third direction — **Minha Conta ↔ perfil** — is not a key here: the two surfaces read and
+	 * write one stored value, so who may write it is a decision of each *use*, taken by the
+	 * binding's `editable`. A use that only reads is a surface that cannot write back.
+	 *
+	 * A document written before this key existed gets both directions off: a store that never asked
+	 * for a value to travel keeps behaving exactly as it did.
+	 *
+	 * @param array<string, mixed> $data Raw definition.
+	 * @return array<string, bool>
+	 */
+	private static function sync_from( array $data ): array {
+		$raw = isset( $data['sync'] ) && is_array( $data['sync'] ) ? $data['sync'] : array();
+
+		return array(
+			'to_checkout'   => ! empty( $raw['to_checkout'] ),
+			'from_checkout' => ! empty( $raw['from_checkout'] ),
+		);
+	}
+
 	/**
 	 * The uses a stored definition carries, when it carries the final model.
 	 *
@@ -174,6 +207,7 @@ final class FieldDefinition {
 			self::destinations_from( $data ),
 			isset( $data['approval'] ) && is_array( $data['approval'] ) ? $data['approval'] : null,
 			isset( $data['collection_surface'] ) ? (string) $data['collection_surface'] : 'checkout',
+			self::sync_from( $data ),
 			self::bindings_from( $data ),
 			// Only a document that carries the list is canonical. A canonical document
 			// with nothing bound carries an empty list, and that is a decision too.
@@ -471,6 +505,36 @@ final class FieldDefinition {
 	}
 
 	/**
+	 * Which ways a customer's value flows (§10.4).
+	 *
+	 * @return array<string, bool>
+	 */
+	public function sync(): array {
+		return array(
+			'to_checkout'   => ! empty( $this->sync['to_checkout'] ),
+			'from_checkout' => ! empty( $this->sync['from_checkout'] ),
+		);
+	}
+
+	/**
+	 * Whether the checkout starts with the value the customer already has.
+	 *
+	 * @return bool
+	 */
+	public function prefills_checkout(): bool {
+		return ! empty( $this->sync['to_checkout'] );
+	}
+
+	/**
+	 * Whether what the customer types at the checkout is kept on their profile.
+	 *
+	 * @return bool
+	 */
+	public function writes_back_to_customer(): bool {
+		return ! empty( $this->sync['from_checkout'] );
+	}
+
+	/**
 	 * Exports the definition in its canonical array shape.
 	 *
 	 * @return array<string, mixed>
@@ -504,6 +568,7 @@ final class FieldDefinition {
 			'destinations'        => $this->exported_destinations(),
 			'approval'            => $this->approval,
 			'collection_surface'  => $this->collection_surface,
+			'sync'                => $this->sync,
 			'schema_version'      => $this->schema_version,
 		) + ( $this->canonical ? array( 'bindings' => $this->exported_bindings() ) : array() );
 	}

@@ -652,6 +652,172 @@ wccs_panel_check(
 );
 
 // ---------------------------------------------------------------------------
+// §10.6 — the flow a merchant configures, direction by direction.
+// ---------------------------------------------------------------------------
+wccs_panel_out( '' );
+wccs_panel_out( '6. The flows of a customer value (§7.7, §10.4)' );
+
+$wccs_panel_customer_values = new CustomerFieldsService();
+$wccs_panel_customer_values->update( $wccs_panel_user_id, array( 'documento_cliente' => '12.345.678/0001-99' ) );
+
+$wccs_panel_section = array(
+	array(
+		'id'       => 'dados_do_cliente',
+		'title'    => 'Dados do cliente',
+		'position' => 10,
+		'location' => 'order',
+		'areas'    => array( 'checkout' ),
+	),
+);
+
+$wccs_panel_prefilled = wccs_panel_field(
+	'documento_cliente',
+	'Documento',
+	'text',
+	10,
+	array( 'checkout' => array( 'enabled' => true ) ),
+	array( 'sync' => array( 'to_checkout' => true ) )
+);
+
+$wccs_panel_plain = wccs_panel_field(
+	'documento_sem_fluxo',
+	'Sem fluxo',
+	'text',
+	20,
+	array( 'checkout' => array( 'enabled' => true ) )
+);
+
+// The checkout reads the customer's stored value, so the request has to be that customer's.
+wp_set_current_user( $wccs_panel_user_id );
+
+
+
+$wccs_panel_fields = ( new \WCCheckoutSuite\Checkout\Classic\ClassicAdapter() )->apply(
+	array( 'billing' => array() ),
+	array( $wccs_panel_prefilled, $wccs_panel_plain ),
+	$wccs_panel_section,
+	\WCCheckoutSuite\Checkout\Classic\ClassicCheckout::prefill( array( $wccs_panel_prefilled, $wccs_panel_plain ) )
+);
+
+// The section's location decides which WooCommerce section the fields join; the flow decides
+// what they start with.
+wccs_panel_check(
+	'A field that asked for the flow starts with the value the customer has',
+	'12.345.678/0001-99' === ( $wccs_panel_fields['order']['documento_cliente']['default'] ?? '' ),
+	'default=' . ( $wccs_panel_fields['order']['documento_cliente']['default'] ?? '(none)' )
+);
+
+wccs_panel_check(
+	'And a field that did not ask is there, with no value prefilled',
+	isset( $wccs_panel_fields['order']['documento_sem_fluxo'] ) &&
+		! isset( $wccs_panel_fields['order']['documento_sem_fluxo']['default'] ),
+	'the direction is a decision, not an assumption'
+);
+
+// The other direction, on its own, does not prefill: §10.4 names the two separately.
+$wccs_panel_back = wccs_panel_field(
+	'documento_de_volta',
+	'Documento de volta',
+	'text',
+	10,
+	array( 'checkout' => array( 'enabled' => true ) ),
+	array( 'sync' => array( 'from_checkout' => true ) )
+);
+
+$wccs_panel_back_fields = ( new \WCCheckoutSuite\Checkout\Classic\ClassicAdapter() )->apply(
+	array( 'billing' => array() ),
+	array( $wccs_panel_back ),
+	$wccs_panel_section,
+	array( 'documento_de_volta' => '12.345.678/0001-99' )
+);
+
+wccs_panel_check(
+	'Writing back to the profile does not prefill, because the two directions are separate',
+	isset( $wccs_panel_back_fields['order']['documento_de_volta'] ) &&
+		! isset( $wccs_panel_back_fields['order']['documento_de_volta']['default'] ),
+	'from_checkout only, and nothing was prefilled'
+);
+
+wp_set_current_user( 0 );
+
+$wccs_panel_guest = ( new \WCCheckoutSuite\Checkout\Classic\ClassicAdapter() )->apply(
+	array( 'billing' => array() ),
+	array( $wccs_panel_prefilled ),
+	$wccs_panel_section,
+	array()
+);
+
+wccs_panel_check(
+	'A visitor with no account has nothing to prefill from',
+	isset( $wccs_panel_guest['order']['documento_cliente'] ) &&
+		! isset( $wccs_panel_guest['order']['documento_cliente']['default'] ),
+	'the caller passes no value for a guest, and the adapter invents none'
+);
+
+// ---------------------------------------------------------------------------
+// §10.6 — editing the profile does not change an order that was already placed.
+// ---------------------------------------------------------------------------
+wccs_panel_out( '' );
+wccs_panel_out( '7. The gate: an order keeps what it was placed with' );
+
+$wccs_panel_order = wc_create_order(
+	array(
+		'customer_id' => $wccs_panel_user_id,
+		'status'      => 'processing',
+	)
+);
+
+$wccs_panel_order = $wccs_panel_order instanceof WC_Order ? $wccs_panel_order : null;
+
+if ( null !== $wccs_panel_order ) {
+	$wccs_panel_definitions = \WCCheckoutSuite\Checkout\Classic\PublishedDocument::read()->fields();
+
+	( new \WCCheckoutSuite\Domain\Orders\OrderFieldsService() )->write(
+		$wccs_panel_order,
+		array( 'documento_cliente' => '11.111.111/0001-11' ),
+		array( $wccs_panel_prefilled ),
+		1
+	);
+
+	$wccs_panel_order->save();
+
+	$wccs_panel_before = ( new \WCCheckoutSuite\Domain\Orders\OrderFieldsService() )->history( $wccs_panel_order, array( $wccs_panel_prefilled ) );
+	$wccs_panel_before_value = '';
+
+	foreach ( $wccs_panel_before as $wccs_panel_entry ) {
+		if ( 'documento_cliente' === $wccs_panel_entry->id() ) {
+			$wccs_panel_before_value = (string) $wccs_panel_entry->value();
+		}
+	}
+
+	// The merchant edits the customer's current value on the profile screen.
+	$wccs_panel_customer_values->update( $wccs_panel_user_id, array( 'documento_cliente' => '22.222.222/0001-22' ) );
+
+	$wccs_panel_order_after = ( new \WCCheckoutSuite\Domain\Orders\OrderFieldsService() )->history( $wccs_panel_order, array( $wccs_panel_prefilled ) );
+	$wccs_panel_after_value = '';
+
+	foreach ( $wccs_panel_order_after as $wccs_panel_entry ) {
+		if ( 'documento_cliente' === $wccs_panel_entry->id() ) {
+			$wccs_panel_after_value = (string) $wccs_panel_entry->value();
+		}
+	}
+
+	wccs_panel_check(
+		'The customer now holds the value staff just wrote',
+		'22.222.222/0001-22' === ( $wccs_panel_customer_values->values( $wccs_panel_user_id )['documento_cliente'] ?? '' ),
+		'current=' . ( $wccs_panel_customer_values->values( $wccs_panel_user_id )['documento_cliente'] ?? '(none)' )
+	);
+
+	wccs_panel_check(
+		'And the order that was already placed still says what it was placed with',
+		'11.111.111/0001-11' === $wccs_panel_after_value && $wccs_panel_before_value === $wccs_panel_after_value,
+		'before=' . $wccs_panel_before_value . ' after=' . $wccs_panel_after_value
+	);
+
+	$wccs_panel_order->delete( true );
+}
+
+// ---------------------------------------------------------------------------
 // 4. What the harness left behind.
 // ---------------------------------------------------------------------------
 wccs_panel_out( '' );

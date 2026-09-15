@@ -604,4 +604,89 @@ final class ClassicAdapterTest extends TestCase {
 
 		self::assertSame( $before, $this->adapter->apply( $before, array() ) );
 	}
+
+	/**
+	 * The checkout starts with the value the customer already has, when the field asked for it.
+	 *
+	 * §7.7 and §10.4: the direction is a decision, not an assumption. The value comes from the
+	 * caller — the half that knows who is shopping — so the adapter stays a pure function over
+	 * the document.
+	 *
+	 * @return void
+	 */
+	public function test_a_prefilled_field_starts_with_the_customer_value(): void {
+		$definition = $this->definition(
+			'billing_documento',
+			array( 'sync' => array( 'to_checkout' => true ) )
+		);
+
+		$fields = $this->adapter->apply(
+			$this->woo_fields(),
+			array( $definition ),
+			array(),
+			array( 'billing_documento' => '12.345.678/0001-99' )
+		);
+
+		self::assertSame( '12.345.678/0001-99', $fields['billing']['billing_documento']['default'] );
+	}
+
+	/**
+	 * A field that did not ask for the flow keeps the default its type configured.
+	 *
+	 * @return void
+	 */
+	public function test_a_field_that_did_not_ask_keeps_its_configured_default(): void {
+		$definition = $this->definition(
+			'billing_documento',
+			array( 'settings' => array( 'default' => 'escreva aqui' ) )
+		);
+
+		$fields = $this->adapter->apply(
+			$this->woo_fields(),
+			array( $definition ),
+			array(),
+			array( 'billing_documento' => '12.345.678/0001-99' )
+		);
+
+		self::assertSame( 'escreva aqui', $fields['billing']['billing_documento']['default'] );
+	}
+
+	/**
+	 * A field that asked and found nothing falls back to its configured default.
+	 *
+	 * A guest has no profile, and a customer who never filled the field has no value either; both
+	 * are the same answer here, and neither is an empty control where a default was configured.
+	 *
+	 * @return void
+	 */
+	public function test_a_field_that_asked_and_found_nothing_falls_back(): void {
+		$definition = $this->definition(
+			'billing_documento',
+			array(
+				'sync'     => array( 'to_checkout' => true ),
+				'settings' => array( 'default' => 'escreva aqui' ),
+			)
+		);
+
+		$fields = $this->adapter->apply( $this->woo_fields(), array( $definition ), array(), array() );
+
+		self::assertSame( 'escreva aqui', $fields['billing']['billing_documento']['default'] );
+	}
+
+	/**
+	 * And a flow that was asked for does not mean the other direction was.
+	 *
+	 * `to_checkout` fills the form; it says nothing about writing the answer back to the customer,
+	 * which is the mistake §10.4 forbids by naming the directions separately.
+	 *
+	 * @return void
+	 */
+	public function test_prefilling_does_not_imply_writing_back(): void {
+		$definition = \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array(
+			$this->definition( 'billing_documento', array( 'sync' => array( 'to_checkout' => true ) ) )
+		);
+
+		self::assertTrue( $definition->prefills_checkout() );
+		self::assertFalse( $definition->writes_back_to_customer() );
+	}
 }

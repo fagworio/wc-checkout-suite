@@ -129,6 +129,57 @@ final class DefinitionValidator {
 		$scope       = is_array( $storage ) && isset( $storage['scope'] ) ? (string) $storage['scope'] : '';
 		$sensitivity = is_array( $storage ) && isset( $storage['sensitivity'] ) ? (string) $storage['sensitivity'] : '';
 
+		// Which ways a customer's value flows (§10.4). Both directions are decisions about
+		// collection, so a field that is not collected at the checkout has no flow to decide:
+		// there is no checkout form for the value to arrive from or start in.
+		$sync = $definition->sync();
+
+		if ( ( $sync['to_checkout'] || $sync['from_checkout'] ) && 'checkout' !== $collection_surface ) {
+			$result = $result->merge(
+				ValidationResult::invalid(
+					'sync_requires_checkout_collection',
+					sprintf(
+						/* translators: %s: field id */
+						__( 'The flows of "%s" are decisions about the checkout, and this field is collected on the customer\'s own page.', 'wc-checkoutsuite' ),
+						$id
+					),
+					array( 'field' => $id )
+				)
+			);
+		}
+
+		if ( $sync['to_checkout'] && ! $stores_value ) {
+			$result = $result->merge(
+				ValidationResult::invalid(
+					'sync_requires_value',
+					sprintf(
+						/* translators: %s: field id */
+						__( 'The field "%s" stores no value, so there is nothing to prefill the checkout with.', 'wc-checkoutsuite' ),
+						$id
+					),
+					array( 'field' => $id )
+				)
+			);
+		}
+
+		// A direction the runtime does not perform is refused rather than accepted and ignored.
+		// Accepting it would store a promise — a document that says the value is written back —
+		// that nothing carries out, which is worse than not offering it: the merchant would have
+		// no way to tell the difference between a flow nobody used and a flow that never ran.
+		if ( $sync['from_checkout'] ) {
+			$result = $result->merge(
+				ValidationResult::invalid(
+					'sync_direction_not_available',
+					sprintf(
+						/* translators: %s: field id */
+						__( 'The flow checkout → perfil is not carried out yet, so the field "%s" is refused instead of storing a promise nothing keeps.', 'wc-checkoutsuite' ),
+						$id
+					),
+					array( 'field' => $id )
+				)
+			);
+		}
+
 		if ( ! in_array( $scope, DefinitionVocabulary::storage_scope_values(), true ) ) {
 			$result = $result->merge(
 				ValidationResult::invalid(

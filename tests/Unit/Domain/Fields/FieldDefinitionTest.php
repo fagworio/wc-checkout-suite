@@ -301,4 +301,62 @@ final class FieldDefinitionTest extends TestCase {
 		self::assertSame( 'billing', $array['destinations']['checkout']['section'] );
 		self::assertFalse( $definition->is_canonical() );
 	}
+
+	/**
+	 * A value flows nowhere unless the merchant said so (§10.4).
+	 *
+	 * A document written before the flows existed keeps behaving exactly as it did: nothing is
+	 * prefilled and nothing is written back, because assuming either direction is what the
+	 * specification forbids.
+	 *
+	 * @return void
+	 */
+	public function test_the_flows_are_off_until_they_are_asked_for(): void {
+		$legacy = \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array(
+			array(
+				'id'     => 'documento',
+				'origin' => 'custom',
+				'type'   => 'text',
+				'label'  => 'Documento',
+			)
+		);
+
+		self::assertSame(
+			array(
+				'to_checkout'   => false,
+				'from_checkout' => false,
+			),
+			$legacy->sync()
+		);
+		self::assertFalse( $legacy->prefills_checkout() );
+		self::assertFalse( $legacy->writes_back_to_customer() );
+		self::assertArrayHasKey( 'sync', $legacy->to_array(), 'the key is written, so the document says what it means' );
+	}
+
+	/**
+	 * A stored flow survives the round trip, and each direction is its own answer.
+	 *
+	 * @return void
+	 */
+	public function test_a_stored_flow_round_trips(): void {
+		$field = \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array(
+			array(
+				'id'     => 'cnpj',
+				'origin' => 'custom',
+				'type'   => 'text',
+				'label'  => 'CNPJ',
+				'sync'   => array(
+					'to_checkout'   => true,
+					'from_checkout' => false,
+				),
+			)
+		);
+
+		self::assertTrue( $field->prefills_checkout() );
+		self::assertFalse( $field->writes_back_to_customer(), 'the other direction is not implied' );
+
+		$again = \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array( $field->to_array() );
+
+		self::assertSame( $field->sync(), $again->sync() );
+	}
 }

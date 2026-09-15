@@ -9,6 +9,9 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Checkout\Classic;
 
+use WCCheckoutSuite\Domain\Customers\CustomerFieldsService;
+use WCCheckoutSuite\Domain\Fields\FieldDefinition;
+
 /**
  * Connects the stored schema to the classic checkout.
  *
@@ -48,7 +51,7 @@ final class ClassicCheckout {
 		}
 
 		$adapter = new ClassicAdapter();
-		$fields  = $adapter->apply( $fields, $document->fields(), $document->sections() );
+		$fields  = $adapter->apply( $fields, $document->fields(), $document->sections(), self::prefill( $document->fields() ) );
 
 		/**
 		 * Filters what the classic adapter could not render.
@@ -64,5 +67,55 @@ final class ClassicCheckout {
 		do_action( 'wccs_classic_adapter_report', $adapter->report() );
 
 		return $fields;
+	}
+
+	/**
+	 * The values the checkout starts with (§7.7, §10.4).
+	 *
+	 * Only the fields that asked to be prefilled, and only for a customer who is signed in: a
+	 * guest has no profile to read, and reading one would mean looking up an account from an
+	 * e-mail address the visitor has not typed yet. What is read is the customer's *current*
+	 * value — never an order's snapshot, which belongs to the order that took it.
+	 *
+	 * @param array<int, array<string, mixed>> $definitions Published definitions.
+	 * @return array<string, string> Values keyed by field identifier.
+	 */
+	public static function prefill( array $definitions ): array {
+		$user_id = function_exists( 'get_current_user_id' ) ? (int) get_current_user_id() : 0;
+
+		if ( $user_id <= 0 ) {
+			return array();
+		}
+
+		$wanted = array();
+
+		foreach ( $definitions as $raw ) {
+			if ( ! is_array( $raw ) ) {
+				continue;
+			}
+
+			$definition = FieldDefinition::from_array( $raw );
+
+			if ( $definition->prefills_checkout() && '' !== $definition->id() ) {
+				$wanted[] = $definition->id();
+			}
+		}
+
+		if ( array() === $wanted ) {
+			return array();
+		}
+
+		$values  = ( new CustomerFieldsService() )->values( $user_id );
+		$prefill = array();
+
+		foreach ( $wanted as $id ) {
+			$value = $values[ $id ] ?? null;
+
+			if ( is_scalar( $value ) && '' !== (string) $value ) {
+				$prefill[ $id ] = (string) $value;
+			}
+		}
+
+		return $prefill;
 	}
 }

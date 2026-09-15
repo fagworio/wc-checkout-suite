@@ -127,6 +127,17 @@ final class ClassicAdapter {
 	private array $report = array();
 
 	/**
+	 * The values the checkout starts with, by field identifier.
+	 *
+	 * Resolved by the caller, which is the half that can know who is shopping: the adapter is a
+	 * pure function over the document, and looking up a customer here would make it depend on the
+	 * session it happens to be running in.
+	 *
+	 * @var array<string, string>
+	 */
+	private array $prefill = array();
+
+	/**
 	 * What the last translation could not do.
 	 *
 	 * Two levels: `skipped` means nothing was rendered, `degraded` means something
@@ -179,10 +190,12 @@ final class ClassicAdapter {
 	 * @param array<string, mixed>             $fields      Fields from `woocommerce_checkout_fields`.
 	 * @param array<int, array<string, mixed>> $definitions Raw field definitions, published.
 	 * @param array<int, array<string, mixed>> $sections    Raw section definitions.
+	 * @param array<string, string>            $prefill     Values the checkout starts with, by field.
 	 * @return array<string, mixed> The field array to return from the filter.
 	 */
-	public function apply( array $fields, array $definitions, array $sections = array() ): array {
-		$this->report = array();
+	public function apply( array $fields, array $definitions, array $sections = array(), array $prefill = array() ): array {
+		$this->report  = array();
+		$this->prefill = $prefill;
 
 		$locations = $this->locations( $sections );
 		$ordered   = $this->order( $this->collection_definitions( $definitions ), $locations );
@@ -526,7 +539,14 @@ final class ClassicAdapter {
 
 		$default = $this->setting( $definition, 'default' );
 
-		if ( is_string( $default ) && '' !== $default ) {
+		// The customer's own value comes first, and only for a field that asked for it (§7.7,
+		// §10.4). The type's configured default is what a field falls back to when the store has
+		// nothing to prefill with — not a second opinion about the same value.
+		$prefilled = $this->prefill[ $definition->id() ] ?? '';
+
+		if ( $definition->prefills_checkout() && is_string( $prefilled ) && '' !== $prefilled ) {
+			$field['default'] = $prefilled;
+		} elseif ( is_string( $default ) && '' !== $default ) {
 			$field['default'] = $default;
 		}
 

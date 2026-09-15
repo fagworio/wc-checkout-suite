@@ -666,4 +666,38 @@ describe( 'a section offered per area', () => {
 			} )
 		).not.toBeInTheDocument();
 	} );
+	it( 'decides the flow of the value, one direction at a time', async () => {
+		const user = userEvent.setup();
+		const { onChange } = renderInspector();
+
+		await user.click( screen.getByRole( 'button', { name: 'Vínculos' } ) );
+
+		// §7.7 and §10.4: the journey to the checkout is a decision, and it is not the same
+		// decision as who may edit the value on each surface.
+		const prefill = screen.getByRole( 'checkbox', {
+			name: 'Perfil → checkout',
+		} );
+
+		expect( prefill ).not.toBeChecked();
+
+		await user.click( prefill );
+
+		expect( onChange ).toHaveBeenCalledWith( {
+			sync: { to_checkout: true },
+		} );
+	} );
+
+	it( 'shows the flow the document already holds', async () => {
+		renderInspector( {
+			field: field( { sync: { to_checkout: true } } ),
+		} );
+
+		await userEvent
+			.setup()
+			.click( screen.getByRole( 'button', { name: 'Vínculos' } ) );
+
+		expect(
+			screen.getByRole( 'checkbox', { name: 'Perfil → checkout' } )
+		).toBeChecked();
+	} );
 } );

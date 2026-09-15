@@ -993,4 +993,118 @@ final class DefinitionValidatorTest extends TestCase {
 		self::assertFalse( $result->is_valid() );
 		self::assertContains( 'invalid_destination_action', $result->error_codes() );
 	}
+
+	/**
+	 * The flows are decisions about the checkout, and only a checkout field has them (§10.4).
+	 *
+	 * @return void
+	 */
+	public function test_a_flow_needs_the_checkout_to_collect_the_value(): void {
+		$result = $this->validator()->validate(
+			\WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array(
+				array(
+					'id'                 => 'cnpj',
+					'origin'             => 'custom',
+					'type'               => 'text',
+					'label'              => 'CNPJ',
+					'section'            => 'billing',
+					'enabled'            => true,
+					'collection_surface' => 'my_account',
+					'storage'            => array( 'scope' => 'customer' ),
+					'sync'               => array( 'to_checkout' => true ),
+				)
+			)
+		);
+
+		self::assertFalse( $result->is_valid() );
+		self::assertContains( 'sync_requires_checkout_collection', $result->error_codes() );
+	}
+
+	/**
+	 * A field that stores nothing has nothing to prefill with.
+	 *
+	 * @return void
+	 */
+	public function test_a_flow_needs_a_value_to_carry(): void {
+		$result = $this->validator()->validate(
+			\WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array(
+				array(
+					'id'      => 'aviso',
+					'origin'  => 'custom',
+					'type'    => 'heading',
+					'label'   => 'Aviso',
+					'section' => 'billing',
+					'enabled' => true,
+					'sync'    => array( 'to_checkout' => true ),
+				)
+			)
+		);
+
+		self::assertFalse( $result->is_valid() );
+		self::assertContains( 'sync_requires_value', $result->error_codes() );
+	}
+
+	/**
+	 * And a checkout field that asked for the flow the runtime performs is accepted.
+	 *
+	 * @return void
+	 */
+	public function test_a_checkout_field_may_carry_a_flow(): void {
+		// Only the direction the runtime performs: the other one is refused by
+		// `test_a_direction_the_runtime_does_not_perform_is_refused()`.
+		foreach ( array( array( 'to_checkout' => true ) ) as $sync ) {
+			$result = $this->validator()->validate(
+				\WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array(
+					array(
+						'id'      => 'cnpj',
+						'origin'  => 'custom',
+						'type'    => 'text',
+						'label'   => 'CNPJ',
+						'section' => 'billing',
+						'enabled' => true,
+						'storage' => array(
+							'scope'       => 'order',
+							'sensitivity' => 'personal',
+						),
+						'sync'    => $sync,
+					)
+				)
+			);
+
+			self::assertTrue(
+				$result->is_valid(),
+				implode( ', ', array_keys( $sync ) ) . ': ' . implode( ', ', $result->error_codes() )
+			);
+		}
+	}
+	/**
+	 * A direction the runtime does not perform is refused, not accepted and ignored.
+	 *
+	 * Accepting it would store a promise nothing keeps — and a merchant cannot tell a flow that
+	 * is never used from a flow that never runs.
+	 *
+	 * @return void
+	 */
+	public function test_a_direction_the_runtime_does_not_perform_is_refused(): void {
+		$result = $this->validator()->validate(
+			\WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array(
+				array(
+					'id'      => 'cnpj',
+					'origin'  => 'custom',
+					'type'    => 'text',
+					'label'   => 'CNPJ',
+					'section' => 'billing',
+					'enabled' => true,
+					'storage' => array(
+						'scope'       => 'order',
+						'sensitivity' => 'personal',
+					),
+					'sync'    => array( 'from_checkout' => true ),
+				)
+			)
+		);
+
+		self::assertFalse( $result->is_valid() );
+		self::assertContains( 'sync_direction_not_available', $result->error_codes() );
+	}
 }

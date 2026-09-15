@@ -1198,6 +1198,40 @@ export default function FieldProperties( {
 								/>
 							</>
 						) : null }
+
+						<div className="divider" />
+
+						{ /* §7.7 and §10.4: the value's journey is decided direction by direction, and
+						     nothing is assumed bidirectional. */ }
+						<div className="form-label">
+							{ __( 'Fluxo do valor', 'wc-checkoutsuite' ) }
+						</div>
+						<p className="form-help">
+							{ __(
+								'Cada direção é uma decisão. Quem pode alterar em Minha conta e no painel da equipa é decidido em cada vínculo acima; aqui decide-se o que viaja até ao checkout.',
+								'wc-checkoutsuite'
+							) }
+						</p>
+						<SwitchRow
+							id="wccs-sync-to-checkout"
+							label={ __(
+								'Perfil → checkout',
+								'wc-checkoutsuite'
+							) }
+							help={ __(
+								'O checkout começa com o valor que o cliente já tem no perfil.',
+								'wc-checkoutsuite'
+							) }
+							checked={ Boolean( field.sync?.to_checkout ) }
+							onToggle={ ( /** @type {boolean} */ next ) =>
+								onChange( {
+									sync: {
+										...( field.sync ?? {} ),
+										to_checkout: next,
+									},
+								} )
+							}
+						/>
 					</>
 				) : null }
 
