@@ -13,6 +13,7 @@ use WCCheckoutSuite\Domain\Fields\FieldBinding;
 use WCCheckoutSuite\Domain\Fields\FieldContext;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Registries;
+use WCCheckoutSuite\Domain\Uploads\FilePermissions;
 
 /**
  * The shape a customer surface reads a section in, shared by every one of them.
@@ -35,9 +36,10 @@ final class CustomerSectionFields {
 	/**
 	 * The types a customer surface can collect.
 	 *
-	 * File upload has its own private-media lifecycle and heading/hidden fields do not
-	 * represent a customer-owned value. They stay out until that lifecycle exists for
-	 * the customer store too, rather than being drawn as a control that cannot save.
+	 * A document is on the list now that the customer store exists for it: the file belongs
+	 * to the customer, is found by customer and field, and does not expire with a cart
+	 * ({@see \WCCheckoutSuite\Domain\Uploads\UploadService::accept_for_customer()}). Heading
+	 * and hidden fields stay out: they represent no value of the customer's own.
 	 *
 	 * @var array<int,string>
 	 */
@@ -53,6 +55,7 @@ final class CustomerSectionFields {
 		'select',
 		'radio',
 		'checkbox',
+		'file',
 	);
 
 	/**
@@ -224,5 +227,49 @@ final class CustomerSectionFields {
 		}
 
 		return is_scalar( $value ) ? (string) $value : '';
+	}
+
+	/**
+	 * Whether a field is a document on a customer surface.
+	 *
+	 * The type decides, through the registry, exactly as the checkout's file permissions do:
+	 * a type that declares it stores a file is a document, and one this plugin has never
+	 * heard of is not guessed at.
+	 *
+	 * @param FieldDefinition $field Field.
+	 * @return bool
+	 */
+	public static function is_document( FieldDefinition $field ): bool {
+		return FilePermissions::is_file( $field );
+	}
+
+	/**
+	 * How a customer's document reads on screen.
+	 *
+	 * A document is not a stored value: it is a row in the uploads table, found by customer
+	 * and field. This is the sentence both surfaces show — the name the customer recognises,
+	 * with the size, or the fact that nothing has been sent yet.
+	 *
+	 * @param array<string, mixed>|null $record Upload record, or null when there is none.
+	 * @return string
+	 */
+	public static function document_label( ?array $record ): string {
+		if ( null === $record ) {
+			return __( 'Nenhum documento enviado.', 'wc-checkoutsuite' );
+		}
+
+		$name = isset( $record['file_name'] ) ? (string) $record['file_name'] : '';
+		$size = isset( $record['byte_size'] ) ? (int) $record['byte_size'] : 0;
+
+		if ( '' === $name ) {
+			return __( 'Documento enviado.', 'wc-checkoutsuite' );
+		}
+
+		return sprintf(
+			/* translators: 1: file name, 2: human readable size. */
+			__( '%1$s (%2$s)', 'wc-checkoutsuite' ),
+			$name,
+			size_format( max( 0, $size ) )
+		);
 	}
 }

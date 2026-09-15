@@ -116,11 +116,15 @@ wp_set_current_user( 1 );
 
 global $wpdb;
 
-// The observation is deleted first so the count at the end is comparable, and so the
-// harness's own injection cannot be mistaken for something the store decided.
+// The observation and the document slots are cleared first so the count at the end is
+// comparable, and so the harness's own fixtures cannot be mistaken for something the store
+// decided.
 $wccs_ref_privacy_option = \WCCheckoutSuite\Domain\Uploads\UploadsEnvironment::STATE_OPTION;
 
 delete_option( $wccs_ref_privacy_option );
+delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_DRAFT ) );
+delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED ) );
+delete_option( 'wccs_schema_revisions' );
 
 $wccs_ref_options_before = wccs_proof_option_count();
 
@@ -299,6 +303,135 @@ wccs_proof_check(
 	'decision=' . $wccs_ref_decision
 );
 
+// ---------------------------------------------------------------------------
+// 4. The page the customer fills in.
+// ---------------------------------------------------------------------------
+$wccs_ref_repository_published = new \WCCheckoutSuite\Domain\Schema\SchemaRepository(
+	\WCCheckoutSuite\Domain\Registries::instance()->definition_validator(),
+	new \WCCheckoutSuite\Domain\Schema\CoreFieldGuard()
+);
+
+$wccs_ref_document = array(
+	'revision' => 1,
+	'fields'   => array(
+		array(
+			'id'             => 'documento_do_cliente',
+			'integration_id' => 'wc-checkoutsuite/documento_do_cliente',
+			'origin'         => 'custom',
+			'type'           => 'file',
+			'label'          => 'Contrato social',
+			'section'        => 'documentos_da_conta',
+			'enabled'        => true,
+			'required'       => false,
+			'position'       => 10,
+			'storage'        => array(
+				'scope'       => 'customer',
+				'sensitivity' => 'sensitive',
+			),
+			'settings'       => array(
+				'maxFiles'          => 1,
+				'allowedExtensions' => array( 'pdf' ),
+			),
+			'destinations'   => array(
+				'customer_account' => array(
+					'enabled' => true,
+					'section' => 'documentos_da_conta',
+					'title'   => 'Seu contrato',
+					'mode'    => 'edit',
+					'actions' => array( 'show_metadata', 'view' ),
+				),
+			),
+		),
+	),
+	'sections' => array(
+		array(
+			'id'           => 'documentos_da_conta',
+			'title'        => 'Documentos',
+			'description'  => '',
+			'position'     => 10,
+			'location'     => 'order',
+			'areas'        => array( 'customer_account' ),
+			'presentation' => array(
+				'account' => array(
+					'slug'       => 'documentos-da-conta',
+					'menu_label' => 'Documentos',
+					'icon'       => 'file',
+					'position'   => 5,
+					'mode'       => 'edit',
+				),
+			),
+		),
+	),
+	'settings' => array(),
+);
+
+$wccs_ref_written = $wccs_ref_repository_published->write(
+	\WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED,
+	\WCCheckoutSuite\Domain\Schema\SchemaDocument::from_array( $wccs_ref_document ),
+	$wccs_ref_repository_published->read( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED )->revision()
+);
+
+wccs_proof_check(
+	'A customer account page with a document is a document the store accepts',
+	$wccs_ref_written->is_ok(),
+	'ok=' . ( $wccs_ref_written->is_ok() ? 'yes' : 'no' )
+);
+
+\WCCheckoutSuite\Account\MyAccountSections::register_endpoints();
+
+wp_set_current_user( $wccs_ref_user_id );
+set_query_var( 'documentos-da-conta', '' );
+
+ob_start();
+\WCCheckoutSuite\Account\MyAccountSections::render();
+$wccs_ref_html = (string) ob_get_clean();
+
+wccs_proof_check(
+	'The page shows the document the customer already sent',
+	false !== strpos( $wccs_ref_html, 'contrato-social.pdf' ) &&
+		false !== strpos( $wccs_ref_html, 'wccs-account-document-documento_do_cliente' ),
+	'name=' . ( false !== strpos( $wccs_ref_html, 'contrato-social.pdf' ) ? 'shown' : 'missing' )
+);
+
+wccs_proof_check(
+	'It offers the door that serves the bytes, when the use allows reading',
+	false !== strpos( $wccs_ref_html, 'wccs-account-document__link' ) &&
+		false !== strpos( $wccs_ref_html, 'token=' . $wccs_ref_token ),
+	'the link carries the token and the destination'
+);
+
+wccs_proof_check(
+	'And the form can carry bytes, because a document is not a value',
+	false !== strpos( $wccs_ref_html, 'enctype="multipart/form-data"' ) &&
+		false !== strpos( $wccs_ref_html, 'name="wccs_account_files[documento_do_cliente]"' ),
+	'the input is a file input, not a text one'
+);
+
+// With the store unable to protect the directory, the page says why instead of offering a
+// control that cannot work.
+delete_option( $wccs_ref_privacy_option );
+
+ob_start();
+\WCCheckoutSuite\Account\MyAccountSections::render();
+$wccs_ref_html_unavailable = (string) ob_get_clean();
+
+wccs_proof_check(
+	'And when the store cannot keep files private, it says so instead of pretending',
+	false === strpos( $wccs_ref_html_unavailable, 'wccs_account_files[' ) &&
+		false !== strpos( $wccs_ref_html_unavailable, 'wccs-account-document__unavailable' ),
+	'reason shown, no input'
+);
+
+wccs_proof_check(
+	'While the document the customer sent is still shown',
+	false !== strpos( $wccs_ref_html_unavailable, 'contrato-social.pdf' ),
+	'the document is theirs whether or not uploads are offered'
+);
+
+// The published document this section wrote is removed, so the sweep is not run against a
+// store this harness configured.
+delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED ) );
+
 $wccs_ref_path = (string) $wccs_ref_record['path'];
 
 require_once ABSPATH . 'wp-admin/includes/user.php';
@@ -329,14 +462,20 @@ if ( file_exists( (string) $wccs_ref_file['tmp_name'] ) ) {
 }
 
 wccs_proof_note(
-	'What is not proven here yet',
-	'The account form that hands a file to this service is the next slice of Fase 4: the field renderer, the multipart form and the submission are not wired to it yet, so this harness proves the server half only.'
+	'What this harness does not cover',
+	'The account page is rendered here with the real renderer and the real document; the browser drives the same page with a real form submission in tests/browser/fase4-my-account-upload.mjs, and says there that this box needs the observation injected.'
 );
 
 // ---------------------------------------------------------------------------
 // Summary.
 // ---------------------------------------------------------------------------
 delete_option( $wccs_ref_privacy_option );
+delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_DRAFT ) );
+delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED ) );
+delete_option( 'wccs_schema_revisions' );
+// Registering the endpoint for this harness's document records what the endpoints were, and
+// that record belongs to the document being removed.
+delete_option( 'wccs_account_endpoint_signature' );
 
 wccs_proof_check(
 	'The harness left no stored option behind',

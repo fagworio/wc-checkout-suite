@@ -77,6 +77,38 @@ if ( ! function_exists( 'esc_url_raw' ) ) {
 	}
 }
 
+if ( ! function_exists( 'size_format' ) ) {
+	/**
+	 * Human readable size shim, for the units a label may carry.
+	 *
+	 * WordPress's own function picks the largest unit that fits and formats with the requested
+	 * decimals. This one covers the range a customer document is shown in — bytes up to
+	 * megabytes — so a label can be asserted without a WordPress installation. A test that
+	 * asserts a size beyond that range would be asserting this shim rather than the store, and
+	 * the range is written down here so that is visible.
+	 *
+	 * @param int|float $bytes    Bytes.
+	 * @param int       $decimals Decimals.
+	 * @return string
+	 */
+	function size_format( $bytes, $decimals = 0 ) {
+		$bytes = (float) $bytes;
+		$units = array( 'B', 'KB', 'MB', 'GB', 'TB' );
+		$index = 0;
+
+		while ( $bytes >= 1024 && $index < count( $units ) - 1 ) {
+			$bytes /= 1024;
+			++$index;
+		}
+
+		// WordPress formats through `number_format_i18n`; the separator is the same for the
+		// range this shim covers, and a machine-readable decimal point is what a test needs.
+		$formatted = number_format( $bytes, 0 === $index ? 0 : max( 0, (int) $decimals ), '.', '' );
+
+		return $formatted . ' ' . $units[ $index ];
+	}
+}
+
 if ( ! function_exists( 'is_email' ) ) {
 	/**
 	 * E-mail shim.

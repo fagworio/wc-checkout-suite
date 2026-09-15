@@ -227,4 +227,61 @@ final class CustomerSectionFieldsTest extends TestCase {
 		self::assertSame( array(), $updates );
 		self::assertSame( array(), $errors );
 	}
+
+	/**
+	 * A document is renderable on a customer surface, and reads as the file the customer sent.
+	 *
+	 * The document is not a value: it is a row the customer's own store keeps, found by
+	 * customer and field. The surface still has to know it is one, because a file is drawn and
+	 * submitted differently from a value — and the label is the sentence both surfaces show.
+	 *
+	 * @return void
+	 */
+	public function test_a_document_is_renderable_and_reads_as_a_file(): void {
+		$document         = $this->field( array( $this->binding( 'dados', 'Contrato', 10, true ) ) );
+		$document['type'] = 'file';
+
+		$entries = CustomerSectionFields::entries( array( $document ), 'customer_account', 'dados' );
+
+		self::assertCount( 1, $entries, 'a document is one of the types a customer surface collects' );
+		self::assertTrue( CustomerSectionFields::is_document( $entries[0]['field'] ) );
+
+		// A value the customer stored is not a document, and a document is never read as one.
+		$text = $this->field( array( $this->binding( 'dados', 'Registro', 10, true ) ) );
+
+		self::assertFalse( CustomerSectionFields::is_document( \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array( $text ) ) );
+	}
+
+	/**
+	 * The sentence a customer reads about their document.
+	 *
+	 * @return void
+	 */
+	public function test_a_document_label_names_the_file_and_its_size(): void {
+		self::assertSame(
+			'Nenhum documento enviado.',
+			CustomerSectionFields::document_label( null )
+		);
+
+		self::assertSame(
+			'contrato-social.pdf (48 B)',
+			CustomerSectionFields::document_label(
+				array(
+					'file_name' => 'contrato-social.pdf',
+					'byte_size' => 48,
+				)
+			)
+		);
+
+		// A row whose name is gone still says a document was sent, rather than showing nothing.
+		self::assertSame(
+			'Documento enviado.',
+			CustomerSectionFields::document_label(
+				array(
+					'file_name' => '',
+					'byte_size' => 0,
+				)
+			)
+		);
+	}
 }

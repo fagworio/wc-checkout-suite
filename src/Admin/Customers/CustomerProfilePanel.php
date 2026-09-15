@@ -16,6 +16,7 @@ use WCCheckoutSuite\Domain\Customers\CustomerFieldsService;
 use WCCheckoutSuite\Domain\Customers\CustomerSectionFields;
 use WCCheckoutSuite\Domain\Fields\FieldBinding;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
+use WCCheckoutSuite\Domain\Uploads\UploadService;
 use WCCheckoutSuite\Domain\Sections\SectionDefinition;
 
 /**
@@ -167,7 +168,22 @@ final class CustomerProfilePanel {
 
 				// The use of the field decides, not the field: the same definition may be
 				// editable in one panel and read-only in the next (§3.3).
-				if ( ! CustomerSectionFields::entry_writable( $field ) ) {
+				if ( CustomerSectionFields::is_document( $definition ) ) {
+					// A document is the customer's own row in the uploads table, not a value
+					// this screen can type into. It is shown, and the upload from here is the
+					// next slice of the phase: a file input with no handler would look like an
+					// offer this screen does not make.
+					printf(
+						'<th scope="row">%s</th><td><span class="wccs-customer-document">%s</span><br /><small>%s</small></td>',
+						esc_html( $field['title'] ),
+						esc_html(
+							CustomerSectionFields::document_label(
+								( new UploadService() )->for_customer_field( (int) $user->ID, $definition->id() )
+							)
+						),
+						esc_html__( 'O cliente envia e substitui este documento na página dele.', 'wc-checkoutsuite' )
+					);
+				} elseif ( ! CustomerSectionFields::entry_writable( $field ) ) {
 					printf(
 						'<th scope="row">%s</th><td>%s</td>',
 						esc_html( $field['title'] ),

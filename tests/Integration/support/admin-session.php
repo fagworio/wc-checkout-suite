@@ -19,8 +19,11 @@
  * anyone for a password.
  *
  * Usage:
- *   wp eval-file tests/Integration/support/admin-session.php create [login]
+ *   wp eval-file tests/Integration/support/admin-session.php create [login] [any]
  *   wp eval-file tests/Integration/support/admin-session.php destroy <token>
+ *
+ * `any` mints a session for a user who does not manage WooCommerce — a customer
+ * observation — and says in its output that the session is not a coming-soon bypass.
  *
  * @package WCCheckoutSuite
  */
@@ -60,8 +63,18 @@ if ( ! $wccs_session_user ) {
 }
 
 if ( ! user_can( $wccs_session_user, 'manage_woocommerce' ) ) {
-	fwrite( STDERR, "{$wccs_session_login} cannot manage WooCommerce, so it does not bypass the coming-soon screen.\n" );
-	exit( 1 );
+	// A customer observation needs a customer's session, and the capability this guard asks
+	// about is the store's coming-soon bypass rather than a requirement of signing in. The
+	// caller says which it needs, so the sentence above keeps its meaning for the default
+	// case and a customer session is asked for on purpose.
+	$wccs_session_any = isset( $args[2] ) ? (string) $args[2] : '';
+
+	if ( 'any' !== $wccs_session_any ) {
+		fwrite( STDERR, "{$wccs_session_login} cannot manage WooCommerce, so it does not bypass the coming-soon screen. Pass `any` as the third argument to mint the session anyway.\n" );
+		exit( 1 );
+	}
+
+	echo "note=this session is not a coming-soon bypass\n";
 }
 
 $wccs_session_expiration = time() + 3600;
