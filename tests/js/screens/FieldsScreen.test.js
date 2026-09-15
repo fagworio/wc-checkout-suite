@@ -79,7 +79,26 @@ function client( overrides = {} ) {
 	return {
 		getDraft: jest.fn( async () => draft ),
 		fieldTypes: jest.fn( async () => ( {
-			categories: [],
+			// The picker draws what the catalogue groups, so the stub has to group the one
+			// type it offers the same way the server does.
+			categories: [
+				{
+					key: 'text',
+					label: 'Texto',
+					types: [
+						{
+							key: 'text',
+							label: 'Texto',
+							category: 'text',
+							source: 'core',
+							contractVersion: '1.0',
+							supports: { value: true, maskable: true },
+							valueSchema: { type: 'string' },
+							settingsSchema: {},
+						},
+					],
+				},
+			],
 			types: {
 				text: {
 					key: 'text',
@@ -285,7 +304,9 @@ describe( 'the schema', () => {
 			screen.getByRole( 'heading', { name: 'Dados de cobrança' } )
 		).toBeInTheDocument();
 
-		await user.click( screen.getByRole( 'tab', { name: /Cliente/ } ) );
+		await user.click(
+			screen.getByRole( 'tab', { name: /Pedido do cliente/ } )
+		);
 
 		expect(
 			screen.getByRole( 'heading', { name: 'Documentos' } )
@@ -303,6 +324,200 @@ describe( 'the schema', () => {
 		expect(
 			screen.getByLabelText( 'Áreas em que esta seção está ativa' )
 		).toHaveTextContent( 'Ativa em: Checkout' );
+	} );
+} );
+
+describe( 'the destination the merchant works in', () => {
+	it( 'keeps the destinations the merchant uses most on their own', async () => {
+		render( <FieldsScreen client={ client() } /> );
+
+		await screen.findByText( 'CPF' );
+
+		const bar = screen.getByRole( 'tablist', { name: 'Destino' } );
+
+		expect(
+			within( bar )
+				.getAllByRole( 'tab' )
+				.map( ( tab ) => tab.textContent )
+		).toEqual( [
+			'CheckoutCampos preenchidos durante a compra.',
+			'Minha contaPágina própria do cliente, fora de um pedido.',
+			'Pedido do clienteMinha conta → Pedidos → Ver pedido.',
+			'AdminOnde a equipa trabalha.',
+			'Mais destinosPágina de agradecimento e e-mails.',
+		] );
+	} );
+
+	it( 'opens a group\u2019s own destinations under it, rather than in one row', async () => {
+		const user = userEvent.setup();
+
+		render( <FieldsScreen client={ client() } /> );
+
+		await screen.findByText( 'CPF' );
+
+		// Nothing of a group is shown until the group is opened.
+		expect(
+			screen.queryByRole( 'tablist', { name: 'Dentro de Admin' } )
+		).not.toBeInTheDocument();
+
+		await user.click( screen.getByRole( 'tab', { name: /^Admin/ } ) );
+
+		const inside = screen.getByRole( 'tablist', {
+			name: 'Dentro de Admin',
+		} );
+
+		expect(
+			within( inside )
+				.getAllByRole( 'tab' )
+				.map( ( tab ) => tab.textContent )
+		).toEqual( [
+			'PedidoAdmin → WooCommerce → Pedidos → Editar pedido.',
+			'Perfil do clienteAdmin → Usuários → editar cliente.',
+		] );
+		expect(
+			within( inside ).getByRole( 'tab', { name: /^Pedido/ } )
+		).toHaveAttribute( 'aria-selected', 'true' );
+	} );
+
+	it( 'speaks the words of the destination it is in', async () => {
+		const user = userEvent.setup();
+
+		render( <FieldsScreen client={ client() } /> );
+
+		await screen.findByText( 'CPF' );
+
+		// The checkout has sections.
+		expect(
+			screen.getByRole( 'button', { name: /Nova seção/ } )
+		).toBeInTheDocument();
+
+		await user.click( screen.getByRole( 'tab', { name: /^Minha conta/ } ) );
+
+		// The customer's own page has pages.
+		expect(
+			screen.getByRole( 'button', { name: /Nova página/ } )
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole( 'button', { name: /Nova seção/ } )
+		).not.toBeInTheDocument();
+
+		await user.click( screen.getByRole( 'tab', { name: /^Admin/ } ) );
+		await user.click(
+			screen.getByRole( 'tab', { name: /^Perfil do cliente/ } )
+		);
+
+		// The panel on the customer's profile has panels.
+		expect(
+			screen.getByRole( 'button', { name: /Novo painel/ } )
+		).toBeInTheDocument();
+	} );
+} );
+
+describe( 'creating a container', () => {
+	it( 'offers it in the destination the merchant is working in, and nowhere else', async () => {
+		const user = userEvent.setup();
+		const stub = client();
+
+		render( <FieldsScreen client={ stub } /> );
+
+		await screen.findByText( 'CPF' );
+
+		await user.click( screen.getByRole( 'tab', { name: /^Minha conta/ } ) );
+		await user.click(
+			screen.getByRole( 'button', { name: 'Nova página' } )
+		);
+		await user.type(
+			screen.getByLabelText( 'Nome' ),
+			'Dados profissionais'
+		);
+		await user.click(
+			screen.getByRole( 'button', { name: 'Criar página' } )
+		);
+
+		// The form no longer asks which areas: the destination decides, and the document
+		// says so.
+		expect( screen.queryByLabelText( 'Areas' ) ).not.toBeInTheDocument();
+		expect(
+			screen.getByText( 'Aparece em: Minha conta' )
+		).toBeInTheDocument();
+
+		await user.click(
+			screen.getByRole( 'button', { name: 'Salvar alterações' } )
+		);
+
+		await waitFor( () =>
+			expect( stub.saveDraft ).toHaveBeenCalledTimes( 1 )
+		);
+
+		const [ saved ] = stub.saveDraft.mock.calls[ 0 ];
+		const created = ( saved.sections ?? [] ).find(
+			( /** @type {any} */ entry ) => 'dados_profissionais' === entry.id
+		);
+
+		expect( created ).toBeTruthy();
+		expect( created.areas ).toEqual( [ 'customer_account' ] );
+		expect( created.presentation.account.slug ).toBe(
+			'dados-profissionais'
+		);
+	} );
+
+	it( 'creates a field in a destination that only shows values, collected at the checkout', async () => {
+		const user = userEvent.setup();
+		const stub = client();
+
+		render( <FieldsScreen client={ stub } /> );
+
+		await screen.findByText( 'CPF' );
+
+		await user.click(
+			screen.getByRole( 'tab', { name: /^Pedido do cliente/ } )
+		);
+		await user.click(
+			screen.getByRole( 'button', { name: 'Novo bloco' } )
+		);
+		await user.type( screen.getByLabelText( 'Nome' ), 'Documentos' );
+		await user.click(
+			screen.getByRole( 'button', { name: 'Criar bloco' } )
+		);
+
+		// A field can be created here (§9): it is bound to this container, and its value is
+		// collected where a customer fills one in — the checkout, not a display area.
+		await user.click(
+			screen.getByRole( 'button', { name: 'Adicionar campo' } )
+		);
+		// The category tab and the type card both carry the same word: the card is the one
+		// that selects the type, and it is rendered after the tabs.
+		await user.click(
+			screen.getAllByRole( 'button', { name: /Texto/ } ).slice( -1 )[ 0 ]
+		);
+		// The picker's own confirm button adds the field it configured.
+		await user.click(
+			screen
+				.getAllByRole( 'button', { name: 'Adicionar campo' } )
+				.slice( -1 )[ 0 ]
+		);
+
+		await user.click(
+			screen.getByRole( 'button', { name: 'Salvar alterações' } )
+		);
+
+		await waitFor( () =>
+			expect( stub.saveDraft ).toHaveBeenCalledTimes( 1 )
+		);
+
+		const [ saved ] = stub.saveDraft.mock.calls[ 0 ];
+		const created = ( saved.fields ?? [] )
+			.filter( ( /** @type {any} */ entry ) => entry.destinations )
+			.find( ( /** @type {any} */ entry ) =>
+				Object.keys( entry.destinations ).some(
+					( /** @type {string} */ key ) =>
+						true === entry.destinations[ key ].enabled
+				)
+			);
+
+		expect( created ).toBeTruthy();
+		expect( created.collection_surface ).toBe( 'checkout' );
+		expect( created.section ).toBe( 'order' );
 	} );
 } );
 

@@ -40,6 +40,13 @@ import { TextField, SelectField, CheckboxField } from './components/controls';
 import FieldManagerView from './views/FieldManagerView';
 import useUnsavedChanges from './api/useUnsavedChanges';
 import { sectionHref } from './sectionUrl';
+import {
+	collectsAt,
+	containerWords,
+	isCustomerDestination,
+	navigation,
+	offeredInSentence,
+} from './design/destinations';
 import { Icon } from './design/icons';
 import useDocumentHistory from './schema/useDocumentHistory';
 import {
@@ -80,108 +87,19 @@ import {
  */
 const FALLBACK_SECTION = 'order';
 
-/** The three stable work areas of the editor, mapped to real destinations. */
-const EDITOR_AREAS = [
-	{
-		id: 'checkout',
-		label: __( 'Checkout', 'wc-checkoutsuite' ),
-		description: __(
-			'Campos preenchidos durante a compra.',
-			'wc-checkoutsuite'
-		),
-	},
-	{
-		id: 'customer_order',
-		label: __( 'Cliente', 'wc-checkoutsuite' ),
-		description: __(
-			'Minha conta → Pedidos → Ver pedido.',
-			'wc-checkoutsuite'
-		),
-	},
-	{
-		id: 'customer_account',
-		label: __( 'Minha conta', 'wc-checkoutsuite' ),
-		description: __(
-			'Nova aba com formulário e dados próprios do cliente.',
-			'wc-checkoutsuite'
-		),
-	},
-	{
-		id: 'admin_customer',
-		label: __( 'Perfil do cliente', 'wc-checkoutsuite' ),
-		description: __(
-			'Admin → Usuários → editar cliente.',
-			'wc-checkoutsuite'
-		),
-	},
-	{
-		id: 'admin_order',
-		label: __( 'Pedido', 'wc-checkoutsuite' ),
-		description: __(
-			'Admin → WooCommerce → Pedidos → Editar pedido.',
-			'wc-checkoutsuite'
-		),
-	},
-];
-
 /**
- * The work areas whose values belong to the customer, not to an order.
+ * Whether the work area the merchant is in holds the customer's own values.
  *
- * They are two surfaces over one store: the customer's own page in My Account, and the
- * panel staff read on the customer's profile screen.
- */
-const CUSTOMER_AREAS = [ 'customer_account', 'admin_customer' ];
-
-/**
- * Whether a work area collects the customer's own data.
+ * The two customer surfaces are one store with two readers: the customer's page in My
+ * Account and the panel staff read on the customer's profile. The registry in
+ * `design/destinations.js` decides which destinations those are.
  *
  * @param {string} area Editor work area.
  * @return {boolean} Whether it is a customer surface.
  */
 function isCustomerArea( area ) {
-	return CUSTOMER_AREAS.includes( area );
+	return isCustomerDestination( area );
 }
-
-/** Human location shown beside each section area choice. */
-/** @type {Record<string, string>} */
-const SECTION_AREA_REFERENCE = {
-	checkout: __(
-		'Preenchido pelo cliente durante a finalização da compra.',
-		'wc-checkoutsuite'
-	),
-	admin_order: __(
-		'Exibido para a equipe em WooCommerce → Pedidos → Editar pedido.',
-		'wc-checkoutsuite'
-	),
-	customer_order: __(
-		'Exibido ao cliente em Minha conta → Pedidos → Ver pedido.',
-		'wc-checkoutsuite'
-	),
-	order_received: __(
-		'Exibido na página mostrada ao cliente após concluir o pedido.',
-		'wc-checkoutsuite'
-	),
-	customer_email: __(
-		'Exibido nos e-mails enviados ao cliente sobre o pedido.',
-		'wc-checkoutsuite'
-	),
-	admin_email: __(
-		'Exibido nos e-mails internos enviados para a loja.',
-		'wc-checkoutsuite'
-	),
-	customer_account: __(
-		'Página própria do cliente em Minha conta, fora de um pedido. Uma seção oferecida aqui vira uma página autenticada que ele mesmo preenche.',
-		'wc-checkoutsuite'
-	),
-	admin_customer: __(
-		'Painel no perfil do cliente, dentro do admin, fora de um pedido. Os valores são os mesmos que o cliente vê em Minha conta.',
-		'wc-checkoutsuite'
-	),
-	public_api: __(
-		'Disponibilizado pela API pública, quando autorizada.',
-		'wc-checkoutsuite'
-	),
-};
 
 /** Local draft handoff used when the shell swaps the editor for another screen. */
 const LOCAL_DRAFT_KEY = 'wccs-local-draft';
@@ -435,15 +353,7 @@ export default function FieldsScreen( {
 
 	/** @type {[string, Function]} */
 	const [ newSectionLocation, setNewSectionLocation ] = useState( 'billing' );
-	/**
-	 * The areas a section being created is offered in.
-	 *
-	 * A section is offered somewhere or it cannot be chosen; the checkout is where a
-	 * section has always lived, so that is what starts ticked.
-	 *
-	 * @type {[string[], Function]}
-	 */
-	const [ newSectionAreas, setNewSectionAreas ] = useState( [ 'checkout' ] );
+	/** @type {[string, Function]} */
 	const [ newSectionIcon, setNewSectionIcon ] = useState( 'user' );
 	const [ newSectionMode, setNewSectionMode ] = useState(
 		/** @type {'edit'|'view'} */ ( 'edit' )
@@ -1185,7 +1095,7 @@ export default function FieldsScreen( {
 					} ) ),
 					linkSections: declaredSections,
 					area,
-					areas: EDITOR_AREAS,
+					areas: navigation(),
 					onAreaChange: setArea,
 					loading,
 					dirty,
@@ -1247,44 +1157,44 @@ export default function FieldsScreen( {
 						id && apply( removeField( document, id ) ),
 					onProtect: explainProtection,
 					onCreateField: ( /** @type {any} */ choice ) => {
-						if ( 'checkout' !== area && ! isCustomerArea( area ) ) {
-							setRefusal(
-								__(
-									'Nesta área, vincule um campo existente. Campos novos podem ser criados no Checkout, em Minha conta ou no perfil do cliente.',
-									'wc-checkoutsuite'
-								)
-							);
-							return;
-						}
+						// A field can be created in any destination the merchant works in
+						// (§9), and creating it here binds it here. Where its value is
+						// *collected* is a property of the field, not of the container it was
+						// created in: it is the checkout, unless the destination is one of the
+						// two customer surfaces, where the value lives with the customer.
+						const collectedHere = collectsAt( area );
+						const customerSurface = isCustomerArea( area );
 
 						apply(
 							createField( document, {
 								...choice,
 								label: choice.defaults?.label ?? choice.label,
-								section,
+								// A destination that only shows values collects nothing: the
+								// field is created with its collection home in the checkout, so
+								// it is not a definition nobody can ever fill in.
+								section: collectedHere ? section : 'order',
 								settings: choice.settings,
 								layout: choice.defaults?.layout,
-								// Where a value is collected is a property of the field, and the
-								// two customer surfaces write the same store: the value lives
-								// with the customer and is offered again on the next order.
-								collectionSurface: isCustomerArea( area )
+								collectionSurface: customerSurface
 									? 'my_account'
 									: 'checkout',
-								...( isCustomerArea( area )
+								...( customerSurface
 									? {
 											storage: {
 												scope: 'customer',
 												sensitivity: 'personal',
 											},
-											destinations: {
-												[ area ]: {
-													enabled: true,
-													section,
-													mode: 'edit',
-												},
-											},
 									  }
 									: {} ),
+								destinations: {
+									[ area ]: {
+										enabled: true,
+										section,
+										...( customerSurface
+											? { mode: 'edit' }
+											: {} ),
+									},
+								},
 							} )
 						);
 					},
@@ -1325,12 +1235,11 @@ export default function FieldsScreen( {
 							? setEditingSectionId( id )
 							: setRefusal(
 									__(
-										'Esta seção implícita do WooCommerce não pode ser editada. Crie uma seção personalizada para configurar nome e áreas.',
+										'Esta seção implícita do WooCommerce não pode ser editada. Crie uma seção personalizada para dar-lhe um nome.',
 										'wc-checkoutsuite'
 									)
 							  ),
 					onCreateSection: () => {
-						setNewSectionAreas( [ area ] );
 						setNewSectionLocation( defaultSectionLocation( area ) );
 						setNewSectionIcon( 'user' );
 						setNewSectionMode( 'edit' );
@@ -1344,9 +1253,13 @@ export default function FieldsScreen( {
 					removalDialog: sectionRemoval ? (
 						<Dialog
 							open={ true }
-							title={ __(
-								'Remover seção e dependências',
-								'wc-checkoutsuite'
+							title={ sprintf(
+								/* translators: %s: what this destination calls its container. */
+								__(
+									'Remover %s e dependências',
+									'wc-checkoutsuite'
+								),
+								containerWords( area ).one
 							) }
 							onClose={ () => setSectionRemoval( null ) }
 							footer={
@@ -1376,9 +1289,13 @@ export default function FieldsScreen( {
 											}
 										} }
 									>
-										{ __(
-											'Remover seção e campos',
-											'wc-checkoutsuite'
+										{ sprintf(
+											/* translators: %s: what this destination calls its container. */
+											__(
+												'Remover %s e campos',
+												'wc-checkoutsuite'
+											),
+											containerWords( area ).one
 										) }
 									</Button>
 								</>
@@ -1609,7 +1526,7 @@ export default function FieldsScreen( {
 					sectionDraft: (
 						<Dialog
 							open={ sectionDraftOpen }
-							title={ __( 'Add a section', 'wc-checkoutsuite' ) }
+							title={ containerWords( area ).create }
 							onClose={ () => setSectionDraftOpen( false ) }
 							footer={
 								<>
@@ -1624,8 +1541,7 @@ export default function FieldsScreen( {
 									<Button
 										variant="primary"
 										disabled={
-											'' === newSectionTitle.trim() ||
-											0 === newSectionAreas.length
+											'' === newSectionTitle.trim()
 										}
 										onClick={ () => {
 											const title =
@@ -1636,7 +1552,9 @@ export default function FieldsScreen( {
 													title,
 													location:
 														newSectionLocation,
-													areas: newSectionAreas,
+													// The container belongs to the destination the merchant is
+													// working in: creating one here offers it here (§18).
+													areas: [ area ],
 													presentation: {
 														show_title:
 															newSectionShowTitle,
@@ -1688,16 +1606,10 @@ export default function FieldsScreen( {
 												)
 											);
 											setNewSectionTitle( '' );
-											setNewSectionAreas( [
-												'checkout',
-											] );
 											setSectionDraftOpen( false );
 										} }
 									>
-										{ __(
-											'Add section',
-											'wc-checkoutsuite'
-										) }
+										{ containerWords( area ).submit }
 									</Button>
 								</>
 							}
@@ -1711,7 +1623,7 @@ export default function FieldsScreen( {
 
 							<TextField
 								id="wccs-new-section-title"
-								label={ __( 'Title', 'wc-checkoutsuite' ) }
+								label={ __( 'Nome', 'wc-checkoutsuite' ) }
 								value={ newSectionTitle }
 								onChange={ (
 									/** @type {{ target: { value: string } }} */ event
@@ -1723,7 +1635,7 @@ export default function FieldsScreen( {
 									<SelectField
 										id="wccs-new-section-location"
 										label={ __(
-											'Location',
+											'Local',
 											'wc-checkoutsuite'
 										) }
 										value={ newSectionLocation }
@@ -1743,46 +1655,14 @@ export default function FieldsScreen( {
 											)
 										}
 									/>
-									<div className="form-label">
-										{ __( 'Areas', 'wc-checkoutsuite' ) }
-									</div>
-									{ ( catalog?.sectionAreas ?? [] ).map(
-										( /** @type {any} */ entry ) => (
-											<CheckboxField
-												key={ entry.value }
-												id={ `wccs-new-section-area-${ entry.value }` }
-												label={ entry.label }
-												help={
-													SECTION_AREA_REFERENCE[
-														entry.value
-													] ?? entry.description
-												}
-												checked={ newSectionAreas.includes(
-													entry.value
-												) }
-												onChange={ (
-													/** @type {{ target: { checked: boolean } }} */ event
-												) =>
-													setNewSectionAreas(
-														event.target.checked
-															? [
-																	...newSectionAreas,
-																	entry.value,
-															  ]
-															: newSectionAreas.filter(
-																	(
-																		/** @type {string} */ key
-																	) =>
-																		key !==
-																		entry.value
-															  )
-													)
-												}
-											/>
-										)
-									) }
 								</>
 							) : null }
+							{ /* Where the container lives is the destination the merchant is
+							     working in: creating one here offers it here (§18). The
+							     multi-area list is not a choice the form asks again. */ }
+							<p className="form-help">
+								{ offeredInSentence( [ area ] ) }
+							</p>
 							{ isCustomerArea( area ) ? (
 								<>
 									<Notice status="info">
@@ -1876,14 +1756,6 @@ export default function FieldsScreen( {
 									) }
 								</Notice>
 							) : null }
-							{ 0 === newSectionAreas.length ? (
-								<Notice status="warning">
-									{ __(
-										'Escolha pelo menos uma área para criar a seção.',
-										'wc-checkoutsuite'
-									) }
-								</Notice>
-							) : null }
 						</Dialog>
 					),
 					migrationDialog: legacyPromptOpen ? (
@@ -1955,7 +1827,7 @@ export default function FieldsScreen( {
 					sectionEditor: (
 						<Dialog
 							open={ null !== editingSectionId }
-							title={ __( 'Section', 'wc-checkoutsuite' ) }
+							title={ containerWords( area ).one }
 							onClose={ () => setEditingSectionId( null ) }
 							footer={
 								<Button
@@ -1973,7 +1845,7 @@ export default function FieldsScreen( {
 									<TextField
 										id="wccs-section-title"
 										label={ __(
-											'Title',
+											'Nome',
 											'wc-checkoutsuite'
 										) }
 										value={ editingSection.title }
@@ -1996,7 +1868,7 @@ export default function FieldsScreen( {
 									<SelectField
 										id="wccs-section-location"
 										label={ __(
-											'Location',
+											'Local',
 											'wc-checkoutsuite'
 										) }
 										value={ editingSection.location }
@@ -2024,69 +1896,15 @@ export default function FieldsScreen( {
 										}
 									/>
 
-									<div className="form-label">
-										{ __( 'Areas', 'wc-checkoutsuite' ) }
-									</div>
-									{ ( catalog?.sectionAreas ?? [] ).map(
-										( /** @type {any} */ entry ) => (
-											<CheckboxField
-												key={ entry.value }
-												id={ `wccs-section-area-${ entry.value }` }
-												label={ entry.label }
-												help={
-													SECTION_AREA_REFERENCE[
-														entry.value
-													] ?? entry.description
-												}
-												checked={ (
-													editingSection.areas ?? []
-												).includes( entry.value ) }
-												onChange={ (
-													/** @type {{ target: { checked: boolean } }} */ event
-												) => {
-													const current =
-														editingSection.areas ??
-														[];
-													if (
-														! event.target
-															.checked &&
-														current.length <= 1
-													) {
-														setRefusal(
-															__(
-																'Uma seção precisa permanecer ativa em pelo menos uma área.',
-																'wc-checkoutsuite'
-															)
-														);
-														return;
-													}
-
-													apply(
-														updateSection(
-															document,
-															editingSection.id,
-															{
-																areas: event
-																	.target
-																	.checked
-																	? [
-																			...current,
-																			entry.value,
-																	  ]
-																	: current.filter(
-																			(
-																				/** @type {string} */ key
-																			) =>
-																				key !==
-																				entry.value
-																	  ),
-															}
-														)
-													);
-												} }
-											/>
-										)
-									) }
+									{ /* The destinations a stored container is offered in are
+									     read here, not chosen: it was created in one of them,
+									     and a document may legitimately offer the same group
+									     of fields to more than one reader. */ }
+									<p className="form-help">
+										{ offeredInSentence(
+											editingSection.areas ?? []
+										) }
+									</p>
 									{ ( editingSection.areas ?? [] ).some(
 										( /** @type {string} */ offered ) =>
 											isCustomerArea( offered )

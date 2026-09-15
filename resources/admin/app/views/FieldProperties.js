@@ -21,6 +21,8 @@
 import { useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 
+import { destination as destinationEntry } from '../design/destinations';
+
 import ConditionBuilder from '../components/ConditionBuilder';
 import { SettingsControls } from '../components/SettingsControls';
 import { isProtected, protectionReason } from '../schema/fieldOperations';
@@ -149,6 +151,20 @@ export default function FieldProperties( {
 
 	const type = catalog?.types?.[ field.type ] ?? null;
 	const vocabulary = /** @type {any} */ ( catalog?.vocabulary ?? {} );
+
+	/**
+	 * The catalogue's destinations, named the way the editor names them.
+	 *
+	 * The server's vocabulary is written for the store — its policy text lists those
+	 * labels — and the editor has its own words for the same places (§2, §14): «Pedido»,
+	 * «Painel do cliente», «Minha conta». The key is what the document stores; only what
+	 * the merchant reads is replaced here.
+	 *
+	 * @param {any} entry Vocabulary entry.
+	 * @return {string} Label.
+	 */
+	const destinationLabel = ( entry ) =>
+		destinationEntry( entry.value )?.label ?? entry.label;
 	const layout = /** @type {Record<string, number>} */ (
 		/** @type {unknown} */ ( field.layout ?? {} )
 	);
@@ -684,10 +700,12 @@ export default function FieldProperties( {
 										className="condition-row"
 										key={ entry.value }
 										role="group"
-										aria-label={ entry.label }
+										aria-label={ destinationLabel( entry ) }
 									>
 										<div className="condition-row-head">
-											<span>{ entry.label }</span>
+											<span>
+												{ destinationLabel( entry ) }
+											</span>
 										</div>
 
 										<SwitchRow
@@ -698,7 +716,7 @@ export default function FieldProperties( {
 													'Mostrar em %s',
 													'wc-checkoutsuite'
 												),
-												entry.label
+												destinationLabel( entry )
 											) }
 											help={ entry.description ?? '' }
 											checked={ Boolean( link.enabled ) }
@@ -1007,7 +1025,9 @@ export default function FieldProperties( {
 													key={ entry.value }
 													value={ entry.value }
 												>
-													{ entry.label }
+													{ destinationLabel(
+														entry
+													) }
 												</option>
 											)
 										) }
@@ -1192,7 +1212,7 @@ export default function FieldProperties( {
 												key={ entry.value }
 												value={ entry.value }
 											>
-												{ entry.label }
+												{ destinationLabel( entry ) }
 											</option>
 										) ) }
 									</select>
@@ -1234,7 +1254,7 @@ export default function FieldProperties( {
 												key={ entry.value }
 												value={ entry.value }
 											>
-												{ entry.label }
+												{ destinationLabel( entry ) }
 											</option>
 										) ) }
 									</select>

@@ -16,8 +16,11 @@
  *      and asking for it on a field that has none writes a state the merchant can see and
  *      edit — the server refuses a flow that names none, so the suggestion is what makes
  *      the flow configurable at all.
- *   4. **Sections per area (WCCS-073).** The section dialog offers the areas, and the
- *      section select inside a destination offers only the sections offered there.
+ *   4. **The destination the merchant works in (§2, §3, §18).** The bar offers the five
+ *      entries the specification names, a group opens its own destinations under it, and a
+ *      container is created in the destination the merchant is in — the form no longer asks
+ *      which areas it belongs to. The section select *inside* a destination still offers
+ *      only the sections offered there (WCCS-073).
  *   5. **Saving (WCCS-071/072, §16 da especificação).** The document is saved from the
  *      interface, and the store ends up on the revision the screen reported.
  *
@@ -403,49 +406,68 @@ await step( 'The page could be reloaded after the local change', async () => {
 } );
 
 // ---------------------------------------------------------------------------
-// 4. Sections per area.
+// 4. The destination the merchant works in.
 // ---------------------------------------------------------------------------
-await step( 'The section dialog could be opened', async () => {
-	await page.getByRole( 'button', { name: 'Nova seção' } ).first().click();
-	await page.waitForTimeout( 600 );
-
-	const dialogAreas = await page.evaluate( () =>
+await step( 'The destination bar and its section dialog could be opened', async () => {
+	// The navigation keeps three destinations on their own and two groups behind an entry
+	// (§3), rather than showing every area at once.
+	const bar = await page.evaluate( () =>
 		Array.from(
-			document.querySelectorAll(
-				'input[type=checkbox][id^=wccs-new-section-area-]'
-			)
-		).map( ( node ) => ( { id: node.id, checked: node.checked } ) )
+			document.querySelectorAll( '.wccs-editor-areas [role=tab]' )
+		).map( ( node ) => node.textContent )
 	);
 
 	record(
-		'The section dialog offers the areas, with the checkout on and no public API',
-		dialogAreas.length === 8 &&
-			dialogAreas.some(
-				( area ) =>
-					area.id === 'wccs-new-section-area-checkout' && area.checked
-			) &&
-			dialogAreas.some(
-				( area ) =>
-					area.id === 'wccs-new-section-area-admin_order' &&
-					! area.checked
-			) &&
-			// The two customer surfaces are separate areas: the customer's own page and
-			// the panel staff read on their profile.
-			dialogAreas.some(
-				( area ) => area.id === 'wccs-new-section-area-customer_account'
-			) &&
-			dialogAreas.some(
-				( area ) => area.id === 'wccs-new-section-area-admin_customer'
-			) &&
-			! dialogAreas.some(
-				( area ) => area.id === 'wccs-new-section-area-public_api'
-			),
-		'areas=' +
-			dialogAreas
-				.map( ( area ) =>
-					area.id.replace( 'wccs-new-section-area-', '' )
-				)
-				.join( ',' )
+		'The bar offers the destinations the specification names',
+		bar.length === 5 &&
+			/Checkout/.test( bar[ 0 ] ) &&
+			/Minha conta/.test( bar[ 1 ] ) &&
+			/Pedido do cliente/.test( bar[ 2 ] ) &&
+			/Admin/.test( bar[ 3 ] ) &&
+			/Mais destinos/.test( bar[ 4 ] ),
+		bar.map( ( entry ) => entry.replace( /\s+/g, ' ' ).slice( 0, 24 ) ).join( ' | ' )
+	);
+
+	// A group opens its own destinations under it.
+	await page.getByRole( 'tab', { name: /^Admin/ } ).click();
+	await page.waitForTimeout( 400 );
+
+	const inside = await page.evaluate( () =>
+		Array.from(
+			document.querySelectorAll( '.wccs-editor-subareas [role=tab]' )
+		).map( ( node ) => node.textContent )
+	);
+
+	record(
+		'And a group opens its own destinations under it',
+		inside.length === 2 &&
+			/Pedido/.test( inside[ 0 ] ) &&
+			/Perfil do cliente/.test( inside[ 1 ] ),
+		inside.map( ( entry ) => entry.replace( /\s+/g, ' ' ).slice( 0, 24 ) ).join( ' | ' )
+	);
+
+	await page.getByRole( 'tab', { name: /^Checkout/ } ).click();
+	await page.waitForTimeout( 400 );
+
+	await page.getByRole( 'button', { name: 'Nova seção' } ).first().click();
+	await page.waitForTimeout( 600 );
+
+	const dialog = await page.evaluate( () => ( {
+		title: document.querySelector( 'dialog[open] h2, dialog[open] .dialog-title' )?.textContent ?? '',
+		areas: Array.from(
+			document.querySelectorAll(
+				'input[type=checkbox][id^=wccs-new-section-area-]'
+			)
+		).length,
+		offered: Array.from( document.querySelectorAll( 'dialog[open] .form-help' ) )
+			.map( ( node ) => node.textContent )
+			.join( ' | ' ),
+	} ) );
+
+	record(
+		'The container belongs to the destination it is created in, and the form no longer asks for areas',
+		0 === dialog.areas && /Aparece em: Checkout/.test( dialog.offered ),
+		'area checkboxes=' + dialog.areas + ' offered=' + dialog.offered
 	);
 
 	await page.screenshot( { path: `${ OUT }/f14-section-areas.png` } );

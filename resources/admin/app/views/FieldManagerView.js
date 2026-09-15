@@ -36,6 +36,12 @@ import { Toast } from '../design/Toast';
 import { TopbarActions } from '../design/TopbarActions';
 import { Icon } from '../design/icons';
 import { sectionCopy } from '../design/sectionMeta';
+import {
+	activeEntry,
+	collectsAt,
+	containerWords,
+	navigation,
+} from '../design/destinations';
 import { useNarrowViewport } from '../design/useNarrowViewport';
 import { typeGlyph } from '../design/typeGlyph';
 
@@ -146,6 +152,16 @@ export default function FieldManagerView( { model } ) {
 		removalDialog,
 		migrationDialog,
 	} = model;
+
+	/** What this destination calls the group of fields the merchant works on. */
+	const words = containerWords( area );
+
+	/** The navigation entry this destination belongs to, and its siblings. */
+	const areaGroup =
+		navigation().find(
+			( /** @type {any} */ candidate ) =>
+				candidate.id === activeEntry( area )
+		) ?? null;
 
 	/** The design's own view state: the search box and the origin filter. */
 	const [ search, setSearch ] = useState( '' );
@@ -635,49 +651,111 @@ export default function FieldManagerView( { model } ) {
 								) }
 						</p>
 					</div>
-					{ [ 'checkout', 'my_account' ].includes( area ) ? (
-						<button
-							type="button"
-							className="btn btn-primary btn-add"
-							onClick={ () => setPickerOpen( true ) }
-						>
-							<Icon name="plus" />
-							{ __( 'Adicionar campo', 'wc-checkoutsuite' ) }
-						</button>
+					{ /* Both ways are offered everywhere (§9): a field can be created here
+					     and bound to this container, or an existing one reused. Which of the
+					     two is the main action is what the destination is for — where a
+					     customer fills a value in, creating is the ordinary path; where the
+					     value is only shown, reusing what was collected is (§6). */ }
+					{ collectsAt( area ) ? (
+						<>
+							<button
+								type="button"
+								className="btn btn-primary btn-add"
+								onClick={ () => setPickerOpen( true ) }
+							>
+								<Icon name="plus" />
+								{ __( 'Adicionar campo', 'wc-checkoutsuite' ) }
+							</button>
+							<button
+								type="button"
+								className="btn"
+								onClick={ onLinkExisting }
+							>
+								{ __(
+									'Vincular campo existente',
+									'wc-checkoutsuite'
+								) }
+							</button>
+						</>
 					) : (
-						<button
-							type="button"
-							className="btn btn-primary btn-add"
-							onClick={ onLinkExisting }
-						>
-							<Icon name="plus" />
-							{ __(
-								'Vincular campo existente',
-								'wc-checkoutsuite'
-							) }
-						</button>
+						<>
+							<button
+								type="button"
+								className="btn btn-primary btn-add"
+								onClick={ onLinkExisting }
+							>
+								<Icon name="plus" />
+								{ __(
+									'Vincular campo existente',
+									'wc-checkoutsuite'
+								) }
+							</button>
+							<button
+								type="button"
+								className="btn"
+								onClick={ () => setPickerOpen( true ) }
+							>
+								{ __( 'Adicionar campo', 'wc-checkoutsuite' ) }
+							</button>
+						</>
 					) }
 				</div>
 
 				<div
 					className="wccs-editor-areas"
 					role="tablist"
-					aria-label={ __( 'Área de trabalho', 'wc-checkoutsuite' ) }
+					aria-label={ __( 'Destino', 'wc-checkoutsuite' ) }
 				>
-					{ areas.map( ( /** @type {any} */ entry ) => (
+					{ areas.map( ( /** @type {any} */ tab ) => (
 						<button
-							key={ entry.id }
+							key={ tab.id }
 							type="button"
 							role="tab"
-							aria-selected={ entry.id === area }
-							className={ entry.id === area ? 'active' : '' }
-							onClick={ () => onAreaChange( entry.id ) }
+							aria-selected={ tab.id === activeEntry( area ) }
+							className={
+								tab.id === activeEntry( area ) ? 'active' : ''
+							}
+							onClick={ () =>
+								onAreaChange( tab.members[ 0 ].id )
+							}
 						>
-							<strong>{ entry.label }</strong>
-							<small>{ entry.description }</small>
+							<strong>{ tab.label }</strong>
+							<small>{ tab.description }</small>
 						</button>
 					) ) }
 				</div>
+
+				{ /* A group opens its own destinations under it, rather than putting every
+				     destination in one row of checkboxes (§3). */ }
+				{ areaGroup && areaGroup.members.length > 1 ? (
+					<div
+						className="wccs-editor-subareas"
+						role="tablist"
+						aria-label={ sprintf(
+							/* translators: %s: group name, such as Admin. */
+							__( 'Dentro de %s', 'wc-checkoutsuite' ),
+							areaGroup.label
+						) }
+					>
+						{ areaGroup.members.map(
+							( /** @type {any} */ member ) => (
+								<button
+									key={ member.id }
+									type="button"
+									role="tab"
+									aria-selected={ member.id === area }
+									className={
+										member.id === area ? 'active' : ''
+									}
+									onClick={ () => onAreaChange( member.id ) }
+								>
+									<strong>{ member.label }</strong>
+									<small>{ member.description }</small>
+								</button>
+							)
+						) }
+					</div>
+				) : null }
 
 				<div className="contextbar">
 					<div
@@ -875,9 +953,10 @@ export default function FieldManagerView( { model } ) {
 							<div
 								className="section-tabs"
 								role="group"
-								aria-label={ __(
-									'Seções da área selecionada',
-									'wc-checkoutsuite'
+								aria-label={ sprintf(
+									/* translators: %s: what this destination calls its containers. */
+									__( '%s desta área', 'wc-checkoutsuite' ),
+									words.many
 								) }
 							>
 								{ groups.map( ( /** @type {any} */ group ) => {
@@ -921,7 +1000,7 @@ export default function FieldManagerView( { model } ) {
 									onClick={ onCreateSection }
 								>
 									<Icon name="plus" />
-									{ __( 'Nova seção', 'wc-checkoutsuite' ) }
+									{ words.create }
 								</button>
 							</div>
 
@@ -990,18 +1069,13 @@ export default function FieldManagerView( { model } ) {
 										)
 									}
 									aria-label={ sprintf(
-										/* translators: %s: section title. */
-										__(
-											'Ações da seção %s',
-											'wc-checkoutsuite'
-										),
+										/* translators: 1: what this destination calls the actions, 2: container title. */
+										__( '%1$s: %2$s', 'wc-checkoutsuite' ),
+										words.actions,
 										copy.title
 									) }
 								>
-									{ __(
-										'Ações da seção',
-										'wc-checkoutsuite'
-									) }
+									{ words.actions }
 								</button>
 							</div>
 

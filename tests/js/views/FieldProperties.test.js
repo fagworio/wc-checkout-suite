@@ -281,12 +281,14 @@ describe( 'the links and display tab', () => {
 
 		await user.click( screen.getByRole( 'button', { name: 'Vínculos' } ) );
 
+		// Named the editor's way: the server's label is written for the store's own
+		// documents, and the merchant reads the destination the editor calls it.
 		expect(
-			screen.getByRole( 'group', { name: 'Order screen, for staff' } )
+			screen.getByRole( 'group', { name: 'Pedido' } )
 		).toBeInTheDocument();
 		expect(
 			screen.getByRole( 'checkbox', {
-				name: 'Mostrar em Order screen, for staff',
+				name: 'Mostrar em Pedido',
 			} )
 		).not.toBeChecked();
 	} );
@@ -344,7 +346,7 @@ describe( 'the links and display tab', () => {
 		// section and in what order. The actions are the file's, and this type has no
 		// file to show, open, download, approve or replace.
 		expect(
-			screen.getByRole( 'group', { name: 'Order screen, for staff' } )
+			screen.getByRole( 'group', { name: 'Pedido' } )
 		).toBeInTheDocument();
 		expect(
 			screen.getByLabelText( 'Seção neste destino' )
