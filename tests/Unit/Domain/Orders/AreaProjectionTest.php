@@ -13,6 +13,7 @@ use PHPUnit\Framework\TestCase;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Orders\AreaProjection;
 use WCCheckoutSuite\Domain\Orders\OrderFieldEntry;
+use WCCheckoutSuite\Domain\Registries;
 
 /**
  * Section, title and order, read from the link and not from the field.
@@ -23,6 +24,17 @@ use WCCheckoutSuite\Domain\Orders\OrderFieldEntry;
  * and the projection is where that is decided for every surface at once.
  */
 final class AreaProjectionTest extends TestCase {
+
+	/**
+	 * Boots the registries, because whether a field stores a file is the registry's answer.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+
+		Registries::boot();
+	}
 
 	/**
 	 * One entry.
@@ -286,5 +298,192 @@ final class AreaProjectionTest extends TestCase {
 		);
 
 		self::assertSame( 'Do documento', $groups[0]['fields'][0]['title'] );
+	}
+
+	/**
+	 * The same field used twice in one area: two rows, each with its own decision.
+	 *
+	 * This is what `FieldBinding` exists for (§3.3). The field keeps one definition and one
+	 * value; what changes per use is where it appears, under which title, in which order
+	 * and with which permissions.
+	 *
+	 * @return void
+	 */
+	public function test_a_field_bound_twice_in_one_area_appears_twice(): void {
+		$definition = $this->definition( 'cpf', 'billing', 5, array() );
+
+		$definition['bindings'] = array(
+			array(
+				'field_id'       => 'cpf',
+				'container_id'   => 'antes',
+				'destination'    => 'admin_order',
+				'label_override' => 'CPF do titular',
+				'position'       => 20,
+				'visible'        => true,
+				'editable'       => false,
+				'permissions'    => array( 'show_metadata', 'view' ),
+			),
+			array(
+				'field_id'       => 'cpf',
+				'container_id'   => 'depois',
+				'destination'    => 'admin_order',
+				'label_override' => 'CPF conferido',
+				'position'       => 10,
+				'visible'        => true,
+				'editable'       => true,
+			),
+		);
+
+		$groups = AreaProjection::group(
+			array( $this->entry( 'cpf', 'CPF' ) ),
+			array( $definition ),
+			$this->sections(),
+			'admin_order'
+		);
+
+		self::assertCount( 2, $groups, 'one row per use, in the container each use named' );
+		self::assertSame( 'antes', $groups[0]['id'], 'containers come out by position' );
+		self::assertSame( 'depois', $groups[1]['id'] );
+
+		$first  = $groups[0]['fields'][0];
+		$second = $groups[1]['fields'][0];
+
+		self::assertSame( 'CPF do titular', $first['title'] );
+		self::assertSame( 'CPF conferido', $second['title'] );
+		self::assertSame( 20, $first['position'] );
+		self::assertSame( 10, $second['position'] );
+		self::assertFalse( $first['binding']->is_editable() );
+		self::assertTrue( $second['binding']->is_editable() );
+		self::assertSame( array( 'show_metadata', 'view' ), $first['binding']->permissions() );
+		self::assertSame( 'cpf', $first['entry']->id(), 'the value is the same field' );
+	}
+
+	/**
+	 * Two uses in the same container keep a stable order, even at the same position.
+	 *
+	 * @return void
+	 */
+	public function test_two_uses_in_one_container_keep_a_stable_order(): void {
+		$definition = $this->definition( 'cpf', 'billing', 5, array() );
+
+		$definition['bindings'] = array(
+			array(
+				'field_id'       => 'cpf',
+				'container_id'   => 'antes',
+				'destination'    => 'admin_order',
+				'label_override' => 'Segundo',
+				'position'       => 10,
+				'visible'        => true,
+			),
+			array(
+				'field_id'       => 'cpf',
+				'container_id'   => 'antes',
+				'destination'    => 'admin_order',
+				'label_override' => 'Primeiro',
+				'position'       => 10,
+				'visible'        => true,
+			),
+		);
+
+		$groups = AreaProjection::group(
+			array( $this->entry( 'cpf', 'CPF' ) ),
+			array( $definition ),
+			$this->sections(),
+			'admin_order'
+		);
+
+		self::assertCount( 1, $groups );
+		self::assertSame(
+			array( 'Segundo', 'Primeiro' ),
+			array_map( static fn( array $field ): string => $field['title'], $groups[0]['fields'] ),
+			'the binding identifier breaks the tie, so the order never changes between reads'
+		);
+	}
+
+	/**
+	 * A use that is not visible is not shown, even when the field is.
+	 *
+	 * @return void
+	 */
+	public function test_an_invisible_use_is_skipped(): void {
+		$definition = $this->definition( 'cpf', 'billing', 5, array() );
+
+		$definition['bindings'] = array(
+			array(
+				'field_id'     => 'cpf',
+				'container_id' => 'antes',
+				'destination'  => 'admin_order',
+				'visible'      => false,
+			),
+		);
+
+		self::assertSame(
+			array(),
+			AreaProjection::group(
+				array( $this->entry( 'cpf', 'CPF' ) ),
+				array( $definition ),
+				$this->sections(),
+				'admin_order'
+			)
+		);
+	}
+
+	/**
+	 * A file appears only where its use allows the name and the details to be shown.
+	 *
+	 * The value of a file is the file itself, and metadata is how a surface says it is
+	 * there. A use that withheld `show_metadata` is asking not to list the field at all,
+	 * so the projection drops that row and keeps the others — the decision belongs to the
+	 * use, not to the type, which is why the same document may show a document on the
+	 * order screen and omit it from the customer's e-mail.
+	 *
+	 * @return void
+	 */
+	public function test_a_file_use_without_metadata_is_not_listed(): void {
+		$definition = $this->definition( 'licenca', 'billing', 5, array() );
+
+		$definition['type']     = 'file';
+		$definition['bindings'] = array(
+			array(
+				'field_id'       => 'licenca',
+				'container_id'   => 'antes',
+				'destination'    => 'admin_order',
+				'label_override' => 'Licença enviada',
+				'position'       => 1,
+				'visible'        => true,
+				'permissions'    => array( 'view' ),
+			),
+			array(
+				'field_id'       => 'licenca',
+				'container_id'   => 'antes',
+				'destination'    => 'admin_order',
+				'label_override' => 'Licença',
+				'position'       => 2,
+				'visible'        => true,
+				'permissions'    => array( 'show_metadata', 'view', 'download' ),
+			),
+			array(
+				'field_id'     => 'licenca',
+				'container_id' => 'antes',
+				'destination'  => 'admin_order',
+				'position'     => 3,
+				'visible'      => true,
+			),
+		);
+
+		$groups = AreaProjection::group(
+			array( $this->entry( 'licenca', 'Arquivo enviado' ) ),
+			array( $definition ),
+			$this->sections(),
+			'admin_order'
+		);
+
+		self::assertCount( 1, $groups, 'the use that withheld metadata is not listed' );
+		self::assertSame( 'antes', $groups[0]['id'] );
+		self::assertSame(
+			array( 'Licença', 'Arquivo enviado' ),
+			array_map( static fn( array $field ): string => $field['title'], $groups[0]['fields'] ),
+			'the use that asked for it stays, and a use that declared nothing gets the defaults'
+		);
 	}
 }

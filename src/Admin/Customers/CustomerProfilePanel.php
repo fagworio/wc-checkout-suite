@@ -14,6 +14,7 @@ use WP_User;
 use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
 use WCCheckoutSuite\Domain\Customers\CustomerFieldsService;
 use WCCheckoutSuite\Domain\Customers\CustomerSectionFields;
+use WCCheckoutSuite\Domain\Fields\FieldBinding;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Sections\SectionDefinition;
 
@@ -82,7 +83,7 @@ final class CustomerProfilePanel {
 	/**
 	 * The sections this panel shows, in the document's own order.
 	 *
-	 * @return array<int, array{section: SectionDefinition, entries: array<int, array{field: FieldDefinition, title: string, position: int}>}>
+	 * @return array<int, array{section: SectionDefinition, entries: array<int, array{field: FieldDefinition, title: string, position: int, binding: FieldBinding}>}>
 	 */
 	public static function sections(): array {
 		$document = PublishedDocument::read();
@@ -164,7 +165,9 @@ final class CustomerProfilePanel {
 
 				echo '<tr>';
 
-				if ( ! CustomerSectionFields::writable( $definition, self::DESTINATION ) ) {
+				// The use of the field decides, not the field: the same definition may be
+				// editable in one panel and read-only in the next (§3.3).
+				if ( ! CustomerSectionFields::entry_writable( $field ) ) {
 					printf(
 						'<th scope="row">%s</th><td>%s</td>',
 						esc_html( $field['title'] ),

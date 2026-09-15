@@ -170,6 +170,8 @@ final class FieldDefinition {
 			isset( $data['approval'] ) && is_array( $data['approval'] ) ? $data['approval'] : null,
 			isset( $data['collection_surface'] ) ? (string) $data['collection_surface'] : 'checkout',
 			self::bindings_from( $data ),
+			// Only a document that carries the list is canonical. A canonical document
+			// with nothing bound carries an empty list, and that is a decision too.
 			isset( $data['bindings'] ) && is_array( $data['bindings'] )
 		);
 	}
@@ -475,14 +477,15 @@ final class FieldDefinition {
 			'hidden_value_policy' => $this->hidden_value_policy,
 			'storage'             => $this->storage,
 			// A canonical document writes its bindings and the map derived from them. A
-			// document written before the split keeps the map it has, and gains bindings
-			// only when the migration layer converts it.
-			'bindings'            => $this->canonical ? $this->exported_bindings() : array(),
+			// document written before the split keeps the map it has — and does **not**
+			// gain an empty `bindings` key for saying so, because an empty list is a
+			// document that says "this field is used nowhere", which is a different
+			// statement. It gains bindings when the migration layer converts it.
 			'destinations'        => $this->exported_destinations(),
 			'approval'            => $this->approval,
 			'collection_surface'  => $this->collection_surface,
 			'schema_version'      => $this->schema_version,
-		);
+		) + ( $this->canonical ? array( 'bindings' => $this->exported_bindings() ) : array() );
 	}
 
 	/**

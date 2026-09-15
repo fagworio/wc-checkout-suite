@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Domain\Customers;
 
+use WCCheckoutSuite\Domain\Fields\FieldBinding;
 use WCCheckoutSuite\Domain\Fields\FieldContext;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Registries;
@@ -59,8 +60,8 @@ final class CustomerSectionFields {
 	 *
 	 * @param array<int, array<string, mixed>> $definitions Published definitions.
 	 * @param string                           $destination Destination key of the surface.
-	 * @param string                           $section_id  Section identifier.
-	 * @return array<int, array{field: FieldDefinition, title: string, position: int}> Renderable entries.
+	 * @param string                           $section_id  Container identifier.
+	 * @return array<int, array{field: FieldDefinition, title: string, position: int, binding: FieldBinding}> Renderable entries.
 	 */
 	public static function entries( array $definitions, string $destination, string $section_id ): array {
 		$entries = array();
@@ -71,70 +72,100 @@ final class CustomerSectionFields {
 			}
 
 			$field = FieldDefinition::from_array( $raw );
-			$link  = $field->destinations()[ $destination ] ?? array();
 
-			if (
-				! $field->is_enabled() ||
-				! in_array( $field->type(), self::RENDERABLE_TYPES, true ) ||
-				empty( $link['enabled'] ) ||
-				(string) ( $link['section'] ?? '' ) !== $section_id
-			) {
+			if ( ! $field->is_enabled() || ! in_array( $field->type(), self::RENDERABLE_TYPES, true ) ) {
 				continue;
 			}
 
-			$title = isset( $link['title'] ) && '' !== trim( (string) $link['title'] )
-				? (string) $link['title']
-				: $field->label();
+			// One entry per binding: the same field may be used twice on the same page,
+			// with its own title, its own order and its own editable decision (§3.3).
+			foreach ( $field->bindings_for( $destination ) as $binding ) {
+				if ( ! $binding->is_visible() || $binding->container_id() !== $section_id ) {
+					continue;
+				}
 
-			$position = isset( $link['position'] ) && is_numeric( $link['position'] )
-				? (int) $link['position']
-				: $field->position();
-
-			$entries[] = array(
-				'field'    => $field,
-				'title'    => $title,
-				'position' => $position,
-			);
+				$entries[] = array(
+					'field'    => $field,
+					'title'    => $binding->title_for( $field->label() ),
+					'position' => $binding->has_position()
+						? $binding->position()
+						: $field->position(),
+					'binding'  => $binding,
+				);
+			}
 		}
 
-		usort( $entries, static fn( array $a, array $b ): int => $a['position'] <=> $b['position'] );
+		usort(
+			$entries,
+			static function ( array $a, array $b ): int {
+				$by_position = $a['position'] <=> $b['position'];
+
+				if ( 0 !== $by_position ) {
+					return $by_position;
+				}
+
+				return $a['binding']->id() <=> $b['binding']->id();
+			}
+		);
 
 		return $entries;
 	}
 
 	/**
-	 * Whether a link into this surface lets the value be written.
+	 * Whether the use of a field on this surface lets the value be written.
+	 *
+	 * @param array{field: FieldDefinition, title: string, position: int, binding: FieldBinding} $entry Entry.
+	 * @return bool
+	 */
+	public static function entry_writable( array $entry ): bool {
+		return $entry['binding']->is_editable();
+	}
+
+	/**
+	 * Whether any use of a field on this surface lets the value be written.
 	 *
 	 * @param FieldDefinition $field       Field definition.
 	 * @param string          $destination Destination key.
 	 * @return bool
 	 */
 	public static function writable( FieldDefinition $field, string $destination ): bool {
-		$link = $field->destinations()[ $destination ] ?? array();
+		foreach ( $field->bindings_for( $destination ) as $binding ) {
+			if ( $binding->is_editable() ) {
+				return true;
+			}
+		}
 
-		return 'edit' === ( $link['mode'] ?? 'edit' );
+		return false;
 	}
 
 	/**
 	 * Validates one submission and returns what may be written.
 	 *
-	 * @param array<int, array{field: FieldDefinition, title: string, position: int}> $entries     Rendered entries.
-	 * @param string                                                                  $destination Destination key of the surface.
-	 * @param array<string,mixed>                                                     $values      Current customer values.
-	 * @param array<string,mixed>                                                     $posted      Sanitized submitted values.
-	 * @param array<int,string>                                                       $errors      Validation errors, by reference.
+	 * @param array<int, array{field: FieldDefinition, title: string, position: int, binding: FieldBinding}> $entries     Rendered entries.
+	 * @param string                                                                                         $destination Destination key of the surface.
+	 * @param array<string,mixed>                                                                            $values      Current customer values.
+	 * @param array<string,mixed>                                                                            $posted      Sanitized submitted values.
+	 * @param array<int,string>                                                                              $errors      Validation errors, by reference.
 	 * @return array<string,mixed> Canonical updates.
 	 */
 	public static function submission( array $entries, string $destination, array $values, array $posted, array &$errors ): array {
 		$updates   = array();
 		$canonical = array();
+		$seen      = array();
 
 		foreach ( $entries as $entry ) {
 			$field = $entry['field'];
 
-			if ( ! self::writable( $field, $destination ) ) {
+			if ( ! self::entry_writable( $entry ) ) {
 				continue;
 			}
+
+			if ( isset( $seen[ $field->id() ] ) ) {
+				// The same field used twice: it is one value, validated and written once.
+				continue;
+			}
+
+			$seen[ $field->id() ] = true;
 
 			// The surface renders every writable field, so a key that never reached the
 			// request was not part of this submission: it is left alone rather than read

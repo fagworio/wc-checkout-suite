@@ -293,7 +293,12 @@ final class FieldDefinitionTest extends TestCase {
 
 		$array = $definition->to_array();
 
-		self::assertSame( array(), $array['bindings'] );
+		self::assertArrayNotHasKey(
+			'bindings',
+			$array,
+			'an empty list would say "this field is used nowhere", which is not what it means'
+		);
 		self::assertSame( 'billing', $array['destinations']['checkout']['section'] );
+		self::assertFalse( $definition->is_canonical() );
 	}
 }

@@ -35,7 +35,8 @@ final class FieldBinding {
 	 * @param string               $container_id         Container it sits in.
 	 * @param string               $destination          Destination it appears in.
 	 * @param string               $id                   Binding identifier.
-	 * @param int                  $position             Ordering position inside the container.
+	 * @param int|null             $position             Ordering position inside the container, or null
+	 *                                                   when the use did not configure one.
 	 * @param bool                 $visible              Whether it is shown there.
 	 * @param bool                 $editable             Whether the person reading it may change the value.
 	 * @param bool                 $required_override    Whether it becomes required there.
@@ -49,7 +50,7 @@ final class FieldBinding {
 		private string $container_id,
 		private string $destination,
 		private string $id = '',
-		private int $position = 0,
+		private ?int $position = null,
 		private bool $visible = true,
 		private bool $editable = false,
 		private bool $required_override = false,
@@ -102,7 +103,7 @@ final class FieldBinding {
 			isset( $link['section'] ) ? (string) $link['section'] : '',
 			$destination,
 			isset( $link['id'] ) ? (string) $link['id'] : '',
-			isset( $link['position'] ) && is_numeric( $link['position'] ) ? (int) $link['position'] : 0,
+			isset( $link['position'] ) && is_numeric( $link['position'] ) ? (int) $link['position'] : null,
 			! empty( $link['enabled'] ),
 			'view' !== $mode,
 			! empty( $link['required'] ),
@@ -127,7 +128,7 @@ final class FieldBinding {
 			isset( $data['container_id'] ) ? (string) $data['container_id'] : '',
 			isset( $data['destination'] ) ? (string) $data['destination'] : '',
 			isset( $data['id'] ) ? (string) $data['id'] : '',
-			isset( $data['position'] ) ? (int) $data['position'] : 0,
+			isset( $data['position'] ) && is_numeric( $data['position'] ) ? (int) $data['position'] : null,
 			! isset( $data['visible'] ) || (bool) $data['visible'],
 			! isset( $data['editable'] ) || (bool) $data['editable'],
 			! empty( $data['required_override'] ),
@@ -182,7 +183,19 @@ final class FieldBinding {
 	 * @return int
 	 */
 	public function position(): int {
-		return $this->position;
+		return $this->position ?? 0;
+	}
+
+	/**
+	 * Whether this use configured its own position.
+	 *
+	 * A use that did not keeps the field's own order, which is what a link that only
+	 * turned a destination on always did.
+	 *
+	 * @return bool
+	 */
+	public function has_position(): bool {
+		return null !== $this->position;
 	}
 
 	/**
@@ -269,7 +282,7 @@ final class FieldBinding {
 			'field_id'             => $this->field_id,
 			'container_id'         => $this->container_id,
 			'destination'          => $this->destination,
-			'position'             => $this->position,
+			'position'             => $this->position(),
 			'visible'              => $this->visible,
 			'editable'             => $this->editable,
 			'required_override'    => $this->required_override,
@@ -295,7 +308,7 @@ final class FieldBinding {
 			'enabled'  => $this->visible,
 			'section'  => $this->container_id,
 			'title'    => $this->label_override,
-			'position' => $this->position,
+			'position' => $this->position(),
 			'mode'     => $this->editable ? 'edit' : 'view',
 			'actions'  => $this->permissions,
 		);

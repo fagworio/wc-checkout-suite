@@ -21,6 +21,7 @@
 namespace WCCheckoutSuite\Domain\Uploads;
 
 use WCCheckoutSuite\Domain\Fields\DefinitionVocabulary;
+use WCCheckoutSuite\Domain\Fields\FieldBinding;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Registries;
 
@@ -60,24 +61,55 @@ final class FilePermissions {
 	/**
 	 * The actions one destination allows for one field.
 	 *
+	 * The union over the field's uses in that destination. A field may be used more than
+	 * once in the same area (§3.3), and the question this answers — "may this area do this
+	 * with this value at all?" — is true when any of its uses allows it. A surface that
+	 * draws one use asks {@see self::actions_for_binding()} instead, because that is the
+	 * decision that belongs to the use.
+	 *
 	 * @param FieldDefinition $definition  Definition.
 	 * @param string          $destination Destination key.
 	 * @return array<int, string> Allowed actions, empty when the destination is off.
 	 */
 	public static function actions( FieldDefinition $definition, string $destination ): array {
-		$link = $definition->destinations()[ $destination ] ?? array();
+		$allowed = array();
 
-		if ( empty( $link['enabled'] ) ) {
+		foreach ( $definition->bindings_for( $destination ) as $binding ) {
+			$allowed = array_merge( $allowed, self::actions_for_binding( $binding, $destination ) );
+		}
+
+		return array_values( array_unique( $allowed ) );
+	}
+
+	/**
+	 * The actions one use of a field allows in its destination.
+	 *
+	 * @param FieldBinding $binding     Binding.
+	 * @param string       $destination Destination key.
+	 * @return array<int, string> Allowed actions, empty when the use is not visible.
+	 */
+	public static function actions_for_binding( FieldBinding $binding, string $destination ): array {
+		if ( ! $binding->is_visible() ) {
 			return array();
 		}
 
 		$performable = DefinitionVocabulary::actions_for_destination( $destination );
 
-		$declared = isset( $link['actions'] ) && is_array( $link['actions'] ) && array() !== $link['actions']
-			? array_map( 'strval', $link['actions'] )
-			: self::DEFAULT_ACTIONS;
+		$declared = array() !== $binding->permissions() ? $binding->permissions() : self::DEFAULT_ACTIONS;
 
 		return array_values( array_intersect( $declared, $performable ) );
+	}
+
+	/**
+	 * Whether one use of a field allows one action in its destination.
+	 *
+	 * @param FieldBinding $binding     Binding.
+	 * @param string       $destination Destination key.
+	 * @param string       $action      Action key.
+	 * @return bool
+	 */
+	public static function allows_binding( FieldBinding $binding, string $destination, string $action ): bool {
+		return in_array( $action, self::actions_for_binding( $binding, $destination ), true );
 	}
 
 	/**
