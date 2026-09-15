@@ -85,6 +85,23 @@ function buildClient( queue, options = {} ) {
 	return { client, fetchImpl, sleep };
 }
 
+describe( 'the schema the store runs', () => {
+	it( 'offers no operation that rewrites the published document', () => {
+		const { client } = buildClient( [] );
+
+		// `saveDraft` is the only operation that carries a schema document, and
+		// publishing is the only thing that writes the published slot. An
+		// `/schema/update` route and an `updateActive()` method existed once, which
+		// gave the editor a second write path straight into what the store runs; the
+		// name is pinned here so that path cannot come back unnoticed.
+		expect( typeof client.saveDraft ).toBe( 'function' );
+		expect(
+			Object.keys( client ).filter( ( name ) => /active/i.test( name ) )
+		).toEqual( [] );
+		expect( typeof client.updateActive ).toBe( 'undefined' );
+	} );
+} );
+
 describe( 'createClient', () => {
 	it( 'refuses to build without a nonce', () => {
 		expect( () =>

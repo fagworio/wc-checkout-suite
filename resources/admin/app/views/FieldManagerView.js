@@ -30,6 +30,7 @@ import FieldProperties from './FieldProperties';
 import PreviewView from './PreviewView';
 import RulesView from './RulesView';
 import Notice from '../components/Notice';
+import PublishPanel from '../components/PublishPanel';
 import RevisionsList from '../components/RevisionsList';
 import Button from '../components/Button';
 import { Toast } from '../design/Toast';
@@ -127,6 +128,9 @@ export default function FieldManagerView( { model } ) {
 		onAdoptCore,
 		edits,
 		onSave,
+		onPublish,
+		publishing,
+		publishError,
 		report,
 		revisions,
 		restoring,
@@ -168,6 +172,9 @@ export default function FieldManagerView( { model } ) {
 		/** @type {'enable'|'disable'|'archive'|null} */ ( null )
 	);
 	const [ historyOpen, setHistoryOpen ] = useState( false );
+
+	/** Whether the publication review is open. */
+	const [ publishOpen, setPublishOpen ] = useState( false );
 
 	/**
 	 * The design's toast: the message on screen and a counter that restarts its
@@ -262,9 +269,7 @@ export default function FieldManagerView( { model } ) {
 	const activeArea = areas.find(
 		( /** @type {any} */ entry ) => entry.id === area
 	);
-	const sectionAreaIds = current?.fields?.length
-		? [ ...new Set( [ 'checkout', ...( current?.section.areas ?? [] ) ] ) ]
-		: current?.section.areas ?? [ 'checkout' ];
+	const sectionAreaIds = current?.section.areas ?? [ 'checkout' ];
 	const sectionAreas = sectionAreaIds
 		.map( ( /** @type {string} */ id ) =>
 			areas.find( ( /** @type {any} */ entry ) => entry.id === id )
@@ -537,15 +542,68 @@ export default function FieldManagerView( { model } ) {
 				<Icon name="save" />
 				<span>{ saveLabel }</span>
 			</button>
-			<button
-				type="button"
-				className="btn btn-primary"
-				onClick={ onPreview }
-			>
+			<button type="button" className="btn" onClick={ onPreview }>
 				<span>{ __( 'Ver checkout', 'wc-checkoutsuite' ) }</span>
 				<Icon name="arrow" />
 			</button>
+			<button
+				type="button"
+				className="btn btn-primary"
+				onClick={ () => setPublishOpen( true ) }
+			>
+				<span>{ __( 'Revisar publicação', 'wc-checkoutsuite' ) }</span>
+				<Icon name="arrow" />
+			</button>
 		</TopbarActions>
+	);
+
+	// The publication review is where the draft becomes what the store runs: the panel
+	// shows what publishing changes, what it refuses and what it only warns about, and
+	// the button applies it. Without this the editor could only write a draft, and the
+	// store would never receive the configuration the merchant just made.
+	const publishDialog = (
+		<Dialog
+			open={ publishOpen }
+			size="publish"
+			eyebrow={ __( 'PUBLICAR', 'wc-checkoutsuite' ) }
+			title={ __( 'Revisar publicação', 'wc-checkoutsuite' ) }
+			subtitle={ __(
+				'O rascunho vira a versão que a loja corre. Publicar cria uma revisão nova e mantém a anterior.',
+				'wc-checkoutsuite'
+			) }
+			onClose={ () => setPublishOpen( false ) }
+			footer={
+				<>
+					<Button
+						variant="secondary"
+						onClick={ () => setPublishOpen( false ) }
+					>
+						{ __( 'Fechar', 'wc-checkoutsuite' ) }
+					</Button>
+					<Button
+						variant="primary"
+						busy={ publishing }
+						disabled={ publishing }
+						onClick={ onPublish }
+					>
+						{ __( 'Publicar alterações', 'wc-checkoutsuite' ) }
+					</Button>
+				</>
+			}
+		>
+			<PublishPanel
+				report={ report }
+				enabled={
+					( doc?.fields ?? [] ).filter(
+						( /** @type {any} */ field ) => field.enabled
+					).length
+				}
+				dirty={ dirty }
+				publishing={ publishing }
+				error={ publishError }
+				onPublish={ onPublish }
+			/>
+		</Dialog>
 	);
 
 	// The field properties are one element with two homes, as the design draws them: the
@@ -638,7 +696,7 @@ export default function FieldManagerView( { model } ) {
 								) }
 						</p>
 					</div>
-					{ 'checkout' === area ? (
+					{ [ 'checkout', 'my_account' ].includes( area ) ? (
 						<button
 							type="button"
 							className="btn btn-primary btn-add"
@@ -1917,6 +1975,7 @@ export default function FieldManagerView( { model } ) {
 			</section>
 
 			{ /* The dialogs the design opens from the bar and the panel. */ }
+			{ publishDialog }
 			<Dialog
 				open={ pickerOpen }
 				size="picker"
@@ -1936,6 +1995,7 @@ export default function FieldManagerView( { model } ) {
 					coreFields={ coreFields }
 					section={ section }
 					sections={ sectionOptions }
+					surface={ area }
 					onSectionChange={ onSectionChange }
 					onChooseType={ ( /** @type {any} */ choice ) => {
 						setPickerOpen( false );

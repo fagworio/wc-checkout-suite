@@ -60,6 +60,7 @@ import {
 	removeField,
 	removeSection,
 	removeSectionWithDependents,
+	repairLegacyDraft,
 	sectionImpact,
 	sectionGroups,
 	setFieldEnabled,
@@ -90,6 +91,14 @@ const EDITOR_AREAS = [
 		label: __( 'Cliente', 'wc-checkoutsuite' ),
 		description: __(
 			'Minha conta → Pedidos → Ver pedido.',
+			'wc-checkoutsuite'
+		),
+	},
+	{
+		id: 'my_account',
+		label: __( 'Minha conta', 'wc-checkoutsuite' ),
+		description: __(
+			'Nova aba com formulário e dados próprios do cliente.',
 			'wc-checkoutsuite'
 		),
 	},
@@ -131,7 +140,7 @@ const SECTION_AREA_REFERENCE = {
 		'wc-checkoutsuite'
 	),
 	customer_profile: __(
-		'Exibido no perfil do cliente no painel administrativo.',
+		'Exibido na conta do cliente, fora de um pedido: uma seção oferecida aqui e com apresentação de conta vira uma aba autenticada em Minha conta.',
 		'wc-checkoutsuite'
 	),
 	public_api: __(
@@ -142,6 +151,114 @@ const SECTION_AREA_REFERENCE = {
 
 /** Local draft handoff used when the shell swaps the editor for another screen. */
 const LOCAL_DRAFT_KEY = 'wccs-local-draft';
+
+/**
+ * Returns the logical default location for a section created in one work area.
+ *
+ * @param {string} area Editor work area.
+ * @return {string} Logical section location.
+ */
+function defaultSectionLocation( area ) {
+	if ( 'checkout' === area ) {
+		return 'billing';
+	}
+
+	if ( 'my_account' === area ) {
+		return 'account';
+	}
+
+	return 'order';
+}
+
+/**
+ * Settings that make a section a real, independent Minha conta page.
+ *
+ * @param {{section: import('./schema/types').SectionDefinition, document: import('./schema/types').SchemaDocument, apply: Function}} props Component properties.
+ * @return {*} Account presentation controls.
+ */
+function AccountSectionPresentation( { section, document, apply } ) {
+	const presentation = section.presentation ?? {};
+	const account = presentation.account ?? {};
+	const update = ( /** @type {Record<string, unknown>} */ changes ) =>
+		apply(
+			updateSection( document, section.id, {
+				presentation: {
+					...presentation,
+					account: { ...account, ...changes },
+				},
+			} )
+		);
+
+	return (
+		<>
+			<Notice status="info">
+				{ __(
+					'Esta é uma aba autenticada de Minha conta. Os valores pertencem ao cliente e não a um pedido.',
+					'wc-checkoutsuite'
+				) }
+			</Notice>
+			<TextField
+				id="wccs-account-section-slug"
+				label={ __( 'Endereço da aba', 'wc-checkoutsuite' ) }
+				help={ __(
+					'Utilize minúsculas, números e hífens. Exemplo: meus-documentos.',
+					'wc-checkoutsuite'
+				) }
+				value={ account.slug ?? '' }
+				onChange={ (
+					/** @type {{ target: { value: string } }} */ event
+				) => update( { slug: event.target.value } ) }
+			/>
+			<TextField
+				id="wccs-account-section-menu-label"
+				label={ __( 'Nome no menu', 'wc-checkoutsuite' ) }
+				value={ account.menu_label ?? section.title }
+				onChange={ (
+					/** @type {{ target: { value: string } }} */ event
+				) => update( { menu_label: event.target.value } ) }
+			/>
+			<SelectField
+				id="wccs-account-section-mode"
+				label={ __( 'Modo', 'wc-checkoutsuite' ) }
+				value={ account.mode ?? 'edit' }
+				options={ [
+					{
+						value: 'edit',
+						label: __( 'Formulário editável', 'wc-checkoutsuite' ),
+					},
+					{
+						value: 'view',
+						label: __( 'Somente consulta', 'wc-checkoutsuite' ),
+					},
+				] }
+				onChange={ (
+					/** @type {{ target: { value: 'edit'|'view' } }} */ event
+				) => update( { mode: event.target.value } ) }
+			/>
+			<CheckboxField
+				id="wccs-account-section-show-title"
+				label={ __( 'Exibir título no conteúdo', 'wc-checkoutsuite' ) }
+				help={ __(
+					'O nome no menu continua visível quando o título é ocultado.',
+					'wc-checkoutsuite'
+				) }
+				checked={ false !== presentation.show_title }
+				onChange={ (
+					/** @type {{ target: { checked: boolean } }} */ event
+				) =>
+					apply(
+						updateSection( document, section.id, {
+							presentation: {
+								...presentation,
+								show_title: event.target.checked,
+							},
+						} )
+					)
+				}
+			/>
+		</>
+	);
+}
 
 /**
  * Fields screen.
@@ -278,6 +395,11 @@ export default function FieldsScreen( {
 	 * @type {[string[], Function]}
 	 */
 	const [ newSectionAreas, setNewSectionAreas ] = useState( [ 'checkout' ] );
+	const [ newSectionIcon, setNewSectionIcon ] = useState( 'user' );
+	const [ newSectionMode, setNewSectionMode ] = useState(
+		/** @type {'edit'|'view'} */ ( 'edit' )
+	);
+	const [ newSectionShowTitle, setNewSectionShowTitle ] = useState( false );
 	/**
 	 * The document as the server last confirmed it.
 	 *
@@ -384,7 +506,7 @@ export default function FieldsScreen( {
 		try {
 			const [ draft, types, core, publication, history ] =
 				await Promise.all( [
-					( client.getActive ?? client.getDraft )(),
+					client.getDraft(),
 					client.fieldTypes(),
 					client.coreFields(),
 					client.diff(),
@@ -408,7 +530,24 @@ export default function FieldsScreen( {
 				local = null;
 			}
 
-			if ( local?.baseRevision === draft.revision && local.document ) {
+			const candidate =
+				local?.baseRevision === draft.revision && local.document
+					? local.document
+					: draft;
+			const repaired = repairLegacyDraft( candidate );
+
+			if ( repaired.changed ) {
+				resetDocument( repaired.document );
+				setSaved(
+					__(
+						'Encontramos dados antigos incompletos nesta edição local e os corrigimos. Revise e salve para continuar.',
+						'wc-checkoutsuite'
+					)
+				);
+			} else if (
+				local?.baseRevision === draft.revision &&
+				local.document
+			) {
 				resetDocument( local.document );
 				setSaved(
 					__(
@@ -645,7 +784,12 @@ export default function FieldsScreen( {
 		setSaved( '' );
 
 		try {
-			const result = await ( client.updateActive ?? client.saveDraft )(
+			// Saving writes the draft and nothing else. The store keeps serving the
+			// published revision until the merchant publishes, which is what the
+			// interface says in Regras and what section 13 of the roadmap requires:
+			// a save that reached the live checkout would make the review step a
+			// formality and the draft a second, competing timeline.
+			const result = await client.saveDraft(
 				document,
 				document.revision
 			);
@@ -654,21 +798,21 @@ export default function FieldsScreen( {
 				return;
 			}
 
-			// The server is authoritative after the write. Read the active document
-			// because the update route assigns the next revision on the server.
-			const active = result?.fields
-				? result
-				: await ( client.getActive ?? client.getDraft )();
-			resetDocument( active );
-			setSavedDocument( active );
+			// The server is authoritative after the write: it owns the revision.
+			const stored = result?.fields ? result : await client.getDraft();
+			resetDocument( stored );
+			setSavedDocument( stored );
 			window.sessionStorage?.removeItem( LOCAL_DRAFT_KEY );
 			setSaved(
 				document.revision > 0
 					? __(
-							'Campos atualizados com sucesso.',
+							'Rascunho atualizado. A loja continua a correr a revisão publicada.',
 							'wc-checkoutsuite'
 					  )
-					: __( 'Campos salvos com sucesso.', 'wc-checkoutsuite' )
+					: __(
+							'Rascunho salvo. A loja continua a correr a revisão publicada.',
+							'wc-checkoutsuite'
+					  )
 			);
 
 			// The report compares the draft with the published document, so a save
@@ -811,6 +955,7 @@ export default function FieldsScreen( {
 		customer_email: __( 'E-mail enviado ao cliente', 'wc-checkoutsuite' ),
 		admin_email: __( 'E-mail enviado à loja', 'wc-checkoutsuite' ),
 		customer_profile: __( 'Perfil do cliente', 'wc-checkoutsuite' ),
+		my_account: __( 'Minha conta — aba personalizada', 'wc-checkoutsuite' ),
 		public_api: __( 'API pública', 'wc-checkoutsuite' ),
 	};
 	const dependencyField = ( /** @type {string} */ id ) =>
@@ -1014,10 +1159,10 @@ export default function FieldsScreen( {
 						id && apply( removeField( document, id ) ),
 					onProtect: explainProtection,
 					onCreateField: ( /** @type {any} */ choice ) => {
-						if ( 'checkout' !== area ) {
+						if ( ! [ 'checkout', 'my_account' ].includes( area ) ) {
 							setRefusal(
 								__(
-									'Campos são criados no Checkout. Nesta área, vincule um campo existente.',
+									'Nesta área, vincule um campo existente. Campos novos podem ser criados no Checkout ou em Minha conta.',
 									'wc-checkoutsuite'
 								)
 							);
@@ -1031,6 +1176,22 @@ export default function FieldsScreen( {
 								section,
 								settings: choice.settings,
 								layout: choice.defaults?.layout,
+								collectionSurface: area,
+								...( 'my_account' === area
+									? {
+											storage: {
+												scope: 'customer',
+												sensitivity: 'personal',
+											},
+											destinations: {
+												my_account: {
+													enabled: true,
+													section,
+													mode: 'edit',
+												},
+											},
+									  }
+									: {} ),
 							} )
 						);
 					},
@@ -1078,9 +1239,10 @@ export default function FieldsScreen( {
 							  ),
 					onCreateSection: () => {
 						setNewSectionAreas( [ area ] );
-						setNewSectionLocation(
-							'checkout' === area ? 'billing' : 'order'
-						);
+						setNewSectionLocation( defaultSectionLocation( area ) );
+						setNewSectionIcon( 'user' );
+						setNewSectionMode( 'edit' );
+						setNewSectionShowTitle( 'my_account' === area );
 						setSectionDraftOpen( true );
 					},
 					onLinkExisting: () => {
@@ -1309,10 +1471,15 @@ export default function FieldsScreen( {
 							}
 						>
 							<p>
-								{ __(
-									'Este vínculo altera apenas a exibição autorizada. A coleta, a chave e os valores do pedido permanecem os mesmos.',
-									'wc-checkoutsuite'
-								) }
+								{ 'my_account' === area
+									? __(
+											'Nesta área, somente campos armazenados no cliente podem ser vinculados. Eles ficam independentes de pedidos.',
+											'wc-checkoutsuite'
+									  )
+									: __(
+											'Este vínculo altera apenas a exibição autorizada. A coleta, a chave e os valores do pedido permanecem os mesmos.',
+											'wc-checkoutsuite'
+									  ) }
 							</p>
 							<SelectField
 								id="wccs-link-existing-field"
@@ -1329,7 +1496,10 @@ export default function FieldsScreen( {
 									...( document.fields ?? [] )
 										.filter(
 											( /** @type {any} */ field ) =>
-												field.enabled
+												field.enabled &&
+												( 'my_account' !== area ||
+													'customer' ===
+														field.storage?.scope )
 										)
 										.map(
 											( /** @type {any} */ field ) => ( {
@@ -1375,6 +1545,41 @@ export default function FieldsScreen( {
 													location:
 														newSectionLocation,
 													areas: newSectionAreas,
+													presentation: {
+														show_title:
+															newSectionShowTitle,
+														...( 'my_account' ===
+														area
+															? {
+																	account: {
+																		slug: title
+																			.toLocaleLowerCase(
+																				'pt-BR'
+																			)
+																			.normalize(
+																				'NFD'
+																			)
+																			.replace(
+																				/[\u0300-\u036f]/g,
+																				''
+																			)
+																			.replace(
+																				/[^a-z0-9]+/g,
+																				'-'
+																			)
+																			.replace(
+																				/^-+|-+$/g,
+																				''
+																			),
+																		menu_label:
+																			title,
+																		icon: newSectionIcon,
+																		position: 5,
+																		mode: newSectionMode,
+																	},
+															  }
+															: {} ),
+													},
 												}
 											);
 
@@ -1484,14 +1689,101 @@ export default function FieldsScreen( {
 										)
 									) }
 								</>
-							) : (
+							) : null }
+							{ 'my_account' === area ? (
+								<>
+									<Notice status="info">
+										{ __(
+											'Esta seção criará uma nova aba autenticada em Minha conta. Ela não será exibida no checkout ou nos pedidos.',
+											'wc-checkoutsuite'
+										) }
+									</Notice>
+									<SelectField
+										id="wccs-new-section-icon"
+										label={ __(
+											'Ícone',
+											'wc-checkoutsuite'
+										) }
+										value={ newSectionIcon }
+										options={ [
+											'user',
+											'fields',
+											'file',
+											'mail',
+										].map( ( value ) => ( {
+											value,
+											label: value,
+										} ) ) }
+										onChange={ (
+											/** @type {{ target: { value: string } }} */ event
+										) =>
+											setNewSectionIcon(
+												event.target.value
+											)
+										}
+									/>
+									<SelectField
+										id="wccs-new-section-mode"
+										label={ __(
+											'Modo',
+											'wc-checkoutsuite'
+										) }
+										value={ newSectionMode }
+										options={ [
+											{
+												value: 'edit',
+												label: __(
+													'Formulário editável',
+													'wc-checkoutsuite'
+												),
+											},
+											{
+												value: 'view',
+												label: __(
+													'Somente consulta',
+													'wc-checkoutsuite'
+												),
+											},
+										] }
+										onChange={ (
+											/** @type {{ target: { value: 'edit'|'view' } }} */ event
+										) =>
+											setNewSectionMode(
+												event.target.value
+											)
+										}
+									/>
+									<CheckboxField
+										id="wccs-new-section-show-title"
+										label={ __(
+											'Exibir título no conteúdo',
+											'wc-checkoutsuite'
+										) }
+										help={ __(
+											'O nome no menu continua visível mesmo quando este título é ocultado.',
+											'wc-checkoutsuite'
+										) }
+										checked={ newSectionShowTitle }
+										onChange={ (
+											/** @type {{ target: { checked: boolean } }} */ event
+										) =>
+											setNewSectionShowTitle(
+												event.target.checked
+											)
+										}
+									/>
+								</>
+							) : null }
+							{ ! [ 'checkout', 'my_account' ].includes(
+								area
+							) ? (
 								<Notice status="info">
 									{ __(
 										'Esta seção será usada apenas para organizar a exibição nesta área. Para mostrar valores nela, vincule campos existentes.',
 										'wc-checkoutsuite'
 									) }
 								</Notice>
-							) }
+							) : null }
 							{ 0 === newSectionAreas.length ? (
 								<Notice status="warning">
 									{ __(
@@ -1637,6 +1929,15 @@ export default function FieldsScreen( {
 											/>
 										)
 									) }
+									{ ( editingSection.areas ?? [] ).includes(
+										'my_account'
+									) ? (
+										<AccountSectionPresentation
+											section={ editingSection }
+											document={ document }
+											apply={ apply }
+										/>
+									) : null }
 
 									<div className="inline-actions">
 										<button

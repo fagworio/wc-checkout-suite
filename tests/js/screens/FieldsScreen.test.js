@@ -387,6 +387,52 @@ describe( 'editing', () => {
 		expect( saved.fields ).toHaveLength( 2 );
 		expect( revision ).toBe( 3 );
 	} );
+
+	it( 'writes the draft over the draft route, and writes nothing else', async () => {
+		const user = userEvent.setup();
+		const { createClient } = await import(
+			'../../../resources/admin/app/api/client'
+		);
+
+		/** @type {string[]} */
+		const requests = [];
+		const document = doc( [ field() ] );
+		const transport = createClient( {
+			root: 'https://example.test/wp-json/',
+			namespace: 'wc-checkoutsuite/v1',
+			nonce: 'nonce-value',
+			routes: { draft: '/schema/draft' },
+			fetchImpl: async ( url, options = {} ) => {
+				requests.push( `${ options.method } ${ url }` );
+
+				return {
+					ok: true,
+					status: 200,
+					text: async () => JSON.stringify( document ),
+				};
+			},
+			sleep: async () => {},
+		} );
+
+		// The reads keep their own stub: what is under test is where the save lands,
+		// and that it is the only write the screen performs.
+		const stub = client( { saveDraft: transport.saveDraft } );
+
+		render( <FieldsScreen client={ stub } /> );
+
+		await screen.findByText( 'CPF' );
+
+		await duplicateField( user, 'CPF' );
+		await user.click(
+			screen.getByRole( 'button', { name: 'Atualizar campos' } )
+		);
+
+		await waitFor( () => expect( requests ).toHaveLength( 1 ) );
+
+		expect( requests[ 0 ] ).toBe(
+			'PUT https://example.test/wp-json/wc-checkoutsuite/v1/schema/draft'
+		);
+	} );
 } );
 
 describe( 'a failure does not discard work', () => {

@@ -393,7 +393,6 @@ wccs_proof_check(
 $wccs_declared = array(
 	\WCCheckoutSuite\Http\Admin\SchemaController::ROUTE_DRAFT,
 	\WCCheckoutSuite\Http\Admin\SchemaController::ROUTE_ACTIVE,
-	\WCCheckoutSuite\Http\Admin\SchemaController::ROUTE_UPDATE,
 	\WCCheckoutSuite\Http\Admin\SchemaController::ROUTE_PUBLISH,
 	\WCCheckoutSuite\Http\Admin\SchemaController::ROUTE_REVISIONS,
 	\WCCheckoutSuite\Http\Admin\SchemaController::ROUTE_RESTORE,
