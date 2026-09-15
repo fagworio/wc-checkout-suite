@@ -113,6 +113,14 @@ function wccs_proof_rule_body( $css, $selector ) {
 
 $wccs_root = rtrim( (string) WCCS_PLUGIN_DIR, '/' );
 
+// The plugin options this store had before the preview was exercised. What this harness asserts is
+// that **the preview** stored nothing; an absolute list of every option the plugin may keep stopped
+// being true the day the plugin gained state of its own (uploads, then the order statuses and the
+// automations), and an assertion pinned to a world state fails for the right reason and gets edited
+// for the wrong one.
+global $wpdb;
+$wccs_options_before = $wpdb->get_col( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE 'wccs\_%'" );
+
 wccs_proof_out( '=====================================================================' );
 wccs_proof_out( 'WCCS-015 proof — visual preview' );
 wccs_proof_out( 'Site: ' . home_url() . ' | WP ' . get_bloginfo( 'version' ) . ' | PHP ' . PHP_VERSION );
@@ -429,28 +437,14 @@ $wccs_leftovers = $wpdb->get_col(
 	"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE 'wccs\_%'"
 );
 
-// What this asserts is that the *preview* stored nothing, not that the plugin
-// stores nothing at all. The original form — no `wccs_` option may exist anywhere —
-// was true when it was written and stopped being true when F08 gave the plugin state
-// of its own to keep (`wccs_uploads_db_version`, installed on boot). An assertion
-// pinned to a world state fails for the right reason and gets edited for the wrong
-// one, so it now names the state it expects: every option present is one the plugin
-// keeps on purpose, and none of them was written by a preview.
-$wccs_intentional = array(
-	\WCCheckoutSuite\Domain\Uploads\UploadsTable::VERSION_OPTION,
-	// The cached observation of whether this store can keep an upload private. The
-	// plugin writes it the first time it is asked, which any request may be.
-	\WCCheckoutSuite\Domain\Uploads\UploadsEnvironment::STATE_OPTION,
-);
-
-$wccs_unexpected = array_values( array_diff( $wccs_leftovers, $wccs_intentional ) );
+$wccs_unexpected = array_values( array_diff( $wccs_leftovers, (array) $wccs_options_before ) );
 
 wccs_proof_check(
 	'The preview created no stored option of its own',
 	array() === $wccs_unexpected,
 	$wccs_unexpected
-		? 'unexpected: ' . implode( ', ', $wccs_unexpected )
-		: 'only the plugin\'s own state: ' . implode( ', ', $wccs_leftovers )
+		? 'created by this run: ' . implode( ', ', $wccs_unexpected )
+		: 'the store has the same ' . count( (array) $wccs_leftovers ) . ' options it had'
 );
 
 wccs_proof_note(

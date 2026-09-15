@@ -9,6 +9,7 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Http\Admin;
 
+use WCCheckoutSuite\Domain\Payments\GatewayCapabilityRegistry;
 use WCCheckoutSuite\Domain\Payments\PaymentMatrix;
 use WCCheckoutSuite\Domain\Payments\PaymentMode;
 use WCCheckoutSuite\Domain\Settings\CheckoutSettings;
@@ -143,6 +144,11 @@ final class SettingsController {
 		$decision  = CheckoutSettings::decision( $offered );
 		$installed = array();
 		$undecided = 0;
+		// The transactional capabilities, read from their own registry. The two records travel
+		// together because a merchant reads them together — "may this plugin decorate the gateway"
+		// and "may it ask the gateway to capture" — and they stay separate objects because they are
+		// different questions with different evidence (§17).
+		$capability = new GatewayCapabilityRegistry();
 
 		if ( function_exists( 'WC' ) ) {
 			foreach ( WC()->payment_gateways()->payment_gateways() as $gateway ) {
@@ -156,15 +162,21 @@ final class SettingsController {
 					++$undecided;
 				}
 
-				$installed[] = array(
-					'id'       => (string) $gateway->id,
-					'title'    => method_exists( $gateway, 'get_title' ) ? (string) $gateway->get_title() : (string) $gateway->id,
-					'version'  => isset( $gateway->version ) ? (string) $gateway->version : '',
-					'enabled'  => method_exists( $gateway, 'is_available' ) ? (bool) $gateway->is_available() : false,
-					'mode'     => $gateway_decision['mode'],
-					'withheld' => $gateway_decision['withheld'],
-					'tested'   => $gateway_decision['tested'],
-					'reason'   => $gateway_decision['reason'],
+				$version = isset( $gateway->version ) ? (string) $gateway->version : '';
+
+				$installed[] = $capability->report(
+					(string) $gateway->id,
+					$version,
+					array(
+						'id'       => (string) $gateway->id,
+						'title'    => method_exists( $gateway, 'get_title' ) ? (string) $gateway->get_title() : (string) $gateway->id,
+						'version'  => $version,
+						'enabled'  => method_exists( $gateway, 'is_available' ) ? (bool) $gateway->is_available() : false,
+						'mode'     => $gateway_decision['mode'],
+						'withheld' => $gateway_decision['withheld'],
+						'tested'   => $gateway_decision['tested'],
+						'reason'   => $gateway_decision['reason'],
+					)
 				);
 			}
 		}
@@ -184,6 +196,17 @@ final class SettingsController {
 			'homologated'     => count( $installed ) - $undecided,
 			'undecided'       => $undecided,
 			'modes'           => PaymentMode::all(),
+			// The transactional half: the vocabulary, and the claims that could not become
+			// capabilities. A refused claim is reported here rather than dropped, because a claim
+			// refused in silence is one somebody makes again.
+			'capabilities'    => $capability->vocabulary(),
+			'refused'         => $capability->refused_declarations(),
+			'evidence'        => array_values(
+				array_map(
+					static fn( $entry ): array => $entry->to_array(),
+					$capability->all()
+				)
+			),
 		);
 	}
 }

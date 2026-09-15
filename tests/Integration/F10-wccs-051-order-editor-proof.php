@@ -203,7 +203,11 @@ wccs_proof_out( '===============================================================
 
 wp_set_current_user( 1 );
 
-$wccs_options_before = (int) $GLOBALS['wpdb']->get_var( "SELECT COUNT(*) FROM {$GLOBALS['wpdb']->options} WHERE option_name LIKE 'wccs\_%'" );
+// The option **names** this store had before the run, not their count: what this harness asserts is
+// that it left nothing of its own behind, and a count also moves when another part of the plugin
+// legitimately deletes something of its own — the published slot a harness cleared on the way in,
+// or the option a migration writes once.
+$wccs_options_before = $GLOBALS['wpdb']->get_col( "SELECT option_name FROM {$GLOBALS['wpdb']->options} WHERE option_name LIKE 'wccs\_%'" );
 
 // ---------------------------------------------------------------------------
 // 1. Both order backends, one contract.
@@ -609,12 +613,16 @@ wccs_proof_out( '6. Environment' );
 delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED ) );
 delete_option( \WCCheckoutSuite\Domain\Settings\CheckoutSettings::OPTION );
 
-$wccs_options_after = (int) $GLOBALS['wpdb']->get_var( "SELECT COUNT(*) FROM {$GLOBALS['wpdb']->options} WHERE option_name LIKE 'wccs\_%'" );
+$wccs_options_after = $GLOBALS['wpdb']->get_col( "SELECT option_name FROM {$GLOBALS['wpdb']->options} WHERE option_name LIKE 'wccs\_%'" );
+
+$wccs_created = array_values( array_diff( (array) $wccs_options_after, (array) $wccs_options_before ) );
 
 wccs_proof_check(
 	'The harness left no stored option of its own behind',
-	$wccs_options_after === $wccs_options_before,
-	'before=' . $wccs_options_before . ' after=' . $wccs_options_after
+	array() === $wccs_created,
+	$wccs_created
+		? 'created by this run: ' . implode( ', ', $wccs_created )
+		: 'the store has the same ' . count( (array) $wccs_options_after ) . ' options it had'
 );
 
 // ---------------------------------------------------------------------------

@@ -262,6 +262,117 @@ export default function SettingsScreen( { client, editable = true } ) {
 				</tbody>
 			</table>
 
+			{ /* The transactional half, from its own registry. It sits beside the presentation
+			     column because a merchant reads the two together — "may this plugin decorate the
+			     payment area" and "may it ask the gateway to capture" — and it is a different
+			     record because a presentation decision is not permission to move money (§17). */ }
+			<h2 className="wccs-settings__heading">
+				{ __( 'What each gateway proved', 'wc-checkoutsuite' ) }
+			</h2>
+
+			<p className="wccs-settings__summary">
+				{ __(
+					'Uma ação só aparece onde existe prova: a execução, o modo, a versão e a data. Sem prova, a loja envia o link «Pagar pedido» do próprio pedido.',
+					'wc-checkoutsuite'
+				) }
+			</p>
+
+			<table className="wccs-settings__gateways">
+				<thead>
+					<tr>
+						<th scope="col">
+							{ __( 'Gateway', 'wc-checkoutsuite' ) }
+						</th>
+						<th scope="col">
+							{ __(
+								'Actions that may be offered',
+								'wc-checkoutsuite'
+							) }
+						</th>
+						<th scope="col">
+							{ __( 'Evidence', 'wc-checkoutsuite' ) }
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					{ gateways.map( ( /** @type {any} */ gateway ) => {
+						const proven = ( gateway.actions ?? [] ).filter(
+							( /** @type {any} */ action ) =>
+								action.offerable && ! action.fallback
+						);
+
+						return (
+							<tr key={ `caps-${ gateway.id }` }>
+								<td>
+									{ gateway.title }
+									<code className="wccs-settings__id">
+										{ gateway.id }
+									</code>
+								</td>
+								<td>
+									{ ( gateway.offerable ?? [] ).length > 0
+										? ( gateway.offerable ?? [] ).join(
+												', '
+										  )
+										: __( 'nada', 'wc-checkoutsuite' ) }
+								</td>
+								<td>
+									{ proven.length > 0
+										? proven
+												.map(
+													(
+														/** @type {any} */ action
+													) =>
+														sprintf(
+															/* translators: 1: action, 2: evidence mode, 3: version, 4: date */
+															__(
+																'%1$s: %2$s em %3$s, %4$s',
+																'wc-checkoutsuite'
+															),
+															action.label,
+															action.evidence
+																?.mode ?? '',
+															action.evidence
+																?.version ?? '',
+															action.evidence
+																?.proven_at ??
+																''
+														)
+												)
+												.join( '; ' )
+										: __(
+												'nenhuma ação comprovada; só o link «Pagar pedido»',
+												'wc-checkoutsuite'
+										  ) }
+								</td>
+							</tr>
+						);
+					} ) }
+				</tbody>
+			</table>
+
+			{ ( state.refused ?? [] ).length > 0 ? (
+				<Notice
+					status="warning"
+					title={ __(
+						'Claims that could not become capabilities',
+						'wc-checkoutsuite'
+					) }
+				>
+					<ul>
+						{ ( state.refused ?? [] ).map(
+							( /** @type {any} */ refusal ) => (
+								<li
+									key={ `${ refusal.gateway }:${ refusal.action }` }
+								>
+									{ refusal.reason }
+								</li>
+							)
+						) }
+					</ul>
+				</Notice>
+			) : null }
+
 			{ failure ? (
 				<Notice
 					status="error"

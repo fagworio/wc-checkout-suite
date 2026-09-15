@@ -71,6 +71,27 @@ function storeState( overrides = {} ) {
 				withheld: [],
 				tested: [],
 				reason: 'This gateway has no homologation record.',
+				offerable: [ 'pay_for_order' ],
+				actions: [
+					{
+						action: 'capture',
+						label: 'Capturar uma autorização',
+						offerable: false,
+						proven: false,
+						fallback: false,
+						missing: [ 'mode', 'version', 'scenario', 'proven_at' ],
+						evidence: null,
+					},
+					{
+						action: 'pay_for_order',
+						label: 'Enviar o link «Pagar pedido»',
+						offerable: true,
+						proven: false,
+						fallback: true,
+						missing: [],
+						evidence: null,
+					},
+				],
 			},
 			{
 				id: 'bacs',
@@ -81,6 +102,8 @@ function storeState( overrides = {} ) {
 				withheld: [],
 				tested: [],
 				reason: 'This gateway has no homologation record.',
+				offerable: [ 'pay_for_order' ],
+				actions: [],
 			},
 		],
 		homologated: 0,
@@ -112,7 +135,31 @@ describe( 'the settings screen', () => {
 		expect(
 			screen.getByText( /2 have never been tested/ )
 		).toBeInTheDocument();
-		expect( screen.getByText( 'ppcp-gateway' ) ).toBeInTheDocument();
+		// The gateway appears in both tables — its presentation record and its transactional
+		// capabilities — because the two questions are read on one screen and answered by two
+		// objects (§17).
+		expect( screen.getAllByText( 'ppcp-gateway' ) ).toHaveLength( 2 );
+	} );
+
+	it( 'shows what each gateway proved, and nothing more', async () => {
+		const { client } = withState( storeState() );
+
+		render( <SettingsScreen client={ client } editable={ false } /> );
+
+		await waitFor( () =>
+			expect(
+				screen.getByText( /What each gateway proved/ )
+			).toBeInTheDocument()
+		);
+
+		// The action nobody proved is not in the offerable list, and the fallback is.
+		expect( screen.getAllByText( 'pay_for_order' ) ).toHaveLength( 2 );
+		expect( screen.getAllByText( /nenhuma ação comprovada/ ) ).toHaveLength(
+			2
+		);
+		expect(
+			screen.getByText( /Uma ação só aparece onde existe prova/ )
+		).toBeInTheDocument();
 	} );
 
 	it( 'sends one boolean and reports what came back', async () => {
