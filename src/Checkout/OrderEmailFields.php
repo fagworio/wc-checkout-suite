@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace WCCheckoutSuite\Checkout;
 
 use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
+use WCCheckoutSuite\Domain\Fields\FieldBinding;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Orders\AreaProjection;
 use WCCheckoutSuite\Domain\Orders\OrderFieldEntry;
@@ -123,7 +124,19 @@ final class OrderEmailFields {
 
 			$stored = $definition->to_array();
 
-			if ( ! $definition->shows_in( $key ) ) {
+			// The field is listed when at least one **visible** use of it is placed in this
+			// audience: an invisible use is not drawn by the projection, so claiming the field
+			// belongs in this e-mail would be an answer the mail does not keep.
+			$uses = array_values(
+				array_filter(
+					$definition->bindings_for( $key ),
+					static function ( FieldBinding $binding ): bool {
+						return $binding->is_visible();
+					}
+				)
+			);
+
+			if ( array() === $uses ) {
 				continue;
 			}
 
@@ -175,7 +188,10 @@ final class OrderEmailFields {
 	 * @return bool
 	 */
 	public static function is_document( array $field ): bool {
-		return 'file' === (string) ( $field['type'] ?? '' );
+		// The registry decides, not a list written here: a type that declares it stores a file
+		// is a document in an e-mail too, and a third party that contributes one does not have to
+		// be known by this class.
+		return FilePermissions::is_file( FieldDefinition::from_array( $field ) );
 	}
 
 	/**

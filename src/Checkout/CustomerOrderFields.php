@@ -11,6 +11,7 @@ namespace WCCheckoutSuite\Checkout;
 
 use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
 use WCCheckoutSuite\Domain\Approval\ReviewStatus;
+use WCCheckoutSuite\Domain\Fields\FieldBinding;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Orders\AreaProjection;
 use WCCheckoutSuite\Domain\Orders\OrderFieldEntry;
@@ -106,9 +107,20 @@ final class CustomerOrderFields {
 
 			$stored = $definition->to_array();
 
-			// The link, not a copy of it: a destination is enabled per field, and the
-			// model is the only place that knows.
-			if ( ! $definition->shows_in( $destination ) ) {
+			// The field is listed when at least one **visible** use of it is placed in this
+			// area: a use that is not visible is not drawn by the projection, so claiming the
+			// field is shown here would be an answer the page does not keep. What each use may
+			// do is checked per use, below and in the projection.
+			$uses = array_values(
+				array_filter(
+					$definition->bindings_for( $destination ),
+					static function ( FieldBinding $binding ): bool {
+						return $binding->is_visible();
+					}
+				)
+			);
+
+			if ( array() === $uses ) {
 				continue;
 			}
 
