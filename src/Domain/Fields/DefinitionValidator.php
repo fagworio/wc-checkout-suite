@@ -202,7 +202,16 @@ final class DefinitionValidator {
 		// Destinations. Each one decides its own section, title, order and actions, so
 		// each one is checked on its own: an unknown destination, an action it may not
 		// be allowed to perform, or a malformed entry is refused rather than dropped.
-		$result = $result->merge( $this->validate_destinations( $id, $destinations, $stores_value, $stores_file ) );
+		$result = $result->merge(
+			$this->validate_destinations( $id, $destinations, $stores_value, $stores_file, $definition->is_canonical() )
+		);
+
+		// And then the uses, which are the authority the map above is derived from. A
+		// document written before the split has no list of its own: its map *is* the list,
+		// and it was just validated as one.
+		if ( $definition->is_canonical() ) {
+			$result = $result->merge( $this->validate_bindings( $definition, $stores_file ) );
+		}
 
 		// A link into a customer surface that says how the field behaves there must say
 		// something that surface can carry out. Whether the *value* may live with the
@@ -280,9 +289,10 @@ final class DefinitionValidator {
 	 * @param array<string, mixed> $destinations  Destination map.
 	 * @param bool                 $stores_value  Whether the type stores a value.
 	 * @param bool                 $stores_file   Whether the type stores a file.
+	 * @param bool                 $per_use       Whether the uses are validated on their own.
 	 * @return ValidationResult
 	 */
-	private function validate_destinations( string $id, array $destinations, bool $stores_value, bool $stores_file ): ValidationResult {
+	private function validate_destinations( string $id, array $destinations, bool $stores_value, bool $stores_file, bool $per_use = false ): ValidationResult {
 		$result = ValidationResult::valid();
 
 		foreach ( $destinations as $key => $entry ) {
@@ -365,7 +375,14 @@ final class DefinitionValidator {
 				);
 			}
 
-			if ( isset( $entry['actions'] ) ) {
+			// The actions belong to the use, not to the destination: a field used twice in
+			// one destination may be allowed to approve in the first and only look in the
+			// second, and the map keeps one of them. When the uses are validated on their
+			// own, this projection is not asked a question it cannot answer — the same
+			// configuration is refused with the same code, use by use, by
+			// {@see self::validate_bindings()}. What the map still decides on its own is an
+			// entry no use justifies: a link that is off decides nothing, actions included.
+			if ( isset( $entry['actions'] ) && ! $per_use ) {
 				$allowed = DefinitionVocabulary::actions_for_destination( $key );
 				$actions = is_array( $entry['actions'] ) ? $entry['actions'] : array( $entry['actions'] );
 
@@ -416,6 +433,168 @@ final class DefinitionValidator {
 							$id
 						),
 						array( 'field' => $id )
+					)
+				);
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Validates the uses of a field, one by one.
+	 *
+	 * `roadmap/WC-CheckoutSuite-Especificacao-Completa-com-Referencias-Visuais` §3.3 makes one
+	 * definition usable several times, and each use carries what belongs to it: which
+	 * destination it appears in, whether it is visible or writable there, in which container,
+	 * in which order, with which permissions. The destination map cannot answer for it — a map
+	 * holds one entry per destination — so a second use in the same destination was a place
+	 * where configuration the merchant believes is in place could say nothing at all.
+	 *
+	 * Questions about the destination *key* are answered where the map is validated, because
+	 * the map is the projection that reaches every surface and a key the closed list does not
+	 * know has to be refused by the same code it was refused by before. What is checked here
+	 * is what only the use knows: that it names the field it is listed under, that it has an
+	 * identifier of its own, what it may do with the value, and where it orders itself.
+	 *
+	 * @param FieldDefinition $definition Definition.
+	 * @param bool            $stores_file Whether the type stores a file.
+	 * @return ValidationResult
+	 */
+	private function validate_bindings( FieldDefinition $definition, bool $stores_file ): ValidationResult {
+		$result = ValidationResult::valid();
+		$id     = $definition->id();
+
+		foreach ( $definition->raw_bindings() as $index => $raw ) {
+			if ( ! is_array( $raw ) ) {
+				$result = $result->merge(
+					ValidationResult::invalid(
+						'invalid_binding',
+						sprintf(
+							/* translators: 1: field id, 2: index of the use */
+							__( 'The use %2$d of the field "%1$s" must be a map.', 'wc-checkoutsuite' ),
+							'' === $id ? '(unnamed)' : $id,
+							(int) $index
+						),
+						array(
+							'field' => $id,
+							'index' => (int) $index,
+						)
+					)
+				);
+			}
+		}
+
+		$seen = array();
+
+		foreach ( $definition->bindings() as $binding ) {
+			$destination = $binding->destination();
+			$field_id    = $binding->field_id();
+			$identifier  = $binding->id();
+
+			// A use sits inside one field's list, so saying which field it belongs to is
+			// either redundant or a second answer to the same question. The empty string is
+			// accepted as "the field this list belongs to"; anything else has to agree.
+			if ( '' !== $field_id && $field_id !== $id ) {
+				$result = $result->merge(
+					ValidationResult::invalid(
+						'binding_field_mismatch',
+						sprintf(
+							/* translators: 1: use identifier, 2: field id of the use, 3: field id it is listed under */
+							__( 'The use "%1$s" says it belongs to the field "%2$s", but it is listed under "%3$s".', 'wc-checkoutsuite' ),
+							$identifier,
+							$field_id,
+							$id
+						),
+						array(
+							'field'    => $id,
+							'binding'  => $identifier,
+							'declared' => $field_id,
+						)
+					)
+				);
+			}
+
+			if ( isset( $seen[ $identifier ] ) ) {
+				// A surface asks by identifier: two uses under one name would make the
+				// answer depend on which one was read first.
+				$result = $result->merge(
+					ValidationResult::invalid(
+						'duplicate_binding_id',
+						sprintf(
+							/* translators: 1: use identifier, 2: field id */
+							__( 'The field "%2$s" uses the identifier "%1$s" more than once, so two different uses would answer to the same name.', 'wc-checkoutsuite' ),
+							$identifier,
+							$id
+						),
+						array(
+							'field'   => $id,
+							'binding' => $identifier,
+						)
+					)
+				);
+			}
+
+			$seen[ $identifier ] = true;
+
+			$permissions = $binding->permissions();
+
+			if ( ! $stores_file && array() !== $permissions ) {
+				$result = $result->merge(
+					ValidationResult::invalid(
+						'actions_not_supported',
+						sprintf(
+							/* translators: 1: destination key, 2: field id */
+							__( 'The destination "%1$s" cannot be given file actions, because the field "%2$s" stores no file.', 'wc-checkoutsuite' ),
+							$destination,
+							$id
+						),
+						array(
+							'field'       => $id,
+							'destination' => $destination,
+						)
+					)
+				);
+			}
+
+			$performable = DefinitionVocabulary::actions_for_destination( $destination );
+
+			foreach ( $permissions as $action ) {
+				if ( ! in_array( (string) $action, $performable, true ) ) {
+					$result = $result->merge(
+						ValidationResult::invalid(
+							'invalid_destination_action',
+							sprintf(
+								/* translators: 1: action key, 2: destination key, 3: field id */
+								__( 'The action "%1$s" is not one "%2$s" can perform (field "%3$s").', 'wc-checkoutsuite' ),
+								(string) $action,
+								$destination,
+								$id
+							),
+							array(
+								'field'       => $id,
+								'destination' => $destination,
+								'binding'     => $identifier,
+							)
+						)
+					);
+				}
+			}
+
+			if ( $binding->has_position() && $binding->position() < 0 ) {
+				$result = $result->merge(
+					ValidationResult::invalid(
+						'invalid_binding_position',
+						sprintf(
+							/* translators: 1: use identifier, 2: field id */
+							__( 'The order of the use "%1$s" of the field "%2$s" cannot be negative.', 'wc-checkoutsuite' ),
+							$identifier,
+							$id
+						),
+						array(
+							'field'   => $id,
+							'binding' => $identifier,
+						)
 					)
 				);
 			}
@@ -555,12 +734,19 @@ final class DefinitionValidator {
 		$stores   = isset( $supports['value'] ) && true === $supports['value'];
 		$files    = isset( $supports['file'] ) && true === $supports['file'];
 
-		return $this->validate_destinations(
+		$result = $this->validate_destinations(
 			$definition->id(),
 			is_array( $raw['destinations'] ) ? $raw['destinations'] : array(),
 			$stores,
-			$files
-		)->merge(
+			$files,
+			$definition->is_canonical()
+		);
+
+		if ( $definition->is_canonical() ) {
+			$result = $result->merge( $this->validate_bindings( $definition, $files ) );
+		}
+
+		return $result->merge(
 			$this->validate_approval(
 				$definition->id(),
 				is_array( $raw['approval'] ) ? $raw['approval'] : null

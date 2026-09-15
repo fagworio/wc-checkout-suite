@@ -70,6 +70,30 @@ superfície desenha é **um uso**, não um campo:
   ficheiro, e o uso que não quer o nome nem os detalhes está a pedir para não ser listado. É a razão
   de o mesmo documento poder mostrar o documento no ecrã do pedido e omiti-lo no e-mail do cliente.
 
+**Os usos passaram a ser validados um a um** (§3.3, §23) — o mapa por destino tem uma entrada por
+destino, portanto um segundo uso no mesmo destino era o sítio onde a configuração não podia estar
+errada:
+
+- `DefinitionValidator::validate_bindings()` valida a lista quando o documento a guarda: cada uso
+  tem de pertencer ao campo onde está listado (`binding_field_mismatch`), ter um identificador único
+  (`duplicate_binding_id`), declarar só ações que o seu destino desempenha
+  (`invalid_destination_action`), nenhuma ação de ficheiro num tipo que não guarda ficheiro
+  (`actions_not_supported`) e uma ordem não negativa (`invalid_binding_position`); uma entrada que não
+  é um mapa é recusada (`invalid_binding`) em vez de desaparecer na leitura. O mapa continua a
+  responder pelo que ele decide — chave desconhecida, chave ambígua, a entrada bem formada — e deixa
+  de ser interrogado sobre ações, que só o uso sabe.
+- `SectionValidator::placements()` lê a mesma autoridade para as duas perguntas que precisam do
+  documento inteiro: o container que a área oferece (`destination_section_not_offered`) e o storage
+  que a superfície de cliente exige (`account_section_requires_customer_storage`). Um uso que não é
+  visível não oferece formulário nenhum, portanto não promete nada.
+- `DocumentMigrator::field_with_bindings()` passou a respeitar a lista em vez de a reconstruir do
+  mapa — reconstruí-la apagava o segundo uso, que é a razão de a lista existir. As duas vistas
+  reconciliam-se por uma regra explícita: um destino com **um** uso cabe no mapa, e aí o mapa é a
+  vista mais recente (é o que o editor escreve hoje) e o uso segue-o; um destino com **mais do que
+  um** uso só a lista o pode dizer, e aí a lista decide e o mapa é a sua projeção.
+- `FieldDefinition::raw_bindings()` expõe a lista como foi guardada, e `bindings_from()` deixou de
+  filtrar entradas que não são mapas: ler pode ignorar o que não compreende, validar não pode.
+
 ## 2. Prova
 
 | Prova | Resultado |
@@ -81,9 +105,13 @@ superfície desenha é **um uso**, não um campo:
 | `tests/Unit/Domain/Uploads/FilePermissionsTest.php` (novo) | 7 testes: link guardado, união dos usos da área, cada uso responde por si dentro do que o destino desempenha, omissões de um uso vazio, uso invisível não permite nada, tipo sem ficheiro não tem permissões, um binding responde sozinho |
 | `AreaProjectionTest` (4 testes novos) | um campo usado duas vezes aparece duas vezes; dois usos no mesmo container mantêm ordem estável; uso invisível é saltado; uso de ficheiro sem `show_metadata` não é listado |
 | `FieldDefinitionTest` (3 testes novos) | mapa guardado → bindings; dois bindings no mesmo destino; escrita consistente das duas formas |
+| `DefinitionValidatorTest` (7 testes novos) | um uso responde pelas suas ações; sem ações de ficheiro num tipo sem ficheiro; dois usos não partilham identificador; um uso pertence ao campo onde está listado; um uso que não é mapa é recusado; ordem negativa recusada; um mapa guardado continua a ser validado ligação a ligação |
+| `SectionValidatorTest` (3 testes novos) | um uso num container que a área não oferece é recusado; o segundo uso da área é perguntado por si; cada uso visível numa superfície de cliente é perguntado sobre o storage (e um uso invisível não) |
+| `DocumentMigratorTest` (2 testes novos) | a lista não é reconstruída do mapa (dois usos sobrevivem, a projeção é a do último); um mapa editado chega ao uso que descreve, e não decide onde há dois usos |
+| `tests/Integration/FASE2-binding-validation-proof.php` (novo) | **8/0** pela rota real: dois usos do mesmo campo no mesmo destino são aceites e voltam os dois; um uso com `approve` no destino do cliente é recusado (`invalid_destination_action`); um uso num container da equipa dentro do destino do cliente é recusado (`destination_section_not_offered`); a recusa não substitui o documento guardado |
 | `npx jest` / `npx tsc --noEmit` / `npm run lint:js` / `npm run build` | limpos (647 testes) |
-| `composer check` | phpcs e phpstan sem erros; **488 testes, 1788 asserções** |
-| Varredura de integração | 67 harnesses, 1542 asserções, **0 falhas** |
+| `composer check` | phpcs e phpstan sem erros; **500 testes, 1818 asserções** |
+| Varredura de integração | **68 harnesses, 1550 asserções, 0 falhas** |
 | `tests/browser/f14-links-observation.mjs` | **22/0** com o documento migrado (o editor lê a seção da variante do destino, que é o comportamento novo) |
 | `tests/browser/my-account-sections-flow.mjs` | **6/6** com o documento migrado: o campo aparece sem pedido, o cliente grava o próprio valor, o valor persiste no acesso seguinte, e o campo de Minha conta não aparece no checkout |
 
@@ -100,14 +128,12 @@ container da sua área (13/0).
   ecrãs para bindings (editor e formulários) é o passo seguinte da fase.
 - **`presentation.account` continua guardado dentro de `presentation`** enquanto o renderer de
   Minha Conta o lê; as chaves canônicas `display_title`/`icon` já são preenchidas a partir dele.
-- **O validador ainda não conhece `bindings[]`.** `DefinitionValidator` valida o mapa `destinations`
-  (que continua a ser a projeção derivada), e um documento canônico passa pela validação do mapa —
-  onde um segundo uso no mesmo destino não cabe, porque o mapa tem uma entrada por destino. Escrever
-  pela rota um documento com dois usos no mesmo destino só é honesto depois de o validador validar a
-  lista; até lá, o comportamento **por uso** está provado por testes de unidade
-  (`AreaProjectionTest`, `CustomerSectionFieldsTest`, `FilePermissionsTest`) sobre o modelo final, e a
-  passagem de browser prova o caminho derivado na loja (22/0 e 6/6). É o item (c) do passo seguinte,
-  a par do (a) editor e do (b) `target`.
+- **O validador conhece a lista, mas o editor ainda escreve o mapa.** `DefinitionValidator` e
+  `SectionValidator` já validam `bindings[]` uso a uso (e é isso que a rota real prova), mas o ecrã de
+  configuração continua a gravar `destinations` e ainda não oferece um segundo uso do mesmo campo no
+  mesmo destino. A regra de reconciliação do migrador existe precisamente para os dois conviverem: um
+  destino com um uso segue o mapa (a edição do editor), um destino com dois usos segue a lista. É o
+  item (a) do passo seguinte, a par do (b) `target`.
 - **`target` livre por destino** ainda não é validado por lista fechada: hoje vale para o checkout
   (onde é a localização lógica) e não é usado pelas outras superfícies.
 - **Duas superfícies ainda são indexadas por campo, não por uso.** `CustomerOrderFields::visible()`

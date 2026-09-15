@@ -46,7 +46,7 @@ final class FieldDefinition {
 	 * @param array<string, mixed>             $destinations       Where the answer may be shown, per destination.
 	 * @param array<string, mixed>|null        $approval           Optional approval flow, or null.
 	 * @param string                           $collection_surface Where the field is collected.
-	 * @param array<int, array<string, mixed>> $bindings           Every use of the field, in the final model.
+	 * @param array<int, mixed>                $bindings           Every use of the field, as stored.
 	 * @param bool                             $canonical          Whether the document stored `bindings`.
 	 */
 	public function __construct(
@@ -93,15 +93,20 @@ final class FieldDefinition {
 	/**
 	 * The uses a stored definition carries, when it carries the final model.
 	 *
+	 * The list is kept as it was stored, entries that are not maps included: reading is
+	 * where an entry the model cannot use is dropped, and refusing it is the validator's
+	 * job — a definition that dropped it here would make a document the store does not
+	 * understand look like a document with one use fewer.
+	 *
 	 * @param array<string, mixed> $data Raw definition.
-	 * @return array<int, array<string, mixed>>
+	 * @return array<int, mixed>
 	 */
 	private static function bindings_from( array $data ): array {
 		if ( ! isset( $data['bindings'] ) || ! is_array( $data['bindings'] ) ) {
 			return array();
 		}
 
-		return array_values( array_filter( $data['bindings'], 'is_array' ) );
+		return array_values( $data['bindings'] );
 	}
 
 	/**
@@ -250,6 +255,21 @@ final class FieldDefinition {
 				static fn( FieldBinding $binding ): bool => $binding->destination() === $destination
 			)
 		);
+	}
+
+	/**
+	 * The stored list of uses, before it is read as objects.
+	 *
+	 * {@see self::bindings()} answers with objects and drops an entry that is not a map,
+	 * because a surface has nothing to draw from one. A validator has the opposite duty:
+	 * an entry it cannot read is a document that says something the store does not
+	 * understand, and it is refused rather than dropped. That is why the raw list is
+	 * reachable here — and why it is empty for a document that does not store one.
+	 *
+	 * @return array<int, mixed>
+	 */
+	public function raw_bindings(): array {
+		return $this->canonical ? $this->bindings : array();
 	}
 
 	/**

@@ -211,6 +211,142 @@ final class DocumentMigratorTest extends TestCase {
 	}
 
 	/**
+	 * A document that stores its uses is read from the list, not rebuilt from the map.
+	 *
+	 * The map holds one entry per destination, so rebuilding the list from it would erase a
+	 * second use of the same destination — the one thing the list exists to carry. The map
+	 * ends up as the projection of the list, which is what every surface reads.
+	 *
+	 * @return void
+	 */
+	public function test_the_uses_are_read_from_the_list_and_not_rebuilt_from_the_map(): void {
+		$document = array(
+			'revision' => 1,
+			'fields'   => array(
+				array(
+					'id'       => 'autorizacao',
+					'type'     => 'file',
+					'label'    => 'Autorização',
+					'bindings' => array(
+						array(
+							'field_id'     => 'autorizacao',
+							'container_id' => 'documentos',
+							'destination'  => 'customer_order',
+							'position'     => 10,
+							'visible'      => true,
+							'permissions'  => array( 'show_metadata', 'view' ),
+						),
+						array(
+							'field_id'     => 'autorizacao',
+							'container_id' => 'anexos',
+							'destination'  => 'customer_order',
+							'position'     => 20,
+							'visible'      => true,
+							'permissions'  => array( 'download' ),
+						),
+					),
+				),
+			),
+			'sections' => array(),
+			'settings' => array(),
+		);
+
+		$result   = DocumentMigrator::migrate( $document );
+		$migrated = $result['document']['fields'][0];
+
+		self::assertCount( 2, $migrated['bindings'], 'both uses are still there' );
+		self::assertSame(
+			array( 'documentos', 'anexos' ),
+			array_column( $migrated['bindings'], 'container_id' )
+		);
+		self::assertArrayHasKey(
+			'customer_order',
+			$migrated['destinations'],
+			'the map is the projection of the list, so the surface still reads something'
+		);
+		self::assertSame(
+			'download',
+			$migrated['destinations']['customer_order']['actions'][0],
+			'the map carries what it can: the last use of that destination'
+		);
+
+		$again = DocumentMigrator::migrate( $result['document'] );
+
+		self::assertFalse( $again['changed'], 'and it is still idempotent' );
+		self::assertSame( $result['document'], $again['document'] );
+	}
+
+	/**
+	 * An edit written into the map reaches the use it describes.
+	 *
+	 * The editor writes the map today. For a destination with a single use the two shapes
+	 * describe the same thing, so the map is the newer view and the use follows it; for a
+	 * destination with two uses the map cannot describe them both, and the list decides.
+	 *
+	 * @return void
+	 */
+	public function test_an_edited_map_reaches_its_use(): void {
+		$use = static function ( string $destination, string $container, string $title ): array {
+			return array(
+				'field_id'       => 'documento',
+				'container_id'   => $container,
+				'destination'    => $destination,
+				'visible'        => true,
+				'label_override' => $title,
+			);
+		};
+
+		$document = array(
+			'revision' => 1,
+			'fields'   => array(
+				array(
+					'id'           => 'documento',
+					'type'         => 'text',
+					'label'        => 'Documento',
+					// The list still says what was written before the edit; the map carries
+					// what the merchant typed afterwards.
+					'bindings'     => array(
+						$use( 'admin_order', 'equipa', 'Antes' ),
+						$use( 'customer_order', 'cliente', 'Cliente' ),
+						$use( 'customer_order', 'anexos', 'Anexos' ),
+					),
+					'destinations' => array(
+						'admin_order'    => array(
+							'enabled' => true,
+							'section' => 'equipa',
+							'title'   => 'Depois',
+							'mode'    => 'edit',
+						),
+						'customer_order' => array(
+							'enabled' => true,
+							'section' => 'cliente',
+							'title'   => 'Não vale: este destino tem dois usos',
+							'mode'    => 'edit',
+						),
+					),
+				),
+			),
+			'sections' => array(),
+			'settings' => array(),
+		);
+
+		$result   = DocumentMigrator::migrate( $document );
+		$migrated = $result['document']['fields'][0];
+
+		self::assertSame(
+			array( 'Depois', 'Cliente', 'Anexos' ),
+			array_column( $migrated['bindings'], 'label_override' ),
+			'the single-use destination follows the map; the two-use one keeps its list'
+		);
+		self::assertSame( 'Depois', $migrated['destinations']['admin_order']['title'] );
+		self::assertSame(
+			'Anexos',
+			$migrated['destinations']['customer_order']['title'],
+			'the map is the projection of the list where the list is the authority: the last use'
+		);
+	}
+
+	/**
 	 * A destination that meant two places is not guessed: it is left for the validator.
 	 *
 	 * @return void

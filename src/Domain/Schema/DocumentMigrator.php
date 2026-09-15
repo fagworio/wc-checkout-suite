@@ -191,7 +191,7 @@ final class DocumentMigrator {
 				continue;
 			}
 
-			$canonical = self::canonical_field( $entry, $remap );
+			$canonical = self::canonical_field( $entry, $remap, $migrations );
 
 			if ( $canonical !== $entry ) {
 				$migrations[] = 'field_bindings';
@@ -206,12 +206,24 @@ final class DocumentMigrator {
 	/**
 	 * One field, in the canonical shape.
 	 *
-	 * @param array<string, mixed>  $field Raw definition.
-	 * @param array<string, string> $remap Container identifier remap, by destination.
+	 * A field that already stores its uses is taken at its word: the list is the authority
+	 * the map is derived from, and reading the map instead would erase a second use of the
+	 * same destination — the very thing the list exists to carry. Its uses are still
+	 * followed through the container remap, because a container offered in several
+	 * destinations was split by the pass before this one.
+	 *
+	 * @param array<string, mixed>  $field      Raw definition.
+	 * @param array<string, string> $remap      Container identifier remap, by destination.
+	 * @param array<int, string>    $migrations Migrations applied, by reference.
 	 * @return array<string, mixed>
 	 */
-	private static function canonical_field( array $field, array $remap ): array {
-		$id           = isset( $field['id'] ) ? (string) $field['id'] : '';
+	private static function canonical_field( array $field, array $remap, array &$migrations ): array {
+		$id = isset( $field['id'] ) ? (string) $field['id'] : '';
+
+		if ( isset( $field['bindings'] ) && is_array( $field['bindings'] ) ) {
+			return self::field_with_bindings( $field, $id, $remap, $migrations );
+		}
+
 		$destinations = self::effective_destinations( $field );
 
 		$bindings = array();
@@ -247,6 +259,104 @@ final class DocumentMigrator {
 		}
 
 		$field['destinations'] = $map;
+		$field['bindings']     = $bindings;
+
+		return $field;
+	}
+
+	/**
+	 * A field that already stores its uses, with both shapes agreeing.
+	 *
+	 * Two views of one configuration arrive here. The **list** is the authority: it is the
+	 * only shape that can carry two uses of the same field in one destination, and reading
+	 * the map instead would erase the second of them. The **map** is what the editor writes
+	 * today, and it is an edit to the use it describes — one use per destination fits the map
+	 * exactly, so for a destination with a single use the map is the newer of the two views
+	 * and the use follows it. A destination with more than one use is expressible only in the
+	 * list, so there the list decides and the map is its projection.
+	 *
+	 * Either way the map ends up as the projection of the list, keeping the entries no use
+	 * justifies: a link that is off is configuration the merchant typed, and the surfaces
+	 * still read it.
+	 *
+	 * @param array<string, mixed>  $field      Raw definition.
+	 * @param string                $id         Field identifier.
+	 * @param array<string, string> $remap      Container identifier remap, by destination.
+	 * @param array<int, string>    $migrations Migrations applied, by reference.
+	 * @return array<string, mixed>
+	 */
+	private static function field_with_bindings( array $field, string $id, array $remap, array &$migrations ): array {
+		$map   = isset( $field['destinations'] ) && is_array( $field['destinations'] ) ? $field['destinations'] : array();
+		$uses  = array();
+		$tally = array();
+
+		foreach ( array_values( $field['bindings'] ) as $raw ) {
+			if ( ! is_array( $raw ) ) {
+				// An entry the model cannot read is left where it is, for the validator to
+				// refuse: dropping it here would hide what the document says.
+				$uses[] = array(
+					'raw'         => $raw,
+					'destination' => null,
+					'binding'     => null,
+				);
+
+				continue;
+			}
+
+			$destination = isset( $raw['destination'] ) ? (string) $raw['destination'] : '';
+			$renamed     = self::destination( $destination, $migrations );
+
+			if ( $renamed !== $destination ) {
+				$raw['destination'] = $renamed;
+				$destination        = $renamed;
+			}
+
+			$container = isset( $raw['container_id'] ) ? (string) $raw['container_id'] : '';
+			$remapped  = $remap[ $destination . '|' . $container ] ?? $container;
+
+			if ( $remapped !== $container ) {
+				$raw['container_id'] = $remapped;
+			}
+
+			$tally[ $destination ] = ( $tally[ $destination ] ?? 0 ) + 1;
+
+			$uses[] = array(
+				'raw'         => $raw,
+				'destination' => $destination,
+				'binding'     => FieldBinding::from_array( $raw ),
+			);
+		}
+
+		$bindings  = array();
+		$projected = array();
+
+		foreach ( $uses as $use ) {
+			$binding     = $use['binding'];
+			$destination = $use['destination'];
+
+			if (
+				null !== $binding &&
+				1 === ( $tally[ $destination ] ?? 0 ) &&
+				isset( $map[ $destination ] ) &&
+				is_array( $map[ $destination ] )
+			) {
+				$binding = FieldBinding::from_link( $id, (string) $destination, $map[ $destination ] );
+			}
+
+			if ( null === $binding ) {
+				$bindings[] = $use['raw'];
+
+				continue;
+			}
+
+			$bindings[] = $binding->to_array();
+
+			// The projection the surfaces read, refreshed use by use: the last use in a
+			// destination is what the map can say, and the list is what says the rest.
+			$projected[ (string) $destination ] = $binding->to_link();
+		}
+
+		$field['destinations'] = array_merge( $map, $projected );
 		$field['bindings']     = $bindings;
 
 		return $field;

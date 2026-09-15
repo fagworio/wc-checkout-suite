@@ -628,4 +628,194 @@ final class SectionValidatorTest extends TestCase {
 
 		self::assertContains( 'destination_section_not_offered', $result->error_codes() );
 	}
+
+	/**
+	 * Two sections, one offered in each of two destinations.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function two_areas(): array {
+		return array(
+			$this->section(
+				array(
+					'id'       => 'documentos_para_analise',
+					'position' => 10,
+					'areas'    => array( 'admin_order' ),
+				)
+			),
+			$this->section(
+				array(
+					'id'       => 'documentos_enviados',
+					'position' => 20,
+					'areas'    => array( 'customer_order' ),
+				)
+			),
+		);
+	}
+
+	/**
+	 * One use of a field, in the final model.
+	 *
+	 * @param string               $destination Destination.
+	 * @param string               $container   Container.
+	 * @param array<string, mixed> $extra       Extra keys.
+	 * @return array<string, mixed>
+	 */
+	private function use_row( string $destination, string $container, array $extra = array() ): array {
+		return array_merge(
+			array(
+				'field_id'     => 'autorizacao',
+				'container_id' => $container,
+				'destination'  => $destination,
+				'visible'      => true,
+			),
+			$extra
+		);
+	}
+
+	/**
+	 * One field that stores its uses.
+	 *
+	 * @param array<int, mixed>    $bindings Uses.
+	 * @param array<string, mixed> $extra    Extra keys.
+	 * @return array<string, mixed>
+	 */
+	private function bound_field( array $bindings, array $extra = array() ): array {
+		return array_merge(
+			array(
+				'id'       => 'autorizacao',
+				'origin'   => 'custom',
+				'type'     => 'text',
+				'label'    => 'Autorização',
+				'section'  => 'billing',
+				'bindings' => $bindings,
+			),
+			$extra
+		);
+	}
+
+	/**
+	 * A use whose container is not offered in its destination is refused.
+	 *
+	 * The container is the use's own, so the answer is per use: a field may sit in the
+	 * section the staff area offers and in the one the customer area offers, and each of
+	 * them is asked about its own destination.
+	 *
+	 * @return void
+	 */
+	public function test_a_use_in_a_container_the_area_does_not_offer_is_refused(): void {
+		$accepted = SectionValidator::validate_references(
+			$this->two_areas(),
+			array(
+				$this->bound_field(
+					array(
+						$this->use_row( 'admin_order', 'documentos_para_analise' ),
+						$this->use_row( 'customer_order', 'documentos_enviados' ),
+					)
+				),
+			)
+		);
+
+		self::assertTrue( $accepted->is_valid(), implode( ', ', $accepted->error_codes() ) );
+
+		$refused = SectionValidator::validate_references(
+			$this->two_areas(),
+			array(
+				$this->bound_field(
+					array(
+						$this->use_row( 'admin_order', 'documentos_para_analise' ),
+						$this->use_row( 'admin_order', 'documentos_enviados' ),
+					)
+				),
+			)
+		);
+
+		self::assertFalse( $refused->is_valid(), 'the second use names a container of the customer area' );
+		self::assertContains( 'destination_section_not_offered', $refused->error_codes() );
+	}
+
+	/**
+	 * A use is asked about its own destination even when another use names the same container.
+	 *
+	 * A field used twice in one area can name a container the area offers in the first use
+	 * and one it does not in the second; the map keeps one entry, so only the list can tell
+	 * them apart.
+	 *
+	 * @return void
+	 */
+	public function test_the_second_use_of_an_area_is_checked_on_its_own(): void {
+		$refused = SectionValidator::validate_references(
+			$this->two_areas(),
+			array(
+				$this->bound_field(
+					array(
+						$this->use_row( 'admin_order', 'documentos_para_analise', array( 'position' => 10 ) ),
+						$this->use_row( 'admin_order', 'documentos_enviados', array( 'position' => 20 ) ),
+					)
+				),
+			)
+		);
+
+		self::assertContains( 'destination_section_not_offered', $refused->error_codes() );
+	}
+
+	/**
+	 * A use that offers a form has to store where that form writes.
+	 *
+	 * The rule is about the use, not the field: a use that is not visible offers no form,
+	 * so it makes no promise, while the visible one still has to store with the customer.
+	 *
+	 * @return void
+	 */
+	public function test_each_visible_use_on_a_customer_surface_is_asked_about_storage(): void {
+		$sections = array(
+			$this->section(
+				array(
+					'id'           => 'preferencias_do_perfil',
+					'title'        => 'Preferências',
+					'areas'        => array( 'customer_account' ),
+					'presentation' => array(
+						'account' => array(
+							'slug'       => 'preferencias',
+							'menu_label' => 'Preferências',
+							'icon'       => 'user',
+							'position'   => 0,
+							'mode'       => 'edit',
+						),
+					),
+				)
+			),
+		);
+
+		$refused = SectionValidator::validate_references(
+			$sections,
+			array(
+				$this->bound_field(
+					array(
+						$this->use_row( 'customer_account', 'preferencias_do_perfil' ),
+					),
+					array( 'storage' => array( 'scope' => 'order' ) )
+				),
+			)
+		);
+
+		self::assertContains( 'account_section_requires_customer_storage', $refused->error_codes() );
+
+		$hidden = SectionValidator::validate_references(
+			$sections,
+			array(
+				$this->bound_field(
+					array(
+						$this->use_row( 'customer_account', 'preferencias_do_perfil', array( 'visible' => false ) ),
+					),
+					array( 'storage' => array( 'scope' => 'order' ) )
+				),
+			)
+		);
+
+		self::assertTrue(
+			$hidden->is_valid(),
+			'a use nobody sees offers no form, so it promises nothing: ' . implode( ', ', $hidden->error_codes() )
+		);
+	}
 }

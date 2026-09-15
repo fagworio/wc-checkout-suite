@@ -367,6 +367,49 @@ final class SectionValidator {
 	}
 
 	/**
+	 * Where one field says it appears, in whichever shape the document stores it.
+	 *
+	 * A placement is the pair that decides insertion: the destination and the container the
+	 * value sits in. A document that stores its bindings answers with one placement per
+	 * use — two uses in the same area are two placements, which is what the destination map
+	 * cannot express. A document written before the split has only its map, and every entry
+	 * of it is a placement: a link that is off is still configuration the merchant typed,
+	 * and what it points at is refused rather than ignored.
+	 *
+	 * `enabled` is answered per shape: a use is placed because its link was on, and a use
+	 * that is not visible offers nothing to anybody, so it makes no promise about what it
+	 * can write.
+	 *
+	 * @param FieldDefinition $definition Definition.
+	 * @return array<int, array{destination: string, container: string, enabled: bool}>
+	 */
+	private static function placements( FieldDefinition $definition ): array {
+		$placements = array();
+
+		if ( $definition->is_canonical() ) {
+			foreach ( $definition->bindings() as $binding ) {
+				$placements[] = array(
+					'destination' => $binding->destination(),
+					'container'   => $binding->container_id(),
+					'enabled'     => $binding->is_visible(),
+				);
+			}
+
+			return $placements;
+		}
+
+		foreach ( $definition->destinations() as $destination => $link ) {
+			$placements[] = array(
+				'destination' => (string) $destination,
+				'container'   => is_array( $link ) && isset( $link['section'] ) ? (string) $link['section'] : '',
+				'enabled'     => is_array( $link ) && ! empty( $link['enabled'] ),
+			);
+		}
+
+		return $placements;
+	}
+
+	/**
 	 * Validates that every field points at a section that exists.
 	 *
 	 * @param array<int, mixed> $sections Raw section list.
@@ -449,27 +492,33 @@ final class SectionValidator {
 
 			$definition = FieldDefinition::from_array( $raw_field );
 
-			foreach ( $definition->destinations() as $destination => $link ) {
-				$section = isset( $link['section'] ) ? (string) $link['section'] : '';
+			// The container a value appears in is decided by the *use*, not by the
+			// destination: one field may sit in two containers of the same area, and the
+			// map keeps a single entry per area. A document that stores its uses is asked
+			// use by use; one written before the split has only the map, and the map is
+			// what is read.
+			foreach ( self::placements( $definition ) as $placement ) {
+				$destination = $placement['destination'];
+				$section     = $placement['container'];
 
 				if ( '' === $section ) {
 					continue;
 				}
 
-				if ( ! isset( $offered[ $section ] ) || ! in_array( (string) $destination, $offered[ $section ], true ) ) {
+				if ( ! isset( $offered[ $section ] ) || ! in_array( $destination, $offered[ $section ], true ) ) {
 					$result = $result->merge(
 						ValidationResult::invalid(
 							'destination_section_not_offered',
 							sprintf(
 								/* translators: 1: destination key, 2: section id, 3: field id */
 								__( 'The section "%2$s" is not offered in the area "%1$s" (field "%3$s").', 'wc-checkoutsuite' ),
-								(string) $destination,
+								$destination,
 								$section,
 								$definition->id()
 							),
 							array(
 								'field'       => $definition->id(),
-								'destination' => (string) $destination,
+								'destination' => $destination,
 								'section'     => $section,
 							)
 						)
@@ -478,15 +527,15 @@ final class SectionValidator {
 			}
 
 			// A customer surface reads and writes the customer's own data, and it does
-			// so with no order in hand. A field linked into one of them therefore has to
+			// so with no order in hand. A field placed in one of them therefore has to
 			// store on the customer: the page or the panel would otherwise offer a form
 			// that saves to a scope nothing provides, which is configuration the merchant
 			// believes is in place and which does nothing.
-			foreach ( self::CUSTOMER_SURFACES as $surface ) {
-				$link   = $definition->destinations()[ $surface ] ?? array();
-				$target = isset( $link['section'] ) ? (string) $link['section'] : '';
+			foreach ( self::placements( $definition ) as $placement ) {
+				$surface = $placement['destination'];
+				$target  = $placement['container'];
 
-				if ( empty( $link['enabled'] ) || '' === $target || ! isset( $declared[ $target ] ) ) {
+				if ( ! $placement['enabled'] || ! in_array( $surface, self::CUSTOMER_SURFACES, true ) || '' === $target || ! isset( $declared[ $target ] ) ) {
 					continue;
 				}
 

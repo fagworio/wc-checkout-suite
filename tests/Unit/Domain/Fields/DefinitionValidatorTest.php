@@ -781,4 +781,216 @@ final class DefinitionValidatorTest extends TestCase {
 			)->is_valid()
 		);
 	}
+
+	/**
+	 * One field that stores its uses, with the given list.
+	 *
+	 * @param array<int, mixed>    $bindings Uses.
+	 * @param array<string, mixed> $extra    Extra keys.
+	 * @return \WCCheckoutSuite\Domain\Fields\FieldDefinition
+	 */
+	private function bound( array $bindings, array $extra = array() ): \WCCheckoutSuite\Domain\Fields\FieldDefinition {
+		return \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array(
+			array_merge(
+				array(
+					'id'           => 'documento',
+					'origin'       => 'custom',
+					'type'         => 'text',
+					'label'        => 'Documento',
+					'section'      => 'billing',
+					'enabled'      => true,
+					'bindings'     => $bindings,
+					'destinations' => \WCCheckoutSuite\Domain\Fields\DefinitionVocabulary::default_destinations(),
+				),
+				$extra
+			)
+		);
+	}
+
+	/**
+	 * A use of the field in one destination.
+	 *
+	 * @param string               $destination Destination.
+	 * @param array<string, mixed> $extra       Extra keys.
+	 * @return array<string, mixed>
+	 */
+	private function use_of( string $destination, array $extra = array() ): array {
+		return array_merge(
+			array(
+				'field_id'     => 'documento',
+				'container_id' => 'billing',
+				'destination'  => $destination,
+				'visible'      => true,
+			),
+			$extra
+		);
+	}
+
+	/**
+	 * A use answers for itself, even when another use of the same field hides it.
+	 *
+	 * This is the hole the destination map could not see: a map keeps one entry per area, so
+	 * a second use in the same area had nowhere to say what it may do, and an action the
+	 * destination cannot perform was accepted for it.
+	 *
+	 * @return void
+	 */
+	public function test_a_use_carries_its_own_actions(): void {
+		$validator = $this->validator();
+		$file      = array(
+			'type'     => 'file',
+			'storage'  => array(
+				'scope'       => 'order',
+				'sensitivity' => 'sensitive',
+			),
+			'settings' => array(
+				'maxFiles'          => 1,
+				'allowedExtensions' => array( 'pdf' ),
+			),
+		);
+
+		$look    = $this->use_of( 'customer_order', array( 'permissions' => array( 'view' ) ) );
+		$again   = $this->use_of(
+			'customer_order',
+			array(
+				'container_id' => 'outro',
+				'permissions'  => array( 'view' ),
+			)
+		);
+		$approve = $this->use_of(
+			'customer_order',
+			array(
+				'container_id' => 'outro',
+				'permissions'  => array( 'approve' ),
+			)
+		);
+
+		$accepted = $validator->validate( $this->bound( array( $look, $again ), $file ) );
+
+		self::assertTrue( $accepted->is_valid(), implode( ', ', $accepted->error_codes() ) );
+
+		$refused = $validator->validate( $this->bound( array( $look, $approve ), $file ) );
+
+		self::assertFalse( $refused->is_valid(), 'the customer surface may not approve' );
+		self::assertContains( 'invalid_destination_action', $refused->error_codes() );
+	}
+
+	/**
+	 * File actions on a use of a field that stores no file are refused.
+	 *
+	 * @return void
+	 */
+	public function test_a_use_of_a_type_without_a_file_has_no_file_actions(): void {
+		$result = $this->validator()->validate(
+			$this->bound(
+				array(
+					$this->use_of( 'admin_order', array( 'permissions' => array( 'download' ) ) ),
+				)
+			)
+		);
+
+		self::assertFalse( $result->is_valid() );
+		self::assertContains( 'actions_not_supported', $result->error_codes() );
+	}
+
+	/**
+	 * Two uses under one identifier are refused: the answer would depend on the order.
+	 *
+	 * @return void
+	 */
+	public function test_two_uses_cannot_share_an_identifier(): void {
+		$result = $this->validator()->validate(
+			$this->bound(
+				array(
+					$this->use_of( 'customer_order', array( 'id' => 'documento@customer_order' ) ),
+					$this->use_of( 'customer_account', array( 'id' => 'documento@customer_order' ) ),
+				)
+			)
+		);
+
+		self::assertFalse( $result->is_valid() );
+		self::assertContains( 'duplicate_binding_id', $result->error_codes() );
+	}
+
+	/**
+	 * A use that names another field is refused: it is listed under this one.
+	 *
+	 * @return void
+	 */
+	public function test_a_use_must_belong_to_the_field_it_is_listed_under(): void {
+		$result = $this->validator()->validate(
+			$this->bound(
+				array(
+					$this->use_of( 'customer_order', array( 'field_id' => 'outro_campo' ) ),
+				)
+			)
+		);
+
+		self::assertFalse( $result->is_valid() );
+		self::assertContains( 'binding_field_mismatch', $result->error_codes() );
+	}
+
+	/**
+	 * A use that is not a map is refused rather than dropped.
+	 *
+	 * @return void
+	 */
+	public function test_a_use_that_is_not_a_map_is_refused(): void {
+		$result = $this->validator()->validate(
+			$this->bound( array( 'customer_order' ) )
+		);
+
+		self::assertFalse( $result->is_valid() );
+		self::assertContains( 'invalid_binding', $result->error_codes() );
+	}
+
+	/**
+	 * The order of a use cannot be negative.
+	 *
+	 * @return void
+	 */
+	public function test_a_use_position_cannot_be_negative(): void {
+		$result = $this->validator()->validate(
+			$this->bound(
+				array(
+					$this->use_of( 'customer_order', array( 'position' => -3 ) ),
+				)
+			)
+		);
+
+		self::assertFalse( $result->is_valid() );
+		self::assertContains( 'invalid_binding_position', $result->error_codes() );
+	}
+
+	/**
+	 * A document that stores a map and no list is validated as it always was.
+	 *
+	 * The list is the authority for a document that has one; a document written before the
+	 * split has only its map, and the codes the merchant already knows do not change.
+	 *
+	 * @return void
+	 */
+	public function test_a_stored_map_is_still_validated_link_by_link(): void {
+		$result = $this->validator()->validate(
+			\WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array(
+				array(
+					'id'           => 'documento',
+					'origin'       => 'custom',
+					'type'         => 'text',
+					'label'        => 'Documento',
+					'section'      => 'billing',
+					'enabled'      => true,
+					'destinations' => array(
+						'customer_order' => array(
+							'enabled' => true,
+							'actions' => array( 'approve' ),
+						),
+					),
+				)
+			)
+		);
+
+		self::assertFalse( $result->is_valid() );
+		self::assertContains( 'invalid_destination_action', $result->error_codes() );
+	}
 }
