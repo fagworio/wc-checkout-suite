@@ -9,6 +9,8 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Domain\Statuses;
 
+use WCCheckoutSuite\Domain\Support\Slug;
+
 /**
  * One custom order status, as §12.3 configures it.
  *
@@ -142,16 +144,15 @@ final class OrderStatus {
 	 * own states in it, and numbered when it collides. It is derived from the name **once**: the
 	 * identifier is stored, and every later call renames the label and nothing else.
 	 *
+	 * The folding lives in {@see Slug} because a workflow identifier is derived the same way, and
+	 * the two rules disagreeing would show a merchant two keys for one name.
+	 *
 	 * @param string             $label Name the merchant typed.
 	 * @param array<int, string> $taken Identifiers already in use.
 	 * @return string
 	 */
 	public static function unique_id( string $label, array $taken = array() ): string {
-		$base = strtolower( self::without_accents( $label ) );
-		$base = (string) preg_replace( '/[^a-z0-9]+/', '_', $base );
-		$base = trim( $base, '_' );
-		$base = substr( $base, 0, self::MAX_ID );
-		$base = '' !== $base ? $base : 'estado';
+		$base = substr( Slug::key( $label, 'estado' ), 0, self::MAX_ID );
 
 		if ( ! in_array( $base, $taken, true ) ) {
 			return $base;
@@ -164,81 +165,6 @@ final class OrderStatus {
 		}
 
 		return substr( $base, 0, self::MAX_ID - 2 ) . '_' . $suffix;
-	}
-
-	/**
-	 * The letters of the languages this store is written in, folded to their plain form.
-	 *
-	 * Deliberately a table and not WordPress's `remove_accents()`, for the reason the browser half
-	 * of the editor needs the same answer: the screen proposes an identifier from the name the
-	 * merchant types, the server stores one, and the two have to agree. `remove_accents()` exists
-	 * only in PHP, and a rule that produced one identifier in the browser and another on the server
-	 * would show the merchant a key their status does not have.
-	 *
-	 * Anything outside the table is not a letter an identifier can hold, and the pattern that
-	 * follows turns it into a separator.
-	 *
-	 * @param string $label Name the merchant typed.
-	 * @return string
-	 */
-	private static function without_accents( string $label ): string {
-		$table = array(
-			'á' => 'a',
-			'à' => 'a',
-			'â' => 'a',
-			'ã' => 'a',
-			'ä' => 'a',
-			'å' => 'a',
-			'Á' => 'A',
-			'À' => 'A',
-			'Â' => 'A',
-			'Ã' => 'A',
-			'Ä' => 'A',
-			'Å' => 'A',
-			'ç' => 'c',
-			'Ç' => 'C',
-			'é' => 'e',
-			'è' => 'e',
-			'ê' => 'e',
-			'ë' => 'e',
-			'É' => 'E',
-			'È' => 'E',
-			'Ê' => 'E',
-			'Ë' => 'E',
-			'í' => 'i',
-			'ì' => 'i',
-			'î' => 'i',
-			'ï' => 'i',
-			'Í' => 'I',
-			'Ì' => 'I',
-			'Î' => 'I',
-			'Ï' => 'I',
-			'ñ' => 'n',
-			'Ñ' => 'N',
-			'ó' => 'o',
-			'ò' => 'o',
-			'ô' => 'o',
-			'õ' => 'o',
-			'ö' => 'o',
-			'Ó' => 'O',
-			'Ò' => 'O',
-			'Ô' => 'O',
-			'Õ' => 'O',
-			'Ö' => 'O',
-			'ú' => 'u',
-			'ù' => 'u',
-			'û' => 'u',
-			'ü' => 'u',
-			'Ú' => 'U',
-			'Ù' => 'U',
-			'Û' => 'U',
-			'Ü' => 'U',
-			'ý' => 'y',
-			'ÿ' => 'y',
-			'Ý' => 'Y',
-		);
-
-		return strtr( $label, $table );
 	}
 
 	/**

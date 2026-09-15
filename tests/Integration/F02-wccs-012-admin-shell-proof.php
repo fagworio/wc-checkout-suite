@@ -133,9 +133,9 @@ wccs_proof_check(
 wccs_proof_out( '' );
 wccs_proof_out( '2. Navigation' );
 
-// `statuses` is §4's "Status e automações": Fase 9 gave the custom order statuses a screen of
-// their own, and the navigation the planning fixes is the one that now includes it.
-$wccs_expected_sections = array( 'fields', 'sections', 'rules', 'appearance', 'statuses', 'checkout-page', 'import-export', 'diagnostics', 'settings' );
+// §4's "Status e automações" is two screens: the states (Fase 9) and the automations that move
+// through them (Fase 10). The navigation the planning fixes is the one that now includes both.
+$wccs_expected_sections = array( 'fields', 'sections', 'rules', 'appearance', 'statuses', 'workflows', 'checkout-page', 'import-export', 'diagnostics', 'settings' );
 
 wccs_proof_check(
 	'The sections fixed by the planning are present, in order',

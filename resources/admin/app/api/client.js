@@ -302,6 +302,29 @@ export function createClient( {
 				data: { statuses },
 				signal,
 			} ),
+		// The automations of §13. The simulation is a route of its own and not a flag on
+		// the write: a simulation that could be mistaken for a save is a simulation
+		// somebody would run by accident.
+		workflows: ( /** @type {AbortSignal} */ signal ) =>
+			send( routes.workflows, { method: 'GET', signal } ),
+		saveWorkflows: (
+			/** @type {Array<any>} */ workflows,
+			/** @type {AbortSignal} */ signal
+		) =>
+			send( routes.workflows, {
+				method: 'POST',
+				data: { workflows },
+				signal,
+			} ),
+		simulate: (
+			/** @type {Record<string, any>} */ sample,
+			/** @type {AbortSignal} */ signal
+		) =>
+			send( routes.simulate, {
+				method: 'POST',
+				data: { sample },
+				signal,
+			} ),
 		// What publishing would change. A read, so the retry rule applies.
 		diff: ( /** @type {AbortSignal} */ signal ) =>
 			send( routes.diff, { method: 'GET', signal } ),

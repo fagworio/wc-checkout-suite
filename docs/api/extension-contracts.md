@@ -52,6 +52,8 @@ Cada hook recebe exatamente um argumento, e é o registro que ele preenche.
 | `wccs_email_field_links` | `apply_filters( ..., bool $enabled )` | `bool` |
 | `wccs_uploads_cleanup` | `do_action( ..., int $now )` | nada (trabalho agendado) |
 | `wccs_account_document_url` | `apply_filters( ..., string $url, string $token )` | `string` (endereço da porta que serve o documento do cliente) |
+| `wccs_workflow_expire` | `do_action( ..., int $order_id )` | nada (trabalho agendado) |
+| `wccs_workflow_sweep` | `do_action( ... )` | nada (trabalho agendado) |
 
 ## 3. Versão
 

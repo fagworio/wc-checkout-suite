@@ -244,6 +244,26 @@ final class OrderStatusRegistry {
 	}
 
 	/**
+	 * The identifiers of every status the store has.
+	 *
+	 * What a caller validating a definition that names a status needs: the whole floor, the
+	 * merchant's own states and WooCommerce's, because a workflow may legitimately move an order to
+	 * `processing` and may legitimately move it to a state the merchant created.
+	 *
+	 * @return array<int, string>
+	 */
+	public static function known_ids(): array {
+		return array_values(
+			array_filter(
+				array_map(
+					static fn( array $entry ): string => (string) ( $entry['id'] ?? '' ),
+					self::inventory()
+				)
+			)
+		);
+	}
+
+	/**
 	 * The statuses the store has, with the ones WooCommerce owns.
 	 *
 	 * What the screen lists: the merchant's own states first, each with whether it is registered,

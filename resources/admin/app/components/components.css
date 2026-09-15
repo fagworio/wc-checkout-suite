@@ -1575,3 +1575,78 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ------------------------------------------------------ Status automation */
+
+/*
+ * The automations of §13: the list, the stepped editor and the simulator. Three columns, as the
+ * design draws them, and the strategies the store cannot execute simply do not appear in the
+ * selects — the notice beside them says which and why.
+ */
+
+.wccs-admin .wccs-workflows {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr) minmax(0, 320px);
+  gap: var(--wccs-space-16);
+  align-items: start;
+}
+
+.wccs-admin .wccs-workflows h2 {
+  margin: 0 0 var(--wccs-space-4);
+  font-size: 15px;
+}
+
+.wccs-admin .wccs-workflows h3 {
+  margin: var(--wccs-space-16) 0 var(--wccs-space-8);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--wccs-ink-muted);
+}
+
+.wccs-admin .wccs-workflows__items {
+  margin: var(--wccs-space-8) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wccs-admin .wccs-workflows__items button {
+  display: block;
+  width: 100%;
+  padding: var(--wccs-space-8);
+  border: 1px solid transparent;
+  border-radius: var(--wccs-radius-control);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wccs-admin .wccs-workflows__items button.active {
+  border-color: var(--wccs-brand);
+  background: var(--wccs-surface);
+  box-shadow: inset 0 0 0 1px var(--wccs-brand);
+}
+
+.wccs-admin .wccs-workflows__items strong,
+.wccs-admin .wccs-workflows__items small {
+  display: block;
+}
+
+.wccs-admin .wccs-workflows__items small {
+  color: var(--wccs-ink-muted);
+  font-family: var(--wp--preset--font-family--monospace, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 11px;
+}
+
+.wccs-admin .wccs-workflows__answer {
+  margin: var(--wccs-space-8) 0 0;
+  padding-inline-start: 18px;
+  list-style: disc outside !important;
+  font-size: var(--wccs-text-help);
+}
+
+@media (max-width: 1200px) {
+  .wccs-admin .wccs-workflows {
+    grid-template-columns: 1fr;
+  }
+}

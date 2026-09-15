@@ -26,6 +26,7 @@ import { TopbarActionsContext } from './design/TopbarActions';
 import FieldsScreen from './FieldsScreen';
 import SettingsScreen from './SettingsScreen';
 import StatusesScreen from './StatusesScreen';
+import WorkflowsScreen from './WorkflowsScreen';
 import { readSection, sectionHref } from './sectionUrl';
 import previewCapabilities from './previewCapabilities';
 
@@ -62,6 +63,11 @@ const DESIGNED_SECTIONS = [
 		id: 'statuses',
 		label: __( 'Status personalizados', 'wc-checkoutsuite' ),
 		icon: 'layers',
+	},
+	{
+		id: 'workflows',
+		label: __( 'Automação de status', 'wc-checkoutsuite' ),
+		icon: 'branch',
 	},
 ];
 
@@ -199,6 +205,12 @@ function SectionContent( { section, client, siteName, urls, checkoutMode } ) {
 	// view of the field manager.
 	if ( 'statuses' === section && client ) {
 		return <StatusesScreen client={ client } />;
+	}
+
+	// The automations of §13. A workflow is not a view of the schema document either: it moves
+	// orders, and it has its own screen under "Status e automações" (§4).
+	if ( 'workflows' === section && client ) {
+		return <WorkflowsScreen client={ client } />;
 	}
 
 	if ( 'settings' === section && client ) {
