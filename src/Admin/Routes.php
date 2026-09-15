@@ -12,6 +12,7 @@ namespace WCCheckoutSuite\Admin;
 use WCCheckoutSuite\Http\Admin\CatalogController;
 use WCCheckoutSuite\Http\Admin\SchemaController;
 use WCCheckoutSuite\Http\Admin\SettingsController;
+use WCCheckoutSuite\Http\Admin\StatusController;
 use WCCheckoutSuite\Http\Admin\TransferController;
 use WCCheckoutSuite\Http\Integration\OrderFieldsController;
 
@@ -40,6 +41,7 @@ final class Routes {
 		return SchemaController::routes()
 			+ CatalogController::routes()
 			+ SettingsController::routes()
+			+ StatusController::routes()
 			+ OrderFieldsController::routes()
 			+ TransferController::routes();
 	}

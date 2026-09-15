@@ -287,6 +287,21 @@ export function createClient( {
 				data: { custom_checkout: enabled },
 				signal,
 			} ),
+		// The store's own order statuses. The read is a read; the write replaces the
+		// whole list, because a status is a row in a list and not an entity with its
+		// own address — two requests that each changed one row would be two chances
+		// for the list to be half-written.
+		statuses: ( /** @type {AbortSignal} */ signal ) =>
+			send( routes.statuses, { method: 'GET', signal } ),
+		saveStatuses: (
+			/** @type {Array<any>} */ statuses,
+			/** @type {AbortSignal} */ signal
+		) =>
+			send( routes.statuses, {
+				method: 'POST',
+				data: { statuses },
+				signal,
+			} ),
 		// What publishing would change. A read, so the retry rule applies.
 		diff: ( /** @type {AbortSignal} */ signal ) =>
 			send( routes.diff, { method: 'GET', signal } ),

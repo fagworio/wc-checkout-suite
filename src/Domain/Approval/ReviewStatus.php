@@ -12,6 +12,7 @@ namespace WCCheckoutSuite\Domain\Approval;
 use WC_Order;
 use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
 use WCCheckoutSuite\Domain\Orders\OrderFieldsService;
+use WCCheckoutSuite\Domain\Statuses\OrderStatusRegistry;
 
 /**
  * Registration and application of the optional review state.
@@ -67,44 +68,25 @@ final class ReviewStatus {
 	/**
 	 * Publishes the statuses the published document asks for, or nothing.
 	 *
+	 * Registration is the registry's now. The states a flow asks for are added to the store's list
+	 * **with the identifier they already have** — orders are recorded in them — and the registry
+	 * registers every active status from that list, which is what keeps one registration path
+	 * instead of two that could disagree about a label.
+	 *
+	 * A store that enables no complete flow still adds no hook and registers no status of its own:
+	 * the list it registers from is the merchant's, and a flow that was never configured
+	 * contributes nothing to it.
+	 *
 	 * @return void
 	 */
 	public static function publish(): void {
 		$statuses = self::statuses( PublishedDocument::read()->fields() );
 
+		OrderStatusRegistry::migrate( $statuses );
+
 		if ( array() === $statuses ) {
 			return;
 		}
-
-		foreach ( $statuses as $status => $label ) {
-			register_post_status(
-				'wc-' . $status,
-				array(
-					'label'                     => $label,
-					'public'                    => false,
-					'exclude_from_search'       => false,
-					'show_in_admin_all_list'    => true,
-					'show_in_admin_status_list' => true,
-					/* translators: %s: number of orders. */
-					'label_count'               => _n_noop(
-						'Waiting for review (%s)',
-						'Waiting for review (%s)',
-						'wc-checkoutsuite'
-					),
-				)
-			);
-		}
-
-		add_filter(
-			'wc_order_statuses',
-			static function ( $order_statuses ) use ( $statuses ) {
-				foreach ( $statuses as $status => $label ) {
-					$order_statuses[ 'wc-' . $status ] = $label;
-				}
-
-				return $order_statuses;
-			}
-		);
 
 		add_action( self::HOOK_CLASSIC, array( self::class, 'hold_after_status_change' ), 20, 4 );
 		add_action( self::HOOK_API, array( self::class, 'hold_api' ), 20, 1 );

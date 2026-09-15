@@ -101,6 +101,10 @@ final class AdminMenu {
 				'label' => __( 'Appearance', 'wc-checkoutsuite' ),
 			),
 			array(
+				'id'    => 'statuses',
+				'label' => __( 'Order statuses', 'wc-checkoutsuite' ),
+			),
+			array(
 				'id'    => 'checkout-page',
 				'label' => __( 'Checkout page', 'wc-checkoutsuite' ),
 			),

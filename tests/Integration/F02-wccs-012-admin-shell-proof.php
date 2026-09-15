@@ -133,10 +133,12 @@ wccs_proof_check(
 wccs_proof_out( '' );
 wccs_proof_out( '2. Navigation' );
 
-$wccs_expected_sections = array( 'fields', 'sections', 'rules', 'appearance', 'checkout-page', 'import-export', 'diagnostics', 'settings' );
+// `statuses` is §4's "Status e automações": Fase 9 gave the custom order statuses a screen of
+// their own, and the navigation the planning fixes is the one that now includes it.
+$wccs_expected_sections = array( 'fields', 'sections', 'rules', 'appearance', 'statuses', 'checkout-page', 'import-export', 'diagnostics', 'settings' );
 
 wccs_proof_check(
-	'The eight sections fixed by the planning are present, in order',
+	'The sections fixed by the planning are present, in order',
 	$wccs_expected_sections === AdminMenu::section_ids(),
 	implode( ', ', AdminMenu::section_ids() )
 );

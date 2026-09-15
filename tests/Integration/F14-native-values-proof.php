@@ -140,6 +140,9 @@ wp_set_current_user( 1 );
 delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_DRAFT ) );
 delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED ) );
 delete_option( 'wccs_schema_revisions' );
+// A complete approval flow migrates its state into the store's status list, which is durable on
+// purpose. This harness configures one, so this harness clears what that writes.
+delete_option( \WCCheckoutSuite\Domain\Statuses\OrderStatusRepository::OPTION );
 
 $wccs_options_before = wccs_proof_option_count();
 
@@ -454,6 +457,7 @@ foreach ( array_merge( array( $wccs_order->get_id(), $wccs_quiet->get_id() ), $w
 delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED ) );
 delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_DRAFT ) );
 delete_option( 'wccs_schema_revisions' );
+delete_option( \WCCheckoutSuite\Domain\Statuses\OrderStatusRepository::OPTION );
 
 wccs_proof_check(
 	'The harness left no stored option behind',

@@ -25,6 +25,7 @@ import { Icon } from './design/icons';
 import { TopbarActionsContext } from './design/TopbarActions';
 import FieldsScreen from './FieldsScreen';
 import SettingsScreen from './SettingsScreen';
+import StatusesScreen from './StatusesScreen';
 import { readSection, sectionHref } from './sectionUrl';
 import previewCapabilities from './previewCapabilities';
 
@@ -56,6 +57,11 @@ const DESIGNED_SECTIONS = [
 		id: 'rules',
 		label: __( 'Regras do editor', 'wc-checkoutsuite' ),
 		icon: 'shield',
+	},
+	{
+		id: 'statuses',
+		label: __( 'Status personalizados', 'wc-checkoutsuite' ),
+		icon: 'layers',
 	},
 ];
 
@@ -188,6 +194,13 @@ function SectionContent( { section, client, siteName, urls, checkoutMode } ) {
 	// Settings is where the merchant turns the custom checkout on; Diagnostics is the
 	// same state without the switch. One component, two sections, because they answer
 	// one question between them.
+	// The states an order waits in (§12). They are not part of the schema document: a status
+	// belongs to the workflow vocabulary and has its own screen, which is why this is not a
+	// view of the field manager.
+	if ( 'statuses' === section && client ) {
+		return <StatusesScreen client={ client } />;
+	}
+
 	if ( 'settings' === section && client ) {
 		return <SettingsScreen client={ client } />;
 	}

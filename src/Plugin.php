@@ -35,8 +35,10 @@ use WCCheckoutSuite\Checkout\CustomerOrderFields;
 use WCCheckoutSuite\Account\MyAccountSections;
 use WCCheckoutSuite\Checkout\OrderEmailFields;
 use WCCheckoutSuite\Domain\Approval\ReviewStatus;
+use WCCheckoutSuite\Domain\Statuses\OrderStatusRegistry;
 use WCCheckoutSuite\Http\Admin\SchemaController;
 use WCCheckoutSuite\Http\Admin\SettingsController;
+use WCCheckoutSuite\Http\Admin\StatusController;
 use WCCheckoutSuite\Http\Admin\TransferController;
 use WCCheckoutSuite\Http\Integration\OrderFieldsController;
 use WCCheckoutSuite\Privacy\OrderFieldsEraser;
@@ -163,6 +165,10 @@ final class Plugin {
 		$settings_controller = new SettingsController();
 
 		add_action( 'rest_api_init', array( $settings_controller, 'register_routes' ) );
+
+		$status_controller = new StatusController();
+
+		add_action( 'rest_api_init', array( $status_controller, 'register_routes' ) );
 
 		// Storefront side: the published schema applied to the classic checkout.
 		//
@@ -297,6 +303,10 @@ final class Plugin {
 		// projections — customer or store, HTML or text — are decided from what the
 		// platform hands over rather than from a setting that could disagree with it.
 		OrderEmailFields::register();
+
+		// The custom statuses the merchant configured, and the payment guard that keeps a
+		// state before payment out of WooCommerce's paid list (§12.4, §12.5).
+		OrderStatusRegistry::register();
 
 		// The optional approval flow. Registered unconditionally, and does nothing at
 		// all until a published field enables a complete flow: a store that does not

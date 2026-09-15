@@ -274,6 +274,10 @@ wp_set_current_user( 1 );
 delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_DRAFT ) );
 delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED ) );
 delete_option( 'wccs_schema_revisions' );
+// The states a flow asks for are migrated into the store's status list, which is durable on
+// purpose: an order recorded in a state keeps being in a registered state even if the flow that
+// named it is turned off. This harness is what causes that write, so this harness clears it.
+delete_option( \WCCheckoutSuite\Domain\Statuses\OrderStatusRepository::OPTION );
 
 $wccs_options_before = wccs_proof_option_count();
 $wccs_orders         = array();
@@ -600,6 +604,7 @@ foreach ( $wccs_orders as $wccs_created ) {
 delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_DRAFT ) );
 delete_option( \WCCheckoutSuite\Domain\Schema\SchemaRepository::option_for( \WCCheckoutSuite\Domain\Schema\SchemaRepository::SLOT_PUBLISHED ) );
 delete_option( 'wccs_schema_revisions' );
+delete_option( \WCCheckoutSuite\Domain\Statuses\OrderStatusRepository::OPTION );
 
 wccs_proof_check(
 	'The harness left no stored option behind',
