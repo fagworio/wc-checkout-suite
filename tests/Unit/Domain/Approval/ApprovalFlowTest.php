@@ -211,12 +211,16 @@ final class ApprovalFlowTest extends TestCase {
 	/**
 	 * The review transition is only eligible after the gateway has decided.
 	 *
+	 * `on-hold` is the store waiting for a bank transfer or a cheque, so it is before
+	 * the decision rather than after it: an unpaid order stays in the payment flow the
+	 * customer was told about and is reviewed when the payment arrives.
+	 *
 	 * @return void
 	 */
 	public function test_only_post_payment_statuses_can_trigger_review(): void {
 		self::assertTrue( ReviewStatus::is_post_payment_status( 'processing' ) );
 		self::assertTrue( ReviewStatus::is_post_payment_status( 'completed' ) );
-		self::assertTrue( ReviewStatus::is_post_payment_status( 'on-hold' ) );
+		self::assertFalse( ReviewStatus::is_post_payment_status( 'on-hold' ) );
 		self::assertFalse( ReviewStatus::is_post_payment_status( 'pending' ) );
 		self::assertFalse( ReviewStatus::is_post_payment_status( 'wccs-custom' ) );
 	}

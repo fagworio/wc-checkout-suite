@@ -174,7 +174,13 @@ $wccs_fields = array(
 		'origin'         => 'custom',
 		'type'           => 'text',
 		'label'          => 'Preferência do perfil',
-		'description'    => 'Vinculado só ao perfil, que ainda não tem superfície.',
+		// The account page writes to the customer, so the value lives with the customer
+		// and not with any one order.
+		'storage'        => array(
+			'scope'       => 'customer',
+			'sensitivity' => 'personal',
+		),
+		'description'    => 'Vinculado à página Preferências, em Minha conta.',
 		'section'        => 'dados_fiscais',
 		'enabled'        => true,
 		'required'       => false,
@@ -192,6 +198,7 @@ $wccs_fields = array(
 					'section'  => 'preferencias_do_perfil',
 					'title'    => 'Como prefere ser contactado',
 					'position' => 10,
+					'mode'     => 'edit',
 				),
 			)
 		),
@@ -329,11 +336,24 @@ $wccs_sections = array(
 		'areas'    => array( 'customer_email', 'admin_email' ),
 	),
 	array(
-		'id'       => 'preferencias_do_perfil',
-		'title'    => 'Preferências',
-		'position' => 60,
-		'location' => 'order',
-		'areas'    => array( 'customer_profile' ),
+		'id'           => 'preferencias_do_perfil',
+		'title'        => 'Preferências',
+		'position'     => 60,
+		'location'     => 'order',
+		'areas'        => array( 'customer_profile' ),
+		// A section offered in the profile area is an authenticated page in My Account:
+		// its own address, its own entry in the account menu, and the icon the design
+		// draws for it.
+		'presentation' => array(
+			'show_title' => true,
+			'account'    => array(
+				'slug'       => 'preferencias',
+				'menu_label' => 'Preferências',
+				'icon'       => 'user',
+				'mode'       => 'edit',
+				'position'   => 0,
+			),
+		),
 	),
 );
 

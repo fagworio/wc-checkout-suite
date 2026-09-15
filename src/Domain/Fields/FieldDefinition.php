@@ -45,6 +45,7 @@ final class FieldDefinition {
 	 * @param int                              $schema_version     Definition schema version.
 	 * @param array<string, mixed>             $destinations       Where the answer may be shown, per destination.
 	 * @param array<string, mixed>|null        $approval           Optional approval flow, or null.
+	 * @param string                           $collection_surface Where the field is collected.
 	 */
 	public function __construct(
 		private string $id,
@@ -68,7 +69,8 @@ final class FieldDefinition {
 		private array $storage,
 		private int $schema_version,
 		private array $destinations = array(),
-		private ?array $approval = null
+		private ?array $approval = null,
+		private string $collection_surface = 'checkout'
 	) {
 	}
 
@@ -137,7 +139,8 @@ final class FieldDefinition {
 				: DefinitionVocabulary::default_storage( true ),
 			isset( $data['schema_version'] ) ? (int) $data['schema_version'] : 1,
 			self::destinations_from( $data ),
-			isset( $data['approval'] ) && is_array( $data['approval'] ) ? $data['approval'] : null
+			isset( $data['approval'] ) && is_array( $data['approval'] ) ? $data['approval'] : null,
+			isset( $data['collection_surface'] ) ? (string) $data['collection_surface'] : 'checkout'
 		);
 	}
 
@@ -337,6 +340,15 @@ final class FieldDefinition {
 	}
 
 	/**
+	 * Returns where the customer enters this field's value.
+	 *
+	 * @return string Collection surface.
+	 */
+	public function collection_surface(): string {
+		return $this->collection_surface;
+	}
+
+	/**
 	 * Exports the definition in its canonical array shape.
 	 *
 	 * @return array<string, mixed>
@@ -364,6 +376,7 @@ final class FieldDefinition {
 			'storage'             => $this->storage,
 			'destinations'        => $this->destinations,
 			'approval'            => $this->approval,
+			'collection_surface'  => $this->collection_surface,
 			'schema_version'      => $this->schema_version,
 		);
 	}

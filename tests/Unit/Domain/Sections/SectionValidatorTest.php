@@ -128,6 +128,170 @@ final class SectionValidatorTest extends TestCase {
 	}
 
 	/**
+	 * My Account sections need the endpoint details the runtime will register.
+	 *
+	 * @return void
+	 */
+	public function test_my_account_section_requires_endpoint_presentation(): void {
+		$result = SectionValidator::validate(
+			SectionDefinition::from_array(
+				$this->section(
+					array(
+						'areas' => array( 'customer_profile' ),
+					)
+				)
+			)
+		);
+
+		self::assertContains( 'invalid_account_endpoint_slug', $result->error_codes() );
+		self::assertContains( 'invalid_account_menu_label', $result->error_codes() );
+	}
+
+	/**
+	 * Two sections cannot register the same public account URL.
+	 *
+	 * @return void
+	 */
+	public function test_duplicate_my_account_endpoint_slugs_are_refused(): void {
+		$presentation = array(
+			'account' => array(
+				'slug'       => 'meus-documentos',
+				'menu_label' => 'Meus documentos',
+				'icon'       => 'file',
+				'position'   => 5,
+				'mode'       => 'edit',
+			),
+		);
+		$result       = SectionValidator::validate_sections(
+			array(
+				$this->section(
+					array(
+						'areas'        => array( 'customer_profile' ),
+						'presentation' => $presentation,
+					)
+				),
+				$this->section(
+					array(
+						'id'           => 'outros_documentos',
+						'title'        => 'Outros documentos',
+						'areas'        => array( 'customer_profile' ),
+						'presentation' => $presentation,
+					)
+				),
+			)
+		);
+
+		self::assertContains( 'duplicate_account_endpoint_slug', $result->error_codes() );
+	}
+
+	/**
+	 * An account page is the customer's own form, so the field it collects has to
+	 * store where that page writes.
+	 *
+	 * A link whose section is an account page and whose field stores with the order
+	 * (or nowhere at all) is configuration the merchant believes is in place while
+	 * the page offers a form that saves nothing. The rule can only be asked here,
+	 * because it needs the link and the section it names at the same time.
+	 *
+	 * @return void
+	 */
+	public function test_an_account_link_requires_a_field_stored_on_the_customer(): void {
+		$section = $this->section(
+			array(
+				'id'           => 'preferencias_do_perfil',
+				'title'        => 'Preferências',
+				'areas'        => array( 'customer_profile' ),
+				'presentation' => array(
+					'account' => array(
+						'slug'       => 'preferencias',
+						'menu_label' => 'Preferências',
+						'icon'       => 'user',
+						'position'   => 0,
+						'mode'       => 'edit',
+					),
+				),
+			)
+		);
+
+		$field = static function ( array $overrides ): array {
+			return array(
+				array_merge(
+					array(
+						'id'           => 'preferencia_perfil',
+						'section'      => 'preferencias_do_perfil',
+						'storage'      => array( 'scope' => 'customer' ),
+						'destinations' => array(
+							'customer_profile' => array(
+								'enabled' => true,
+								'section' => 'preferencias_do_perfil',
+								'mode'    => 'edit',
+							),
+						),
+					),
+					$overrides
+				),
+			);
+		};
+
+		foreach ( array( 'order', 'none', '' ) as $scope ) {
+			$overrides = array( 'storage' => array() );
+
+			if ( '' !== $scope ) {
+				$overrides = array( 'storage' => array( 'scope' => $scope ) );
+			}
+
+			$refused = SectionValidator::validate_references( array( $section ), $field( $overrides ) );
+
+			self::assertContains(
+				'account_section_requires_customer_storage',
+				$refused->error_codes(),
+				'scope=' . ( '' === $scope ? '(absent)' : $scope )
+			);
+		}
+
+		$accepted = SectionValidator::validate_references(
+			array( $section ),
+			$field( array( 'storage' => array( 'scope' => 'customer' ) ) )
+		);
+
+		self::assertTrue( $accepted->is_valid(), implode( ', ', $accepted->error_codes() ) );
+	}
+
+	/**
+	 * The same link pointing at a section that is not an account page is ordinary
+	 * configuration: there is no page to write from, so there is nothing to require.
+	 *
+	 * @return void
+	 */
+	public function test_a_profile_link_to_a_section_without_a_page_is_not_an_account_link(): void {
+		$result = SectionValidator::validate_references(
+			array(
+				$this->section(
+					array(
+						'id'    => 'documentos_do_perfil',
+						'areas' => array( 'customer_profile' ),
+					)
+				),
+			),
+			array(
+				array(
+					'id'           => 'preferencia_perfil',
+					'section'      => 'documentos_do_perfil',
+					'storage'      => array( 'scope' => 'order' ),
+					'destinations' => array(
+						'customer_profile' => array(
+							'enabled' => true,
+							'section' => 'documentos_do_perfil',
+						),
+					),
+				),
+			)
+		);
+
+		self::assertTrue( $result->is_valid(), implode( ', ', $result->error_codes() ) );
+	}
+
+	/**
 	 * A field may belong to a declared section.
 	 *
 	 * @return void

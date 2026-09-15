@@ -163,7 +163,7 @@ final class DefinitionVocabulary {
 				'value'       => 'customer_profile',
 				'label'       => __( 'Customer profile', 'wc-checkoutsuite' ),
 				'description' => __(
-					'Shown in the customer account, outside one order.',
+					'Shown in the customer account, outside one order. A section offered here and given an account presentation becomes its own authenticated page in My Account.',
 					'wc-checkoutsuite'
 				),
 				'actions'     => array( 'show_metadata', 'view' ),
@@ -183,10 +183,11 @@ final class DefinitionVocabulary {
 	/**
 	 * The areas a section may be offered in, from ROADMAP.md section 4.
 	 *
-	 * The checkout is where a section is filled, and the seven destinations are where
-	 * its fields may be shown afterwards. The public API is not one of them: it is a
-	 * projection of values, not a place a panel is inserted, and offering a section
-	 * there would promise an interface that does not exist.
+	 * Checkout is where a section is filled, while the destinations — including the
+	 * standalone My Account page — are where values may be shown afterwards. The
+	 * public API is not one of them: it is a projection of values, not a place a
+	 * panel is inserted, and offering a section there would promise an interface
+	 * that does not exist.
 	 *
 	 * @return array<int, array{value: string, label: string, description: string}>
 	 */

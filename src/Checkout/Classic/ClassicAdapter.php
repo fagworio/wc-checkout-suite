@@ -185,7 +185,7 @@ final class ClassicAdapter {
 		$this->report = array();
 
 		$locations = $this->locations( $sections );
-		$ordered   = $this->order( $this->collection_definitions( $definitions, $sections ), $locations );
+		$ordered   = $this->order( $this->collection_definitions( $definitions ), $locations );
 		$wides     = array();
 
 		foreach ( $ordered as $definition ) {
@@ -243,13 +243,24 @@ final class ClassicAdapter {
 	 * projection, never an instruction to collect another value at checkout.
 	 *
 	 * @param array<int, array<string, mixed>> $definitions Raw field definitions.
-	 * @param array<int, array<string, mixed>> $sections    Raw section definitions.
 	 * @return array<int, array<string, mixed>> Definitions eligible for collection.
 	 */
-	private function collection_definitions( array $definitions, array $sections ): array {
-		// A field's own section is the collection instruction. Section areas only
-		// describe post-checkout projections and must not hide that input.
-		return $definitions;
+	private function collection_definitions( array $definitions ): array {
+		// Fields created for Minha Conta have a customer-owned collection surface.
+		// They may be linked to the account form, but must never become checkout
+		// inputs merely because a classic adapter sees their section identifier.
+		return array_values(
+			array_filter(
+				$definitions,
+				static function ( $raw ): bool {
+					if ( ! is_array( $raw ) ) {
+						return false;
+					}
+
+					return 'my_account' !== FieldDefinition::from_array( $raw )->collection_surface();
+				}
+			)
+		);
 	}
 
 	/**

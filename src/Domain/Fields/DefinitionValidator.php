@@ -98,12 +98,13 @@ final class DefinitionValidator {
 		// One snapshot rather than five accessor calls: the definition exposes no
 		// accessor for these, and asking it repeatedly would build the same array
 		// again for every question.
-		$raw           = $definition->to_array();
-		$mask          = is_array( $raw['mask'] ) ? $raw['mask'] : null;
-		$storage       = $raw['storage'];
-		$destinations  = is_array( $raw['destinations'] ) ? $raw['destinations'] : array();
-		$approval      = is_array( $raw['approval'] ) ? $raw['approval'] : null;
-		$hidden_policy = (string) $raw['hidden_value_policy'];
+		$raw                = $definition->to_array();
+		$mask               = is_array( $raw['mask'] ) ? $raw['mask'] : null;
+		$storage            = $raw['storage'];
+		$destinations       = is_array( $raw['destinations'] ) ? $raw['destinations'] : array();
+		$approval           = is_array( $raw['approval'] ) ? $raw['approval'] : null;
+		$hidden_policy      = (string) $raw['hidden_value_policy'];
+		$collection_surface = isset( $raw['collection_surface'] ) ? (string) $raw['collection_surface'] : 'checkout';
 
 		// The mask.
 		if ( null !== $mask && array() !== $mask ) {
@@ -172,10 +173,57 @@ final class DefinitionValidator {
 			);
 		}
 
+		if ( ! in_array( $collection_surface, array( 'checkout', 'my_account' ), true ) ) {
+			$result = $result->merge(
+				ValidationResult::invalid(
+					'unknown_collection_surface',
+					sprintf(
+						/* translators: %s: field id */
+						__( 'The collection surface of "%s" must be checkout or My Account.', 'wc-checkoutsuite' ),
+						$id
+					),
+					array( 'field' => $id )
+				)
+			);
+		} elseif ( 'my_account' === $collection_surface && 'customer' !== $scope ) {
+			$result = $result->merge(
+				ValidationResult::invalid(
+					'account_collection_requires_customer_storage',
+					sprintf(
+						/* translators: %s: field id */
+						__( 'The My Account field "%s" must store its value on the customer.', 'wc-checkoutsuite' ),
+						$id
+					),
+					array( 'field' => $id )
+				)
+			);
+		}
+
 		// Destinations. Each one decides its own section, title, order and actions, so
 		// each one is checked on its own: an unknown destination, an action it may not
 		// be allowed to perform, or a malformed entry is refused rather than dropped.
 		$result = $result->merge( $this->validate_destinations( $id, $destinations, $stores_value, $stores_file ) );
+
+		// A profile link that says how the field behaves there must say something the
+		// account page can carry out. Whether the *value* may live with the customer is a
+		// question about the section the link points at, and it is asked where both parts
+		// are known: {@see SectionValidator::validate_references()}. Asking it here would
+		// refuse a link whose section the document has not been consulted for, which is
+		// how a configuration that is fine in the document becomes invalid in isolation.
+		$account_link = $destinations['customer_profile'] ?? null;
+		if ( is_array( $account_link ) && ! empty( $account_link['enabled'] ) && isset( $account_link['mode'] ) ) {
+			$mode = (string) $account_link['mode'];
+
+			if ( ! in_array( $mode, array( 'edit', 'view' ), true ) ) {
+				$result = $result->merge(
+					ValidationResult::invalid(
+						'invalid_account_field_mode',
+						__( 'A My Account field must be editable or read-only.', 'wc-checkoutsuite' ),
+						array( 'field' => $id )
+					)
+				);
+			}
+		}
 
 		// The approval flow is separate from the destinations on purpose: a
 		// destination never enables it, and enabling it without the area it needs is

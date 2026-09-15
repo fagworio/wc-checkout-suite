@@ -143,14 +143,45 @@ export default function SettingsScreen( { client, editable = true } ) {
 				/>
 			) : null }
 
-			<div className="wccs-settings__modes" aria-label={ __( 'Modos de checkout', 'wc-checkoutsuite' ) }>
-				<div className={ `wccs-settings__mode-card${ ! state.custom_checkout ? ' is-active' : '' }` }>
-					<strong>{ __( 'Checkout padrão do WooCommerce', 'wc-checkoutsuite' ) }</strong>
-					<span>{ __( 'A loja mantém a apresentação nativa do WooCommerce.', 'wc-checkoutsuite' ) }</span>
+			<div
+				className="wccs-settings__modes"
+				aria-label={ __( 'Modos de checkout', 'wc-checkoutsuite' ) }
+			>
+				<div
+					className={ `wccs-settings__mode-card${
+						! state.custom_checkout ? ' is-active' : ''
+					}` }
+				>
+					<strong>
+						{ __(
+							'Checkout padrão do WooCommerce',
+							'wc-checkoutsuite'
+						) }
+					</strong>
+					<span>
+						{ __(
+							'A loja mantém a apresentação nativa do WooCommerce.',
+							'wc-checkoutsuite'
+						) }
+					</span>
 				</div>
-				<div className={ `wccs-settings__mode-card${ state.custom_checkout ? ' is-active' : '' }` }>
-					<strong>{ __( 'Checkout modificado pelo WCCS', 'wc-checkoutsuite' ) }</strong>
-					<span>{ __( 'A loja aplica a apresentação personalizada do plugin, quando compatível.', 'wc-checkoutsuite' ) }</span>
+				<div
+					className={ `wccs-settings__mode-card${
+						state.custom_checkout ? ' is-active' : ''
+					}` }
+				>
+					<strong>
+						{ __(
+							'Checkout modificado pelo WCCS',
+							'wc-checkoutsuite'
+						) }
+					</strong>
+					<span>
+						{ __(
+							'A loja aplica a apresentação personalizada do plugin, quando compatível.',
+							'wc-checkoutsuite'
+						) }
+					</span>
 				</div>
 			</div>
 

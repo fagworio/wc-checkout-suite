@@ -37,6 +37,28 @@ use WCCheckoutSuite\Domain\Fields\ValidationResult;
 final class SectionValidator {
 
 	/**
+	 * Endpoint slugs WooCommerce owns.
+	 *
+	 * @var array<int,string>
+	 */
+	private const RESERVED_ACCOUNT_SLUGS = array(
+		'dashboard',
+		'orders',
+		'downloads',
+		'edit-address',
+		'payment-methods',
+		'edit-account',
+		'customer-logout',
+	);
+
+	/**
+	 * Icons the account renderer currently understands.
+	 *
+	 * @var array<int,string>
+	 */
+	private const ACCOUNT_ICONS = array( 'user', 'fields', 'file', 'mail' );
+
+	/**
 	 * Validates a section definition on its own.
 	 *
 	 * @param SectionDefinition $section Section.
@@ -145,6 +167,21 @@ final class SectionValidator {
 			}
 		}
 
+		$presentation = $section->presentation();
+		if ( isset( $presentation['show_title'] ) && ! is_bool( $presentation['show_title'] ) ) {
+			$result = $result->merge(
+				ValidationResult::invalid(
+					'invalid_section_title_visibility',
+					__( 'Whether a section title is shown must be true or false.', 'wc-checkoutsuite' ),
+					array( 'section' => $id )
+				)
+			);
+		}
+
+		if ( $section->is_offered_in( 'customer_profile' ) ) {
+			$result = $result->merge( self::validate_account_presentation( $section ) );
+		}
+
 		if ( ! SectionLocations::has( $section->location() ) ) {
 			$result = $result->merge(
 				ValidationResult::invalid(
@@ -164,14 +201,88 @@ final class SectionValidator {
 	}
 
 	/**
+	 * Ensures an account section can become one safe WooCommerce endpoint.
+	 *
+	 * @param SectionDefinition $section Section offered in My Account.
+	 * @return ValidationResult
+	 */
+	private static function validate_account_presentation( SectionDefinition $section ): ValidationResult {
+		$result   = ValidationResult::valid();
+		$id       = $section->id();
+		$account  = $section->account();
+		$slug     = isset( $account['slug'] ) ? trim( (string) $account['slug'] ) : '';
+		$label    = isset( $account['menu_label'] ) ? trim( (string) $account['menu_label'] ) : '';
+		$icon     = isset( $account['icon'] ) ? (string) $account['icon'] : '';
+		$mode     = isset( $account['mode'] ) ? (string) $account['mode'] : 'edit';
+		$position = isset( $account['position'] ) ? $account['position'] : 0;
+
+		if ( '' === $slug || 1 !== preg_match( '/^[a-z0-9][a-z0-9-]*$/', $slug ) || in_array( $slug, self::RESERVED_ACCOUNT_SLUGS, true ) ) {
+			$result = $result->merge(
+				ValidationResult::invalid(
+					'invalid_account_endpoint_slug',
+					sprintf(
+						/* translators: %s: section id */
+						__( 'The My Account endpoint for section "%s" must use a unique lowercase slug and cannot replace a WooCommerce page.', 'wc-checkoutsuite' ),
+						$id
+					),
+					array( 'section' => $id )
+				)
+			);
+		}
+
+		if ( '' === $label || mb_strlen( $label ) > 100 ) {
+			$result = $result->merge(
+				ValidationResult::invalid(
+					'invalid_account_menu_label',
+					__( 'A My Account section needs a menu label of at most 100 characters.', 'wc-checkoutsuite' ),
+					array( 'section' => $id )
+				)
+			);
+		}
+
+		if ( ! in_array( $icon, self::ACCOUNT_ICONS, true ) ) {
+			$result = $result->merge(
+				ValidationResult::invalid(
+					'invalid_account_icon',
+					__( 'A My Account section must use one of the supported icons.', 'wc-checkoutsuite' ),
+					array( 'section' => $id )
+				)
+			);
+		}
+
+		if ( ! in_array( $mode, array( 'edit', 'view' ), true ) ) {
+			$result = $result->merge(
+				ValidationResult::invalid(
+					'invalid_account_mode',
+					__( 'A My Account section must be editable or read-only.', 'wc-checkoutsuite' ),
+					array( 'section' => $id )
+				)
+			);
+		}
+
+		if ( ( ! is_int( $position ) && ! ctype_digit( (string) $position ) ) || (int) $position < 0 ) {
+			$result = $result->merge(
+				ValidationResult::invalid(
+					'invalid_account_menu_position',
+					__( 'The My Account menu position cannot be negative.', 'wc-checkoutsuite' ),
+					array( 'section' => $id )
+				)
+			);
+		}
+
+		return $result;
+	}
+
+	/**
 	 * Validates the section list of a document.
 	 *
 	 * @param array<int, mixed> $sections Raw section list.
 	 * @return ValidationResult
 	 */
 	public static function validate_sections( array $sections ): ValidationResult {
-		$result = ValidationResult::valid();
-		$seen   = array();
+		$result        = ValidationResult::valid();
+		$seen          = array();
+		$account_slugs = array();
 
 		foreach ( $sections as $index => $raw ) {
 			if ( ! is_array( $raw ) ) {
@@ -211,6 +322,29 @@ final class SectionValidator {
 				$seen[ $id ] = true;
 			}
 
+			if ( $section->is_offered_in( 'customer_profile' ) ) {
+				$account = $section->account();
+				$slug    = isset( $account['slug'] ) ? trim( (string) $account['slug'] ) : '';
+
+				if ( '' !== $slug && isset( $account_slugs[ $slug ] ) ) {
+					$result = $result->merge(
+						ValidationResult::invalid(
+							'duplicate_account_endpoint_slug',
+							sprintf(
+								/* translators: %s: endpoint slug */
+								__( 'The My Account endpoint slug "%s" is used by more than one section.', 'wc-checkoutsuite' ),
+								$slug
+							),
+							array( 'section' => $id )
+						)
+					);
+				}
+
+				if ( '' !== $slug ) {
+					$account_slugs[ $slug ] = true;
+				}
+			}
+
 			$result = $result->merge( self::validate( $section ) );
 		}
 
@@ -225,8 +359,8 @@ final class SectionValidator {
 	 * @return ValidationResult
 	 */
 	public static function validate_references( array $sections, array $fields ): ValidationResult {
-		$result = ValidationResult::valid();
-		$known  = SectionLocations::values();
+		$result              = ValidationResult::valid();
+		$known               = SectionLocations::values();
 		$collection_sections = array_fill_keys( $known, true );
 
 		foreach ( $sections as $raw ) {
@@ -279,7 +413,8 @@ final class SectionValidator {
 		// document's sections are known. A link to a section that does not exist, or
 		// that is not offered in that destination's area, is configuration the
 		// merchant believes is in place and which would insert nothing anywhere.
-		$offered = array();
+		$offered  = array();
+		$declared = array();
 
 		foreach ( $sections as $raw_section ) {
 			if ( ! is_array( $raw_section ) || ! isset( $raw_section['id'] ) ) {
@@ -288,7 +423,8 @@ final class SectionValidator {
 
 			$definition = SectionDefinition::from_array( $raw_section );
 
-			$offered[ $definition->id() ] = $definition->areas();
+			$offered[ $definition->id() ]  = $definition->areas();
+			$declared[ $definition->id() ] = $definition;
 		}
 
 		foreach ( $fields as $raw_field ) {
@@ -320,6 +456,37 @@ final class SectionValidator {
 								'field'       => $definition->id(),
 								'destination' => (string) $destination,
 								'section'     => $section,
+							)
+						)
+					);
+				}
+			}
+
+			// An account page is the customer's own data, and it writes where the
+			// customer lives. A field linked to the profile area whose section is an
+			// account page therefore has to store on the customer: the page would
+			// otherwise offer a form that saves to a scope nothing provides, which is
+			// configuration the merchant believes is in place and which does nothing.
+			$account = $definition->destinations()['customer_profile'] ?? array();
+			$target  = isset( $account['section'] ) ? (string) $account['section'] : '';
+
+			if ( ! empty( $account['enabled'] ) && '' !== $target && isset( $declared[ $target ] ) ) {
+				$page = $declared[ $target ]->account();
+
+				if ( '' !== (string) ( $page['slug'] ?? '' ) && 'customer' !== (string) ( $definition->to_array()['storage']['scope'] ?? '' ) ) {
+					$result = $result->merge(
+						ValidationResult::invalid(
+							'account_section_requires_customer_storage',
+							sprintf(
+								/* translators: 1: section id, 2: field id */
+								__( 'The account page "%1$s" writes to the customer, so the field "%2$s" must store its value on the customer.', 'wc-checkoutsuite' ),
+								$target,
+								$definition->id()
+							),
+							array(
+								'field'       => $definition->id(),
+								'destination' => 'customer_profile',
+								'section'     => $target,
 							)
 						)
 					);

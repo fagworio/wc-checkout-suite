@@ -31,6 +31,7 @@ use WCCheckoutSuite\Checkout\Classic\ClassicValidation;
 use WCCheckoutSuite\Http\Admin\CatalogController;
 use WCCheckoutSuite\Admin\Orders\OrderFieldsPanel;
 use WCCheckoutSuite\Checkout\CustomerOrderFields;
+use WCCheckoutSuite\Account\MyAccountSections;
 use WCCheckoutSuite\Checkout\OrderEmailFields;
 use WCCheckoutSuite\Domain\Approval\ReviewStatus;
 use WCCheckoutSuite\Http\Admin\SchemaController;
@@ -281,6 +282,10 @@ final class Plugin {
 		// has already decided this order may be seen by this person — the policy this
 		// plugin adds is per field, not a second access check.
 		CustomerOrderFields::register();
+
+		// A customer profile is not an order projection. These endpoints create
+		// authenticated My Account pages backed by customer-owned values.
+		MyAccountSections::register();
 
 		// The order e-mails. The hook every order e-mail template fires carries which
 		// audience the message is for and which format part is being rendered, so the two

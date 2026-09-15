@@ -361,11 +361,23 @@ wp_dequeue_style( $wccs_present::TOKENS_HANDLE );
 
 $wccs_assets_dir::enqueue( true, array( 'fields' => array(), 'report' => array() ) );
 
+// The layout is the merchant's decision, not the fields'. A store that opted in wants
+// its checkout presented by this plugin whether or not it has fields of its own — that
+// is what AUD-10 asked for and what "desacoplar layout de campos" means — so the
+// presentation is delivered here. What is *not* delivered is the bundle: with nothing to
+// draw there is no payload, and a checkout the plugin draws nothing on pays for no
+// JavaScript.
 wccs_proof_check(
-	'A Blocks checkout with nothing to render is given neither',
-	! wp_style_is( $wccs_assets_dir::STYLE_HANDLE, 'enqueued' )
-		&& ! wp_style_is( $wccs_present::TOKENS_HANDLE, 'enqueued' ),
-	'a checkout this plugin contributes nothing to pays for nothing'
+	'An opted-in Blocks checkout with no fields is still given the layout',
+	wp_style_is( $wccs_assets_dir::STYLE_HANDLE, 'enqueued' )
+		&& wp_style_is( $wccs_present::TOKENS_HANDLE, 'enqueued' ),
+	'the presentation follows the opt-in, not the field count'
+);
+
+wccs_proof_check(
+	'And pays for no bundle, because it has nothing to draw',
+	! wp_script_is( $wccs_assets_dir::SCRIPT_HANDLE, 'enqueued' ),
+	'nothing to render, no payload to ship'
 );
 
 // The two presentations are mutually exclusive: the classic file is written under

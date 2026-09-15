@@ -71,6 +71,197 @@ const DEFAULT_LAYOUT: FieldLayout = { desktop: 12, tablet: 12, mobile: 12 };
 const DEFAULT_SECTION = 'order';
 
 /**
+ * Areas that can receive a field after checkout.
+ *
+ * This is deliberately kept in the editor boundary instead of accepting every
+ * key found in a draft. A malformed local draft must not be repaired by adding
+ * another malformed area to a section.
+ */
+const REPAIRABLE_DESTINATION_AREAS = new Set( [
+	'admin_order',
+	'customer_order',
+	'order_received',
+	'customer_email',
+	'admin_email',
+	'customer_profile',
+	'public_api',
+] );
+
+/**
+ * Whether a condition tree contains a reference with no field selected.
+ *
+ * Older versions could persist the first, still-empty row of the rule editor.
+ * The server correctly refuses that rule; for a local draft the least
+ * surprising recovery is to remove the incomplete visibility rule, leaving the
+ * field visible for the merchant to configure again.
+ *
+ * @param node Candidate condition node.
+ * @return Whether an empty field reference was found.
+ */
+function hasBlankConditionReference( node: unknown ): boolean {
+	if ( ! node || 'object' !== typeof node ) {
+		return false;
+	}
+
+	const candidate = node as Record< string, unknown >;
+
+	if (
+		'field' === candidate.source &&
+		! String( candidate.field ?? '' ).trim()
+	) {
+		return true;
+	}
+
+	for ( const key of [ 'all', 'any' ] ) {
+		if ( ! Array.isArray( candidate[ key ] ) ) {
+			continue;
+		}
+
+		if (
+			candidate[ key ].some( ( child ) =>
+				hasBlankConditionReference( child )
+			)
+		) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Repairs invalid shapes known to have been produced by older local drafts.
+ *
+ * This is intentionally a narrow migration, not a client-side replacement for
+ * the server validator. It only fixes deterministic, lossless compatibility
+ * issues: sections regain the areas their own fields/links already declare,
+ * file fields regain required defaults, and an unfinished empty rule is removed.
+ * Unknown references and other merchant-authored mistakes remain visible to the
+ * validator instead of being silently rewritten.
+ *
+ * @param document Candidate draft.
+ * @return The original document when no repair was needed, otherwise a new one.
+ */
+export function repairLegacyDraft( document: SchemaDocument ): {
+	document: SchemaDocument;
+	changed: boolean;
+} {
+	let changed = false;
+
+	const fields = ( document?.fields ?? [] ).map( ( field ) => {
+		let repaired = field;
+
+		if ( 'file' === field.type ) {
+			const settings =
+				field.settings && 'object' === typeof field.settings
+					? { ...field.settings }
+					: {};
+			const maxFiles = Number( settings.maxFiles );
+			let allowedExtensions: string[] = [];
+			if ( Array.isArray( settings.allowedExtensions ) ) {
+				allowedExtensions = settings.allowedExtensions
+					.map( ( extension ) => String( extension ).trim() )
+					.filter( Boolean );
+			} else if ( 'string' === typeof settings.allowedExtensions ) {
+				allowedExtensions = settings.allowedExtensions
+					.split( ',' )
+					.map( ( extension ) => extension.trim() )
+					.filter( Boolean );
+			}
+
+			if ( ! Number.isInteger( maxFiles ) || maxFiles < 1 ) {
+				settings.maxFiles = 1;
+			}
+
+			if ( 0 === allowedExtensions.length ) {
+				settings.allowedExtensions = [ 'pdf' ];
+			} else if ( ! Array.isArray( settings.allowedExtensions ) ) {
+				settings.allowedExtensions = allowedExtensions;
+			}
+
+			if (
+				JSON.stringify( settings ) !==
+				JSON.stringify( field.settings ?? {} )
+			) {
+				repaired = { ...repaired, settings };
+				changed = true;
+			}
+		}
+
+		const conditions =
+			repaired.conditions && 'object' === typeof repaired.conditions
+				? { ...repaired.conditions }
+				: {};
+
+		if ( hasBlankConditionReference( conditions.visible ) ) {
+			delete conditions.visible;
+			repaired = { ...repaired, conditions };
+			changed = true;
+		}
+
+		return repaired;
+	} );
+
+	const sections = ( document?.sections ?? [] ).map( ( section ) => {
+		const areas = Array.isArray( section.areas )
+			? section.areas.filter(
+					( area ) => 'string' === typeof area && area
+			  )
+			: [];
+		const nextAreas = [ ...areas ];
+		const offer = ( area: string ) => {
+			if ( ! nextAreas.includes( area ) ) {
+				nextAreas.push( area );
+			}
+		};
+
+		for ( const field of fields ) {
+			if ( field.section === section.id ) {
+				offer( 'checkout' );
+			}
+
+			for ( const [ area, link ] of Object.entries(
+				field.destinations ?? {}
+			) ) {
+				if (
+					REPAIRABLE_DESTINATION_AREAS.has( area ) &&
+					link?.section === section.id
+				) {
+					offer( area );
+				}
+			}
+
+			if (
+				field.approval?.require_review &&
+				field.approval.section === section.id &&
+				REPAIRABLE_DESTINATION_AREAS.has( field.approval.area ?? '' )
+			) {
+				offer( field.approval.area as string );
+			}
+		}
+
+		if ( 0 === nextAreas.length ) {
+			offer( 'checkout' );
+		}
+
+		if (
+			JSON.stringify( nextAreas ) ===
+			JSON.stringify( section.areas ?? [] )
+		) {
+			return section;
+		}
+
+		changed = true;
+		return { ...section, areas: nextAreas };
+	} );
+
+	return {
+		document: changed ? { ...document, fields, sections } : document,
+		changed,
+	};
+}
+
+/**
  * Whether a field is owned by WooCommerce.
  *
  * @param field Field definition.
@@ -270,6 +461,9 @@ export function buildField(
 		conditions: {},
 		hidden_value_policy: 'discard',
 		...surfaces,
+		storage: choice.storage ?? surfaces.storage,
+		destinations: choice.destinations ?? surfaces.destinations,
+		collection_surface: choice.collectionSurface ?? 'checkout',
 	};
 }
 
@@ -312,6 +506,7 @@ export function buildCoreField(
 		normalizer: null,
 		conditions: {},
 		hidden_value_policy: 'discard',
+		collection_surface: 'checkout',
 		...surfaces,
 	};
 }
@@ -1010,7 +1205,9 @@ export function sectionGroups(
 				( section.areas ?? [ 'checkout' ] ).includes( area ) ||
 				( 'checkout' === area &&
 					( document.fields ?? [] ).some(
-						( field ) => ( field.section ?? 'order' ) === section.id
+						( field ) =>
+							'my_account' !== field.collection_surface &&
+							( field.section ?? 'order' ) === section.id
 					) )
 		)
 		.sort( ( a, b ) => ( a.position || 0 ) - ( b.position || 0 ) );
@@ -1026,6 +1223,12 @@ export function sectionGroups(
 	}
 
 	for ( const field of document.fields ?? [] ) {
+		if (
+			'checkout' === area &&
+			'my_account' === field.collection_surface
+		) {
+			continue;
+		}
 		const link =
 			'checkout' === area ? null : field.destinations?.[ area ] ?? null;
 		let id = '';
@@ -1104,12 +1307,13 @@ export function uniqueSectionId(
 /**
  * Adds a section.
  *
- * @param document           Document.
- * @param choice             Section to add.
+ * @param document            Document.
+ * @param choice              Section to add.
  * @param choice.title
  * @param choice.location
  * @param choice.description
  * @param choice.areas
+ * @param choice.presentation
  * @return Result.
  */
 export function createSection(
@@ -1119,6 +1323,7 @@ export function createSection(
 		location: string;
 		description?: string;
 		areas?: string[];
+		presentation?: SectionDefinition[ 'presentation' ];
 	}
 ): OperationResult {
 	const id = uniqueSectionId( document, choice.title );
@@ -1137,6 +1342,7 @@ export function createSection(
 		// preserved so the editor can explain the invalid choice instead of silently
 		// assigning the section to Checkout.
 		areas: Array.isArray( choice.areas ) ? choice.areas : [ 'checkout' ],
+		presentation: choice.presentation ?? {},
 	};
 
 	return {

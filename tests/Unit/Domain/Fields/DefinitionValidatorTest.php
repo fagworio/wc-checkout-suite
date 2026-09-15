@@ -325,6 +325,64 @@ final class DefinitionValidatorTest extends TestCase {
 	}
 
 	/**
+	 * A profile link that says how the field behaves there must say something the
+	 * account page can carry out.
+	 *
+	 * Whether the value may live with the customer is a question about the section the
+	 * link points at, and it is asked where both parts are known. This rule is the
+	 * other half: the mode itself belongs to the link.
+	 *
+	 * @return void
+	 */
+	public function test_an_account_link_mode_must_be_editable_or_read_only(): void {
+		foreach ( array( 'edit', 'view' ) as $mode ) {
+			$accepted = $this->validator()->validate_array(
+				array(
+					'id'           => 'preferencia_perfil',
+					'origin'       => 'custom',
+					'type'         => 'text',
+					'label'        => 'Preferência',
+					'storage'      => array(
+						'scope'       => 'customer',
+						'sensitivity' => 'personal',
+					),
+					'destinations' => array(
+						'customer_profile' => array(
+							'enabled' => true,
+							'section' => 'preferencias',
+							'mode'    => $mode,
+						),
+					),
+				)
+			);
+
+			self::assertTrue( $accepted->is_valid(), $mode . ': ' . implode( ', ', $accepted->error_codes() ) );
+		}
+
+		$refused = $this->validator()->validate_array(
+			array(
+				'id'           => 'preferencia_perfil',
+				'origin'       => 'custom',
+				'type'         => 'text',
+				'label'        => 'Preferência',
+				'storage'      => array(
+					'scope'       => 'customer',
+					'sensitivity' => 'personal',
+				),
+				'destinations' => array(
+					'customer_profile' => array(
+						'enabled' => true,
+						'section' => 'preferencias',
+						'mode'    => 'publish',
+					),
+				),
+			)
+		);
+
+		self::assertContains( 'invalid_account_field_mode', $refused->error_codes() );
+	}
+
+	/**
 	 * A stored document carrying the legacy audience map is migrated, and an audience
 	 * the closed list does not know survives the migration so that it can be refused.
 	 *

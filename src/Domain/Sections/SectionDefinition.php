@@ -29,12 +29,13 @@ final class SectionDefinition {
 	/**
 	 * Constructor.
 	 *
-	 * @param string             $id          Permanent identifier.
-	 * @param string             $title       Translatable title.
-	 * @param string             $description Optional explanation.
-	 * @param int                $position    Ordering position among sections.
-	 * @param string             $location    Logical location, one of SectionLocations.
-	 * @param array<int, string> $areas       Areas the section may be offered in.
+	 * @param string              $id          Permanent identifier.
+	 * @param string              $title       Translatable title.
+	 * @param string              $description Optional explanation.
+	 * @param int                 $position    Ordering position among sections.
+	 * @param string              $location    Logical location, one of SectionLocations.
+	 * @param array<int, string>  $areas       Areas the section may be offered in.
+	 * @param array<string,mixed> $presentation Destination-specific presentation.
 	 */
 	public function __construct(
 		private string $id,
@@ -42,7 +43,8 @@ final class SectionDefinition {
 		private string $description,
 		private int $position,
 		private string $location,
-		private array $areas = array( 'checkout' )
+		private array $areas = array( 'checkout' ),
+		private array $presentation = array()
 	) {
 	}
 
@@ -63,7 +65,10 @@ final class SectionDefinition {
 			// what it was, and reading it as one keeps it working.
 			isset( $data['areas'] ) && is_array( $data['areas'] )
 				? array_values( array_map( 'strval', $data['areas'] ) )
-				: array( 'checkout' )
+				: array( 'checkout' ),
+			isset( $data['presentation'] ) && is_array( $data['presentation'] )
+				? $data['presentation']
+				: array()
 		);
 	}
 
@@ -84,6 +89,35 @@ final class SectionDefinition {
 	 */
 	public function is_offered_in( string $area ): bool {
 		return in_array( $area, $this->areas, true );
+	}
+
+	/**
+	 * Returns presentation details that apply to one destination.
+	 *
+	 * @return array<string,mixed> Presentation data.
+	 */
+	public function presentation(): array {
+		return $this->presentation;
+	}
+
+	/**
+	 * Determines whether the content heading is visible.
+	 *
+	 * @return bool Whether the title is visible.
+	 */
+	public function shows_title(): bool {
+		return ! isset( $this->presentation['show_title'] ) || (bool) $this->presentation['show_title'];
+	}
+
+	/**
+	 * Returns My Account endpoint settings.
+	 *
+	 * @return array<string,mixed> Account presentation data.
+	 */
+	public function account(): array {
+		return isset( $this->presentation['account'] ) && is_array( $this->presentation['account'] )
+			? $this->presentation['account']
+			: array();
 	}
 
 	/**
@@ -138,12 +172,13 @@ final class SectionDefinition {
 	 */
 	public function to_array(): array {
 		return array(
-			'id'          => $this->id,
-			'title'       => $this->title,
-			'description' => $this->description,
-			'position'    => $this->position,
-			'location'    => $this->location,
-			'areas'       => $this->areas,
+			'id'           => $this->id,
+			'title'        => $this->title,
+			'description'  => $this->description,
+			'position'     => $this->position,
+			'location'     => $this->location,
+			'areas'        => $this->areas,
+			'presentation' => $this->presentation,
 		);
 	}
 }

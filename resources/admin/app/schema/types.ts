@@ -46,6 +46,7 @@ export interface FieldDefinition {
 	hidden_value_policy: string;
 	storage: { scope: string; sensitivity: string };
 	destinations: Record< string, DestinationLink >;
+	collection_surface?: 'checkout' | 'my_account';
 	approval?: ApprovalFlow | null;
 	validators?: unknown[];
 	schema_version?: number;
@@ -71,6 +72,16 @@ export interface SectionDefinition {
 	 * offered nowhere cannot be chosen by anything.
 	 */
 	areas: string[];
+	presentation?: {
+		show_title?: boolean;
+		account?: {
+			slug?: string;
+			menu_label?: string;
+			icon?: string;
+			position?: number;
+			mode?: 'edit' | 'view';
+		};
+	};
 }
 
 /**
@@ -304,6 +315,9 @@ export interface PickerChoice {
 	mask?: { key: string; version: number } | null;
 	settingsSchema?: Record< string, Record< string, unknown > >;
 	settingsValue?: Record< string, unknown >;
+	collectionSurface?: 'checkout' | 'my_account';
+	storage?: { scope: string; sensitivity: string };
+	destinations?: Record< string, DestinationLink >;
 }
 
 /**

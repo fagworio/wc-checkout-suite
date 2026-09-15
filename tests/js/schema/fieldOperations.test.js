@@ -32,6 +32,7 @@ import {
 	removeField,
 	removeSection,
 	reorderField,
+	repairLegacyDraft,
 	sectionGroups,
 	setFieldEnabled,
 	setFieldSection,
@@ -855,6 +856,65 @@ describe( 'section groups', () => {
 } );
 
 describe( 'sections', () => {
+	it( 'keeps My Account collection fields out of checkout groups', () => {
+		const document = doc(
+			[
+				custom( {
+					id: 'customer_note',
+					section: 'customer_notes',
+					collection_surface: 'my_account',
+					destinations: {
+						my_account: {
+							enabled: true,
+							section: 'customer_notes',
+							mode: 'edit',
+						},
+					},
+				} ),
+			],
+			[
+				{
+					id: 'customer_notes',
+					title: 'Anotações',
+					description: '',
+					position: 10,
+					location: 'account',
+					areas: [ 'my_account' ],
+				},
+			]
+		);
+
+		expect( sectionGroups( document, 'checkout' ) ).toEqual( [] );
+		expect(
+			sectionGroups( document, 'my_account' )[ 0 ].fields.map(
+				( entry ) => entry.id
+			)
+		).toEqual( [ 'customer_note' ] );
+	} );
+
+	it( 'preserves account presentation when creating a section', () => {
+		const presentation = {
+			show_title: true,
+			account: {
+				slug: 'meus-documentos',
+				menu_label: 'Meus documentos',
+				icon: 'file',
+				position: 5,
+				mode: /** @type {'edit'} */ ( 'edit' ),
+			},
+		};
+		const result = createSection( doc(), {
+			title: 'Meus documentos',
+			location: 'account',
+			areas: [ 'my_account' ],
+			presentation,
+		} );
+
+		expect( result.document.sections[ 0 ].presentation ).toEqual(
+			presentation
+		);
+	} );
+
 	it( 'creates one with an identifier derived from the title', () => {
 		const result = createSection( doc(), {
 			title: 'Dados extras',
@@ -1361,5 +1421,88 @@ describe( 'the fields a rule reads', () => {
 		] );
 
 		expect( conditionDependents( document, [ 'a' ] ) ).toEqual( [] );
+	} );
+} );
+
+describe( 'legacy draft recovery', () => {
+	it( 'repairs the invalid shapes left by an older local draft', () => {
+		const document = doc(
+			[
+				custom( {
+					id: 'wccs_e2e_file',
+					type: 'file',
+					section: 'checkout_fields',
+					settings: {},
+					conditions: {
+						visible: {
+							source: 'field',
+							operator: 'equals',
+							field: '',
+							value: '',
+						},
+					},
+					destinations: {
+						customer_order: {
+							enabled: true,
+							section: 'customer_fields',
+						},
+					},
+				} ),
+			],
+			[
+				{
+					id: 'checkout_fields',
+					title: 'Checkout fields',
+					description: '',
+					position: 10,
+					location: 'order',
+					areas: [],
+				},
+				{
+					id: 'customer_fields',
+					title: 'Customer fields',
+					description: '',
+					position: 20,
+					location: 'order',
+					areas: [],
+				},
+			]
+		);
+
+		const result = repairLegacyDraft( document );
+
+		expect( result.changed ).toBe( true );
+		expect( result.document.sections[ 0 ].areas ).toEqual( [ 'checkout' ] );
+		expect( result.document.sections[ 1 ].areas ).toEqual( [
+			'customer_order',
+		] );
+		expect( result.document.fields[ 0 ].settings ).toEqual( {
+			maxFiles: 1,
+			allowedExtensions: [ 'pdf' ],
+		} );
+		expect( result.document.fields[ 0 ].conditions ).toEqual( {} );
+		expect( result.document ).not.toBe( document );
+		expect( document.sections[ 0 ].areas ).toEqual( [] );
+	} );
+
+	it( 'does not rewrite an already valid draft', () => {
+		const document = doc(
+			[ custom( { id: 'name', type: 'text', settings: {} } ) ],
+			[
+				{
+					id: 'billing',
+					title: 'Billing',
+					description: '',
+					position: 10,
+					location: 'billing',
+					areas: [ 'checkout' ],
+				},
+			]
+		);
+
+		const result = repairLegacyDraft( document );
+
+		expect( result.changed ).toBe( false );
+		expect( result.document ).toBe( document );
 	} );
 } );

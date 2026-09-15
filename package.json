@@ -21,8 +21,9 @@
 		"check-types": "tsc --noEmit",
 		"format": "wp-scripts format resources tests/js",
 		"build:blocks": "wp-scripts build --webpack-src-dir=resources/blocks --output-path=build/blocks",
-		"test:e2e:woocommerce": "node tests/browser/full-woocommerce-flow.mjs"
-		,"test:e2e:admin-editor": "node tests/browser/admin-section-field-rules-flow.mjs"
+		"test:e2e:woocommerce": "node tests/browser/full-woocommerce-flow.mjs",
+		"test:e2e:admin-editor": "node tests/browser/admin-section-field-rules-flow.mjs",
+		"test:e2e:my-account": "node tests/browser/my-account-sections-flow.mjs"
 	},
 	"devDependencies": {
 		"@testing-library/dom": "^10.4.1",

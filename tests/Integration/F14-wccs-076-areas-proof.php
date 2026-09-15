@@ -124,18 +124,21 @@ function wccs_proof_publish( array $fields, array $sections ): \WCCheckoutSuite\
  * @param array<string, mixed> $destinations Destination links.
  * @return array<string, mixed>
  */
-function wccs_proof_field( string $id, string $label, int $position, array $destinations ): array {
-	return array(
-		'id'             => $id,
-		'integration_id' => 'wc-checkoutsuite/' . $id,
-		'origin'         => 'custom',
-		'type'           => 'text',
-		'label'          => $label,
-		'section'        => 'billing',
-		'enabled'        => true,
-		'required'       => false,
-		'position'       => $position,
-		'destinations'   => $destinations,
+function wccs_proof_field( string $id, string $label, int $position, array $destinations, array $extra = array() ): array {
+	return array_merge(
+		array(
+			'id'             => $id,
+			'integration_id' => 'wc-checkoutsuite/' . $id,
+			'origin'         => 'custom',
+			'type'           => 'text',
+			'label'          => $label,
+			'section'        => 'billing',
+			'enabled'        => true,
+			'required'       => false,
+			'position'       => $position,
+			'destinations'   => $destinations,
+		),
+		$extra
 	);
 }
 
@@ -148,14 +151,23 @@ function wccs_proof_field( string $id, string $label, int $position, array $dest
  * @param array<int, string> $areas    Areas it is offered in.
  * @return array<string, mixed>
  */
-function wccs_proof_section( string $id, string $title, int $position, array $areas ): array {
-	return array(
+function wccs_proof_section( string $id, string $title, int $position, array $areas, array $account = array() ): array {
+	$section = array(
 		'id'       => $id,
 		'title'    => $title,
 		'position' => $position,
 		'location' => 'order',
 		'areas'    => $areas,
 	);
+
+	if ( array() !== $account ) {
+		$section['presentation'] = array(
+			'show_title' => true,
+			'account'    => $account,
+		);
+	}
+
+	return $section;
 }
 
 /**
@@ -232,6 +244,14 @@ function wccs_proof_document(): array {
 					'public_api'       => array( 'enabled' => false ),
 					'customer_profile' => $link( 'perfil', 'Preferência do perfil', 10 ),
 					'order_received'   => array( 'enabled' => false ),
+				),
+				// The profile area is the customer's own page, so the value it
+				// collects lives with the customer and not with an order.
+				array(
+					'storage' => array(
+						'scope'       => 'customer',
+						'sensitivity' => 'personal',
+					),
 				)
 			),
 			wccs_proof_field(
@@ -253,7 +273,19 @@ function wccs_proof_document(): array {
 			wccs_proof_section( 'enviados', 'Documentos enviados', 20, array( 'customer_order', 'order_received' ) ),
 			wccs_proof_section( 'analise', 'Documentos para análise', 10, array( 'admin_order' ) ),
 			wccs_proof_section( 'email', 'Documentos do e-mail', 30, array( 'customer_email', 'admin_email' ) ),
-			wccs_proof_section( 'perfil', 'Documentos do perfil', 40, array( 'customer_profile' ) ),
+			wccs_proof_section(
+				'perfil',
+				'Documentos do perfil',
+				40,
+				array( 'customer_profile' ),
+				array(
+					'slug'       => 'preferencias',
+					'menu_label' => 'Preferências',
+					'icon'       => 'user',
+					'mode'       => 'edit',
+					'position'   => 0,
+				)
+			),
 		),
 	);
 }
@@ -538,7 +570,7 @@ wccs_proof_check(
 // 4. Areas that show nothing.
 // ---------------------------------------------------------------------------
 wccs_proof_out( '' );
-wccs_proof_out( '4. The areas that have nothing to show' );
+wccs_proof_out( '4. public_api, and the profile page' );
 
 $wccs_api_field = \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array( $wccs_definitions[0] );
 $wccs_api_gate  = \WCCheckoutSuite\Domain\Fields\FieldDefinition::from_array( $wccs_definitions[1] );
@@ -559,19 +591,75 @@ wccs_proof_check(
 	'a destination nobody else lends to'
 );
 
+$wccs_profile_title = 'Preferência do perfil';
+
+// The profile area is a page of its own: a section offered there becomes a real
+// WooCommerce My Account endpoint, with its own address, its own menu entry, and the
+// fields whose links name that section. The harness renders it the way WooCommerce
+// does — through the endpoint action — instead of asking the model.
+$wccs_signature    = md5( (string) wp_json_encode( array( 'preferencias' ) ) );
+$wccs_pretend      = static fn(): string => $wccs_signature;
+add_filter( 'pre_option_wccs_account_endpoint_signature', $wccs_pretend );
+
+\WCCheckoutSuite\Account\MyAccountSections::register_endpoints();
+set_query_var( 'preferencias', '1' );
+
+ob_start();
+\WCCheckoutSuite\Account\MyAccountSections::render();
+$wccs_profile_page = (string) ob_get_clean();
+
+set_query_var( 'preferencias', null );
+remove_filter( 'pre_option_wccs_account_endpoint_signature', $wccs_pretend );
+
 wccs_proof_check(
-	'And it reaches no surface, which is the safe direction for an area with no data',
-	! str_contains( $wccs_account, $wccs_profile )
-		&& ! str_contains( $wccs_thankyou, $wccs_profile )
-		&& ! str_contains( $wccs_admin, $wccs_profile )
-		&& ! str_contains( $wccs_email_customer, $wccs_profile )
-		&& ! str_contains( $wccs_email_store, $wccs_profile ),
-	'nowhere, rather than somewhere it was not configured for'
+	'The section offered in the profile area renders as its own account page',
+	str_contains( $wccs_profile_page, 'Documentos do perfil' )
+		&& str_contains( $wccs_profile_page, 'wccs-account-section' ),
+	'endpoint rendered with the section title'
+);
+
+wccs_proof_check(
+	'Under the title the link configured, and only for the fields that name it',
+	str_contains( $wccs_profile_page, $wccs_profile_title )
+		&& ! str_contains( $wccs_profile_page, $wccs_unlinked )
+		&& ! str_contains( $wccs_profile_page, 'Enviado no checkout' )
+		&& ! str_contains( $wccs_profile_page, 'Documento enviado' ),
+	'link title=' . $wccs_profile_title
+);
+
+$wccs_menu = \WCCheckoutSuite\Account\MyAccountSections::menu_items(
+	array(
+		'orders'          => 'Pedidos',
+		'customer-logout' => 'Sair',
+	)
+);
+
+wccs_proof_check(
+	'And the account menu carries it at the position the design asked for',
+	array( 'preferencias', 'orders', 'customer-logout' ) === array_keys( $wccs_menu )
+		&& 'Preferências' === ( $wccs_menu['preferencias'] ?? '' ),
+	'menu=' . implode( ', ', array_keys( $wccs_menu ) )
+);
+
+wccs_proof_check(
+	'The other areas did not start showing the profile field',
+	! str_contains( $wccs_admin, $wccs_profile_title )
+		&& ! str_contains( $wccs_account, $wccs_profile_title )
+		&& ! str_contains( $wccs_thankyou, $wccs_profile_title )
+		&& ! str_contains( $wccs_email_customer, $wccs_profile_title )
+		&& ! str_contains( $wccs_email_store, $wccs_profile_title ),
+	'a page of its own, not a panel lent to the others'
+);
+
+wccs_proof_check(
+	'The account page stores where the customer lives',
+	'customer' === ( $wccs_profile_field->to_array()['storage']['scope'] ?? '' ),
+	'scope=customer, required because the section is an account page'
 );
 
 wccs_proof_note(
-	'customer_profile has no surface and no store yet',
-	'The customer scope is declared in the vocabulary and nothing writes it: there is no profile value to show, so this destination is inert. A field linked there appears nowhere — the audit confirms the absence — and the gap is named in docs/validation/WCCS-076.md instead of being papered over with an empty panel.'
+	'customer_profile owns a page and writes to the customer',
+	'A section offered in the profile area becomes a WooCommerce My Account endpoint and the fields linked to it render there under the link titles. Because that page belongs to the customer and not to an order, the document is refused when such a field does not store on the customer (account_section_requires_customer_storage): the page would otherwise offer a form that saves nowhere. The round trip of a submitted value is proved in tests/Integration/ACCOUNT-my-account-sections-proof.php.'
 );
 
 // A store that linked nothing anywhere: no area may draw a panel of its own.

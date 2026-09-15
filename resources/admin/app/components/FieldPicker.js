@@ -81,6 +81,7 @@ function suggestedKey( label ) {
  * @param {Function}                                          props.onChooseType    Called with the choice to create.
  * @param {Function}                                          props.onAdoptCore     Called with a core field to adopt.
  * @param {Function}                                          props.onClose         Called to close the dialog.
+ * @param {'checkout'|'my_account'}                           [props.surface]       Where a new field is collected.
  * @return {*} Rendered element tree.
  */
 export default function FieldPicker( {
@@ -92,6 +93,7 @@ export default function FieldPicker( {
 	onChooseType,
 	onAdoptCore,
 	onClose,
+	surface = 'checkout',
 } ) {
 	const [ category, setCategory ] = useState( 'all' );
 	const [ query, setQuery ] = useState( '' );
@@ -199,6 +201,23 @@ export default function FieldPicker( {
 	const visible = entries.filter( ( entry ) => {
 		const matchesCategory =
 			'all' === category || entry.category === category;
+
+		if ( 'my_account' === surface ) {
+			const type =
+				catalog?.types?.[ entry.preset?.type ?? entry.key ] ?? null;
+
+			// The first account delivery stores customer-owned scalar values. Core
+			// checkout fields and uploads have different owners/transport and are
+			// deliberately not offered until their real account implementation exists.
+			if (
+				'core' === entry.kind ||
+				! type?.supports?.value ||
+				type?.supports?.file
+			) {
+				return false;
+			}
+		}
+
 		const haystack = normalise(
 			`${ entry.label } ${ entry.key } ${ entry.categoryLabel }`
 		);
@@ -442,10 +461,10 @@ export default function FieldPicker( {
 									? chosen.preset.settings ?? {}
 									: undefined,
 								defaults: chosen.preset?.defaults ?? undefined,
-								supports: chosen.preset
-									? catalog?.types?.[ chosen.preset.type ]
-											?.supports ?? {}
-									: undefined,
+								supports:
+									catalog?.types?.[
+										chosen.preset?.type ?? chosen.key
+									]?.supports ?? {},
 							} )
 						}
 					>

@@ -316,8 +316,18 @@ export default function PreviewView( { document: doc, siteName, onBack } ) {
 				</div>
 
 				<div className="preview-mode-notice" role="note">
-					<strong>{ __( 'Atenção: esta é a prévia do checkout modificado pelo WCCS.', 'wc-checkoutsuite' ) }</strong>
-					<span>{ __( 'Ela não representa o checkout padrão do WooCommerce. A apresentação usada pela loja é definida em Configurações → modo do checkout.', 'wc-checkoutsuite' ) }</span>
+					<strong>
+						{ __(
+							'Atenção: esta é a prévia do checkout modificado pelo WCCS.',
+							'wc-checkoutsuite'
+						) }
+					</strong>
+					<span>
+						{ __(
+							'Ela não representa o checkout padrão do WooCommerce. A apresentação usada pela loja é definida em Configurações → modo do checkout.',
+							'wc-checkoutsuite'
+						) }
+					</span>
 				</div>
 
 				<div
