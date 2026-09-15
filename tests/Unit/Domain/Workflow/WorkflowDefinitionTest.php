@@ -108,13 +108,15 @@ final class WorkflowDefinitionTest extends TestCase {
 	 * @return void
 	 */
 	public function test_a_strategy_that_cannot_run_is_refused_by_name(): void {
+		// The payment strategies are executable since the payment action service exists, so what is
+		// refused is the one thing nothing performs yet: a stock reservation.
 		$payment = WorkflowValidator::validate_one(
 			self::workflow( array( 'payment_strategy' => 'capture_after_approval' ) ),
 			array( 'analise_pendente', 'aprovado' ),
 			array( 'processing', 'completed' )
 		);
 
-		self::assertContains( 'payment_strategy_not_available', $payment->error_codes() );
+		self::assertNotContains( 'payment_strategy_not_available', $payment->error_codes() );
 
 		$stock = WorkflowValidator::validate_one(
 			self::workflow( array( 'inventory_strategy' => 'until_decision' ) ),
@@ -130,9 +132,11 @@ final class WorkflowDefinitionTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function test_a_paid_status_is_refused_while_nothing_can_pay(): void {
-		self::assertFalse( Workflows::payment_actions_available() );
+	public function test_a_paid_status_is_refused_without_a_payment_action(): void {
+		self::assertTrue( Workflows::payment_actions_available() );
 
+		// A workflow that moves an order into a paid state while its strategy performs no action is
+		// claiming money arrived: nothing concluded a payment.
 		$result = WorkflowValidator::validate_one(
 			self::workflow( array( 'transitions' => array( Workflows::DECISION_APPROVE => 'processing' ) ) ),
 			array( 'analise_pendente', 'processing' ),
@@ -140,6 +144,26 @@ final class WorkflowDefinitionTest extends TestCase {
 		);
 
 		self::assertContains( 'workflow_paid_status_without_payment', $result->error_codes() );
+	}
+
+	/**
+	 * And it is allowed when the strategy performs one.
+	 *
+	 * @return void
+	 */
+	public function test_a_paid_status_is_allowed_with_a_payment_action(): void {
+		$result = WorkflowValidator::validate_one(
+			self::workflow(
+				array(
+					'payment_strategy' => 'capture_after_approval',
+					'transitions'      => array( Workflows::DECISION_APPROVE => 'processing' ),
+				)
+			),
+			array( 'analise_pendente', 'processing' ),
+			array( 'processing', 'completed' )
+		);
+
+		self::assertNotContains( 'workflow_paid_status_without_payment', $result->error_codes() );
 	}
 
 	/**
@@ -155,6 +179,23 @@ final class WorkflowDefinitionTest extends TestCase {
 		);
 
 		self::assertContains( 'workflow_paid_status_without_payment', $result->error_codes() );
+	}
+
+	/**
+	 * The strategy-to-capability mapping is the one table both halves read.
+	 *
+	 * @return void
+	 */
+	public function test_the_strategy_mapping_names_the_capabilities(): void {
+		self::assertSame( array(), Workflows::capabilities_for( Workflows::PAYMENT_NONE ) );
+		self::assertSame( array(), Workflows::capabilities_for( 'request_after_approval' ) );
+		self::assertSame( array( 'capture' ), Workflows::capabilities_for( 'capture_after_approval' ) );
+		self::assertSame( array( 'authorize', 'capture' ), Workflows::capabilities_for( 'authorize_now' ) );
+		self::assertSame( array( 'create_after_approval' ), Workflows::capabilities_for( 'generate_after_approval' ) );
+
+		self::assertFalse( Workflows::strategy_performs_action( Workflows::PAYMENT_NONE ) );
+		self::assertFalse( Workflows::strategy_performs_action( 'request_after_approval' ) );
+		self::assertTrue( Workflows::strategy_performs_action( 'capture_after_approval' ) );
 	}
 
 	/**
@@ -314,7 +355,7 @@ final class WorkflowDefinitionTest extends TestCase {
 		self::assertSame( array( Workflows::TRIGGER_CHECKOUT_SUBMITTED ), array_column( $vocabulary['triggers'], 'value' ) );
 		self::assertSame( array_keys( Workflows::decisions() ), array_column( $vocabulary['decisions'], 'value' ) );
 		self::assertSame( array( Workflows::INVENTORY_NONE ), $vocabulary['executable']['inventory'] );
-		self::assertSame( array( Workflows::PAYMENT_NONE ), $vocabulary['executable']['payment'] );
+		self::assertSame( array_keys( Workflows::payment_strategies() ), $vocabulary['executable']['payment'] );
 		self::assertSame( array_keys( Workflows::events() ), array_column( $vocabulary['events'], 'value' ) );
 	}
 

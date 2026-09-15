@@ -87,7 +87,61 @@ final class WorkflowTransitionService {
 			WorkflowScheduler::cancel( $found );
 		}
 
-		return self::report( $id, $decision, $moved, $moved ? 'applied' : 'already_in_status', $workflow );
+		// §13.4's chain, and the half that is not a status: approving runs the payment action the
+		// workflow's strategy asks for, and only a gateway that says the money moved concludes the
+		// payment. A strategy that performs no action — `none`, or asking the customer to pay
+		// through WooCommerce's own page — runs nothing, which is a decision and not a gap.
+		$payment = self::perform_payment( $found, $workflow, $decision );
+
+		return array_merge(
+			self::report( $id, $decision, $moved, $moved ? 'applied' : 'already_in_status', $workflow ),
+			array( 'payment_action' => $payment )
+		);
+	}
+
+	/**
+	 * Runs the payment action a decision asks for, when it asks for one.
+	 *
+	 * Only the decision that concludes a sale — approving — performs an action. Rejecting and
+	 * expiring move the order and nothing else, which is what §13.4 and §13.5 ask for: a rejection
+	 * that captured money would be the worst bug this plugin could ship.
+	 *
+	 * @param WC_Order           $order    Order.
+	 * @param WorkflowDefinition $workflow Workflow.
+	 * @param string             $decision Decision key.
+	 * @return array<string, mixed> Report, or an empty array when the workflow performs nothing.
+	 */
+	private static function perform_payment( WC_Order $order, WorkflowDefinition $workflow, string $decision ): array {
+		if ( Workflows::DECISION_APPROVE !== $decision ) {
+			return array();
+		}
+
+		$strategy = $workflow->payment_strategy();
+		$needed   = Workflows::capabilities_for( $strategy );
+
+		if ( array() === $needed ) {
+			return array(
+				'strategy' => $strategy,
+				'action'   => '',
+				'reason'   => 'strategy_performs_nothing',
+			);
+		}
+
+		// The last capability in the chain is the one that concludes the sale for this strategy:
+		// a capture for `capture_after_approval`, a capture after an authorisation for
+		// `authorize_now`, and the generation itself for `generate_after_approval`.
+		$action = (string) end( $needed );
+
+		return ( new \WCCheckoutSuite\Domain\Payments\PaymentActionService() )->execute(
+			$order,
+			$action,
+			array(
+				'workflow' => $workflow->id(),
+				'decision' => $decision,
+				'strategy' => $strategy,
+				'amount'   => (float) $order->get_total(),
+			)
+		);
 	}
 
 	/**

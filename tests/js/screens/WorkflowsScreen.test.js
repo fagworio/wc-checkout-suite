@@ -25,10 +25,19 @@ const VOCABULARY = {
 	],
 	payment: [
 		{ value: 'none', label: 'Não iniciar pagamento' },
+		{
+			value: 'request_after_approval',
+			label: 'Solicitar pagamento após aprovação',
+		},
 		{ value: 'capture_after_approval', label: 'Capturar após aprovação' },
 	],
 	events: [ { value: 'received', label: 'Pedido recebido para análise' } ],
-	executable: { inventory: [ 'none' ], payment: [ 'none' ] },
+	// The stock strategies stay unavailable until the phase that reserves stock exists; the payment
+	// ones are executable since the payment action service does, each falling back per gateway.
+	executable: {
+		inventory: [ 'none' ],
+		payment: [ 'none', 'request_after_approval', 'capture_after_approval' ],
+	},
 };
 
 /**
@@ -137,12 +146,14 @@ describe( 'WorkflowsScreen', () => {
 		).toEqual( [ 'none' ] );
 		expect(
 			Array.from( payment.options ).map( ( option ) => option.value )
-		).toEqual( [ 'none' ] );
+		).toEqual( [
+			'none',
+			'request_after_approval',
+			'capture_after_approval',
+		] );
+		// The stock strategy nothing executes is absent from the select and named in the notice.
 		expect(
 			screen.getByText( /Reservar até decisão/ )
-		).toBeInTheDocument();
-		expect(
-			screen.getByText( /Capturar após aprovação/ )
 		).toBeInTheDocument();
 	} );
 

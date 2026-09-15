@@ -9,6 +9,8 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Domain\Workflow;
 
+use WCCheckoutSuite\Domain\Payments\GatewayCapabilities;
+
 /**
  * Every gatilho, decisão, estratégia and communication event a workflow may name.
  *
@@ -217,7 +219,54 @@ final class Workflows {
 	 * @return bool
 	 */
 	public static function payment_actions_available(): bool {
-		return false;
+		return true;
+	}
+
+	/**
+	 * The capabilities a payment strategy needs before it can run.
+	 *
+	 * The bridge between §13.2 step 4's options and §20's vocabulary, and the reason both live in one
+	 * class: a strategy is a sentence about a gateway action, and the sentence is only honest while
+	 * the mapping is written down once. A strategy whose capabilities the gateway has not proven does
+	 * not fail — it falls back to the pay-for-order link, which is what §13.2 step 4 asks for.
+	 *
+	 * `request_after_approval` needs nothing: asking the customer to pay through WooCommerce's own
+	 * page is not something a gateway has to be able to do.
+	 *
+	 * @return array<string, array<int, string>>
+	 */
+	public static function strategy_capabilities(): array {
+		return array(
+			self::PAYMENT_NONE        => array(),
+			'request_after_approval'  => array(),
+			'authorize_now'           => array( GatewayCapabilities::AUTHORIZE, GatewayCapabilities::CAPTURE ),
+			'capture_after_approval'  => array( GatewayCapabilities::CAPTURE ),
+			'generate_after_approval' => array( GatewayCapabilities::CREATE_AFTER_APPROVAL ),
+		);
+	}
+
+	/**
+	 * Whether a strategy asks a gateway to do something.
+	 *
+	 * The question the rule about paid statuses turns on: a state WooCommerce treats as paid may be
+	 * reached only by a workflow whose strategy performs a payment action, because otherwise nothing
+	 * concluded a payment and the status would be saying money arrived.
+	 *
+	 * @param string $strategy Strategy key.
+	 * @return bool
+	 */
+	public static function strategy_performs_action( string $strategy ): bool {
+		return array() !== ( self::strategy_capabilities()[ $strategy ] ?? array() );
+	}
+
+	/**
+	 * The capabilities a strategy needs.
+	 *
+	 * @param string $strategy Strategy key.
+	 * @return array<int, string>
+	 */
+	public static function capabilities_for( string $strategy ): array {
+		return self::strategy_capabilities()[ $strategy ] ?? array();
 	}
 
 	/**
@@ -227,8 +276,11 @@ final class Workflows {
 	 */
 	public static function executable_strategies(): array {
 		return array(
+			// Stock stays refused until the phase that reserves it exists; the payment strategies
+			// are all executable now, each one falling back to the pay-for-order link where the
+			// gateway has not proven what it needs.
 			'inventory' => array( self::INVENTORY_NONE ),
-			'payment'   => array( self::PAYMENT_NONE ),
+			'payment'   => array_keys( self::payment_strategies() ),
 		);
 	}
 

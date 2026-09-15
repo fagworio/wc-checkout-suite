@@ -1,6 +1,9 @@
 /**
  * Fase 10 observation — the automation screen, as a merchant meets it.
  *
+ * Updated in Fase 12: the payment strategies are offered now that the payment action service exists,
+ * and what stays unoffered is the stock strategy nothing executes yet.
+ *
  * The harness drives the engine against a real order; the unit and screen suites prove the model
  * and the component. What neither shows is the screen against the real server: that the vocabulary
  * the store publishes is the one the editor offers, that the strategies it cannot execute are
@@ -160,8 +163,13 @@ await step( 'The screen draws the design steps', async () => {
 	);
 	record(
 		'And it says which strategies the store can execute today',
-		JSON.stringify( vocabulary.executable ) ===
-			JSON.stringify( { inventory: [ 'none' ], payment: [ 'none' ] } ),
+		// The stock strategies stay refused until the phase that reserves stock exists; the payment
+		// ones are executable since the payment action service does, each falling back per gateway.
+		JSON.stringify( ( vocabulary.executable ?? {} ).inventory ) ===
+			JSON.stringify( [ 'none' ] ) &&
+			( vocabulary.executable ?? {} ).payment?.includes(
+				'capture_after_approval'
+			),
 		'executable=' + JSON.stringify( vocabulary.executable )
 	);
 } );
@@ -206,13 +214,19 @@ await step( 'A new automation is created and its steps are drawn', async () => {
 		.evaluateAll( ( nodes ) => nodes.map( ( node ) => node.value ) );
 
 	record(
-		'And the selects offer only what the store can execute',
-		[ 'none' ].join() === stock.join() &&
-			[ 'none' ].join() === payment.join(),
-		'stock=' + stock.join( ',' ) + ' payment=' + payment.join( ',' )
+		'The stock select offers only what the store can execute',
+		[ 'none' ].join() === stock.join(),
+		'stock=' + stock.join( ',' )
 	);
 	record(
-		'And the ones it cannot are named, with the reason',
+		'And the payment select offers the strategies the payment service can run',
+		payment.includes( 'capture_after_approval' ) &&
+			payment.includes( 'request_after_approval' ) &&
+			payment.includes( 'none' ),
+		'payment=' + payment.join( ',' )
+	);
+	record(
+		'And the ones that cannot run are named, with the reason',
 		body.includes( 'não são oferecidas' ) &&
 			body.includes( 'capabilities do gateway' )
 	);

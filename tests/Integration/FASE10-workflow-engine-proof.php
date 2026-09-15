@@ -244,25 +244,27 @@ wccs_proof_check(
 wccs_proof_out( '' );
 wccs_proof_out( '3. O que esta versão recusa por nome' );
 
-foreach ( array(
-	'capture_after_approval' => 'payment_strategy_not_available',
-	'authorize_now'          => 'payment_strategy_not_available',
-) as $wccs_proof_strategy => $wccs_proof_code ) {
-	$wccs_proof_refused = $wccs_proof_repository->save(
-		array(
+// The payment strategies are checked on a definition of their own rather than by saving one: since
+// the payment action service exists they are accepted, and a write that succeeded would replace the
+// workflow the rest of this harness runs on.
+foreach ( array( 'capture_after_approval', 'authorize_now', 'request_after_approval' ) as $wccs_proof_strategy ) {
+	$wccs_proof_accepted = \WCCheckoutSuite\Domain\Workflow\WorkflowValidator::validate_one(
+		\WCCheckoutSuite\Domain\Workflow\WorkflowDefinition::from_array(
 			array(
 				'id'               => 'com_pagamento',
 				'name'             => 'Com ação de pagamento',
 				'initial_status'   => 'analise_pendente',
 				'payment_strategy' => $wccs_proof_strategy,
-			),
-		)
+			)
+		),
+		\WCCheckoutSuite\Domain\Statuses\OrderStatusRegistry::known_ids(),
+		array_values( array_map( 'strval', (array) wc_get_is_paid_statuses() ) )
 	);
 
 	wccs_proof_check(
-		sprintf( 'A ação de pagamento «%s» é recusada por nome', $wccs_proof_strategy ),
-		! $wccs_proof_refused->is_valid() && in_array( $wccs_proof_code, $wccs_proof_refused->error_codes(), true ),
-		implode( ',', $wccs_proof_refused->error_codes() )
+		sprintf( 'A estratégia de pagamento «%s» é aceite, porque o serviço que a executa existe', $wccs_proof_strategy ),
+		$wccs_proof_accepted->is_valid(),
+		implode( ',', $wccs_proof_accepted->error_codes() )
 	);
 }
 

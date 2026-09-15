@@ -53,6 +53,7 @@ Cada hook recebe exatamente um argumento, e é o registro que ele preenche.
 | `wccs_uploads_cleanup` | `do_action( ..., int $now )` | nada (trabalho agendado) |
 | `wccs_account_document_url` | `apply_filters( ..., string $url, string $token )` | `string` (endereço da porta que serve o documento do cliente) |
 | `wccs_register_gateway_capabilities` | `do_action( ..., GatewayCapabilityRegistry $registry )` | nada |
+| `wccs_register_payment_action_adapters` | `do_action( ..., PaymentAdapterRegistry $registry )` | nada |
 | `wccs_workflow_expire` | `do_action( ..., int $order_id )` | nada (trabalho agendado) |
 | `wccs_workflow_sweep` | `do_action( ... )` | nada (trabalho agendado) |
 
@@ -123,7 +124,15 @@ o controlo, e `assets/membership-code-field.js` regista o componente.
 
 Para que a ausência seja tão legível como a presença:
 
-0. **Nenhuma forma de declarar uma capability transacional sem prova.** Um gateway declara o que
+0. **Nenhuma forma de executar uma cobrança sem passar pelo serviço.** Um gateway integra-se por
+   `wccs_register_payment_action_adapters`, implementando `PaymentActionAdapterInterface` — nomear o
+   gateway, nomear as ações provadas e executar uma delas. Quem decide **se** a ação pode ser pedida,
+   **uma vez** por ação por pedido, **o que fica registado** e **o que acontece quando o gateway não
+   sabe** é o `PaymentActionService`; um adapter de contrato desconhecido é recusado em vez de
+   chamado. É o que torna «nenhum cenário duplica cobrança» uma propriedade do serviço e não uma
+   responsabilidade de cada integração.
+
+0.1. **Nenhuma forma de declarar uma capability transacional sem prova.** Um gateway declara o que
    consegue fazer por `wccs_register_gateway_capabilities`, e cada declaração tem de trazer modo,
    versão, cenário e data. Sem os quatro, a declaração é recusada **por nome** e reportada; não entra
    no registo e portanto não aparece em interface nenhuma. É o portão da Fase 11: nenhuma ação sem

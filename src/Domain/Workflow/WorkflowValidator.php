@@ -192,18 +192,18 @@ final class WorkflowValidator {
 
 		foreach ( $named as $where => $status ) {
 			// §13.8 says it in the acceptance of this very screen: "nenhum status 'pago' é aplicado
-			// antes do pagamento". While no payment action can run, a workflow that moved an order
-			// into a status WooCommerce treats as paid would be telling the store that money
-			// arrived. When a payment action exists, this rule becomes "a paid status is reachable
-			// only through a transition that performs one" — which is a rule about the transition,
-			// and the transition is what will carry it.
-			if ( '' !== $status && in_array( $status, $paid, true ) && ! Workflows::payment_actions_available() ) {
+			// antes do pagamento". A state WooCommerce treats as paid may therefore be reached only
+			// by a workflow whose payment strategy **performs a payment action** — otherwise nothing
+			// concluded a payment and the status would be claiming money arrived. The mapping from
+			// strategy to capability is one table, so this rule and the runtime read the same
+			// sentence.
+			if ( '' !== $status && in_array( $status, $paid, true ) && ! Workflows::strategy_performs_action( $workflow->payment_strategy() ) ) {
 				$result = $result->merge(
 					ValidationResult::invalid(
 						'workflow_paid_status_without_payment',
 						sprintf(
 							/* translators: 1: status identifier, 2: where the workflow names it */
-							__( 'O workflow move o pedido para «%1$s» (%2$s), e a WooCommerce considera esse estado pago. Enquanto não houver uma ação de pagamento, nenhum estado pago pode ser aplicado: escolha um estado que não seja de pagamento.', 'wc-checkoutsuite' ),
+							__( 'O workflow move o pedido para «%1$s» (%2$s), e a WooCommerce considera esse estado pago. Um estado pago só pode ser alcançado por um workflow cuja estratégia de pagamento executa uma ação: escolha uma estratégia que o faça, ou um estado que não seja de pagamento.', 'wc-checkoutsuite' ),
 							$status,
 							(string) $where
 						),
