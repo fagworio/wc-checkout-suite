@@ -13,6 +13,7 @@ use WCCheckoutSuite\Domain\Payments\GatewayCapabilityRegistry;
 use WCCheckoutSuite\Domain\Payments\PaymentMatrix;
 use WCCheckoutSuite\Domain\Payments\PaymentMode;
 use WCCheckoutSuite\Domain\Settings\CheckoutSettings;
+use WCCheckoutSuite\Domain\Uploads\UploadsEnvironment;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -50,6 +51,11 @@ final class SettingsController {
 	public const ROUTE_SETTINGS = '/settings';
 
 	/**
+	 * Upload privacy diagnostic route.
+	 */
+	public const ROUTE_UPLOADS = '/uploads';
+
+	/**
 	 * Every route, keyed by the name the admin client uses.
 	 *
 	 * @return array<string, string>
@@ -57,6 +63,7 @@ final class SettingsController {
 	public static function routes(): array {
 		return array(
 			'settings' => self::ROUTE_SETTINGS,
+			'uploads'  => self::ROUTE_UPLOADS,
 		);
 	}
 
@@ -86,6 +93,23 @@ final class SettingsController {
 							'description' => 'Whether this store wants the custom checkout presentation.',
 						),
 					),
+				),
+			)
+		);
+
+		register_rest_route(
+			SchemaController::rest_namespace(),
+			self::ROUTE_UPLOADS,
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_uploads' ),
+					'permission_callback' => array( $this, 'can_manage' ),
+				),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'probe_uploads' ),
+					'permission_callback' => array( $this, 'can_manage' ),
 				),
 			)
 		);
@@ -125,6 +149,26 @@ final class SettingsController {
 	 */
 	public function update_settings( WP_REST_Request $request ): WP_REST_Response {
 		CheckoutSettings::set_enabled( (bool) $request->get_param( 'custom_checkout' ) );
+
+		return new WP_REST_Response( $this->state(), 200 );
+	}
+
+	/**
+	 * Reads the last upload privacy observation without probing.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function get_uploads(): WP_REST_Response {
+		return new WP_REST_Response( $this->uploads_state(), 200 );
+	}
+
+	/**
+	 * Forces an authenticated administrator diagnostic probe.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function probe_uploads(): WP_REST_Response {
+		UploadsEnvironment::state( true );
 
 		return new WP_REST_Response( $this->state(), 200 );
 	}
@@ -207,6 +251,19 @@ final class SettingsController {
 					$capability->all()
 				)
 			),
+			'uploads'         => $this->uploads_state(),
 		);
+	}
+
+	/**
+	 * Upload storage state exposed to the administrator.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function uploads_state(): array {
+		$state            = UploadsEnvironment::last_state();
+		$state['enabled'] = UploadsEnvironment::enabled();
+
+		return $state;
 	}
 }

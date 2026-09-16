@@ -250,9 +250,10 @@ final class UploadService {
 	 * @param string                    $field_id Field the upload belongs to.
 	 * @param int                       $user_id  Customer.
 	 * @param array<string, mixed>      $settings Resolved settings of the field.
+	 * @param bool                      $replace  Whether this upload replaces the newest document.
 	 * @return array{token: string, code: string, message: string} Token on success, a refusal otherwise.
 	 */
-	public function accept_for_customer( ?array $file, string $field_id, int $user_id, array $settings = array() ): array {
+	public function accept_for_customer( ?array $file, string $field_id, int $user_id, array $settings = array(), bool $replace = true ): array {
 		if ( ! UploadsEnvironment::enabled() ) {
 			return $this->refuse( 'not_available', UploadsEnvironment::reason() );
 		}
@@ -263,7 +264,7 @@ final class UploadService {
 			return $this->refuse( 'not_available', __( 'There is no customer to attach this document to.', 'wc-checkoutsuite' ) );
 		}
 
-		$previous = $this->repository->for_user( $user_id, $field_id );
+		$previous = $replace ? $this->repository->for_user( $user_id, $field_id ) : null;
 		$used     = $this->repository->used_bytes( $owner );
 
 		// Replacing a document should consume the space of the new version, not the
@@ -344,6 +345,69 @@ final class UploadService {
 	}
 
 	/**
+	 * Accepts the files selected for a customer field.
+	 *
+	 * A single-file field keeps the existing replacement behaviour. A field with a
+	 * `maxFiles` value greater than one appends the submitted files, enforcing the
+	 * configured count and the owner's byte quota before anything is stored.
+	 *
+	 * @param array<int, array<string, mixed>> $files    Uploaded files.
+	 * @param string                           $field_id Field.
+	 * @param int                              $user_id  Customer.
+	 * @param array<string, mixed>             $settings Resolved settings.
+	 * @return array{accepted: int, errors: array<int, string>}
+	 */
+	public function accept_for_customer_files( array $files, string $field_id, int $user_id, array $settings = array() ): array {
+		$files = array_values( array_filter( $files, 'is_array' ) );
+
+		if ( array() === $files ) {
+			return array(
+				'accepted' => 0,
+				'errors'   => array(),
+			);
+		}
+
+		$max_files = isset( $settings['maxFiles'] ) ? max( 1, min( 20, (int) $settings['maxFiles'] ) ) : 1;
+
+		if ( 1 === $max_files ) {
+			$result = $this->accept_for_customer( $files[0], $field_id, $user_id, $settings );
+
+			return array(
+				'accepted' => '' === $result['code'] ? 1 : 0,
+				'errors'   => '' === $result['code'] ? array() : array( $result['message'] ),
+			);
+		}
+
+		$existing = $this->repository->for_user_all( $user_id, $field_id );
+
+		if ( count( $existing ) + count( $files ) > $max_files ) {
+			return array(
+				'accepted' => 0,
+				'errors'   => array( UploadRules::message( 'too_many_files' ) ),
+			);
+		}
+
+		$accepted = 0;
+		$errors   = array();
+
+		foreach ( $files as $file ) {
+			$result = $this->accept_for_customer( $file, $field_id, $user_id, $settings, false );
+
+			if ( '' !== $result['code'] ) {
+				$errors[] = $result['message'];
+				continue;
+			}
+
+			++$accepted;
+		}
+
+		return array(
+			'accepted' => $accepted,
+			'errors'   => $errors,
+		);
+	}
+
+	/**
 	 * The document a customer currently keeps for one field.
 	 *
 	 * @param int    $user_id  Customer.
@@ -352,6 +416,17 @@ final class UploadService {
 	 */
 	public function for_customer_field( int $user_id, string $field_id ): ?array {
 		return $this->repository->for_user( $user_id, $field_id );
+	}
+
+	/**
+	 * All documents a customer keeps for one field.
+	 *
+	 * @param int    $user_id Customer.
+	 * @param string $field_id Field.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function for_customer_field_all( int $user_id, string $field_id ): array {
+		return $this->repository->for_user_all( $user_id, $field_id );
 	}
 
 	/**

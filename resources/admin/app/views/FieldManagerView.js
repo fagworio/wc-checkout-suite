@@ -491,6 +491,7 @@ export default function FieldManagerView( { model } ) {
 		( 'edit-account' === contextActive ||
 			'edit-address' === contextActive ) &&
 		! accountSectionMatchesContext;
+	const accountContextSectionId = accountContextSection?.section.id;
 	const selectAccountPage = ( /** @type {string} */ id ) => {
 		onEdit( null );
 		setSurfaceContext( id );
@@ -507,21 +508,16 @@ export default function FieldManagerView( { model } ) {
 	useEffect( () => {
 		if (
 			'customer_account' !== area ||
-			! accountContextSection ||
-			accountContextSection.section.id === section
+			! accountContextSectionId ||
+			accountContextSectionId === section
 		) {
 			return;
 		}
 
 		// Keep the parent section state aligned when the account context came from a
 		// preserved session rather than from the current click.
-		onSectionChange( accountContextSection.section.id );
-	}, [
-		area,
-		accountContextSection?.section.id,
-		section,
-		onSectionChange,
-	] );
+		onSectionChange( accountContextSectionId );
+	}, [ area, accountContextSectionId, section, onSectionChange ] );
 
 	useEffect( () => {
 		if ( 'customer_account' !== area || ! current ) {
@@ -1449,26 +1445,31 @@ export default function FieldManagerView( { model } ) {
 										words.actions,
 										copy.title
 									) }
-				>
-					{ words.actions }
-				</button>
-				{ current?.declared ? (
-					<button
-						type="button"
-						className="text-btn text-btn-danger"
-						onClick={ () =>
-							onRemoveSection?.( current.section.id )
-						}
-						aria-label={ sprintf(
-							/* translators: %s: container title. */
-							__( 'Remover %s', 'wc-checkoutsuite' ),
-							copy.title
-						) }
-					>
-						{ __( 'Remover', 'wc-checkoutsuite' ) }
-					</button>
-				) : null }
-			</div>
+								>
+									{ words.actions }
+								</button>
+								{ current?.declared ? (
+									<button
+										type="button"
+										className="text-btn text-btn-danger"
+										onClick={ () =>
+											onRemoveSection?.(
+												current.section.id
+											)
+										}
+										aria-label={ sprintf(
+											/* translators: %s: container title. */
+											__(
+												'Remover %s',
+												'wc-checkoutsuite'
+											),
+											copy.title
+										) }
+									>
+										{ __( 'Remover', 'wc-checkoutsuite' ) }
+									</button>
+								) : null }
+							</div>
 
 							<div className="filterbar">
 								<label

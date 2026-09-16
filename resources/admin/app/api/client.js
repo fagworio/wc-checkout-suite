@@ -278,6 +278,10 @@ export function createClient( {
 		// guess what its own write did.
 		settings: ( /** @type {AbortSignal} */ signal ) =>
 			send( routes.settings, { method: 'GET', signal } ),
+		uploads: ( /** @type {AbortSignal} */ signal ) =>
+			send( routes.uploads, { method: 'GET', signal } ),
+		probeUploads: ( /** @type {AbortSignal} */ signal ) =>
+			send( routes.uploads, { method: 'POST', signal } ),
 		saveSettings: (
 			/** @type {boolean} */ enabled,
 			/** @type {AbortSignal} */ signal

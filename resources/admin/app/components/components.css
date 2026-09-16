@@ -281,37 +281,6 @@
   margin-left: auto;
 }
 
-.wccs-admin .wccs-editor-areas {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--wccs-space-8);
-  margin: 0 0 var(--wccs-space-16);
-}
-
-.wccs-admin .wccs-editor-areas button {
-  padding: var(--wccs-space-12);
-  border: 1px solid var(--wccs-border-control);
-  border-radius: var(--wccs-radius-control);
-  background: var(--wccs-surface);
-  text-align: left;
-  cursor: pointer;
-}
-
-.wccs-admin .wccs-editor-areas button.active {
-  border-color: var(--wccs-brand);
-  box-shadow: inset 0 0 0 1px var(--wccs-brand);
-}
-
-.wccs-admin .wccs-editor-areas strong,
-.wccs-admin .wccs-editor-areas small {
-  display: block;
-}
-
-.wccs-admin .wccs-editor-areas small {
-  margin-top: var(--wccs-space-4);
-  color: var(--wccs-ink-muted);
-}
-
 /* The destinations inside a group — Admin, Mais destinos — and the reason this
    block exists at all: without it the buttons fell back to the browser's own
    chrome, a grey outset button with the label and the path running together on
@@ -391,12 +360,6 @@
   list-style: decimal outside !important;
   font-family: inherit;
   font-size: inherit;
-}
-
-@media (max-width: 700px) {
-  .wccs-admin .wccs-editor-areas {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* ------------------------------------------------------------------- Badge */
@@ -759,6 +722,23 @@
   font-size: var(--wccs-text-help);
 }
 
+.wccs-admin .wccs-settings__uploads {
+  margin: var(--wccs-space-32) 0;
+  padding-top: var(--wccs-space-24);
+  border-top: 1px solid var(--wccs-border-decorative);
+}
+
+.wccs-admin .wccs-settings__uploads-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--wccs-space-12);
+  margin-top: var(--wccs-space-16);
+}
+
+.wccs-admin .wccs-settings__uploads-actions small {
+  color: var(--wccs-ink-muted);
+}
+
 @media (max-width: 700px) {
   .wccs-admin .wccs-settings__modes {
     grid-template-columns: 1fr;
@@ -799,174 +779,6 @@
   .wccs-admin .wccs-preview__sample {
     grid-template-columns: minmax(0, 1fr);
   }
-}
-
-/* ------------------------------------------------------------------ Picker */
-
-.wccs-admin .wccs-picker__controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--wccs-space-12);
-  margin-bottom: var(--wccs-space-12);
-}
-
-.wccs-admin .wccs-picker__group {
-  margin-top: var(--wccs-space-24);
-}
-
-.wccs-admin .wccs-picker__group-title {
-  margin: 0 0 var(--wccs-space-8);
-  font-size: var(--wccs-text-heading-small);
-  font-weight: var(--wccs-weight-semibold);
-}
-
-.wccs-admin .wccs-picker__list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--wccs-space-8);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.wccs-admin .wccs-picker__item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--wccs-space-4);
-  inline-size: 100%;
-  min-height: var(--wccs-size-touch-target);
-  padding: var(--wccs-space-12);
-  border: 1px solid var(--wccs-border-decorative);
-  border-radius: var(--wccs-radius-control);
-  background: var(--wccs-surface);
-  color: var(--wccs-ink);
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-  transition: border-color var(--wccs-motion-fast) ease;
-}
-
-.wccs-admin .wccs-picker__item:hover {
-  border-color: var(--wccs-brand);
-}
-
-.wccs-admin .wccs-picker__item-label {
-  font-weight: var(--wccs-weight-semibold);
-}
-
-.wccs-admin .wccs-picker__item-meta {
-  color: var(--wccs-ink-muted);
-  font-size: var(--wccs-text-help);
-}
-
-.wccs-admin .wccs-picker__hint,
-.wccs-admin .wccs-picker__empty {
-  max-width: 72ch;
-  color: var(--wccs-ink-muted);
-  font-size: var(--wccs-text-help);
-}
-
-/* ------------------------------------------------------------------ Fields */
-
-.wccs-admin .wccs-fields__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--wccs-space-16);
-  margin-bottom: var(--wccs-space-16);
-}
-
-.wccs-admin .wccs-fields__title {
-  margin: 0;
-  font-size: var(--wccs-text-heading-medium);
-  line-height: var(--wccs-leading-heading);
-}
-
-.wccs-admin .wccs-fields__summary {
-  margin: var(--wccs-space-4) 0 0;
-  max-width: 72ch;
-  color: var(--wccs-ink-muted);
-}
-
-.wccs-admin .wccs-fields__actions {
-  display: flex;
-  align-items: center;
-  gap: var(--wccs-space-8);
-}
-
-.wccs-admin .wccs-fields__group {
-  margin-bottom: var(--wccs-space-24);
-}
-
-.wccs-admin .wccs-fields__group-title {
-  margin: 0 0 var(--wccs-space-8);
-  font-size: var(--wccs-text-heading-small);
-  font-weight: var(--wccs-weight-semibold);
-}
-
-.wccs-admin .wccs-fields__list {
-  display: grid;
-  gap: var(--wccs-space-8);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.wccs-admin .wccs-fields__row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--wccs-space-12);
-  padding: var(--wccs-space-12) var(--wccs-space-16);
-  border: 1px solid var(--wccs-border-decorative);
-  border-radius: var(--wccs-radius-row);
-  background: var(--wccs-surface);
-}
-
-/* An archived field stays visible and keeps its actions: hiding it would make
-   restoring it impossible. */
-.wccs-admin .wccs-fields__row.is-archived {
-  background: var(--wccs-app-background);
-  color: var(--wccs-ink-muted);
-}
-
-.wccs-admin .wccs-fields__row-main {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 220px;
-}
-
-.wccs-admin .wccs-fields__row-label {
-  font-weight: var(--wccs-weight-semibold);
-}
-
-.wccs-admin .wccs-fields__row-id {
-  color: var(--wccs-ink-muted);
-  font-family: var(--wccs-font-mono);
-  font-size: var(--wccs-text-caption);
-}
-
-.wccs-admin .wccs-fields__row-badges,
-.wccs-admin .wccs-fields__row-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--wccs-space-8);
-}
-
-.wccs-admin .wccs-fields__protected {
-  max-width: 40ch;
-  color: var(--wccs-ink-muted);
-  font-size: var(--wccs-text-help);
-}
-
-.wccs-admin .wccs-fields__picker {
-  margin-top: var(--wccs-space-32);
-  padding-top: var(--wccs-space-24);
-  border-top: 1px solid var(--wccs-border-decorative);
 }
 
 /* --------------------------------------------------------------- Inspector */
@@ -1083,53 +895,8 @@
   font-size: var(--wccs-text-help);
 }
 
-/* ----------------------------------------------------------------- Sections */
+/* --------------------------------------------------------------- Revisions */
 
-.wccs-admin .wccs-fields__group-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--wccs-space-8);
-  margin-bottom: var(--wccs-space-8);
-}
-
-.wccs-admin .wccs-fields__group-header .wccs-fields__group-title {
-  margin: 0;
-}
-
-.wccs-admin .wccs-fields__group-note {
-  color: var(--wccs-ink-muted);
-  font-size: var(--wccs-text-help);
-}
-
-.wccs-admin .wccs-fields__sections {
-  margin-top: var(--wccs-space-32);
-  padding-top: var(--wccs-space-24);
-  border-top: 1px solid var(--wccs-border-decorative);
-}
-
-.wccs-admin .wccs-fields__section-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--wccs-space-12);
-}
-
-.wccs-admin .wccs-fields__section-form > * {
-  flex: 1 1 200px;
-}
-
-/* A row inside a sortable list already carries its own frame. */
-.wccs-admin .wccs-sortable .wccs-fields__row {
-  flex-wrap: nowrap;
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-
-/* ----------------------------------------------------------------- Publish */
-
-.wccs-admin .wccs-publish,
 .wccs-admin .wccs-revisions {
   margin-block: var(--wccs-space-24);
   padding: var(--wccs-space-16);
@@ -1138,160 +905,12 @@
   background: var(--wccs-surface);
 }
 
-.wccs-admin .wccs-publish__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--wccs-space-12);
-}
-
-.wccs-admin .wccs-publish__title,
-.wccs-admin .wccs-revisions__title {
-  margin: 0;
-  font-size: var(--wccs-text-heading-small);
-  font-weight: var(--wccs-weight-semibold);
-}
-
-.wccs-admin .wccs-publish__statement,
-.wccs-admin .wccs-revisions__statement {
-  margin: var(--wccs-space-4) 0 var(--wccs-space-16);
-  max-width: 72ch;
-  color: var(--wccs-ink-muted);
-  font-size: var(--wccs-text-help);
-}
-
-.wccs-admin .wccs-publish__changes {
-  display: grid;
-  gap: var(--wccs-space-16);
-  margin-block: var(--wccs-space-16);
-}
-
-.wccs-admin .wccs-publish__group-title {
-  display: flex;
-  align-items: center;
-  gap: var(--wccs-space-8);
-  margin: 0 0 var(--wccs-space-4);
-  font-size: var(--wccs-text-label);
-  font-weight: var(--wccs-weight-semibold);
-}
-
-.wccs-admin .wccs-publish__list,
-.wccs-admin .wccs-publish__differences {
-  margin: 0;
-  padding-inline-start: var(--wccs-space-24);
-}
-
-.wccs-admin .wccs-publish__differences {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--wccs-space-8);
-  margin-block: var(--wccs-space-4);
-  list-style: none;
-  padding-inline-start: 0;
-}
-
-.wccs-admin .wccs-publish__differences li {
-  display: flex;
-  align-items: center;
-  gap: var(--wccs-space-4);
-  font-size: var(--wccs-text-help);
-}
-
-.wccs-admin .wccs-publish__key {
-  color: var(--wccs-ink-muted);
-}
-
-.wccs-admin .wccs-publish__ok {
-  margin: var(--wccs-space-4) 0;
-  color: var(--wccs-ink-muted);
-  font-size: var(--wccs-text-help);
-}
-
-.wccs-admin .wccs-publish__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--wccs-space-12);
-  margin-top: var(--wccs-space-16);
-}
-
-.wccs-admin .wccs-publish__hint {
-  color: var(--wccs-ink-muted);
-  font-size: var(--wccs-text-help);
-}
-
-/* --------------------------------------------------------------- Revisions */
-
 .wccs-admin .wccs-revisions__list {
   display: grid;
   gap: var(--wccs-space-8);
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.wccs-admin .wccs-revisions__item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--wccs-space-12);
-  padding: var(--wccs-space-8) var(--wccs-space-12);
-  border: 1px solid var(--wccs-border-decorative);
-  border-radius: var(--wccs-radius-row);
-}
-
-/* The revision the store is running is marked by weight and wording as well as
-   by colour, so it does not depend on seeing the difference. */
-.wccs-admin .wccs-revisions__item.is-current {
-  border-color: var(--wccs-success);
-  font-weight: var(--wccs-weight-semibold);
-}
-
-.wccs-admin .wccs-revisions__main {
-  display: flex;
-  flex-direction: column;
-}
-
-.wccs-admin .wccs-revisions__when {
-  color: var(--wccs-ink-muted);
-  font-size: var(--wccs-text-caption);
-}
-
-/* -------------------------------------------------------------------- Bulk */
-
-.wccs-admin .wccs-bulk {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--wccs-space-16);
-  margin-bottom: var(--wccs-space-16);
-  padding: var(--wccs-space-12) var(--wccs-space-16);
-  border: 1px solid var(--wccs-border-control);
-  border-radius: var(--wccs-radius-panel);
-  background: var(--wccs-brand-subtle);
-}
-
-.wccs-admin .wccs-bulk__count {
-  margin: 0;
-  font-weight: var(--wccs-weight-semibold);
-}
-
-.wccs-admin .wccs-bulk__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--wccs-space-8);
-}
-
-/* The selection control sits before the row body, and its hit area follows the
-   touch target token even though the box itself is smaller. */
-.wccs-admin .wccs-fields__select {
-  flex: 0 0 auto;
-  inline-size: 18px;
-  block-size: 18px;
-  min-block-size: var(--wccs-size-touch-target);
-  margin: 0;
 }
 
 /* -------------------------------------------------------------- Conditions */

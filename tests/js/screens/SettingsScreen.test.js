@@ -44,6 +44,22 @@ function withState( state ) {
 
 				return current;
 			},
+			probeUploads: async ( /** @type {any} */ signal ) => {
+				calls.push( { method: 'probeUploads', args: [ signal ] } );
+				current = {
+					...current,
+					uploads: {
+						observed: true,
+						protected: true,
+						enabled: true,
+						status: 404,
+						reason: '',
+						checked_at: 100,
+					},
+				};
+
+				return current;
+			},
 		},
 	};
 }
@@ -109,6 +125,14 @@ function storeState( overrides = {} ) {
 		homologated: 0,
 		undecided: 2,
 		modes: [ 'decorated', 'compatible', 'unavailable', 'undecided' ],
+		uploads: {
+			observed: false,
+			protected: false,
+			enabled: false,
+			status: 0,
+			reason: '',
+			checked_at: 0,
+		},
 		...overrides,
 	};
 }
@@ -229,6 +253,29 @@ describe( 'the settings screen', () => {
 		await screen.findByText( /0 of 2 gateways/ );
 
 		expect( screen.queryByRole( 'checkbox' ) ).toBeNull();
+	} );
+
+	it( 'runs the upload privacy probe only from diagnostics', async () => {
+		const { client, calls } = withState( storeState() );
+
+		render( <SettingsScreen client={ client } editable={ false } /> );
+
+		const probe = await screen.findByRole( 'button', {
+			name: 'Verificar ambiente de uploads',
+		} );
+		fireEvent.click( probe );
+
+		await waitFor( () =>
+			expect(
+				screen.getByText(
+					/O armazenamento privado foi validado e os uploads podem ser oferecidos/
+				)
+			).toBeInTheDocument()
+		);
+
+		expect(
+			calls.filter( ( call ) => 'probeUploads' === call.method )
+		).toHaveLength( 1 );
 	} );
 
 	it( 'says so when the state cannot be read', async () => {

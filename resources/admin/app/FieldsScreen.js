@@ -667,7 +667,8 @@ export default function FieldsScreen( {
 					? local.document
 					: draft;
 			const hasLocalDraft =
-				local?.baseRevision === draft.revision && Boolean( local.document );
+				local?.baseRevision === draft.revision &&
+				Boolean( local.document );
 			const repaired = repairLegacyDraft( candidate );
 			const applied = repaired.changed ? repaired.document : candidate;
 			const legacy = ambiguousDestinations( applied );
@@ -729,6 +730,8 @@ export default function FieldsScreen( {
 	const discardLocalDraft = useCallback( () => {
 		if (
 			! savedDocument ||
+			// The confirmation intentionally covers every unsaved edit in this session.
+			// eslint-disable-next-line no-alert
 			! window.confirm(
 				__(
 					'Descartar a edição local e remover as alterações não salvas desta sessão?',
@@ -1359,9 +1362,10 @@ export default function FieldsScreen( {
 	 * scrolling through the section properties, while fields and links still get
 	 * the same dependency protection before anything is removed.
 	 *
+	 * @param {string|null} id Section identifier.
 	 * @return {void}
 	 */
-	const requestSectionRemovalById = ( id ) => {
+	const requestSectionRemovalById = ( /** @type {string|null} */ id ) => {
 		if ( ! id ) {
 			return;
 		}
@@ -1383,7 +1387,7 @@ export default function FieldsScreen( {
 	};
 
 	const requestSectionRemoval = () =>
-		requestSectionRemovalById( editingSection?.id );
+		requestSectionRemovalById( editingSection ? editingSection.id : null );
 
 	return (
 		<>
@@ -1682,7 +1686,7 @@ export default function FieldsScreen( {
 										'Esta seção implícita do WooCommerce não pode ser editada. Crie uma seção personalizada para dar-lhe um nome.',
 										'wc-checkoutsuite'
 									)
-								  ),
+							  ),
 					onRemoveSection: requestSectionRemovalById,
 					onCreateSection: () => {
 						setNewSectionLocation( defaultSectionLocation( area ) );
@@ -2381,7 +2385,6 @@ export default function FieldsScreen( {
 											<Icon name="arrow" />
 										</button>
 									</div>
-
 								</>
 							) : null }
 						</Dialog>

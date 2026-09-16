@@ -32,6 +32,7 @@ export default function SettingsScreen( { client, editable = true } ) {
 	const [ state, setState ] = useState( /** @type {any} */ ( null ) );
 	const [ failure, setFailure ] = useState( null );
 	const [ saving, setSaving ] = useState( false );
+	const [ probingUploads, setProbingUploads ] = useState( false );
 
 	/**
 	 * Reads the current state.
@@ -88,6 +89,28 @@ export default function SettingsScreen( { client, editable = true } ) {
 		[ client ]
 	);
 
+	/**
+	 * Runs the explicit server-side privacy probe.
+	 *
+	 * This action is deliberately available only on Diagnostics. The response contains
+	 * the complete state so the panel reflects what the server persisted, including a
+	 * refusal, instead of assuming that a completed request means uploads are safe.
+	 *
+	 * @return {Promise<void>} Resolves when the probe settles.
+	 */
+	const probeUploads = useCallback( async () => {
+		setProbingUploads( true );
+
+		try {
+			setState( await client.probeUploads() );
+			setFailure( null );
+		} catch ( error ) {
+			setFailure( /** @type {any} */ ( error ) );
+		} finally {
+			setProbingUploads( false );
+		}
+	}, [ client ] );
+
 	if ( failure && ! state ) {
 		return (
 			<Notice
@@ -112,6 +135,22 @@ export default function SettingsScreen( { client, editable = true } ) {
 
 	const gateways = state.gateways ?? [];
 	const undecided = state.undecided ?? 0;
+	const uploads = state.uploads ?? {};
+	let uploadStatus = 'warning';
+	let uploadMessage = __(
+		'O ambiente ainda não foi verificado. Os campos de upload permanecem bloqueados até a validação.',
+		'wc-checkoutsuite'
+	);
+
+	if ( uploads.observed ) {
+		uploadStatus = uploads.enabled ? 'success' : 'error';
+		uploadMessage = uploads.enabled
+			? __(
+					'O armazenamento privado foi validado e os uploads podem ser oferecidos.',
+					'wc-checkoutsuite'
+			  )
+			: uploads.reason;
+	}
 
 	return (
 		<div className="wccs-settings">
@@ -261,6 +300,62 @@ export default function SettingsScreen( { client, editable = true } ) {
 					) ) }
 				</tbody>
 			</table>
+
+			{ ! editable ? (
+				<section
+					className="wccs-settings__uploads"
+					aria-labelledby="wccs-uploads-heading"
+				>
+					<h2
+						id="wccs-uploads-heading"
+						className="wccs-settings__heading"
+					>
+						{ __( 'Armazenamento de uploads', 'wc-checkoutsuite' ) }
+					</h2>
+					<p className="wccs-settings__summary">
+						{ __(
+							'O WCCS cria um arquivo de teste, verifica se ele não pode ser lido pela URL pública e o remove. A verificação é executada somente quando você solicita esta ação.',
+							'wc-checkoutsuite'
+						) }
+					</p>
+					<Notice
+						status={ uploadStatus }
+						title={ __(
+							'Privacidade dos arquivos',
+							'wc-checkoutsuite'
+						) }
+					>
+						{ uploadMessage }
+					</Notice>
+					<div className="wccs-settings__uploads-actions">
+						<Button
+							variant="primary"
+							busy={ probingUploads }
+							disabled={ probingUploads }
+							onClick={ probeUploads }
+						>
+							{ __(
+								'Verificar ambiente de uploads',
+								'wc-checkoutsuite'
+							) }
+						</Button>
+						{ uploads.checked_at ? (
+							<small>
+								{ sprintf(
+									/* translators: %s: date and time of the last upload probe. */
+									__(
+										'Última verificação: %s',
+										'wc-checkoutsuite'
+									),
+									new Date(
+										uploads.checked_at * 1000
+									).toLocaleString()
+								) }
+							</small>
+						) : null }
+					</div>
+				</section>
+			) : null }
 
 			{ /* The transactional half, from its own registry. It sits beside the presentation
 			     column because a merchant reads the two together — "may this plugin decorate the

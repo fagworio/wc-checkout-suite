@@ -114,6 +114,28 @@ final class UploadsEnvironment {
 	}
 
 	/**
+	 * The last result for the diagnostic surface, without probing.
+	 *
+	 * Reading diagnostics must not change the environment. The explicit probe action
+	 * calls {@see self::state()} and this method only exposes the record it left behind.
+	 *
+	 * @return array{protected: bool, status: int, reason: string, observed: bool, checked_at: int}
+	 */
+	public static function last_state(): array {
+		$stored   = get_option( self::STATE_OPTION );
+		$checked  = is_array( $stored ) && isset( $stored['checked_at'] ) ? (int) $stored['checked_at'] : 0;
+		$observed = self::observed();
+
+		return array(
+			'protected'  => $observed['protected'],
+			'status'     => $observed['status'],
+			'reason'     => $observed['observed'] ? $observed['reason'] : self::reason(),
+			'observed'   => $observed['observed'],
+			'checked_at' => $checked,
+		);
+	}
+
+	/**
 	 * The last observation, refreshed when it has expired.
 	 *
 	 * @param bool $force Whether to observe again even if the record is fresh.

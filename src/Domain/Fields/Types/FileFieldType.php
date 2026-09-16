@@ -84,6 +84,8 @@ final class FileFieldType extends AbstractFieldType {
 			'maxBytes'          => array(
 				'type'    => 'integer',
 				'minimum' => 1,
+				'label'   => __( 'Tamanho máximo por arquivo (bytes)', 'wc-checkoutsuite' ),
+				'help'    => __( 'Informe o limite em bytes. Exemplo: 5242880 equivale a 5 MB.', 'wc-checkoutsuite' ),
 			),
 			'allowedExtensions' => array(
 				'type'     => 'array',

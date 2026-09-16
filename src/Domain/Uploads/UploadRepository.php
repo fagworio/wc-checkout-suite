@@ -130,6 +130,37 @@ final class UploadRepository {
 	}
 
 	/**
+	 * All documents a customer currently keeps for one field.
+	 *
+	 * The single-row method remains the compatibility/read-summary method. This list is
+	 * used by fields whose `maxFiles` setting explicitly allows more than one document.
+	 *
+	 * @param int    $user_id Customer.
+	 * @param string $field_id Field.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function for_user_all( int $user_id, string $field_id ): array {
+		global $wpdb;
+
+		if ( $user_id <= 0 ) {
+			return array();
+		}
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- A read of this plugin's own table; the table name is built from the WordPress prefix and the values are placeholders.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT * FROM ' . UploadsTable::name() . ' WHERE user_id = %d AND field_id = %s ORDER BY id DESC',
+				$user_id,
+				$field_id
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+
+		return is_array( $rows ) ? array_values( array_filter( $rows, 'is_array' ) ) : array();
+	}
+
+	/**
 	 * One upload, when it belongs to the owner asking.
 	 *
 	 * @param string $token Token.

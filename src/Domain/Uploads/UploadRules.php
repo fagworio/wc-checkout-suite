@@ -154,6 +154,8 @@ final class UploadRules {
 				return __( 'This kind of file is not accepted here.', 'wc-checkoutsuite' );
 			case 'quota_exceeded':
 				return __( 'You have reached the amount of space this checkout gives you.', 'wc-checkoutsuite' );
+			case 'too_many_files':
+				return __( 'This field already has the maximum number of files.', 'wc-checkoutsuite' );
 			case 'not_available':
 				return __( 'Uploads are not available on this store.', 'wc-checkoutsuite' );
 			case 'not_yours':

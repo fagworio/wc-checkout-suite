@@ -595,12 +595,12 @@ final class MyAccountSections {
 	/**
 	 * Renders one value as an editable WooCommerce form field or read-only text.
 	 *
-	 * @param FieldDefinition           $field    Field definition.
-	 * @param string                    $title    Title the link configured for this area.
-	 * @param mixed                     $value    Stored customer value.
-	 * @param bool                      $editable Whether the section is editable.
-	 * @param array<string, mixed>|null $document The document they have, when the field is one.
-	 * @param FieldBinding|null         $binding  Use of the field in this destination.
+	 * @param FieldDefinition                                            $field    Field definition.
+	 * @param string                                                     $title    Title the link configured for this area.
+	 * @param mixed                                                      $value    Stored customer value.
+	 * @param bool                                                       $editable Whether the section is editable.
+	 * @param array<string, mixed>|array<int, array<string, mixed>>|null $document The documents they have, when the field is one.
+	 * @param FieldBinding|null                                          $binding  Use of the field in this destination.
 	 * @return void
 	 */
 	private static function field( FieldDefinition $field, string $title, mixed $value, bool $editable, ?array $document = null, ?FieldBinding $binding = null ): void {
@@ -651,13 +651,13 @@ final class MyAccountSections {
 	/**
 	 * The documents of one section, keyed by field identifier.
 	 *
-	 * A document is not a value: it is the newest row the customer's own store keeps for that
-	 * field, which is why it is read here rather than taken from the values the customer has
-	 * stored. A field used twice in the section is one document, and the map says so.
+	 * A document is not a value: it is a row the customer's own store keeps for that field,
+	 * which is why it is read here rather than taken from the values the customer has stored.
+	 * The list preserves support for both single-file replacement and multiple-file fields.
 	 *
 	 * @param array<int, array{field: FieldDefinition, title: string, position: int, binding: FieldBinding}> $fields Entries.
 	 * @param int                                                                                            $user_id Customer.
-	 * @return array<string, array<string, mixed>> Documents, keyed by field identifier.
+	 * @return array<string, array<int, array<string, mixed>>> Documents, keyed by field identifier.
 	 */
 	private static function documents( array $fields, int $user_id ): array {
 		$service   = new UploadService();
@@ -670,9 +670,9 @@ final class MyAccountSections {
 				continue;
 			}
 
-			$record = $service->for_customer_field( $user_id, $id );
+			$record = $service->for_customer_field_all( $user_id, $id );
 
-			if ( null !== $record ) {
+			if ( array() !== $record ) {
 				$documents[ $id ] = $record;
 			}
 		}
@@ -722,35 +722,33 @@ final class MyAccountSections {
 				continue;
 			}
 
-			$file = self::uploaded_file( $uploads, $id );
+			$files = self::uploaded_files( $uploads, $id );
 
 			// Nothing was sent for this field, which is not a mistake: the customer may be
 			// filling in the rest of the form. Their document is left alone.
-			if ( null === $file ) {
+			if ( array() === $files ) {
 				continue;
 			}
 
-			$result = $service->accept_for_customer( $file, $id, $user_id, $field->settings() );
+			$result = $service->accept_for_customer_files( $files, $id, $user_id, $field->settings() );
 
-			if ( '' !== $result['code'] ) {
+			foreach ( $result['errors'] as $message ) {
 				$errors[] = sprintf(
 					/* translators: 1: field title, 2: reason. */
 					__( '%1$s: %2$s', 'wc-checkoutsuite' ),
 					$entry['title'],
-					$result['message']
+					$message
 				);
-
-				continue;
 			}
 
-			++$accepted;
+			$accepted += $result['accepted'];
 		}
 
 		return $accepted;
 	}
 
 	/**
-	 * One entry of the file input, in the shape the upload service reads.
+	 * Entries of one file input, in the shape the upload service reads.
 	 *
 	 * PHP hands a nested file input as parallel arrays, and a field nobody filled in arrives
 	 * as an error code rather than as an absent key — so the two are told apart here, where
@@ -758,23 +756,46 @@ final class MyAccountSections {
 	 *
 	 * @param array<string, mixed> $uploads The `$_FILES` entry for the section's file input.
 	 * @param string               $id      Field identifier.
-	 * @return array<string, mixed>|null
+	 * @return array<int, array<string, mixed>>
 	 */
-	private static function uploaded_file( array $uploads, string $id ): ?array {
-		$name  = isset( $uploads['name'][ $id ] ) ? $uploads['name'][ $id ] : null;
-		$error = isset( $uploads['error'][ $id ] ) ? (int) $uploads['error'][ $id ] : UPLOAD_ERR_NO_FILE;
+	private static function uploaded_files( array $uploads, string $id ): array {
+		$name  = $uploads['name'][ $id ] ?? null;
+		$names = is_array( $name ) ? $name : array( $name );
+		$files = array();
 
-		if ( UPLOAD_ERR_NO_FILE === $error || ! is_string( $name ) || '' === $name ) {
-			return null;
+		foreach ( $names as $index => $entry_name ) {
+			$error = $uploads['error'][ $id ] ?? UPLOAD_ERR_NO_FILE;
+			$type  = $uploads['type'][ $id ] ?? '';
+			$tmp   = $uploads['tmp_name'][ $id ] ?? '';
+			$size  = $uploads['size'][ $id ] ?? 0;
+
+			if ( is_array( $error ) ) {
+				$error = $error[ $index ] ?? UPLOAD_ERR_NO_FILE;
+			}
+			if ( is_array( $type ) ) {
+				$type = $type[ $index ] ?? '';
+			}
+			if ( is_array( $tmp ) ) {
+				$tmp = $tmp[ $index ] ?? '';
+			}
+			if ( is_array( $size ) ) {
+				$size = $size[ $index ] ?? 0;
+			}
+
+			if ( UPLOAD_ERR_NO_FILE === (int) $error || ! is_string( $entry_name ) || '' === $entry_name ) {
+				continue;
+			}
+
+			$files[] = array(
+				'name'     => $entry_name,
+				'type'     => (string) $type,
+				'tmp_name' => (string) $tmp,
+				'error'    => (int) $error,
+				'size'     => (int) $size,
+			);
 		}
 
-		return array(
-			'name'     => $name,
-			'type'     => isset( $uploads['type'][ $id ] ) ? (string) $uploads['type'][ $id ] : '',
-			'tmp_name' => isset( $uploads['tmp_name'][ $id ] ) ? (string) $uploads['tmp_name'][ $id ] : '',
-			'error'    => $error,
-			'size'     => isset( $uploads['size'][ $id ] ) ? (int) $uploads['size'][ $id ] : 0,
-		);
+		return $files;
 	}
 
 	/**
@@ -809,31 +830,43 @@ final class MyAccountSections {
 	 * store cannot keep a file private — why there is no control to send one with. A file
 	 * input that cannot work is worse than no file input, because it looks like an offer.
 	 *
-	 * @param FieldDefinition           $field    Field.
-	 * @param string                    $title    Title the section gave it.
-	 * @param array<string, mixed>|null $document The document they have, when they have one.
-	 * @param bool                      $editable Whether the surface may write.
-	 * @param FieldBinding|null         $binding  Use of the field in this destination.
+	 * @param FieldDefinition                                            $field    Field.
+	 * @param string                                                     $title    Title the section gave it.
+	 * @param array<string, mixed>|array<int, array<string, mixed>>|null $document The documents they have, when they have any.
+	 * @param bool                                                       $editable Whether the surface may write.
+	 * @param FieldBinding|null                                          $binding  Use of the field in this destination.
 	 * @return void
 	 */
 	private static function document( FieldDefinition $field, string $title, ?array $document, bool $editable, ?FieldBinding $binding ): void {
-		$id = $field->id();
+		$id      = $field->id();
+		$records = null === $document
+			? array()
+			: ( isset( $document['token'] ) ? array( $document ) : array_values( array_filter( $document, 'is_array' ) ) );
+		$label   = array() === $records
+			? CustomerSectionFields::document_label( null )
+			: implode( ', ', array_map( array( CustomerSectionFields::class, 'document_label' ), $records ) );
 
 		printf(
 			'<p class="form-row wccs-account-document" id="wccs-account-document-%1$s"><strong>%2$s</strong><br /><span class="wccs-account-document__current">%3$s</span>',
 			esc_attr( $id ),
 			esc_html( $title ),
-			esc_html( CustomerSectionFields::document_label( $document ) )
+			esc_html( $label )
 		);
 
 		// Reading it is a decision the use owns, and it is taken by the same door the
 		// checkout uses: the page links to it rather than serving the bytes itself.
-		if ( null !== $document && null !== $binding && FilePermissions::allows_binding( $binding, self::DESTINATION, 'download' ) ) {
-			printf(
-				' <a class="wccs-account-document__link" href="%1$s">%2$s</a>',
-				esc_url( self::document_url( (string) $document['token'] ) ),
-				esc_html__( 'Baixar documento', 'wc-checkoutsuite' )
-			);
+		if ( array() !== $records && null !== $binding && FilePermissions::allows_binding( $binding, self::DESTINATION, 'download' ) ) {
+			foreach ( $records as $record ) {
+				if ( ! isset( $record['token'] ) ) {
+					continue;
+				}
+
+				printf(
+					' <a class="wccs-account-document__link" href="%1$s">%2$s</a>',
+					esc_url( self::document_url( (string) $record['token'] ) ),
+					esc_html__( 'Baixar documento', 'wc-checkoutsuite' )
+				);
+			}
 		}
 
 		echo '</p>';
@@ -860,12 +893,17 @@ final class MyAccountSections {
 				$accept[] = '.' . ltrim( $extension, '.' );
 			}
 		}
+		$max_files = isset( $field->settings()['maxFiles'] ) ? max( 1, min( 20, (int) $field->settings()['maxFiles'] ) ) : 1;
+		$name      = 1 < $max_files ? 'wccs_account_files[' . $id . '][]' : 'wccs_account_files[' . $id . ']';
+		$multiple  = 1 < $max_files ? ' multiple' : '';
 
 		printf(
-			'<p class="form-row wccs-account-upload"><label for="wccs-account-file-%1$s">%2$s</label><input type="file" id="wccs-account-file-%1$s" name="wccs_account_files[%1$s]"%3$s /></p>',
+			'<p class="form-row wccs-account-upload"><label for="wccs-account-file-%1$s">%2$s</label><input type="file" id="wccs-account-file-%1$s" name="%3$s"%4$s%5$s /></p>',
 			esc_attr( $id ),
 			esc_html( self::document_hint( $field ) ),
-			array() !== $accept ? ' accept="' . esc_attr( implode( ',', $accept ) ) . '"' : ''
+			esc_attr( $name ),
+			array() !== $accept ? ' accept="' . esc_attr( implode( ',', $accept ) ) . '"' : '',
+			esc_attr( $multiple )
 		);
 	}
 

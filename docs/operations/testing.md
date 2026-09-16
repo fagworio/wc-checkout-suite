@@ -99,6 +99,16 @@ Esse fluxo cria uma nova página apenas no rascunho do navegador, adiciona um ca
 extensão `pdf`, confirma que ele aparece na seção e verifica que uma nova abertura da modal volta
 para `Todos os campos`. Ele não salva nem publica a configuração.
 
+Antes de testar um upload real em Minha conta, abra **Diagnostics** no WCCS e clique em
+**Verificar ambiente de uploads**. A ação cria um arquivo temporário no diretório privado, testa a
+URL pública, remove o arquivo e grava o resultado em `wccs_uploads_privacy`. A leitura da tela e
+as requisições do cliente não executam essa sondagem automaticamente; sem uma verificação válida
+o frontend mantém o seletor de arquivos bloqueado por segurança.
+
+Em campos com `maxFiles` maior que `1`, Minha conta usa um seletor múltiplo e mantém os documentos
+separados, cada um com seu link autorizado de download. `maxBytes` é armazenado e editado em
+**bytes**; por exemplo, `5242880` corresponde a 5 MB.
+
 As capturas são gravadas em `tmp/wccs-visual/`. O teste não clica em Salvar, portanto a alteração
 temporária fica apenas na sessão do navegador.
 
