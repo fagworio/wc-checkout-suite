@@ -54,6 +54,16 @@ upload temporário (que não chegou a um pedido) expira; um ligado a um pedido f
 existir; um órfão (pedido apagado) vai com ele. A política sugerida ao cliente está escrita em
 `docs/validation/WCCS-055.md` e na política de privacidade que o WordPress oferece.
 
+No editor, o campo de ficheiro tem três decisões independentes em **Vínculos → Ações permitidas**:
+
+- **Mostrar metadados:** nome e tamanho do documento atual.
+- **Baixar documento:** mostra o botão/link de download, sempre pela rota protegida.
+- **Enviar nova versão:** mostra o seletor de arquivo e permite substituir o documento atual.
+
+As extensões, o tamanho máximo e a quantidade são configurados nas propriedades do campo. O servidor
+volta a verificar MIME real, extensão permitida, tamanho e cota; o atributo `accept` do navegador é
+apenas uma ajuda visual.
+
 **Onde cada documento aparece, e o que se pode fazer com ele.** No inspetor, a aba **Vínculos** decide
 destino a destino: se o documento aparece no pedido administrativo, no pedido do cliente, na página de
 pedido recebido, nos e-mails ou no perfil — e, em cada um, se pode mostrar o nome, abrir, baixar, ser
@@ -178,7 +188,7 @@ e só depois remover as opções `wccs_schema_*` e `wccs_custom_checkout` à mã
 | Esquema publicado e histórico | opções `wccs_schema_published` e `wccs_schema_revisions` | é o trabalho de configuração do lojista; um backup da base de dados leva-o |
 | Escolha da apresentação | opção `wccs_custom_checkout` | decide se a Suite apresenta o checkout |
 | Valores que os clientes responderam | meta do pedido | viajam com o pedido no backup normal da loja |
-| Ficheiros entregues | `wp-content/wc-checkoutsuite-private/` | **não** estão na base de dados: um backup só da base perde-os |
+| Ficheiros entregues | diretório privado fora do document root (`wc-checkoutsuite-private/`, configurável por `WCCS_PRIVATE_UPLOAD_DIR`) | **não** estão na base de dados: um backup só da base perde-os |
 | Exportação do esquema | ficheiro JSON, em `Exportar` | é a única cópia independente da base de dados, e é o que se importa numa loja nova |
 
 **Restauração de um backup:** repor a base de dados e o diretório de ficheiros repõe o plugin no estado

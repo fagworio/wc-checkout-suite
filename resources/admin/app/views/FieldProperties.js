@@ -37,7 +37,12 @@ import {
 } from '../schema/bindings';
 import { Icon } from '../design/icons';
 import { typeGlyph } from '../design/typeGlyph';
-import { nativeFieldSummary, nativeFieldSupport } from '../schema/coreCheckout';
+import {
+	nativeAccountFieldSummary,
+	nativeAccountFieldSupport,
+	nativeFieldSummary,
+	nativeFieldSupport,
+} from '../schema/coreCheckout';
 
 /**
  * Viewports a width can be set for.
@@ -187,6 +192,8 @@ export default function FieldProperties( {
 	// type that stores no file is offered none of them.
 	const storesFile = true === type?.supports?.file;
 	const protectedField = isProtected( field );
+	const accountNative =
+		protectedField && 'my_account' === field.collection_surface;
 	const mask = field.mask ?? null;
 	const desktop = Number( field.layout?.desktop ?? 12 );
 
@@ -478,35 +485,36 @@ export default function FieldProperties( {
 								id="wccs-native-support"
 							>
 								<p className="muted small">
-									{ nativeFieldSummary( reference ) }
+									{ accountNative
+										? nativeAccountFieldSummary()
+										: nativeFieldSummary( reference ) }
 								</p>
 								<ul>
-									{ nativeFieldSupport( reference ).map(
-										( property ) => (
-											<li
-												key={ property.key }
-												id={ `wccs-native-${ property.key }` }
-											>
-												<span aria-hidden="true">
-													{ property.applied
-														? '✓'
-														: '—' }
-												</span>{ ' ' }
-												{ property.label }
-												<small className="muted">
-													{ property.applied
-														? __(
-																'aplicado',
-																'wc-checkoutsuite'
-														  )
-														: __(
-																'da plataforma',
-																'wc-checkoutsuite'
-														  ) }
-												</small>
-											</li>
-										)
-									) }
+									{ ( accountNative
+										? nativeAccountFieldSupport()
+										: nativeFieldSupport( reference )
+									).map( ( property ) => (
+										<li
+											key={ property.key }
+											id={ `wccs-native-${ property.key }` }
+										>
+											<span aria-hidden="true">
+												{ property.applied ? '✓' : '—' }
+											</span>{ ' ' }
+											{ property.label }
+											<small className="muted">
+												{ property.applied
+													? __(
+															'aplicado',
+															'wc-checkoutsuite'
+													  )
+													: __(
+															'da plataforma',
+															'wc-checkoutsuite'
+													  ) }
+											</small>
+										</li>
+									) ) }
 								</ul>
 							</div>
 						) : null }

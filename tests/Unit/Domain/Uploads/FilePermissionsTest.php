@@ -189,6 +189,20 @@ final class FilePermissionsTest extends TestCase {
 	}
 
 	/**
+	 * A new customer-account document is writable and downloadable by default.
+	 *
+	 * @return void
+	 */
+	public function test_customer_account_defaults_include_replace_and_download(): void {
+		$field   = $this->file( array( $this->binding( 'customer_account', array() ) ) );
+		$binding = $field->bindings_for( 'customer_account' )[0];
+
+		self::assertTrue( FilePermissions::allows_binding( $binding, 'customer_account', 'download' ) );
+		self::assertTrue( FilePermissions::allows_binding( $binding, 'customer_account', 'resubmit' ) );
+		self::assertFalse( FilePermissions::allows_binding( $binding, 'admin_order', 'resubmit' ) );
+	}
+
+	/**
 	 * A use that is not visible allows nothing.
 	 *
 	 * @return void

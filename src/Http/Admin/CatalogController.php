@@ -11,6 +11,7 @@ namespace WCCheckoutSuite\Http\Admin;
 
 use WCCheckoutSuite\Domain\Checkout\CheckoutFacts;
 use WCCheckoutSuite\Domain\Checkout\CoreFields;
+use WCCheckoutSuite\Domain\Customers\AccountFields;
 use WCCheckoutSuite\Domain\Customers\AccountSurfaces;
 use WCCheckoutSuite\Domain\Conditions\ConditionValidator;
 use WCCheckoutSuite\Domain\Conditions\Operators;
@@ -204,6 +205,9 @@ final class CatalogController {
 	public function get_core_fields( WP_REST_Request $request ): WP_REST_Response {
 		unset( $request );
 
-		return new WP_REST_Response( ( new CoreFields() )->catalogue(), 200 );
+		$inventory            = ( new CoreFields() )->catalogue();
+		$inventory['account'] = ( new AccountFields() )->catalogue();
+
+		return new WP_REST_Response( $inventory, 200 );
 	}
 }

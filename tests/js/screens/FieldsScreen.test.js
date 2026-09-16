@@ -487,18 +487,19 @@ describe( 'the destination the merchant works in', () => {
 			await screen.findByRole( 'list', { name: 'Campos da seção' } )
 		).findByText( 'CPF' );
 
-		const bar = screen.getByRole( 'tablist', { name: 'Destino' } );
+		const bar = screen.getByRole( 'tablist', { name: 'Superfície' } );
 
 		expect(
 			within( bar )
 				.getAllByRole( 'tab' )
 				.map( ( tab ) => tab.textContent )
 		).toEqual( [
-			'CheckoutCampos preenchidos durante a compra.',
-			'Minha contaPágina própria do cliente, fora de um pedido.',
-			'Pedido do clienteMinha conta → Pedidos → Ver pedido.',
-			'AdminOnde a equipa trabalha.',
-			'Mais destinosPágina de agradecimento e e-mails.',
+			'Checkout',
+			'Minha conta',
+			'Pedido do cliente',
+			'Pedido (admin)',
+			'Perfil do cliente (admin)',
+			'E-mails',
 		] );
 	} );
 
@@ -511,27 +512,12 @@ describe( 'the destination the merchant works in', () => {
 			await screen.findByRole( 'list', { name: 'Campos da seção' } )
 		).findByText( 'CPF' );
 
-		// Nothing of a group is shown until the group is opened.
-		expect(
-			screen.queryByRole( 'tablist', { name: 'Dentro de Admin' } )
-		).not.toBeInTheDocument();
-
-		await user.click( screen.getByRole( 'tab', { name: /^Admin/ } ) );
-
-		const inside = screen.getByRole( 'tablist', {
-			name: 'Dentro de Admin',
-		} );
+		await user.click(
+			screen.getByRole( 'tab', { name: /^Pedido \(admin\)/ } )
+		);
 
 		expect(
-			within( inside )
-				.getAllByRole( 'tab' )
-				.map( ( tab ) => tab.textContent )
-		).toEqual( [
-			'PedidoAdmin → WooCommerce → Pedidos → Editar pedido.',
-			'Perfil do clienteAdmin → Usuários → editar cliente.',
-		] );
-		expect(
-			within( inside ).getByRole( 'tab', { name: /^Pedido/ } )
+			screen.getByRole( 'tab', { name: /^Pedido \(admin\)/ } )
 		).toHaveAttribute( 'aria-selected', 'true' );
 	} );
 
@@ -559,7 +545,6 @@ describe( 'the destination the merchant works in', () => {
 			screen.queryByRole( 'button', { name: /Nova seção/ } )
 		).not.toBeInTheDocument();
 
-		await user.click( screen.getByRole( 'tab', { name: /^Admin/ } ) );
 		await user.click(
 			screen.getByRole( 'tab', { name: /^Perfil do cliente/ } )
 		);
@@ -616,6 +601,8 @@ describe( 'creating a container', () => {
 
 		expect( created ).toBeTruthy();
 		expect( created.areas ).toEqual( [ 'customer_account' ] );
+		expect( created.location ).toBe( 'account' );
+		expect( created.target ).toBe( 'account' );
 		expect( created.presentation.account.slug ).toBe(
 			'dados-profissionais'
 		);

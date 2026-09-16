@@ -75,6 +75,9 @@ final class ClassicUploads {
 
 		$required = ! empty( $args['required'] );
 		$multiple = ! empty( $args['wccs_multiple'] );
+		$accept   = isset( $args['wccs_accept'] ) && is_array( $args['wccs_accept'] )
+			? array_filter( array_map( static fn( $extension ): string => '.' . ltrim( sanitize_key( (string) $extension ), '.' ), $args['wccs_accept'] ) )
+			: array();
 
 		$input = sprintf(
 			'<input type="file" class="wccs-upload__input" name="%1$s" id="%2$s" data-wccs-field="%3$s" data-wccs-upload="%4$s"%5$s />',
@@ -82,7 +85,9 @@ final class ClassicUploads {
 			esc_attr( $id ),
 			esc_attr( (string) $key ),
 			$multiple ? 'true' : 'false',
-			$required ? ' required aria-required="true"' : ''
+			( $required ? ' required aria-required="true"' : '' )
+			. ( array() !== $accept ? ' accept="' . esc_attr( implode( ',', $accept ) ) . '"' : '' )
+			. ( $multiple ? ' multiple' : '' )
 		);
 
 		$notice = '';

@@ -11,6 +11,7 @@ namespace WCCheckoutSuite\Account;
 
 use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
 use WCCheckoutSuite\Domain\Customers\AccountSurfaces;
+use WCCheckoutSuite\Domain\Customers\AccountFields;
 use WCCheckoutSuite\Domain\Customers\CustomerFieldsService;
 use WCCheckoutSuite\Domain\Customers\CustomerSectionFields;
 use WCCheckoutSuite\Domain\Fields\FieldBinding;
@@ -19,6 +20,8 @@ use WCCheckoutSuite\Domain\Sections\SectionDefinition;
 use WCCheckoutSuite\Domain\Uploads\FilePermissions;
 use WCCheckoutSuite\Domain\Uploads\UploadService;
 use WCCheckoutSuite\Domain\Uploads\UploadsEnvironment;
+use WCCheckoutSuite\Http\Admin\SchemaController;
+use WCCheckoutSuite\Http\Checkout\DownloadController;
 
 /** Registers and renders Suite-owned WooCommerce My Account pages. */
 final class MyAccountSections {
@@ -55,12 +58,49 @@ final class MyAccountSections {
 	public static function register(): void {
 		add_action( 'init', array( self::class, 'register_endpoints' ), 20 );
 		add_filter( 'woocommerce_account_menu_items', array( self::class, 'menu_items' ), 20 );
+		add_filter( 'woocommerce_save_account_details_required_fields', array( self::class, 'account_required_fields' ), 20 );
+	}
+
+	/**
+	 * Removes hidden native account fields from WooCommerce's required-field check.
+	 *
+	 * A hidden field is already submitted as a hidden value to preserve existing profile data.
+	 * When that value is empty, however, WooCommerce would still reject the save because its
+	 * default required list was written for a visible input. The merchant's explicit hide action
+	 * is the authority for that presentation decision; all other validation remains native.
+	 *
+	 * @param array<string,string> $required WooCommerce required fields.
+	 * @return array<string,string>
+	 */
+	public static function account_required_fields( array $required ): array {
+		foreach ( PublishedDocument::read()->fields() as $raw ) {
+			if ( ! is_array( $raw ) || 'my_account' !== ( $raw['collection_surface'] ?? '' ) || ! empty( $raw['enabled'] ) ) {
+				continue;
+			}
+
+			$id = (string) ( $raw['id'] ?? '' );
+
+			if ( '' !== $id ) {
+				unset( $required[ $id ] );
+			}
+		}
+
+		return $required;
 	}
 
 	/** Registers configured endpoints and refreshes rewrite rules only when needed. */
 	public static function register_endpoints(): void {
 		self::$endpoints = self::configured_sections();
 		self::$native    = self::native_sections();
+
+		// When the merchant has configured a native account field, replace only WooCommerce's
+		// account-details renderer. The replacement below deliberately posts the same field
+		// names and nonce, so WooCommerce remains the authority that validates and persists the
+		// account — WCCS only controls which controls are visible and how they are labelled.
+		if ( self::account_details_controlled() ) {
+			remove_action( 'woocommerce_account_edit-account_endpoint', 'woocommerce_account_edit_account', 10 );
+			add_action( 'woocommerce_account_edit-account_endpoint', array( self::class, 'render_account_details' ), 10 );
+		}
 
 		foreach ( self::$endpoints as $slug => $section ) {
 			add_rewrite_endpoint( $slug, EP_ROOT | EP_PAGES );
@@ -94,6 +134,191 @@ final class MyAccountSections {
 			update_option( self::SIGNATURE_OPTION, $signature, false );
 			flush_rewrite_rules();
 		}
+	}
+
+	/**
+	 * Whether the published document contains an override for a native account field.
+	 *
+	 * @return bool
+	 */
+	private static function account_details_controlled(): bool {
+		$catalogue = ( new AccountFields() )->catalogue();
+		$ids       = array();
+
+		foreach ( $catalogue['fields'] as $field ) {
+			if ( is_array( $field ) && isset( $field['id'] ) ) {
+				$ids[ (string) $field['id'] ] = true;
+			}
+		}
+
+		if ( array() === $ids ) {
+			return false;
+		}
+
+		foreach ( PublishedDocument::read()->fields() as $raw ) {
+			if ( ! is_array( $raw ) ) {
+				continue;
+			}
+
+			if ( isset( $ids[ (string) ( $raw['id'] ?? '' ) ] ) && 'my_account' === ( $raw['collection_surface'] ?? '' ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Renders WooCommerce's account-details form with WCCS's native overrides.
+	 *
+	 * The form contract intentionally mirrors WooCommerce's native template. Disabled identity
+	 * fields are submitted as hidden values, preserving the account data for the native handler;
+	 * password inputs are simply omitted because no password value may be carried forward.
+	 *
+	 * @return void
+	 */
+	public static function render_account_details(): void {
+		if ( ! is_user_logged_in() ) {
+			return;
+		}
+
+		$user      = wp_get_current_user();
+		$catalogue = ( new AccountFields() )->catalogue();
+		$defaults  = array();
+
+		foreach ( $catalogue['fields'] as $field ) {
+			if ( is_array( $field ) && isset( $field['id'] ) ) {
+				$defaults[ (string) $field['id'] ] = $field;
+			}
+		}
+
+		$overrides = array();
+
+		foreach ( PublishedDocument::read()->fields() as $raw ) {
+			if ( ! is_array( $raw ) ) {
+				continue;
+			}
+
+			$id = (string) ( $raw['id'] ?? '' );
+
+			if ( isset( $defaults[ $id ] ) && 'my_account' === ( $raw['collection_surface'] ?? '' ) ) {
+				$overrides[ $id ] = FieldDefinition::from_array( $raw );
+			}
+		}
+
+		$details  = array();
+		$password = array();
+
+		foreach ( $defaults as $id => $field ) {
+			if ( 'password' === ( $field['group'] ?? '' ) ) {
+				$password[] = array( $id, $field, $overrides[ $id ] ?? null );
+			} else {
+				$details[] = array( $id, $field, $overrides[ $id ] ?? null );
+			}
+		}
+
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce extension hook.
+		do_action( 'woocommerce_before_edit_account_form' );
+		ob_start();
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce extension hook.
+		do_action( 'woocommerce_edit_account_form_tag' );
+		$form_tag = (string) ob_get_clean();
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Hook output is an HTML attribute fragment supplied by WooCommerce extensions.
+		printf( '<form class="woocommerce-EditAccountForm edit-account" action="" method="post" %s>', $form_tag );
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce extension hook.
+		do_action( 'woocommerce_edit_account_form_start' );
+
+		foreach ( $details as $entry ) {
+			self::account_native_field( $entry[0], $entry[1], $entry[2], $user );
+		}
+
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce extension hook.
+		do_action( 'woocommerce_edit_account_form_fields' );
+
+		$visible_passwords = array_filter(
+			$password,
+			static fn( array $entry ): bool => null === $entry[2] || $entry[2]->is_enabled()
+		);
+
+		if ( array() !== $visible_passwords ) {
+			// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Label belongs to WooCommerce's native template.
+			echo '<fieldset><legend>' . esc_html__( 'Password change', 'woocommerce' ) . '</legend>';
+
+			foreach ( $visible_passwords as $entry ) {
+				self::account_native_field( $entry[0], $entry[1], $entry[2], $user );
+			}
+
+			echo '</fieldset>';
+		}
+
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce extension hook.
+		do_action( 'woocommerce_edit_account_form' );
+		echo '<p>';
+		wp_nonce_field( 'save_account_details', 'save-account-details-nonce' );
+		// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Label belongs to WooCommerce's native template.
+		echo '<button type="submit" class="woocommerce-Button button" name="save_account_details" value="Save changes">' . esc_html__( 'Save changes', 'woocommerce' ) . '</button>';
+		echo '<input type="hidden" name="action" value="save_account_details" />';
+		echo '</p>';
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce extension hook.
+		do_action( 'woocommerce_edit_account_form_end' );
+		echo '</form>';
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce extension hook.
+		do_action( 'woocommerce_after_edit_account_form' );
+	}
+
+	/**
+	 * Renders one native account field or preserves its value while hidden.
+	 *
+	 * @param string               $id       Field identifier.
+	 * @param array<string,mixed>  $native   Native inventory entry.
+	 * @param FieldDefinition|null $override Stored override.
+	 * @param \WP_User             $user     Current user.
+	 * @return void
+	 */
+	private static function account_native_field( string $id, array $native, ?FieldDefinition $override, \WP_User $user ): void {
+		$enabled = null === $override || $override->is_enabled();
+		$value   = self::account_native_value( $id, $user );
+
+		if ( ! $enabled ) {
+			if ( 'password' !== ( $native['nativeType'] ?? '' ) ) {
+				printf( '<input type="hidden" name="%s" value="%s" />', esc_attr( $id ), esc_attr( (string) $value ) );
+			}
+
+			return;
+		}
+
+		$label       = null === $override ? (string) $native['label'] : $override->label();
+		$description = null === $override ? (string) ( $native['description'] ?? '' ) : $override->description();
+		$args        = array(
+			'type'        => 'password' === ( $native['nativeType'] ?? '' ) ? 'password' : (string) $native['nativeType'],
+			'label'       => $label,
+			'required'    => (bool) $native['required'],
+			'description' => $description,
+			'class'       => isset( $native['classes'] ) && is_array( $native['classes'] ) ? $native['classes'] : array( 'form-row-wide' ),
+		);
+
+		// The helper is WooCommerce's own escaped field renderer. It preserves the input names
+		// that class-wc-form-handler.php reads, which is the key to keeping native persistence.
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo woocommerce_form_field( $id, $args, 'password' === $args['type'] ? '' : $value );
+	}
+
+	/**
+	 * Current user value for a native account field.
+	 *
+	 * @param string   $id   Field id.
+	 * @param \WP_User $user Current user.
+	 * @return string
+	 */
+	private static function account_native_value( string $id, \WP_User $user ): string {
+		$values = array(
+			'account_first_name'   => $user->first_name,
+			'account_last_name'    => $user->last_name,
+			'account_display_name' => $user->display_name,
+			'account_email'        => $user->user_email,
+		);
+
+		return isset( $values[ $id ] ) ? (string) $values[ $id ] : '';
 	}
 
 	/**
@@ -493,7 +718,7 @@ final class MyAccountSections {
 
 			$seen[ $id ] = true;
 
-			if ( ! self::entry_is_writable( $entry ) ) {
+			if ( ! self::entry_is_writable( $entry ) || ! self::entry_can_resubmit( $entry ) ) {
 				continue;
 			}
 
@@ -505,7 +730,7 @@ final class MyAccountSections {
 				continue;
 			}
 
-			$result = $service->accept_for_customer( $file, $id, $user_id );
+			$result = $service->accept_for_customer( $file, $id, $user_id, $field->settings() );
 
 			if ( '' !== $result['code'] ) {
 				$errors[] = sprintf(
@@ -563,6 +788,21 @@ final class MyAccountSections {
 	}
 
 	/**
+	 * Whether a customer may send or replace the document in this use.
+	 *
+	 * Editability controls scalar values; a file has a second, explicit permission so a
+	 * section can show a document and offer its download link without accepting a replacement.
+	 * The server checks this as well as the rendered control, because hiding the input is not
+	 * an authorization boundary.
+	 *
+	 * @param array{field: FieldDefinition, title: string, position: int, binding: FieldBinding} $entry Entry.
+	 * @return bool
+	 */
+	private static function entry_can_resubmit( array $entry ): bool {
+		return FilePermissions::allows_binding( $entry['binding'], self::DESTINATION, 'resubmit' );
+	}
+
+	/**
 	 * One document, as the customer sees it on their own page.
 	 *
 	 * Three statements, never mixed: what they have now, what they may send, and — when this
@@ -588,17 +828,17 @@ final class MyAccountSections {
 
 		// Reading it is a decision the use owns, and it is taken by the same door the
 		// checkout uses: the page links to it rather than serving the bytes itself.
-		if ( null !== $document && null !== $binding && FilePermissions::allows_binding( $binding, self::DESTINATION, 'view' ) ) {
+		if ( null !== $document && null !== $binding && FilePermissions::allows_binding( $binding, self::DESTINATION, 'download' ) ) {
 			printf(
 				' <a class="wccs-account-document__link" href="%1$s">%2$s</a>',
 				esc_url( self::document_url( (string) $document['token'] ) ),
-				esc_html__( 'Ver documento', 'wc-checkoutsuite' )
+				esc_html__( 'Baixar documento', 'wc-checkoutsuite' )
 			);
 		}
 
 		echo '</p>';
 
-		if ( ! $editable ) {
+		if ( ! $editable || null === $binding || ! FilePermissions::allows_binding( $binding, self::DESTINATION, 'resubmit' ) ) {
 			return;
 		}
 
@@ -611,10 +851,21 @@ final class MyAccountSections {
 			return;
 		}
 
+		$extensions = $field->settings()['allowedExtensions'] ?? array();
+		$extensions = is_array( $extensions ) ? array_map( 'sanitize_key', $extensions ) : array();
+		$accept     = array();
+
+		foreach ( $extensions as $extension ) {
+			if ( '' !== $extension ) {
+				$accept[] = '.' . ltrim( $extension, '.' );
+			}
+		}
+
 		printf(
-			'<p class="form-row wccs-account-upload"><label for="wccs-account-file-%1$s">%2$s</label><input type="file" id="wccs-account-file-%1$s" name="wccs_account_files[%1$s]" /></p>',
+			'<p class="form-row wccs-account-upload"><label for="wccs-account-file-%1$s">%2$s</label><input type="file" id="wccs-account-file-%1$s" name="wccs_account_files[%1$s]"%3$s /></p>',
 			esc_attr( $id ),
-			esc_html( self::document_hint( $field ) )
+			esc_html( self::document_hint( $field ) ),
+			array() !== $accept ? ' accept="' . esc_attr( implode( ',', $accept ) ) . '"' : ''
 		);
 	}
 
@@ -651,10 +902,15 @@ final class MyAccountSections {
 	private static function document_url( string $token ): string {
 		$url = add_query_arg(
 			array(
-				'token'       => $token,
 				'destination' => self::DESTINATION,
+				// WordPress REST cookie authentication requires the REST nonce. A
+				// download is a normal link, so it cannot send X-WP-Nonce as a header.
+				'_wpnonce'    => wp_create_nonce( 'wp_rest' ),
 			),
-			home_url( '/' )
+			rest_url(
+				SchemaController::rest_namespace()
+					. str_replace( '(?P<token>[a-f0-9]{64})', $token, DownloadController::ROUTE_DOWNLOAD )
+			)
 		);
 
 		/**

@@ -18,12 +18,18 @@
 import { __, sprintf } from '@wordpress/i18n';
 
 import {
+	bindingIdentifier,
 	bindingsOf,
 	ensureBinding,
 	rebindFor,
 	removeDestinationBindings,
 	withBindings,
 } from './bindings';
+import {
+	containerDestinations,
+	containerPayload,
+	createContainer,
+} from './containers';
 import { references } from './conditions';
 import type { ConditionNode } from './conditions';
 import type {
@@ -405,6 +411,22 @@ export function isProtected( field: FieldDefinition ): boolean {
 }
 
 /**
+ * Whether a stored field is one of WooCommerce's native My Account controls.
+ *
+ * Account fields keep their native identifier and persistence contract, but unlike
+ * checkout fields they may be hidden: the account form can preserve the existing
+ * profile value while the merchant removes the control from the screen.
+ *
+ * @param field Field definition.
+ * @return True for a native account field.
+ */
+export function isAccountNativeField( field: FieldDefinition ): boolean {
+	return (
+		'core' === field?.origin && 'my_account' === field?.collection_surface
+	);
+}
+
+/**
  * Why a field cannot be removed or archived.
  *
  * @param field Field definition.
@@ -413,6 +435,17 @@ export function isProtected( field: FieldDefinition ): boolean {
 export function protectionReason( field: FieldDefinition ): string {
 	if ( ! isProtected( field ) ) {
 		return '';
+	}
+
+	if ( isAccountNativeField( field ) ) {
+		return sprintf(
+			/* translators: %s: field identifier. */
+			__(
+				'"%s" é um campo nativo da Minha conta. A chave, o tipo e a gravação continuam no WooCommerce; a exibição pode ser ocultada e restaurada.',
+				'wc-checkoutsuite'
+			),
+			field.id
+		);
 	}
 
 	return sprintf(
@@ -571,7 +604,7 @@ export function buildField(
 
 	const surfaces = surfacesFor( choice.supports );
 
-	return {
+	const definition: FieldDefinition = {
 		id,
 		integration_id: `wc-checkoutsuite/${ id }`,
 		origin: 'custom',
@@ -597,6 +630,12 @@ export function buildField(
 		storage: choice.storage ?? surfaces.storage,
 		destinations: choice.destinations ?? surfaces.destinations,
 		collection_surface: choice.collectionSurface ?? 'checkout',
+	};
+
+	return {
+		...definition,
+		// New writes carry the authoritative list as well as its legacy projection.
+		bindings: bindingsOf( definition ),
 	};
 }
 
@@ -639,7 +678,7 @@ export function buildCoreField(
 		normalizer: null,
 		conditions: {},
 		hidden_value_policy: 'discard',
-		collection_surface: 'checkout',
+		collection_surface: core.collectionSurface ?? 'checkout',
 		...surfaces,
 	};
 }
@@ -712,6 +751,56 @@ export function adoptCoreField(
 		reason: '',
 		field,
 	};
+}
+
+/**
+ * Adopts a native My Account field as an editable override.
+ *
+ * @param document Document.
+ * @param core     Native account inventory entry.
+ * @return Result.
+ */
+export function adoptAccountField(
+	document: SchemaDocument,
+	core: CoreFieldEntry
+): OperationResult {
+	return adoptCoreField( document, {
+		...core,
+		collectionSurface: 'my_account',
+	} );
+}
+
+/**
+ * Shows or hides a native My Account field, creating its override lazily.
+ *
+ * A disabled native field remains in the document so it can be restored and so the
+ * storefront adapter can preserve values for WooCommerce's native save handler.
+ *
+ * @param document Document.
+ * @param core     Native account inventory entry.
+ * @param enabled  Desired visibility.
+ * @return Result.
+ */
+export function setAccountFieldEnabled(
+	document: SchemaDocument,
+	core: CoreFieldEntry,
+	enabled: boolean
+): OperationResult {
+	const existing = ( document?.fields ?? [] ).find(
+		( candidate ) => candidate?.id === core?.id
+	);
+
+	if ( existing ) {
+		return updateField( document, core.id, { enabled } );
+	}
+
+	const adopted = adoptAccountField( document, core );
+
+	if ( ! adopted.ok || enabled ) {
+		return adopted;
+	}
+
+	return updateField( adopted.document, core.id, { enabled: false } );
 }
 
 /**
@@ -1046,7 +1135,32 @@ function renumber( fields: FieldDefinition[] ): FieldDefinition[] {
 
 		counters.set( section, next );
 
-		return { ...field, position: next };
+		const uses = bindingsOf( field );
+		const checkoutUses = uses.filter(
+			( binding ) => 'checkout' === binding.destination
+		);
+
+		if ( 0 === checkoutUses.length ) {
+			return { ...field, position: next };
+		}
+
+		const rebound = uses.map( ( binding, index ) => {
+			if ( 'checkout' !== binding.destination ) {
+				return binding;
+			}
+
+			const container = field.section ?? 'order';
+			const base = bindingIdentifier( field.id, 'checkout', container );
+
+			return {
+				...binding,
+				id: index === 0 ? base : `${ base }#${ index + 1 }`,
+				container_id: container,
+				position: next,
+			};
+		} );
+
+		return { ...field, position: next, ...withBindings( field, rebound ) };
 	} );
 }
 
@@ -1340,7 +1454,7 @@ export function sectionGroups(
 	const declared = [ ...( document.sections ?? [] ) ]
 		.filter(
 			( section ) =>
-				( section.areas ?? [ 'checkout' ] ).includes( area ) ||
+				containerDestinations( section ).includes( area ) ||
 				( 'checkout' === area &&
 					( document.fields ?? [] ).some(
 						( field ) =>
@@ -1367,42 +1481,64 @@ export function sectionGroups(
 		) {
 			continue;
 		}
-		const link =
-			'checkout' === area ? null : field.destinations?.[ area ] ?? null;
-		let id = '';
-		if ( 'checkout' === area ) {
-			id = field.section ?? 'order';
-		} else if ( link?.enabled && link.section ) {
-			id = link.section;
-		}
+		const uses =
+			'checkout' === area
+				? [ null ]
+				: bindingsOf( field ).filter(
+						( binding ) =>
+							binding.destination === area &&
+							binding.visible !== false &&
+							Boolean( binding.container_id )
+				  );
 
-		if ( '' === id ) {
+		if ( ! uses.length ) {
 			continue;
 		}
 
-		if ( ! groups.has( id ) ) {
-			// Only checkout has implicit native locations. A post-purchase link
-			// without a declared, authorised section must not invent a panel.
-			if ( 'checkout' !== area ) {
+		for ( const use of uses ) {
+			const id =
+				'checkout' === area
+					? field.section ?? 'order'
+					: use?.container_id ?? '';
+
+			if ( '' === id ) {
 				continue;
 			}
-			groups.set( id, {
-				section: {
-					id,
-					title: titleFromLocation( id ),
-					description: '',
-					// A location the document did not declare is a place the checkout
-					// already has: it is offered there, and only there.
-					areas: [ 'checkout' ],
-					position: Number.MAX_SAFE_INTEGER,
-					location: id,
-				},
-				declared: false,
-				fields: [],
-			} );
-		}
 
-		groups.get( id )?.fields.push( field );
+			if ( ! groups.has( id ) ) {
+				// Only checkout has implicit native locations. A post-purchase link
+				// without a declared, authorised section must not invent a panel.
+				if ( 'checkout' !== area ) {
+					continue;
+				}
+				groups.set( id, {
+					section: {
+						id,
+						name: titleFromLocation( id ),
+						title: titleFromLocation( id ),
+						description: '',
+						// A location the document did not declare is a place the checkout
+						// already has: it is offered there, and only there.
+						areas: [ 'checkout' ],
+						destination: 'checkout',
+						position: Number.MAX_SAFE_INTEGER,
+						location: id,
+					},
+					declared: false,
+					fields: [],
+				} );
+			}
+
+			if ( groups.has( id ) ) {
+				groups
+					.get( id )
+					?.fields.push(
+						use && 'number' === typeof use.position
+							? { ...field, position: use.position }
+							: field
+					);
+			}
+		}
 	}
 
 	return [ ...groups.values() ].map( ( group ) => ( {
@@ -1470,18 +1606,19 @@ export function createSection(
 		0
 	);
 
-	const section: SectionDefinition = {
+	const section: SectionDefinition = createContainer( document, {
 		id,
-		title: choice.title,
+		name: choice.title,
 		description: choice.description ?? '',
 		position: highest + POSITION_STEP,
 		location: choice.location,
+		destination: choice.areas?.[ 0 ] ?? 'checkout',
 		// Omitted areas is the legacy/default case. An explicitly empty list is
 		// preserved so the editor can explain the invalid choice instead of silently
 		// assigning the section to Checkout.
 		areas: Array.isArray( choice.areas ) ? choice.areas : [ 'checkout' ],
 		presentation: choice.presentation ?? {},
-	};
+	} );
 
 	return {
 		ok: true,
@@ -1528,7 +1665,7 @@ export function updateSection(
 	delete safe.id;
 
 	const next = [ ...sections ];
-	next[ index ] = { ...sections[ index ], ...safe };
+	next[ index ] = containerPayload( sections[ index ], safe );
 
 	return { ok: true, document: { ...document, sections: next }, reason: '' };
 }

@@ -520,6 +520,14 @@ final class ClassicAdapter {
 			$field['options'] = $options;
 		}
 
+		if ( 'file' === $definition->type() ) {
+			$max_files  = $this->setting( $definition, 'maxFiles' );
+			$extensions = $this->setting( $definition, 'allowedExtensions' );
+
+			$field['wccs_multiple'] = is_int( $max_files ) && $max_files > 1;
+			$field['wccs_accept']   = is_array( $extensions ) ? array_map( 'strval', $extensions ) : array();
+		}
+
 		$max_length = $this->setting( $definition, 'maxLength' );
 
 		// The client half has to be able to tell the Suite's fields apart from

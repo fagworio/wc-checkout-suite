@@ -19,7 +19,9 @@ use WCCheckoutSuite\Domain\Fields\ValidationResult;
  * removing one, disabling it or changing what it stores breaks the checkout in
  * ways that surface as a lost order rather than as an error. ROADMAP.md section 7
  * states the rule — a structurally required field "não pode ser removido sem
- * diagnóstico do impacto" — and this class is where that rule is enforced.
+ * diagnóstico do impacto" — and this class is where that rule is enforced. Native
+ * My Account fields are intentionally outside this checkout guard: their adapter
+ * can hide the control while submitting the existing profile value to WooCommerce.
  *
  * Enforcement lives here, on the comparison between two documents, and not in the
  * admin: hiding a button is not protection. Any client, including one written
@@ -28,7 +30,7 @@ use WCCheckoutSuite\Domain\Fields\ValidationResult;
  *
  * Two design choices worth stating:
  *
- * 1. **The baseline is the document being replaced.** A field is protected
+ * 1. **The baseline is the document being replaced.** A checkout field is protected
  *    because it was already stored as `core`, not because a hard-coded list says
  *    it should be. That keeps the rule independent of WooCommerce's version and
  *    of whatever other plugins register, and it means a field the Suite never
@@ -54,7 +56,9 @@ final class CoreFieldGuard {
 	 * @return bool
 	 */
 	private static function is_core( mixed $field ): bool {
-		return is_array( $field ) && 'core' === ( $field['origin'] ?? '' );
+		return is_array( $field )
+			&& 'core' === ( $field['origin'] ?? '' )
+			&& 'my_account' !== ( $field['collection_surface'] ?? 'checkout' );
 	}
 
 	/**

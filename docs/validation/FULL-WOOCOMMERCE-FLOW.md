@@ -6,6 +6,13 @@ local com um cliente temporário, produto temporário e schema publicado pelo me
 
 ## Executar
 
+Antes de executar, iniciar o ambiente conforme [`docs/operations/testing.md`](../operations/testing.md):
+
+```bash
+cd /home/joaofagner/workfolder/devilbox
+docker compose up -d httpd php mysql
+```
+
 Com Devilbox/PHP, WooCommerce e o Chrome local disponíveis:
 
 ```bash

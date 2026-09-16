@@ -21,6 +21,7 @@ import { __, sprintf } from '@wordpress/i18n';
 
 import Button from './components/Button';
 import Notice from './components/Notice';
+import PreviewPanel from './components/PreviewPanel';
 import {
 	TextField,
 	TextareaField,
@@ -59,6 +60,8 @@ export default function StatusesScreen( { client } ) {
 	const [ list, setList ] = useState( /** @type {Array<any>} */ ( [] ) );
 	const [ selected, setSelected ] = useState( 0 );
 	const [ dirty, setDirty ] = useState( false );
+	const [ revision, setRevision ] = useState( 0 );
+	const [ conflict, setConflict ] = useState( false );
 
 	/**
 	 * Reads the store's statuses.
@@ -74,6 +77,8 @@ export default function StatusesScreen( { client } ) {
 			setInventory( answer?.statuses ?? [] );
 			setPaid( answer?.paid ?? [] );
 			setList( customStatuses( answer?.statuses ?? [] ) );
+			setRevision( Number( answer?.revision ?? 0 ) );
+			setConflict( false );
 			setFailure( '' );
 			setDirty( false );
 		} catch ( error ) {
@@ -120,6 +125,7 @@ export default function StatusesScreen( { client } ) {
 		setList( ( entries ) => updateStatus( entries, selected, changes ) );
 		setDirty( true );
 		setSaved( '' );
+		setConflict( false );
 	};
 
 	/**
@@ -137,6 +143,7 @@ export default function StatusesScreen( { client } ) {
 		} );
 		setDirty( true );
 		setSaved( '' );
+		setConflict( false );
 	};
 
 	/**
@@ -149,6 +156,7 @@ export default function StatusesScreen( { client } ) {
 		setSelected( 0 );
 		setDirty( true );
 		setSaved( '' );
+		setConflict( false );
 	};
 
 	/**
@@ -161,11 +169,16 @@ export default function StatusesScreen( { client } ) {
 		setFailure( '' );
 
 		try {
-			const answer = await client.saveStatuses( payloadOf( list ) );
+			const answer = await client.saveStatuses(
+				payloadOf( list ),
+				revision
+			);
 
 			setInventory( answer?.statuses ?? [] );
 			setPaid( answer?.paid ?? [] );
 			setList( customStatuses( answer?.statuses ?? [] ) );
+			setRevision( Number( answer?.revision ?? revision + 1 ) );
+			setConflict( false );
 			setDirty( false );
 			setSaved( __( 'Estados guardados.', 'wc-checkoutsuite' ) );
 		} catch ( error ) {
@@ -174,6 +187,10 @@ export default function StatusesScreen( { client } ) {
 			// merchant is the only one who can fix it.
 			const thrown = /** @type {any} */ ( error );
 			const details = thrown?.payload?.errors;
+			const isConflict =
+				409 === Number( thrown?.status ?? thrown?.payload?.status ) ||
+				'wccs_statuses_conflict' === thrown?.code;
+			setConflict( isConflict );
 
 			setFailure(
 				Array.isArray( details ) && details.length > 0
@@ -201,7 +218,7 @@ export default function StatusesScreen( { client } ) {
 			<button
 				type="button"
 				className="btn btn-primary"
-				disabled={ ! dirty || saving || issues.length > 0 }
+				disabled={ ! dirty || saving || issues.length > 0 || conflict }
 				onClick={ save }
 			>
 				<Icon name="save" />
@@ -241,6 +258,23 @@ export default function StatusesScreen( { client } ) {
 					</div>
 				</div>
 
+				{ conflict ? (
+					<Notice
+						status="warning"
+						title={ __( 'Conflito de edição', 'wc-checkoutsuite' ) }
+					>
+						<p>
+							{ __(
+								'Outra sessão alterou os status. Recarregue a configuração para evitar sobrescrever alterações.',
+								'wc-checkoutsuite'
+							) }
+						</p>
+						<Button variant="secondary" onClick={ load }>
+							{ __( 'Recarregar status', 'wc-checkoutsuite' ) }
+						</Button>
+					</Notice>
+				) : null }
+
 				{ failure ? (
 					<Notice
 						status="error"
@@ -251,6 +285,15 @@ export default function StatusesScreen( { client } ) {
 						onDismiss={ () => setFailure( '' ) }
 					>
 						{ failure }
+					</Notice>
+				) : null }
+
+				{ saved ? (
+					<Notice
+						status="success"
+						title={ __( 'Alterações salvas', 'wc-checkoutsuite' ) }
+					>
+						{ saved }
 					</Notice>
 				) : null }
 
@@ -342,6 +385,62 @@ export default function StatusesScreen( { client } ) {
 							{ __( 'Novo estado', 'wc-checkoutsuite' ) }
 						</Button>
 					</div>
+
+					<PreviewPanel
+						title={ __( 'Prévia do status', 'wc-checkoutsuite' ) }
+						description={ __(
+							'A apresentação é separada das ações financeiras.',
+							'wc-checkoutsuite'
+						) }
+					>
+						{ current ? (
+							<div className="wccs-status-preview">
+								<span
+									className="wccs-status-preview__badge"
+									style={ { background: current.colour } }
+								>
+									{ current.customer_label ||
+										current.label ||
+										__( 'Sem nome', 'wc-checkoutsuite' ) }
+								</span>
+								<strong>
+									{ current.label
+										? sprintf(
+												/* translators: %s: internal status label. */
+												__(
+													'Prévia: %s',
+													'wc-checkoutsuite'
+												),
+												current.label
+										  )
+										: __(
+												'Estado sem nome',
+												'wc-checkoutsuite'
+										  ) }
+								</strong>
+								<p>
+									{ current.description ||
+										__(
+											'Sem observação interna.',
+											'wc-checkoutsuite'
+										) }
+								</p>
+								<Notice status="info">
+									{ __(
+										'Mudar um status nunca captura, autoriza ou estorna pagamento. Essas ações só podem ser configuradas em transições autorizadas de workflow.',
+										'wc-checkoutsuite'
+									) }
+								</Notice>
+							</div>
+						) : (
+							<p className="muted small">
+								{ __(
+									'Selecione um status para visualizar.',
+									'wc-checkoutsuite'
+								) }
+							</p>
+						) }
+					</PreviewPanel>
 
 					<div className="panel wccs-statuses__settings">
 						<h2>

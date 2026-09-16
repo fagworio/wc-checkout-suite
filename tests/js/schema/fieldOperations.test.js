@@ -12,6 +12,7 @@
 
 import {
 	activeCount,
+	adoptAccountField,
 	adoptCoreField,
 	archiveField,
 	archiveFields,
@@ -37,6 +38,7 @@ import {
 	resolveAmbiguousDestinations,
 	sectionGroups,
 	setFieldEnabled,
+	setAccountFieldEnabled,
 	setFieldSection,
 	setFieldsEnabled,
 	setFieldsDestinations,
@@ -144,6 +146,23 @@ function coreEntry( overrides = {} ) {
 		protected: true,
 		...overrides,
 	};
+}
+
+/**
+ * Builds a native My Account inventory entry.
+ *
+ * @param {Object} overrides Values to override.
+ * @return {any} Inventory entry.
+ */
+function accountEntry( overrides = {} ) {
+	return coreEntry( {
+		id: 'account_first_name',
+		section: 'edit-account',
+		label: 'First name',
+		nativeType: 'text',
+		collectionSurface: 'my_account',
+		...overrides,
+	} );
 }
 
 describe( 'identifier generation', () => {
@@ -361,6 +380,34 @@ describe( 'adopting a WooCommerce field', () => {
 		expect( result.ok ).toBe( false );
 		expect( result.reason ).toMatch( /already part of the schema/ );
 		expect( result.document ).toBe( document );
+	} );
+} );
+
+describe( 'native My Account fields', () => {
+	it( 'adopts the native identifier as an account override', () => {
+		const result = adoptAccountField( doc(), accountEntry() );
+
+		expect( result.ok ).toBe( true );
+		expect( fieldOf( result ).id ).toBe( 'account_first_name' );
+		expect( fieldOf( result ).collection_surface ).toBe( 'my_account' );
+		expect( fieldOf( result ).origin ).toBe( 'core' );
+	} );
+
+	it( 'can hide and restore a native account field without deleting its definition', () => {
+		const hidden = setAccountFieldEnabled( doc(), accountEntry(), false );
+
+		expect( hidden.ok ).toBe( true );
+		expect( fieldOf( hidden ).enabled ).toBe( false );
+		expect( hidden.document.fields ).toHaveLength( 1 );
+
+		const restored = setAccountFieldEnabled(
+			hidden.document,
+			accountEntry(),
+			true
+		);
+
+		expect( restored.ok ).toBe( true );
+		expect( fieldOf( restored ).enabled ).toBe( true );
 	} );
 } );
 
@@ -1020,6 +1067,7 @@ describe( 'sections', () => {
 		expect( result.document.sections[ 0 ].presentation ).toEqual(
 			presentation
 		);
+		expect( result.document.sections[ 0 ].target ).toBe( 'account' );
 	} );
 
 	it( 'creates one with an identifier derived from the title', () => {

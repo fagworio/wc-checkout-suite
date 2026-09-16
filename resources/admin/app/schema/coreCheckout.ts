@@ -270,3 +270,27 @@ export function nativeFieldSummary( mode: string ): string {
 
 	return 'No checkout Blocks o WooCommerce é dono dos campos nativos: este plugin não os altera nem cria uma cópia. O campo continua a cobrar como sempre, com a etiqueta e a ordem da plataforma.';
 }
+
+/**
+ * Properties the account adapter can apply without taking over WooCommerce persistence.
+ *
+ * @return Native account properties.
+ */
+export function nativeAccountFieldSupport(): NativeProperty[] {
+	return [
+		{ key: 'label', label: 'Etiqueta', applied: true },
+		{ key: 'description', label: 'Descrição', applied: true },
+		{ key: 'visibility', label: 'Exibição', applied: true },
+		{ key: 'required', label: 'Obrigatório', applied: false },
+		{ key: 'type', label: 'Tipo', applied: false },
+	];
+}
+
+/**
+ * Account-specific explanation shown before a native field is edited.
+ *
+ * @return Summary.
+ */
+export function nativeAccountFieldSummary(): string {
+	return 'Na Minha conta, o rótulo, a descrição e a exibição são controlados pelo Suite. A chave, o tipo, a validação e a gravação continuam no formulário nativo do WooCommerce.';
+}

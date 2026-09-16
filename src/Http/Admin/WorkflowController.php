@@ -82,6 +82,11 @@ final class WorkflowController {
 							'required'    => true,
 							'description' => 'The whole list of the store\'s automations.',
 						),
+						'revision'  => array(
+							'type'        => 'integer',
+							'required'    => false,
+							'description' => 'Revision read by the editor for compare-and-swap.',
+						),
 					),
 				),
 			)
@@ -135,9 +140,12 @@ final class WorkflowController {
 	public function get_workflows( WP_REST_Request $request ): WP_REST_Response {
 		unset( $request );
 
+		$repository = new WorkflowRepository();
+
 		return new WP_REST_Response(
 			array(
-				'workflows'  => ( new WorkflowRepository() )->raw(),
+				'workflows'  => $repository->raw(),
+				'revision'   => $repository->revision(),
 				'vocabulary' => Workflows::to_array(),
 				'statuses'   => WorkflowSimulator::statuses(),
 				'paid'       => array_values( array_map( 'strval', (array) wc_get_is_paid_statuses() ) ),
@@ -153,10 +161,23 @@ final class WorkflowController {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function update_workflows( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$incoming = $request->get_param( 'workflows' );
-		$incoming = is_array( $incoming ) ? $incoming : array();
+		$incoming   = $request->get_param( 'workflows' );
+		$incoming   = is_array( $incoming ) ? $incoming : array();
+		$repository = new WorkflowRepository();
+		$expected   = $request->get_param( 'revision' );
 
-		$result = ( new WorkflowRepository() )->save( $incoming, OrderStatusRegistry::known_ids() );
+		if ( null !== $expected && (int) $expected !== $repository->revision() ) {
+			return new WP_Error(
+				'wccs_workflows_conflict',
+				__( 'The workflows changed in another session. Reload them before saving.', 'wc-checkoutsuite' ),
+				array(
+					'status'   => 409,
+					'revision' => $repository->revision(),
+				)
+			);
+		}
+
+		$result = $repository->save( $incoming, OrderStatusRegistry::known_ids() );
 
 		if ( ! $result->is_valid() ) {
 			return new WP_Error(
@@ -171,7 +192,8 @@ final class WorkflowController {
 
 		return new WP_REST_Response(
 			array(
-				'workflows' => ( new WorkflowRepository() )->raw(),
+				'workflows' => $repository->raw(),
+				'revision'  => $repository->revision(),
 				'overlaps'  => WorkflowEvaluator::overlaps(
 					( new WorkflowRepository() )->raw(),
 					Workflows::TRIGGER_CHECKOUT_SUBMITTED,

@@ -9,6 +9,8 @@ declare( strict_types = 1 );
 
 namespace WCCheckoutSuite\Http\Checkout;
 
+use WCCheckoutSuite\Checkout\Classic\PublishedDocument;
+use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Uploads\UploadRules;
 use WCCheckoutSuite\Domain\Uploads\UploadService;
 use WCCheckoutSuite\Http\Admin\SchemaController;
@@ -90,7 +92,7 @@ final class UploadController {
 			return $this->answer( 'refused', 'bad_upload', UploadRules::message( 'bad_upload' ), 422 );
 		}
 
-		$result = ( new UploadService() )->accept( $file, $field );
+		$result = ( new UploadService() )->accept( $file, $field, $this->settings_for_field( $field ) );
 
 		if ( '' !== $result['code'] ) {
 			$status = 'not_available' === $result['code'] ? 503 : 422;
@@ -99,6 +101,29 @@ final class UploadController {
 		}
 
 		return $this->answer( 'accepted', '', '', 201, $result['token'] );
+	}
+
+	/**
+	 * Reads upload settings from the published field definition.
+	 *
+	 * The field id comes from the request, but the settings never do: the published
+	 * schema is the authority for limits and extensions.
+	 *
+	 * @param string $field_id Field id.
+	 * @return array<string, mixed>
+	 */
+	private function settings_for_field( string $field_id ): array {
+		foreach ( PublishedDocument::read()->fields() as $raw ) {
+			if ( ! is_array( $raw ) || (string) ( $raw['id'] ?? '' ) !== $field_id ) {
+				continue;
+			}
+
+			$definition = FieldDefinition::from_array( $raw );
+
+			return $definition->settings();
+		}
+
+		return array();
 	}
 
 	/**

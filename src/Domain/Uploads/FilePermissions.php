@@ -10,10 +10,12 @@
  * are intersected with the destination's own list, so a document written by hand
  * cannot give a customer surface the right to approve.
  *
- * **Nothing is granted by being enabled.** A link that declares no actions — the shape
- * the inspector writes when a merchant only turns the destination on — allows showing
- * the name and reading the file, and nothing else. Approving and replacing are acts,
- * and an act is chosen.
+ * **Nothing beyond the safe defaults is granted by being enabled.** A link that
+ * declares no actions — the shape the inspector writes when a merchant only turns
+ * the destination on — allows showing the name and reading the file. The customer
+ * account surface also includes replacing that customer's own document in this
+ * default, because an upload field there must be usable immediately. Other
+ * operational acts, such as approval, must be chosen explicitly.
  *
  * @package WCCheckoutSuite
  */
@@ -95,9 +97,32 @@ final class FilePermissions {
 
 		$performable = DefinitionVocabulary::actions_for_destination( $destination );
 
-		$declared = array() !== $binding->permissions() ? $binding->permissions() : self::DEFAULT_ACTIONS;
+		$declared = array() !== $binding->permissions()
+			? $binding->permissions()
+			: self::default_actions( $destination );
 
 		return array_values( array_intersect( $declared, $performable ) );
+	}
+
+	/**
+	 * Safe defaults for a destination.
+	 *
+	 * A new customer-account file must be usable immediately: the customer can
+	 * send/replace their document and download the current version. Other surfaces
+	 * keep the conservative read-only defaults until the merchant explicitly grants
+	 * an operational action in the binding inspector.
+	 *
+	 * @param string $destination Destination.
+	 * @return array<int, string>
+	 */
+	private static function default_actions( string $destination ): array {
+		$actions = self::DEFAULT_ACTIONS;
+
+		if ( 'customer_account' === $destination ) {
+			$actions[] = 'resubmit';
+		}
+
+		return $actions;
 	}
 
 	/**

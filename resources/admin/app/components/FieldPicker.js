@@ -19,7 +19,7 @@
  * @package
  */
 
-import { useMemo, useState } from '@wordpress/element';
+import { useEffect, useMemo, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 
 import ConditionBuilder from './ConditionBuilder';
@@ -83,6 +83,7 @@ function suggestedKey( label ) {
  * @param {Function}                                          props.onChooseType    Called with the choice to create.
  * @param {Function}                                          props.onAdoptCore     Called with a core field to adopt.
  * @param {Function}                                          props.onClose         Called to close the dialog.
+ * @param {boolean}                                           [props.open]          Whether the dialog is open.
  * @param {'checkout'|'my_account'}                           [props.surface]       Where a new field is collected.
  * @return {*} Rendered element tree.
  */
@@ -95,6 +96,7 @@ export default function FieldPicker( {
 	onChooseType,
 	onAdoptCore,
 	onClose,
+	open = false,
 	surface = 'checkout',
 } ) {
 	const [ category, setCategory ] = useState( 'all' );
@@ -111,6 +113,26 @@ export default function FieldPicker( {
 	const [ conditions, setConditions ] = useState(
 		/** @type {Record<string, any>} */ ( {} )
 	);
+
+	// The dialog stays mounted so the native <dialog> can close gracefully. Reset only
+	// on the closed -> open transition; resetting on every render would erase a choice
+	// while the merchant is filling its configuration.
+	useEffect( () => {
+		if ( ! open ) {
+			return;
+		}
+
+		setCategory( 'all' );
+		setQuery( '' );
+		setChosen( null );
+		setLabel( '' );
+		setKey( '' );
+		setRequired( false );
+		setWidth( 12 );
+		setDescription( '' );
+		setSettings( {} );
+		setConditions( {} );
+	}, [ open ] );
 
 	/** Every entry the catalogue offers: types, presets and WooCommerce's own fields. */
 	const entries = useMemo( () => {
@@ -215,14 +237,10 @@ export default function FieldPicker( {
 			const type =
 				catalog?.types?.[ entry.preset?.type ?? entry.key ] ?? null;
 
-			// The first account delivery stores customer-owned scalar values. Core
-			// checkout fields and uploads have different owners/transport and are
-			// deliberately not offered until their real account implementation exists.
-			if (
-				'core' === entry.kind ||
-				! type?.supports?.value ||
-				type?.supports?.file
-			) {
+			// Account fields are customer-owned. Native checkout fields remain out of
+			// this picker, while uploads are allowed because the account renderer has
+			// its own multipart form and private document store.
+			if ( 'core' === entry.kind || ! type?.supports?.value ) {
 				return false;
 			}
 		}
@@ -309,7 +327,7 @@ export default function FieldPicker( {
 							/>
 							<p className="form-help">
 								{ __(
-									'Única e permanente. Letras minúsculas, números e underscore; comece com uma letra.',
+									'Identifica este campo para integrações e valores salvos. Use uma chave estável, como billing_document; ela não é o nome exibido. Letras minúsculas, números e underscore; comece com uma letra. Depois de publicar, não a altere.',
 									'wc-checkoutsuite'
 								) }
 							</p>

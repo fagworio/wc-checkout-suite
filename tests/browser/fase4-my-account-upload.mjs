@@ -23,10 +23,9 @@
  *
  * The cookies come from `wp eval-file tests/Integration/support/admin-session.php create wccs_fase4_cliente any`.
  *
- * **This box serves the private upload directory over HTTP** (WCCS-041), so the store's own
- * observation says "not protected" and uploads are off by rule. The fixture above injects the
- * observation for the run and removes it afterwards, and this script says so in its output
- * rather than implying the environment protects the directory.
+ * The fixture runs the real privacy probe before this script. The default private directory is
+ * outside the document root, so this browser test exercises the upload path as the store would
+ * run it in production.
  *
  * @package WCCheckoutSuite
  */
@@ -51,7 +50,9 @@ const browser = await chromium.launch( {
 		`--unsafely-treat-insecure-origin-as-secure=${ ORIGIN }`,
 	],
 } );
-const page = await browser.newPage( { viewport: { width: 1400, height: 1100 } } );
+const page = await browser.newPage( {
+	viewport: { width: 1400, height: 1100 },
+} );
 
 for ( const pair of [
 	process.env.WCCS_COOKIE,
@@ -121,13 +122,15 @@ await step( 'The customer opens their own page and finds it', async () => {
 
 	record(
 		'The page the customer opens is theirs',
-		page.url().includes( '/minha-conta/' ) && ! page.url().includes( 'wp-login' ),
+		page.url().includes( '/minha-conta/' ) &&
+			! page.url().includes( 'wp-login' ),
 		page.url()
 	);
 
 	record(
 		'It shows the section they were offered, with its fields',
-		text.includes( 'Seu contrato' ) && text.includes( 'Como quer ser chamado' ),
+		text.includes( 'Seu contrato' ) &&
+			text.includes( 'Como quer ser chamado' ),
 		text.split( '\n' ).slice( 0, 4 ).join( ' | ' )
 	);
 
@@ -140,7 +143,10 @@ await step( 'The customer opens their own page and finds it', async () => {
 	record(
 		'With nothing sent yet, which is the truth',
 		text.includes( 'Nenhum documento enviado' ),
-		'current=' + ( text.includes( 'Nenhum documento enviado' ) ? 'empty' : 'something already there' )
+		'current=' +
+			( text.includes( 'Nenhum documento enviado' )
+				? 'empty'
+				: 'something already there' )
 	);
 } );
 
@@ -235,6 +241,27 @@ await step( 'The document survives a new visit', async () => {
 		'the link the use allows'
 	);
 
+	const [ download ] = await Promise.all( [
+		page.waitForEvent( 'download', { timeout: 10000 } ).catch( () => null ),
+		page.locator( '.wccs-account-document__link' ).click(),
+	] );
+
+	if ( download ) {
+		record(
+			'The authorized door returns the stored document',
+			download.suggestedFilename() === 'contrato-social.pdf',
+			download.suggestedFilename()
+		);
+	} else {
+		// The event must be armed immediately before the click. This branch is kept
+		// below as a separate guarded step so a browser timeout becomes a finding.
+		record(
+			'The authorized door returns the stored document',
+			false,
+			'download timeout'
+		);
+	}
+
 	await page.screenshot( { path: `${ OUT }/fase4-my-account-document.png` } );
 } );
 
@@ -245,7 +272,7 @@ record(
 );
 
 note(
-	'Uploads were observed with the environment observation injected: this box serves the private directory over HTTP, so the store refuses uploads by rule (WCCS-041).'
+	'Uploads were enabled by the real private-storage probe; the file is stored outside the document root and is served only through the authorized download door.'
 );
 
 await browser.close();

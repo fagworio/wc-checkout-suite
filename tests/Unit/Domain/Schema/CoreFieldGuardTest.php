@@ -87,6 +87,27 @@ final class CoreFieldGuardTest extends TestCase {
 	}
 
 	/**
+	 * A native My Account field. Account controls may be hidden while WooCommerce
+	 * keeps owning their value and save handler.
+	 *
+	 * @param array<string, mixed> $overrides Values to override.
+	 * @return array<string, mixed>
+	 */
+	private function account_field( array $overrides = array() ): array {
+		return array_merge(
+			$this->core_field(
+				array(
+					'id'                 => 'account_first_name',
+					'integration_id'     => 'account_first_name',
+					'section'            => 'edit-account',
+					'collection_surface' => 'my_account',
+				)
+			),
+			$overrides
+		);
+	}
+
+	/**
 	 * Asserts a result failed with a specific code.
 	 *
 	 * @param \WCCheckoutSuite\Domain\Fields\ValidationResult $result Result.
@@ -135,6 +156,18 @@ final class CoreFieldGuardTest extends TestCase {
 		);
 
 		$this->assertRejectedWith( $result, 'core_field_disabled' );
+	}
+
+	/**
+	 * My Account visibility is deliberately independent from checkout protection.
+	 *
+	 * @return void
+	 */
+	public function test_account_native_field_may_be_hidden(): void {
+		$before = $this->account_field();
+		$after  = $this->account_field( array( 'enabled' => false ) );
+
+		$this->assertTrue( $this->guard->guard( array( $before ), array( $after ) )->is_valid() );
 	}
 
 	/**

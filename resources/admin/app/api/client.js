@@ -295,13 +295,26 @@ export function createClient( {
 			send( routes.statuses, { method: 'GET', signal } ),
 		saveStatuses: (
 			/** @type {Array<any>} */ statuses,
+			/** @type {number|AbortSignal|undefined} */ revisionOrSignal,
 			/** @type {AbortSignal} */ signal
-		) =>
-			send( routes.statuses, {
+		) => {
+			const revision =
+				typeof revisionOrSignal === 'number'
+					? revisionOrSignal
+					: undefined;
+
+			return send( routes.statuses, {
 				method: 'POST',
-				data: { statuses },
-				signal,
-			} ),
+				data: {
+					statuses,
+					...( undefined !== revision ? { revision } : {} ),
+				},
+				signal:
+					typeof revisionOrSignal === 'number'
+						? signal
+						: revisionOrSignal,
+			} );
+		},
 		// The automations of §13. The simulation is a route of its own and not a flag on
 		// the write: a simulation that could be mistaken for a save is a simulation
 		// somebody would run by accident.
@@ -309,13 +322,26 @@ export function createClient( {
 			send( routes.workflows, { method: 'GET', signal } ),
 		saveWorkflows: (
 			/** @type {Array<any>} */ workflows,
+			/** @type {number|AbortSignal|undefined} */ revisionOrSignal,
 			/** @type {AbortSignal} */ signal
-		) =>
-			send( routes.workflows, {
+		) => {
+			const revision =
+				typeof revisionOrSignal === 'number'
+					? revisionOrSignal
+					: undefined;
+
+			return send( routes.workflows, {
 				method: 'POST',
-				data: { workflows },
-				signal,
-			} ),
+				data: {
+					workflows,
+					...( undefined !== revision ? { revision } : {} ),
+				},
+				signal:
+					typeof revisionOrSignal === 'number'
+						? signal
+						: revisionOrSignal,
+			} );
+		},
 		simulate: (
 			/** @type {Record<string, any>} */ sample,
 			/** @type {AbortSignal} */ signal

@@ -20,7 +20,7 @@
  * @package
  */
 
-import { useEffect, useMemo, useState } from '@wordpress/element';
+import { useEffect, useMemo, useRef, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 
 import Dialog from '../components/Dialog';
@@ -34,6 +34,12 @@ import RulesView from './RulesView';
 import Notice from '../components/Notice';
 import RevisionsList from '../components/RevisionsList';
 import Button from '../components/Button';
+import AccountMenuList from '../components/AccountMenuList';
+import AccountNativeFields from '../components/AccountNativeFields';
+import SurfaceTabs from '../components/SurfaceTabs';
+import ContextTabs from '../components/ContextTabs';
+import ContainerList from '../components/ContainerList';
+import PreviewPanel from '../components/PreviewPanel';
 import { Toast } from '../design/Toast';
 import { TopbarActions } from '../design/TopbarActions';
 import { Icon } from '../design/icons';
@@ -53,6 +59,16 @@ import { typeGlyph } from '../design/typeGlyph';
  * @type {string}
  */
 const EYEBROW = 'CAMPOS DO CHECKOUT';
+
+/** @type {Record<string, string>} WooCommerce account endpoint icons. */
+const ACCOUNT_MENU_ICONS = {
+	dashboard: 'home',
+	orders: 'file',
+	downloads: 'download',
+	'edit-address': 'location',
+	'payment-methods': 'card',
+	'edit-account': 'user',
+};
 
 /**
  * How wide a field is, in the design's words: a percentage of the row.
@@ -86,6 +102,103 @@ function typeLabel( field, catalog ) {
 }
 
 /**
+ * Context tabs for each destination, matching the references without leaking Checkout-only
+ * adapter terminology into account, order, profile or e-mail editors.
+ *
+ * @param {string}     area        Destination.
+ * @param {Array<any>} accountMenu WooCommerce account pages.
+ * @return {Array<{id: string, label: string, icon?: string, children?: Array<any>}>} Contexts.
+ */
+function contextOptions( area, accountMenu = [] ) {
+	if ( 'checkout' === area ) {
+		return [
+			{
+				id: 'classic',
+				label: __( 'Classic Checkout', 'wc-checkoutsuite' ),
+			},
+			{
+				id: 'blocks',
+				label: __( 'Checkout Blocks', 'wc-checkoutsuite' ),
+			},
+		];
+	}
+
+	if ( 'customer_account' === area ) {
+		const pages = accountMenu
+			.filter( ( item ) => ! item.logout )
+			.map( ( item ) => ( {
+				...item,
+				icon: item.icon ?? ACCOUNT_MENU_ICONS[ item.id ] ?? 'fields',
+			} ) );
+
+		if ( pages.length > 0 ) {
+			return pages;
+		}
+
+		return [
+			{
+				id: 'dashboard',
+				label: __( 'Painel', 'wc-checkoutsuite' ),
+				icon: 'home',
+			},
+			{
+				id: 'edit-account',
+				label: __( 'Detalhes da conta', 'wc-checkoutsuite' ),
+				icon: 'user',
+			},
+		];
+	}
+
+	if ( 'customer_order' === area ) {
+		return [
+			{ id: 'view-order', label: __( 'Ver pedido', 'wc-checkoutsuite' ) },
+		];
+	}
+
+	if ( 'admin_order' === area ) {
+		return [
+			{
+				id: 'admin-order',
+				label: __( 'Editar pedido', 'wc-checkoutsuite' ),
+			},
+		];
+	}
+
+	if ( 'admin_customer_profile' === area ) {
+		return [
+			{
+				id: 'profile',
+				label: __( 'Perfil do cliente', 'wc-checkoutsuite' ),
+			},
+		];
+	}
+
+	if ( 'customer_email' === area || 'admin_email' === area ) {
+		return [
+			{
+				id: 'customer_email',
+				label: __( 'Cliente', 'wc-checkoutsuite' ),
+			},
+			{ id: 'admin_email', label: __( 'Loja', 'wc-checkoutsuite' ) },
+		];
+	}
+
+	return [];
+}
+
+/**
+ * Returns the WooCommerce account menu item a customer section belongs to.
+ *
+ * @param {any} section Account container.
+ * @return {string} Menu endpoint or custom account slug.
+ */
+function accountPageFor( section ) {
+	const account = section?.presentation?.account ?? {};
+
+	return account.page || account.slug || '';
+}
+
+/**
  * The field manager's editor view.
  *
  * The model is typed loosely on purpose: it is the whole of the screen's state and
@@ -110,11 +223,14 @@ export default function FieldManagerView( { model } ) {
 		linkSections,
 		area,
 		areas,
+		accountMenu: serverAccountMenu = [],
 		onAreaChange,
 		loading,
 		dirty,
 		saving,
 		saved,
+		localDraftRestored,
+		onDiscardLocalDraft,
 		failure,
 		refusal,
 		problems,
@@ -135,6 +251,8 @@ export default function FieldManagerView( { model } ) {
 		onProtect,
 		onCreateField,
 		onAdoptCore,
+		onAdoptAccount,
+		onToggleAccount,
 		onHideCore,
 		edits,
 		onSave,
@@ -147,6 +265,7 @@ export default function FieldManagerView( { model } ) {
 		onExport,
 		onPreview,
 		onOpenSection,
+		onRemoveSection,
 		onCreateSection,
 		onLinkExisting,
 		isProtected,
@@ -169,6 +288,48 @@ export default function FieldManagerView( { model } ) {
 	/** What this destination calls the group of fields the merchant works on. */
 	const words = containerWords( area );
 
+	/**
+	 * Native account pages come from WooCommerce. Draft-only WCCS pages are added
+	 * locally until the merchant publishes them and WooCommerce can return them.
+	 */
+	const accountPages = useMemo( () => {
+		const nativePages = serverAccountMenu
+			.filter( ( /** @type {any} */ item ) => ! item.logout )
+			.map( ( /** @type {any} */ item ) => ( {
+				...item,
+				custom: Boolean( item.custom ),
+			} ) );
+		const known = new Set(
+			nativePages.map( ( /** @type {any} */ item ) => item.id )
+		);
+		const draftPages = ( doc?.sections ?? [] )
+			.filter( ( /** @type {any} */ entry ) => {
+				const destinations = Array.isArray( entry.areas )
+					? entry.areas
+					: [ entry.destination ?? 'checkout' ];
+				const account = entry.presentation?.account ?? {};
+
+				return (
+					destinations.includes( 'customer_account' ) &&
+					'' === ( account.page ?? '' ) &&
+					'' !== ( account.slug ?? '' ) &&
+					! known.has( account.slug )
+				);
+			} )
+			.map( ( /** @type {any} */ entry ) => {
+				const account = entry.presentation?.account ?? {};
+
+				return {
+					id: account.slug,
+					label: account.menu_label ?? entry.title ?? entry.id,
+					custom: true,
+					icon: account.icon ?? 'fields',
+				};
+			} );
+
+		return [ ...nativePages, ...draftPages ];
+	}, [ serverAccountMenu, doc ] );
+
 	/** The navigation entry this destination belongs to, and its siblings. */
 	const areaGroup =
 		navigation().find(
@@ -179,6 +340,8 @@ export default function FieldManagerView( { model } ) {
 	/** The design's own view state: the search box and the origin filter. */
 	const [ search, setSearch ] = useState( '' );
 	const [ origin, setOrigin ] = useState( 'all' );
+	const [ surfaceContext, setSurfaceContext ] = useState( '' );
+	const accountContextSectionRef = useRef( '' );
 	const [ menuOpen, setMenuOpen ] = useState(
 		/** @type {string|null} */ ( null )
 	);
@@ -283,16 +446,104 @@ export default function FieldManagerView( { model } ) {
 			)
 		);
 
-	const current = groups.find(
-		( /** @type {any} */ group ) => group.section.id === section
+	const activeArea = areas.find(
+		( /** @type {any} */ entry ) => entry.id === area
 	);
+	const contexts = contextOptions( area, accountPages );
+	const storedContext = contexts.some(
+		( item ) => item.id === surfaceContext
+	)
+		? surfaceContext
+		: '';
+	const contextActive =
+		'checkout' === area
+			? reference
+			: storedContext ||
+			  ( contexts.some( ( item ) => item.id === area )
+					? area
+					: contexts[ 0 ]?.id );
+	const accountContextSection =
+		'customer_account' === area
+			? groups.find(
+					( /** @type {any} */ group ) =>
+						accountPageFor( group.section ) === contextActive
+			  ) ?? null
+			: null;
+	// A restored local draft can keep the old checkout section id while the account
+	// menu already points at a custom page. Prefer the section belonging to that page
+	// so the builder, its actions and its fields never describe different targets.
+	const current =
+		groups.find(
+			( /** @type {any} */ group ) => group.section.id === section
+		) ?? accountContextSection;
 	const copy = sectionCopy(
 		current?.section ?? { id: section, title: '', description: '' },
 		Boolean( current?.declared )
 	);
-	const activeArea = areas.find(
-		( /** @type {any} */ entry ) => entry.id === area
+	const activeAccountPage = contexts.find(
+		( /** @type {any} */ item ) => item.id === contextActive
 	);
+	const accountSectionMatchesContext =
+		Boolean( current ) &&
+		accountPageFor( current.section ) === contextActive;
+	const accountContextEmpty =
+		'customer_account' === area &&
+		( 'edit-account' === contextActive ||
+			'edit-address' === contextActive ) &&
+		! accountSectionMatchesContext;
+	const selectAccountPage = ( /** @type {string} */ id ) => {
+		onEdit( null );
+		setSurfaceContext( id );
+		const firstSection = groups.find(
+			( /** @type {any} */ group ) =>
+				accountPageFor( group.section ) === id
+		);
+
+		if ( firstSection ) {
+			onSectionChange( firstSection.section.id );
+		}
+	};
+
+	useEffect( () => {
+		if (
+			'customer_account' !== area ||
+			! accountContextSection ||
+			accountContextSection.section.id === section
+		) {
+			return;
+		}
+
+		// Keep the parent section state aligned when the account context came from a
+		// preserved session rather than from the current click.
+		onSectionChange( accountContextSection.section.id );
+	}, [
+		area,
+		accountContextSection?.section.id,
+		section,
+		onSectionChange,
+	] );
+
+	useEffect( () => {
+		if ( 'customer_account' !== area || ! current ) {
+			accountContextSectionRef.current = '';
+			return;
+		}
+
+		// Keep the section's account page in sync when the section itself changes.
+		// `contexts` is intentionally rebuilt from WooCommerce's menu, so using its
+		// identity as a trigger would undo a deliberate click on a native page with
+		// no WCCS section (Painel, Pedidos, Downloads, etc.) on every render.
+		const marker = `${ area }:${ current.section.id }`;
+		if ( accountContextSectionRef.current === marker ) {
+			return;
+		}
+
+		accountContextSectionRef.current = marker;
+		const page = accountPageFor( current.section );
+		if ( page && contexts.some( ( item ) => item.id === page ) ) {
+			setSurfaceContext( page );
+		}
+	}, [ current, area, contexts ] );
 	const sectionAreaIds = current?.section.areas ?? [ 'checkout' ];
 	const sectionAreas = sectionAreaIds
 		.map( ( /** @type {string} */ id ) =>
@@ -557,6 +808,10 @@ export default function FieldManagerView( { model } ) {
 	}
 	const topbarActions = (
 		<TopbarActions>
+			<button type="button" className="btn" onClick={ onPreview }>
+				<span>{ __( 'Visualizar checkout', 'wc-checkoutsuite' ) }</span>
+				<Icon name="eye" />
+			</button>
 			<button
 				type="button"
 				className="btn btn-primary"
@@ -565,10 +820,6 @@ export default function FieldManagerView( { model } ) {
 			>
 				<Icon name="save" />
 				<span>{ saveLabel }</span>
-			</button>
-			<button type="button" className="btn" onClick={ onPreview }>
-				<span>{ __( 'Ver checkout', 'wc-checkoutsuite' ) }</span>
-				<Icon name="arrow" />
 			</button>
 		</TopbarActions>
 	);
@@ -687,6 +938,11 @@ export default function FieldManagerView( { model } ) {
 							<button
 								type="button"
 								className="btn btn-primary btn-add"
+								disabled={
+									! collectsAt( area ) ||
+									( accountContextEmpty &&
+										'edit-address' === contextActive )
+								}
 								onClick={ () => setPickerOpen( true ) }
 							>
 								<Icon name="plus" />
@@ -695,6 +951,7 @@ export default function FieldManagerView( { model } ) {
 							<button
 								type="button"
 								className="btn"
+								disabled={ ! section }
 								onClick={ onLinkExisting }
 							>
 								{ __(
@@ -708,6 +965,7 @@ export default function FieldManagerView( { model } ) {
 							<button
 								type="button"
 								className="btn btn-primary btn-add"
+								disabled={ ! section }
 								onClick={ onLinkExisting }
 							>
 								<Icon name="plus" />
@@ -719,6 +977,11 @@ export default function FieldManagerView( { model } ) {
 							<button
 								type="button"
 								className="btn"
+								disabled={
+									collectsAt( area ) &&
+									( ! accountContextEmpty ||
+										'edit-account' === contextActive )
+								}
 								onClick={ () => setPickerOpen( true ) }
 							>
 								{ __( 'Adicionar campo', 'wc-checkoutsuite' ) }
@@ -727,29 +990,7 @@ export default function FieldManagerView( { model } ) {
 					) }
 				</div>
 
-				<div
-					className="wccs-editor-areas"
-					role="tablist"
-					aria-label={ __( 'Destino', 'wc-checkoutsuite' ) }
-				>
-					{ areas.map( ( /** @type {any} */ tab ) => (
-						<button
-							key={ tab.id }
-							type="button"
-							role="tab"
-							aria-selected={ tab.id === activeEntry( area ) }
-							className={
-								tab.id === activeEntry( area ) ? 'active' : ''
-							}
-							onClick={ () =>
-								onAreaChange( tab.members[ 0 ].id )
-							}
-						>
-							<strong>{ tab.label }</strong>
-							<small>{ tab.description }</small>
-						</button>
-					) ) }
-				</div>
+				<SurfaceTabs active={ area } onChange={ onAreaChange } />
 
 				{ /* A group opens its own destinations under it, rather than putting every
 				     destination in one row of checkboxes (§3). */ }
@@ -805,47 +1046,42 @@ export default function FieldManagerView( { model } ) {
 				) : null }
 
 				<div className="contextbar">
-					<div
-						className="segmented"
-						role="group"
-						aria-label={ __(
-							'Contexto do checkout',
+					<ContextTabs
+						active={ contextActive }
+						label={ __(
+							'Contexto da superfície',
 							'wc-checkoutsuite'
 						) }
-					>
-						<button
-							type="button"
-							className={
-								'classic' === reference ? 'active' : ''
-							}
-							aria-pressed={ 'classic' === reference }
-							onClick={ () =>
-								model.onReferenceChange( 'classic' )
-							}
-						>
-							{ __( 'Classic Checkout', 'wc-checkoutsuite' ) }
-						</button>
-						<button
-							type="button"
-							className={ 'blocks' === reference ? 'active' : '' }
-							aria-pressed={ 'blocks' === reference }
-							onClick={ () => {
-								if ( 'blocks' === reference ) {
-									return;
-								}
+						items={ contexts }
+						onChange={ ( next ) => {
+							if (
+								'checkout' !== area &&
+								( 'customer_email' === next ||
+									'admin_email' === next )
+							) {
+								onAreaChange( next );
 
-								model.onReferenceChange( 'blocks' );
+								return;
+							}
+
+							setSurfaceContext( next );
+							if ( 'customer_account' === area ) {
+								onEdit( null );
+							}
+
+							if ( 'blocks' === next && 'blocks' !== reference ) {
 								announce(
 									__(
 										'Modo Blocks: limitações de posição e tipos foram sinalizadas.',
 										'wc-checkoutsuite'
 									)
 								);
-							} }
-						>
-							{ __( 'Checkout Blocks', 'wc-checkoutsuite' ) }
-						</button>
-					</div>
+							}
+							if ( 'checkout' === area ) {
+								model.onReferenceChange( next );
+							}
+						} }
+					/>
 					<div className="context-status">
 						{ /* The prototype labels its own example. The real
 						     screen states the two facts a merchant needs
@@ -972,6 +1208,21 @@ export default function FieldManagerView( { model } ) {
 									</a>
 								</>
 							) : null }
+							{ localDraftRestored ? (
+								<>
+									{ ' ' }
+									<button
+										type="button"
+										className="wccs-notice__link"
+										onClick={ onDiscardLocalDraft }
+									>
+										{ __(
+											'Descartar edição local',
+											'wc-checkoutsuite'
+										) }
+									</button>
+								</>
+							) : null }
 						</p>
 					</Notice>
 				) : null }
@@ -999,83 +1250,92 @@ export default function FieldManagerView( { model } ) {
 					     horizontal de separadores passa a ser a lista do desenho: ícone, nome e a
 					     frase que diz o que a seção guarda. É a mesma escolha, com lugar
 					     para a explicar. */ }
-					<aside
-						className="panel sections-panel"
-						aria-label={ __(
-							'Seções do checkout',
-							'wc-checkoutsuite'
-						) }
-					>
-						<div className="sections-head">
-							<h2>
-								{ __(
-									'Seções do checkout',
-									'wc-checkoutsuite'
-								) }
-							</h2>
-							<p>
-								{ __(
-									'Organize as seções e defina onde cada campo será exibido no checkout.',
-									'wc-checkoutsuite'
-								) }
-							</p>
-						</div>
-
-						<div
-							className="section-tabs"
-							role="group"
-							aria-label={ sprintf(
+					{ 'customer_account' === area ? (
+						<AccountMenuList
+							items={ contexts }
+							active={ contextActive }
+							onSelect={ selectAccountPage }
+							onCreate={ onCreateSection }
+						/>
+					) : (
+						<ContainerList
+							groups={ groups }
+							active={ section }
+							onSelect={ onSectionChange }
+							onCreate={ onCreateSection }
+							words={ words }
+							label={ sprintf(
 								/* translators: %s: what this destination calls its containers. */
 								__( '%s desta área', 'wc-checkoutsuite' ),
 								words.many
 							) }
-						>
-							{ groups.map( ( /** @type {any} */ group ) => {
-								const tab = sectionCopy(
-									group.section,
-									Boolean( group.declared )
-								);
-								const isActive = group.section.id === section;
+						/>
+					) }
 
-								return (
-									<button
-										key={ group.section.id }
-										type="button"
-										className={ isActive ? 'active' : '' }
-										aria-pressed={ isActive }
-										onClick={ () =>
-											onSectionChange( group.section.id )
-										}
-									>
-										<span
-											className="section-row-icon"
-											aria-hidden="true"
-										>
-											<Icon name={ tab.icon } />
-										</span>
-										<span className="section-row-text">
-											<strong>{ tab.label }</strong>
-											<small>{ tab.description }</small>
-										</span>
-										<small className="section-row-count">
-											{ group.fields.length }
-										</small>
-									</button>
-								);
-							} ) }
-						</div>
+					<div
+						className={
+							'editor-column' +
+							( accountContextEmpty
+								? ' account-context-empty'
+								: '' )
+						}
+					>
+						{ 'edit-account' === contextActive ? (
+							<AccountNativeFields
+								inventory={ coreFields?.account }
+								document={ doc }
+								pageLabel={ activeAccountPage?.label }
+								editing={ editing }
+								onAdopt={ onAdoptAccount }
+								onEdit={ onEdit }
+								onToggle={ onToggleAccount }
+							/>
+						) : null }
 
-						<button
-							type="button"
-							className="sections-add"
-							onClick={ onCreateSection }
-						>
-							<Icon name="plus" />
-							{ words.create }
-						</button>
-					</aside>
+						{ 'edit-address' === contextActive ? (
+							<div className="account-address-notice">
+								<Notice
+									status="info"
+									title={ __(
+										'Endereços do WooCommerce',
+										'wc-checkoutsuite'
+									) }
+								>
+									<p>
+										{ __(
+											'Esta página tem submenus próprios para Cobrança e Entrega. Os campos são renderizados e gravados pelo formulário nativo do WooCommerce.',
+											'wc-checkoutsuite'
+										) }
+									</p>
+									<p>
+										{ __(
+											'A integração desses campos no editor ficará para a próxima etapa; nenhum campo será copiado ou alterado aqui.',
+											'wc-checkoutsuite'
+										) }
+									</p>
+									{ activeAccountPage?.children?.length ? (
+										<ul className="account-address-notice__links">
+											{ activeAccountPage.children.map(
+												(
+													/** @type {any} */ child
+												) => (
+													<li key={ child.id }>
+														<a
+															href={ child.url }
+															target="_blank"
+															rel="noreferrer"
+														>
+															{ child.label }
+														</a>
+													</li>
+												)
+											) }
+										</ul>
+									) : null }
+								</Notice>
+							</div>
+						) : null }
 
-					<div className="editor-column">
 						<div className="panel builder-panel">
 							<div className="builder-header">
 								<div className="panel-heading">
@@ -1189,10 +1449,26 @@ export default function FieldManagerView( { model } ) {
 										words.actions,
 										copy.title
 									) }
-								>
-									{ words.actions }
-								</button>
-							</div>
+				>
+					{ words.actions }
+				</button>
+				{ current?.declared ? (
+					<button
+						type="button"
+						className="text-btn text-btn-danger"
+						onClick={ () =>
+							onRemoveSection?.( current.section.id )
+						}
+						aria-label={ sprintf(
+							/* translators: %s: container title. */
+							__( 'Remover %s', 'wc-checkoutsuite' ),
+							copy.title
+						) }
+					>
+						{ __( 'Remover', 'wc-checkoutsuite' ) }
+					</button>
+				) : null }
+			</div>
 
 							<div className="filterbar">
 								<label
@@ -2069,6 +2345,7 @@ export default function FieldManagerView( { model } ) {
 						<button
 							type="button"
 							className="add-field-inline"
+							disabled={ ! collectsAt( area ) }
 							onClick={ () => setPickerOpen( true ) }
 						>
 							<Icon name="plus" />
@@ -2082,22 +2359,18 @@ export default function FieldManagerView( { model } ) {
 						     mesmos rótulos, a mesma largura por campo — uma amostra do que o
 						     cliente vai ver. Não é o renderizador do WooCommerce, e a prévia
 						     completa continua a ser a da seção «Prévia do checkout». */ }
-						<div className="section-preview">
-							<div className="section-preview-head">
-								<h3>
-									{ __(
-										'Prévia da seção',
-										'wc-checkoutsuite'
-									) }
-								</h3>
-								<p>
-									{ __(
-										'Veja como esta seção aparecerá para o cliente.',
-										'wc-checkoutsuite'
-									) }
-								</p>
-							</div>
-
+						<PreviewPanel
+							title={ __(
+								'Prévia da seção',
+								'wc-checkoutsuite'
+							) }
+							description={ __(
+								'Veja como esta seção aparecerá para o cliente.',
+								'wc-checkoutsuite'
+							) }
+							onOpen={ model.onPreview }
+							className="section-preview"
+						>
 							{ ( current?.fields ?? [] ).length === 0 ? (
 								<p className="muted small">
 									{ __(
@@ -2156,7 +2429,7 @@ export default function FieldManagerView( { model } ) {
 									) }
 								</div>
 							) }
-						</div>
+						</PreviewPanel>
 
 						<div className="editor-bottom">
 							<div className="tip-card">
@@ -2437,10 +2710,21 @@ export default function FieldManagerView( { model } ) {
 					section={ section }
 					sections={ sectionOptions }
 					surface={ area }
+					open={ pickerOpen }
 					onSectionChange={ onSectionChange }
 					onChooseType={ ( /** @type {any} */ choice ) => {
 						setPickerOpen( false );
-						onCreateField( choice );
+						onCreateField( {
+							...choice,
+							...( accountContextEmpty &&
+							'edit-account' === contextActive
+								? {
+										accountPage: contextActive,
+										accountPageLabel:
+											activeAccountPage?.label,
+								  }
+								: {} ),
+						} );
 					} }
 					onAdoptCore={ ( /** @type {any} */ core ) => {
 						setPickerOpen( false );

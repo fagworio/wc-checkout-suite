@@ -73,6 +73,11 @@ final class StatusController {
 							'required'    => true,
 							'description' => 'The whole list of the store\'s own order statuses.',
 						),
+						'revision' => array(
+							'type'        => 'integer',
+							'required'    => false,
+							'description' => 'Revision read by the editor for compare-and-swap.',
+						),
 					),
 				),
 			)
@@ -115,12 +120,15 @@ final class StatusController {
 
 		OrderStatusRegistry::publish();
 
+		$repository = new OrderStatusRepository();
+
 		return new WP_REST_Response(
 			array(
 				'statuses' => OrderStatusRegistry::inventory(),
 				// What WooCommerce considers paid, so the screen can show a merchant that a state
 				// before payment is not in it — the §12.5 rule, visible where it is configured.
 				'paid'     => array_values( array_map( 'strval', (array) wc_get_is_paid_statuses() ) ),
+				'revision' => $repository->revision(),
 			),
 			200
 		);
@@ -133,10 +141,23 @@ final class StatusController {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function update_statuses( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$incoming = $request->get_param( 'statuses' );
-		$incoming = is_array( $incoming ) ? $incoming : array();
+		$incoming   = $request->get_param( 'statuses' );
+		$incoming   = is_array( $incoming ) ? $incoming : array();
+		$repository = new OrderStatusRepository();
+		$expected   = $request->get_param( 'revision' );
 
-		$result = ( new OrderStatusRepository() )->save( $incoming );
+		if ( null !== $expected && (int) $expected !== $repository->revision() ) {
+			return new WP_Error(
+				'wccs_statuses_conflict',
+				__( 'The statuses changed in another session. Reload them before saving.', 'wc-checkoutsuite' ),
+				array(
+					'status'   => 409,
+					'revision' => $repository->revision(),
+				)
+			);
+		}
+
+		$result = $repository->save( $incoming );
 
 		if ( ! $result->is_valid() ) {
 			return new WP_Error(
@@ -155,6 +176,7 @@ final class StatusController {
 			array(
 				'statuses' => OrderStatusRegistry::inventory(),
 				'paid'     => array_values( array_map( 'strval', (array) wc_get_is_paid_statuses() ) ),
+				'revision' => $repository->revision(),
 			),
 			200
 		);

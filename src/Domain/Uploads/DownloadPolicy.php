@@ -56,6 +56,13 @@ final class DownloadPolicy {
 			return true;
 		}
 
+		// A document stored on the customer's profile has a permanent owner rather
+		// than a checkout session. The user id is still checked from the server-side
+		// record, never from the destination or the request body.
+		if ( $user > 0 && hash_equals( $owner, 'customer:' . $user ) ) {
+			return true;
+		}
+
 		// The customer the bound order belongs to. An upload that is not bound to an
 		// order has no customer, which is why this is asked last and answers nothing
 		// when the value is absent.

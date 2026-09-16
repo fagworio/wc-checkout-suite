@@ -72,7 +72,7 @@
 
 ## 4.1. Descoberta na WCCS-041: o diretório privado deste ambiente é servido
 
-O armazenamento privado da WCCS-041 fica em `wp-content/wc-checkoutsuite-private`, ao lado de `uploads` e não dentro dele, com `index.php`, `.htaccess` e `web.config` escritos para os três servidores comuns. A prova escreve um ficheiro e **pede-o pelo endereço do próprio site**: neste ambiente o nginx responde **200 com o conteúdo**.
+O armazenamento privado da WCCS-041 fica, por padrão, fora do document root, em `wc-checkoutsuite-private`, com `index.php`, `.htaccess` e `web.config` escritos para defesa em profundidade. A prova escreve um ficheiro e **pede-o pelo endereço do próprio site**: neste ambiente o nginx responde com **404**, e o recurso fica habilitado.
 
 O `.htaccess` é um ficheiro do Apache e o nginx não o lê; `index.php` só é consultado quando o pedido chega ao PHP, e um ficheiro existente é servido antes disso. A consequência é a que interessa a este modelo: **a localização sozinha não protege, e nenhuma extensão consegue proteger um diretório dentro do document root sem a colaboração do servidor**.
 

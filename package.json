@@ -23,7 +23,9 @@
 		"build:blocks": "wp-scripts build --webpack-src-dir=resources/blocks --output-path=build/blocks",
 		"test:e2e:woocommerce": "node tests/browser/full-woocommerce-flow.mjs",
 		"test:e2e:admin-editor": "node tests/browser/admin-section-field-rules-flow.mjs",
-		"test:e2e:my-account": "node tests/browser/my-account-sections-flow.mjs"
+		"test:e2e:my-account": "node tests/browser/my-account-sections-flow.mjs",
+		"test:e2e:design": "node tests/browser/design-destinations-flow.mjs",
+		"test:e2e:account-file": "node tests/browser/customer-account-file-field-flow.mjs"
 	},
 	"devDependencies": {
 		"@testing-library/dom": "^10.4.1",

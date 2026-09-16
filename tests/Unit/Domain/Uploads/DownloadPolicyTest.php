@@ -97,6 +97,24 @@ final class DownloadPolicyTest extends TestCase {
 	}
 
 	/**
+	 * The customer may read a document stored on their own profile.
+	 *
+	 * @return void
+	 */
+	public function test_customer_may_read_their_profile_document(): void {
+		self::assertTrue(
+			DownloadPolicy::allows(
+				array( 'owner' => 'customer:42' ),
+				array(
+					'owner'      => 'another-session',
+					'user_id'    => 42,
+					'can_manage' => false,
+				)
+			)
+		);
+	}
+
+	/**
 	 * The customer the order belongs to may read it, and nobody else may.
 	 *
 	 * @return void

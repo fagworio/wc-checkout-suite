@@ -166,7 +166,11 @@ final class DefinitionVocabulary {
 					'The customer\'s own page inside My Account, outside any order. A section offered here and given an account presentation becomes its own authenticated page that the customer fills in.',
 					'wc-checkoutsuite'
 				),
-				'actions'     => array( 'show_metadata', 'view' ),
+				// The customer can replace their own document from My Account. An empty
+				// binding receives the safe account default; explicit permissions remain
+				// authoritative in the editor. This list says the surface is capable of
+				// performing the action.
+				'actions'     => array( 'show_metadata', 'view', 'download', 'resubmit' ),
 			),
 			array(
 				'value'       => 'admin_customer_profile',

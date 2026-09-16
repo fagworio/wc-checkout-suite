@@ -123,7 +123,7 @@ itself.
 3. **Data** is never removed by an update or a deactivation. Deletion of the plugin keeps
    the schema, the opt-in, the order values and the private files (`uninstall.php`).
 4. **Before any rollback**, take the two backups that matter: the database and
-   `wp-content/wc-checkoutsuite-private/`. The manual says the same in §10.
+   the private directory outside the document root. The manual says the same in §10.
 
 ## 7. Hotfix plan
 

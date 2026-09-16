@@ -47,6 +47,7 @@ Cada hook recebe exatamente um argumento, e é o registro que ele preenche.
 | `wccs_register_condition_evaluators` | `do_action( ..., ConditionEvaluatorRegistry $evaluators )` | nada |
 | `wccs_field_category_labels` | `apply_filters( ..., array $labels )` | `array<string, string>` |
 | `wccs_core_fields_inventory` | `apply_filters( ..., array $inventory )` | `array{available: bool, fields: array<int, array<string, mixed>>}` |
+| `wccs_account_fields_inventory` | `apply_filters( ..., array $inventory )` | `array{available: bool, sections: array<int, array<string, mixed>>, fields: array<int, array<string, mixed>>}` |
 | `wccs_classic_adapter_report` | `do_action( ..., array $registered, array $refused )` | nada |
 | `wccs_blocks_adapter_report` | `do_action( ..., array $registered, array $refused )` | nada |
 | `wccs_email_field_links` | `apply_filters( ..., bool $enabled )` | `bool` |

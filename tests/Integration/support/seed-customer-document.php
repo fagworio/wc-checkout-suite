@@ -4,9 +4,8 @@
  *
  * WCCS-077's account page is rendered from the published document, and a document with a file
  * field offered to `customer_account` is not what a normal store has: this script writes one,
- * creates the customer the page belongs to, and — because this box serves the private upload
- * directory over HTTP (WCCS-041) — injects the environment observation so the upload path can
- * be observed at all. It says each of those three things in its output.
+ * creates the customer the page belongs to. The application places the default private store
+ * outside the document root, so the real Devilbox privacy probe enables the upload path.
  *
  * Usage:
  *   wp eval-file tests/Integration/support/seed-customer-document.php setup
@@ -68,7 +67,7 @@ $wccs_seed_document = static function (): array {
 						'section' => 'documentos_da_conta',
 						'title'   => 'Seu contrato',
 						'mode'    => 'edit',
-						'actions' => array( 'show_metadata', 'view' ),
+						'actions' => array( 'show_metadata', 'view', 'download', 'resubmit' ),
 					),
 				),
 			),
@@ -174,23 +173,11 @@ $wccs_seed_result = $wccs_seed_repository->write(
 
 echo 'document ok=' . ( $wccs_seed_result->is_ok() ? 'yes' : 'no' ) . "\n";
 
-// This box serves the private directory over HTTP, so the observation the store would make for
-// itself says "not protected" and uploads are off. Injecting it is what lets the page be
-// observed at all; the teardown removes it and the script says what it did.
-update_option(
-	UploadsEnvironment::STATE_OPTION,
-	array(
-		'protected'  => true,
-		'status'     => 403,
-		'reason'     => '',
-		'checked_at' => time(),
-	),
-	false
-);
+$wccs_seed_state = UploadsEnvironment::state( true );
 
 \WCCheckoutSuite\Account\MyAccountSections::register_endpoints();
 
-echo "observation=injected (protected)\n";
+echo 'observation=' . ( $wccs_seed_state['protected'] ? 'protected' : 'unprotected' ) . ' status=' . (int) $wccs_seed_state['status'] . "\n";
 echo 'login=' . $wccs_seed_user->user_login . "\n";
 echo 'user_id=' . (int) $wccs_seed_user->ID . "\n";
 echo 'endpoint=' . home_url( '/minha-conta/documentos-da-conta/' ) . "\n";

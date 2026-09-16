@@ -194,6 +194,8 @@ body:has(.wccs-admin) #wpfooter {
 .wccs-admin .small-icon{width:29px;min-width:29px;height:29px;border-radius:6px;background:transparent}
 .wccs-admin .small-icon .icon{width:15px;height:15px}
 .wccs-admin .text-btn{border:0;background:none;display:inline-flex;align-items:center;gap:6px;color:var(--brand);font-size:11px;font-weight:600;padding:5px 0;border-radius:4px}
+.wccs-admin .text-btn-danger{color:var(--red)}
+.wccs-admin .text-btn-danger:hover{color:#a91f1a;background:#fdecea}
 .wccs-admin .text-btn .icon{width:14px;height:14px}
 .wccs-admin .danger{color:var(--red)}
 .wccs-admin .btn.danger{border-color:color-mix(in srgb,var(--red) 25%,var(--border));background:color-mix(in srgb,var(--red) 4%,var(--surface))}
@@ -480,6 +482,7 @@ body:has(.wccs-admin) #wpfooter {
 .wccs-admin dialog{border:1px solid var(--border);border-radius:18px;padding:0;background:var(--surface);color:var(--ink);width:calc(100vw - 40px);max-height:calc(100dvh - 48px);box-shadow:0 25px 90px #0003}
 .wccs-admin dialog::backdrop{background:#10172888;backdrop-filter:blur(4px)}
 .wccs-admin .picker-dialog{max-width:940px}
+.wccs-admin .wccs-dialog.picker-dialog{width:min(1080px,calc(100vw - 40px));max-width:1080px}
 .wccs-admin .confirm-dialog{max-width:550px}
 .wccs-admin .publish-dialog{max-width:730px}
 .wccs-admin .dialog-head{padding:24px 27px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;border-bottom:1px solid var(--border)}
@@ -759,6 +762,7 @@ body:has(.wccs-admin) #wpfooter {
 .wccs-admin .store-header>span{max-width:118px}
 .wccs-admin .preview-shell{border-radius:12px}
 .wccs-admin dialog{width:calc(100vw - 22px);max-height:calc(100dvh - 24px);border-radius:14px}
+.wccs-admin .wccs-dialog.picker-dialog{width:calc(100vw - 22px);max-width:none}
 .wccs-admin .dialog-head{padding:20px 18px;gap:13px}
 .wccs-admin .dialog-head h2{font-size:20px}
 .wccs-admin .dialog-head p{font-size:10px;line-height:1.7}
@@ -1054,3 +1058,33 @@ body:has(.wccs-admin) #wpfooter {
 .wccs-admin .core-checkout--inline .core-checkout-section-head{padding:0 0 6px}
 .wccs-admin .core-checkout--inline .core-checkout-fields li{padding:7px 0;border-bottom:1px solid var(--border)}
 .wccs-admin .core-checkout--inline .core-checkout-fields li:last-child{border-bottom:0}
+
+/* Native My Account pages are reported before WCCS containers. When there is no
+   custom container attached to the selected WooCommerce endpoint, leave the
+   empty editor out of the composition so the screen reads like the storefront
+   form it is describing. */
+.wccs-admin .account-context-empty .builder-panel{display:none}
+.wccs-admin .account-context-empty > .core-checkout:not(.account-native-fields){display:none}
+.wccs-admin .account-context-empty > .add-field-inline,.wccs-admin .account-context-empty > .section-preview{display:none}
+
+.wccs-admin .account-native-fields{margin-bottom:18px}
+.wccs-admin .account-native-field{align-items:center}
+.wccs-admin .account-native-field__glyph{display:inline-flex;align-items:center;justify-content:center;width:20px;color:var(--brand);font-size:13px}
+.wccs-admin .account-native-field__name{display:grid;min-width:120px;flex:1}
+.wccs-admin .account-native-field__name strong{font-size:11px;font-weight:650}
+.wccs-admin .account-native-field__name code{font-size:9px;color:var(--muted);font-family:ui-monospace,monospace}
+.wccs-admin .account-native-field__protected{display:inline-flex;align-items:center;gap:4px;color:var(--muted);font-size:9px;white-space:nowrap}
+.wccs-admin .account-native-field__protected svg{width:12px;height:12px}
+.wccs-admin .account-native-field__actions{display:inline-flex;align-items:center;gap:4px;margin-left:auto}
+.wccs-admin .account-native-field__actions .icon-btn{width:26px;height:26px;min-width:26px}
+.wccs-admin .account-native-field__actions .icon-btn svg{width:13px;height:13px}
+.wccs-admin .account-native-field__actions .icon-btn.danger{color:var(--danger,#e5484d)}
+.wccs-admin .account-native-field__actions .account-native-field__restore{color:var(--success,#008a70)}
+.wccs-admin .account-native-field--disabled{opacity:.62;background:color-mix(in srgb,var(--soft) 55%,transparent)}
+.wccs-admin .account-native-field.is-editing{background:color-mix(in srgb,var(--brand) 8%,var(--surface));box-shadow:inset 2px 0 var(--brand)}
+.wccs-admin .account-native-fields__note{display:flex;align-items:flex-start;gap:6px;margin:0;padding:10px 18px 14px;color:var(--muted);font-size:10px;line-height:1.55}
+.wccs-admin .account-native-fields__note svg{width:13px;height:13px;flex:0 0 auto;color:var(--brand)}
+.wccs-admin .account-address-notice{margin-bottom:18px}
+.wccs-admin .account-address-notice__links{display:flex;flex-wrap:wrap;gap:8px 16px;margin:8px 0 0;padding:0;list-style:none}
+.wccs-admin .account-address-notice__links a{color:var(--brand);font-weight:650;text-decoration:none}
+.wccs-admin .account-address-notice__links a:hover{text-decoration:underline}

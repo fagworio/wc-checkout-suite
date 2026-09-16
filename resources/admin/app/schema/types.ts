@@ -78,9 +78,13 @@ export interface FieldDefinition {
  */
 export interface SectionDefinition {
 	id: string;
+	/** Canonical container name used by the write model. */
+	name?: string;
 	title: string;
 	description: string;
 	position: number;
+	/** Canonical destination key. */
+	destination?: string;
 	location: string;
 	/**
 	 * The areas the section may be offered in: the checkout, where its fields are
@@ -88,6 +92,12 @@ export interface SectionDefinition {
 	 * offered nowhere cannot be chosen by anything.
 	 */
 	areas: string[];
+	enabled?: boolean;
+	show_title?: boolean;
+	display_title?: string;
+	icon?: string;
+	target?: string;
+	settings?: Record< string, unknown >;
 	presentation?: {
 		show_title?: boolean;
 		account?: {
@@ -107,6 +117,23 @@ export interface SectionDefinition {
 		};
 	};
 }
+
+/**
+ * Canonical container shape emitted by the frontend write model.
+ *
+ * `SectionDefinition` remains the compatibility read type for pre-migration drafts;
+ * every new container produced by `schema/containers` satisfies this stronger contract.
+ */
+export type ContainerDefinition = SectionDefinition & {
+	name: string;
+	destination: string;
+	enabled: boolean;
+	show_title: boolean;
+	display_title: string;
+	icon: string;
+	target: string;
+	settings: Record< string, unknown >;
+};
 
 /**
  * One logical location a section may occupy.
@@ -352,6 +379,10 @@ export interface CoreFieldEntry {
 	classes: string[];
 	layout: FieldLayout;
 	protected: boolean;
+	description?: string;
+	group?: string;
+	source?: string;
+	collectionSurface?: 'checkout' | 'my_account';
 }
 
 /**
@@ -366,6 +397,7 @@ export interface CoreFieldInventory {
 		fields: CoreFieldEntry[];
 	} >;
 	fields: CoreFieldEntry[];
+	account?: CoreFieldInventory;
 }
 
 /**

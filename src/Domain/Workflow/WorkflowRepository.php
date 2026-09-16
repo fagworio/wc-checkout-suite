@@ -39,6 +39,18 @@ final class WorkflowRepository {
 	 */
 	public const OPTION = 'wccs_workflows';
 
+	/** Option holding the compare-and-swap revision. */
+	public const REVISION_OPTION = 'wccs_workflows_revision';
+
+	/**
+	 * Current revision of the stored list.
+	 *
+	 * @return int Revision.
+	 */
+	public function revision(): int {
+		return max( 0, (int) get_option( self::REVISION_OPTION, 0 ) );
+	}
+
 	/**
 	 * Order meta holding the audit log.
 	 */
@@ -115,6 +127,7 @@ final class WorkflowRepository {
 		}
 
 		update_option( self::OPTION, (string) wp_json_encode( $workflows ), false );
+		update_option( self::REVISION_OPTION, $this->revision() + 1, false );
 
 		return $result;
 	}

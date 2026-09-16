@@ -65,6 +65,17 @@ final class UploadRulesTest extends TestCase {
 	}
 
 	/**
+	 * A field's extension setting narrows the safe MIME list.
+	 *
+	 * @return void
+	 */
+	public function test_a_field_extension_allow_list_is_enforced_after_mime_detection(): void {
+		self::assertSame( '', UploadRules::check( 'application/pdf', 100, 0, 1000, 1000, array( 'pdf' ) ) );
+		self::assertSame( '', UploadRules::check( 'image/jpeg', 100, 0, 1000, 1000, array( '.JPG' ) ) );
+		self::assertSame( 'mime_not_allowed', UploadRules::check( 'image/png', 100, 0, 1000, 1000, array( 'pdf' ) ) );
+	}
+
+	/**
 	 * The quota counts what the owner has already stored.
 	 *
 	 * @return void

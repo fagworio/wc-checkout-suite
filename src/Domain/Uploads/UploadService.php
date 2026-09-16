@@ -93,9 +93,10 @@ final class UploadService {
 	 *
 	 * @param array<string, mixed>|null $file     One entry of `$_FILES`.
 	 * @param string                    $field_id Field the upload belongs to.
+	 * @param array<string, mixed>      $settings Resolved settings of the field.
 	 * @return array{token: string, code: string, message: string} Token on success, a refusal otherwise.
 	 */
-	public function accept( ?array $file, string $field_id ): array {
+	public function accept( ?array $file, string $field_id, array $settings = array() ): array {
 		if ( ! UploadsEnvironment::enabled() ) {
 			return $this->refuse( 'not_available', UploadsEnvironment::reason() );
 		}
@@ -120,7 +121,14 @@ final class UploadService {
 		$bytes = (int) $file['size'];
 		$mime  = self::detect( (string) $file['tmp_name'] );
 
-		$code = UploadRules::check( $mime, $bytes, $this->repository->used_bytes( $owner ) );
+		$code = UploadRules::check(
+			$mime,
+			$bytes,
+			$this->repository->used_bytes( $owner ),
+			self::max_bytes( $settings ),
+			UploadRules::DEFAULT_QUOTA_BYTES,
+			self::allowed_extensions( $settings )
+		);
 
 		if ( '' !== $code ) {
 			return $this->refuse( $code, UploadRules::message( $code ) );
@@ -241,9 +249,10 @@ final class UploadService {
 	 * @param array<string, mixed>|null $file     One entry of `$_FILES`.
 	 * @param string                    $field_id Field the upload belongs to.
 	 * @param int                       $user_id  Customer.
+	 * @param array<string, mixed>      $settings Resolved settings of the field.
 	 * @return array{token: string, code: string, message: string} Token on success, a refusal otherwise.
 	 */
-	public function accept_for_customer( ?array $file, string $field_id, int $user_id ): array {
+	public function accept_for_customer( ?array $file, string $field_id, int $user_id, array $settings = array() ): array {
 		if ( ! UploadsEnvironment::enabled() ) {
 			return $this->refuse( 'not_available', UploadsEnvironment::reason() );
 		}
@@ -252,6 +261,16 @@ final class UploadService {
 
 		if ( '' === $owner ) {
 			return $this->refuse( 'not_available', __( 'There is no customer to attach this document to.', 'wc-checkoutsuite' ) );
+		}
+
+		$previous = $this->repository->for_user( $user_id, $field_id );
+		$used     = $this->repository->used_bytes( $owner );
+
+		// Replacing a document should consume the space of the new version, not the
+		// space of both versions. The old row is removed only after the new row is
+		// recorded successfully, so a failed replacement never loses the current file.
+		if ( is_array( $previous ) ) {
+			$used = max( 0, $used - (int) ( $previous['byte_size'] ?? 0 ) );
 		}
 
 		$path = isset( $file['tmp_name'] ) && is_string( $file['tmp_name'] ) ? $file['tmp_name'] : '';
@@ -263,7 +282,14 @@ final class UploadService {
 		$bytes = (int) $file['size'];
 		$mime  = self::detect( (string) $file['tmp_name'] );
 
-		$code = UploadRules::check( $mime, $bytes, $this->repository->used_bytes( $owner ) );
+		$code = UploadRules::check(
+			$mime,
+			$bytes,
+			$used,
+			self::max_bytes( $settings ),
+			UploadRules::DEFAULT_QUOTA_BYTES,
+			self::allowed_extensions( $settings )
+		);
 
 		if ( '' !== $code ) {
 			return $this->refuse( $code, UploadRules::message( $code ) );
@@ -300,6 +326,14 @@ final class UploadService {
 			PrivateStorage::delete( (string) $stored['path'] );
 
 			return $this->refuse( 'not_available', __( 'The store could not record the file.', 'wc-checkoutsuite' ) );
+		}
+
+		if ( is_array( $previous ) ) {
+			$old = $this->repository->delete( (string) ( $previous['token'] ?? '' ), $owner );
+
+			if ( is_array( $old ) ) {
+				PrivateStorage::delete( (string) ( $old['path'] ?? '' ) );
+			}
 		}
 
 		return array(
@@ -362,6 +396,32 @@ final class UploadService {
 		finfo_close( $finfo );
 
 		return is_string( $mime ) ? $mime : '';
+	}
+
+	/**
+	 * Resolves the per-field maximum, falling back to the store default.
+	 *
+	 * @param array<string, mixed> $settings Field settings.
+	 * @return int
+	 */
+	private static function max_bytes( array $settings ): int {
+		$max = isset( $settings['maxBytes'] ) ? (int) $settings['maxBytes'] : UploadRules::DEFAULT_MAX_BYTES;
+
+		return $max > 0 ? $max : UploadRules::DEFAULT_MAX_BYTES;
+	}
+
+	/**
+	 * Resolves the per-field extension allow-list.
+	 *
+	 * @param array<string, mixed> $settings Field settings.
+	 * @return array<int, string>
+	 */
+	private static function allowed_extensions( array $settings ): array {
+		if ( ! isset( $settings['allowedExtensions'] ) || ! is_array( $settings['allowedExtensions'] ) ) {
+			return array();
+		}
+
+		return array_values( array_filter( array_map( 'strval', $settings['allowedExtensions'] ) ) );
 	}
 
 	/**

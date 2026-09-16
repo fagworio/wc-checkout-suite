@@ -54,7 +54,19 @@ final class PrivateStorage {
 			return '';
 		}
 
-		return rtrim( (string) WP_CONTENT_DIR, '/\\' ) . '/' . self::DIRECTORY;
+		// The default must be outside the document root. A denial file is useful
+		// defence in depth, but nginx can serve an existing file before PHP ever
+		// gets a chance to execute index.php. Sites that need a custom location may
+		// provide one explicitly, but the built-in path is safe by construction.
+		if ( defined( 'WCCS_PRIVATE_UPLOAD_DIR' ) && is_string( WCCS_PRIVATE_UPLOAD_DIR ) && '' !== trim( WCCS_PRIVATE_UPLOAD_DIR ) ) {
+			return untrailingslashit( (string) WCCS_PRIVATE_UPLOAD_DIR );
+		}
+
+		$document_root = defined( 'ABSPATH' ) ? dirname( untrailingslashit( (string) ABSPATH ) ) : '';
+
+		return '' !== $document_root
+			? $document_root . '/' . self::DIRECTORY
+			: rtrim( (string) WP_CONTENT_DIR, '/\\' ) . '/' . self::DIRECTORY;
 	}
 
 	/**

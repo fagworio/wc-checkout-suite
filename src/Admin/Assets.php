@@ -73,14 +73,15 @@ final class Assets {
 			return;
 		}
 
-		$tokens = 'resources/design-tokens/tokens.css';
+		$version = self::asset_version();
+		$tokens  = 'resources/design-tokens/tokens.css';
 
 		if ( is_readable( WCCS_PLUGIN_DIR . $tokens ) ) {
 			wp_enqueue_style(
 				self::TOKENS_HANDLE,
 				WCCS_PLUGIN_URL . $tokens,
 				array(),
-				WCCS_VERSION
+				$version
 			);
 		}
 
@@ -90,7 +91,7 @@ final class Assets {
 			self::SCRIPT_HANDLE,
 			WCCS_PLUGIN_URL . 'build/admin/index.js',
 			$asset['dependencies'],
-			$asset['version'],
+			$version,
 			true
 		);
 
@@ -113,7 +114,7 @@ final class Assets {
 				self::STYLE_HANDLE,
 				WCCS_PLUGIN_URL . $stylesheet,
 				array( self::TOKENS_HANDLE ),
-				$asset['version']
+				$version
 			);
 		}
 	}
@@ -121,8 +122,10 @@ final class Assets {
 	/**
 	 * Reads the build manifest produced by the bundler.
 	 *
-	 * Dependencies and the cache-busting version come from the build, never from
-	 * a hand maintained list that would drift the first time an import changes.
+	 * Dependencies come from the build manifest. The version is environment-aware:
+	 * development uses the newest asset modification time so a rebuilt bundle is
+	 * fetched immediately, while production uses the plugin version and does not
+	 * create a new cache key on every request.
 	 *
 	 * @return array{dependencies: array<int, string>, version: string}
 	 */
@@ -148,8 +151,35 @@ final class Assets {
 			'dependencies' => isset( $manifest['dependencies'] ) && is_array( $manifest['dependencies'] )
 				? array_values( array_map( 'strval', $manifest['dependencies'] ) )
 				: array(),
-			'version'      => isset( $manifest['version'] ) ? (string) $manifest['version'] : WCCS_VERSION,
+			'version'      => self::asset_version(),
 		);
+	}
+
+	/**
+	 * Returns the cache key for the admin assets.
+	 *
+	 * `WCCS_DEV_MODE`, `WP_ENVIRONMENT_TYPE=local` or `development` are explicit
+	 * development switches. `WP_DEBUG` remains a fallback for older local
+	 * installations that do not define the environment type. Development requests
+	 * deliberately receive the current timestamp so an already-open browser tab
+	 * cannot keep an older bundle after a rebuild. Production remains stable on
+	 * the plugin version below.
+	 *
+	 * @return string
+	 */
+	private static function asset_version(): string {
+		$environment = function_exists( 'wp_get_environment_type' )
+			? (string) wp_get_environment_type()
+			: '';
+		$development = ( defined( 'WCCS_DEV_MODE' ) && WCCS_DEV_MODE )
+			|| in_array( $environment, array( 'local', 'development' ), true )
+			|| ( '' === $environment && defined( 'WP_DEBUG' ) && WP_DEBUG );
+
+		if ( ! $development ) {
+			return (string) WCCS_VERSION;
+		}
+
+		return 'dev-' . time();
 	}
 
 	/**
@@ -184,11 +214,91 @@ final class Assets {
 			// and a screen that built them itself would be a second opinion about where
 			// the store keeps its pages.
 			'urls'         => self::surface_urls(),
+			// The account editor mirrors WooCommerce's real navigation. It is read from
+			// `wc_get_account_menu_items()` instead of a browser-side list, so extensions,
+			// renamed endpoints and the store's own account configuration remain visible.
+			'accountMenu'  => self::account_menu(),
 			// Which checkout the store runs, read from the store (§6.2, §6.7): what a
 			// native field may be changed into depends on it, and the merchant should not
 			// have to tell the screen what their own checkout is.
 			'checkoutMode' => BlocksRenderer::store_checkout_mode(),
 		);
+	}
+
+	/**
+	 * The current WooCommerce My Account menu for the editor and its preview.
+	 *
+	 * WooCommerce owns the endpoint list and applies its public
+	 * `woocommerce_account_menu_items` filter here. WCCS additions therefore appear
+	 * beside native entries without the admin inventing a second account menu.
+	 *
+	 * @return array<int, array{id: string, label: string, url: string, logout: bool, custom: bool, children?: array<int, array{id: string, label: string, url: string}>}>
+	 */
+	private static function account_menu(): array {
+		if ( ! function_exists( 'wc_get_account_menu_items' ) ) {
+			return array();
+		}
+
+		$items = wc_get_account_menu_items();
+
+		if ( ! is_array( $items ) ) {
+			return array();
+		}
+
+		$native_endpoints = array(
+			'dashboard',
+			'orders',
+			'downloads',
+			'edit-address',
+			'payment-methods',
+			'edit-account',
+			'customer-logout',
+		);
+		$menu             = array();
+		foreach ( $items as $endpoint => $label ) {
+			$endpoint = sanitize_key( (string) $endpoint );
+			if ( '' === $endpoint ) {
+				continue;
+			}
+
+			$logout = 'customer-logout' === $endpoint;
+			$url    = '';
+			if ( $logout && function_exists( 'wc_logout_url' ) ) {
+				$url = wc_logout_url( wc_get_page_permalink( 'myaccount' ) );
+			} elseif ( function_exists( 'wc_get_account_endpoint_url' ) ) {
+				$url = wc_get_account_endpoint_url( $endpoint );
+			}
+
+			$entry = array(
+				'id'     => $endpoint,
+				'label'  => wp_strip_all_tags( (string) $label ),
+				'url'    => esc_url_raw( (string) $url ),
+				'logout' => $logout,
+				'custom' => ! in_array( $endpoint, $native_endpoints, true ),
+			);
+
+			// WooCommerce renders these as two real child routes inside the
+			// edit-address endpoint. Keep the URLs generated by WooCommerce so a
+			// translated or customised endpoint remains correct in the notice.
+			if ( 'edit-address' === $endpoint && function_exists( 'wc_get_endpoint_url' ) ) {
+				$entry['children'] = array(
+					array(
+						'id'    => 'billing',
+						'label' => __( 'Cobrança', 'wc-checkoutsuite' ),
+						'url'   => esc_url_raw( wc_get_endpoint_url( 'edit-address', 'billing', wc_get_page_permalink( 'myaccount' ) ) ),
+					),
+					array(
+						'id'    => 'shipping',
+						'label' => __( 'Entrega', 'wc-checkoutsuite' ),
+						'url'   => esc_url_raw( wc_get_endpoint_url( 'edit-address', 'shipping', wc_get_page_permalink( 'myaccount' ) ) ),
+					),
+				);
+			}
+
+			$menu[] = $entry;
+		}
+
+		return $menu;
 	}
 
 	/**

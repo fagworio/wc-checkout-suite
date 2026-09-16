@@ -36,6 +36,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import Button from './components/Button';
 import Dialog from './components/Dialog';
 import Notice from './components/Notice';
+import ContainerProperties from './components/ContainerProperties';
 import { TextField, SelectField, CheckboxField } from './components/controls';
 import FieldManagerView from './views/FieldManagerView';
 import useUnsavedChanges from './api/useUnsavedChanges';
@@ -43,6 +44,7 @@ import { areaHref, readArea, sectionHref } from './sectionUrl';
 import {
 	collectsAt,
 	containerWords,
+	DESTINATIONS,
 	isCustomerDestination,
 	navigation,
 	offeredInSentence,
@@ -50,6 +52,7 @@ import {
 import { Icon } from './design/icons';
 import { adoptCoreSection } from './schema/coreCheckout';
 import useDocumentHistory from './schema/useDocumentHistory';
+import { addBinding, withBindings } from './schema/bindings';
 import {
 	classifyFailure,
 	missingExtension,
@@ -67,6 +70,7 @@ import {
 	withProfiles,
 } from './schema/profiles';
 import {
+	adoptAccountField,
 	adoptCoreField,
 	ambiguousDestinations,
 	bulkImpact,
@@ -87,6 +91,7 @@ import {
 	sectionImpact,
 	sectionGroups,
 	setFieldEnabled,
+	setAccountFieldEnabled,
 	uniqueSectionId,
 	updateField,
 	updateSection,
@@ -297,14 +302,15 @@ function AccountSectionPresentation( {
 /**
  * Fields screen.
  *
- * @param {Object} props                Component properties.
- * @param {any}    props.client         REST client.
- * @param {string} [props.view]         View the frame is showing: `fields`,
- *                                      `appearance`, `archive` or `rules`.
- * @param {string} [props.siteName]     Store name, for the preview's mock header.
- * @param {Object} [props.urls]         Storefront addresses the success message links to.
- * @param {string} [props.checkoutMode] Which checkout the store runs (`blocks` or
- *                                      `classic`), read from the store by the server.
+ * @param {Object}                                                             props                Component properties.
+ * @param {any}                                                                props.client         REST client.
+ * @param {string}                                                             [props.view]         View the frame is showing: `fields`,
+ *                                                                                                  `appearance`, `archive` or `rules`.
+ * @param {string}                                                             [props.siteName]     Store name, for the preview's mock header.
+ * @param {Object}                                                             [props.urls]         Storefront addresses the success message links to.
+ * @param {Array<{id: string, label: string, url?: string, logout?: boolean}>} [props.accountMenu]  WooCommerce account menu.
+ * @param {string}                                                             [props.checkoutMode] Which checkout the store runs (`blocks` or
+ *                                                                                                  `classic`), read from the store by the server.
  * @return {*} Rendered element tree.
  */
 export default function FieldsScreen( {
@@ -312,6 +318,7 @@ export default function FieldsScreen( {
 	view = 'fields',
 	siteName = '',
 	urls = {},
+	accountMenu = [],
 	checkoutMode = '',
 } ) {
 	/**
@@ -352,6 +359,7 @@ export default function FieldsScreen( {
 	const [ failure, setFailure ] = useState( /** @type {any} */ ( null ) );
 	const [ saving, setSaving ] = useState( false );
 	const [ saved, setSaved ] = useState( '' );
+	const [ localDraftRestored, setLocalDraftRestored ] = useState( false );
 	const [ refusal, setRefusal ] = useState( '' );
 	const [ problems, setProblems ] = useState(
 		/** @type {Array<{fieldId?: string, message: string}>} */ ( [] )
@@ -658,6 +666,8 @@ export default function FieldsScreen( {
 				local?.baseRevision === draft.revision && local.document
 					? local.document
 					: draft;
+			const hasLocalDraft =
+				local?.baseRevision === draft.revision && Boolean( local.document );
 			const repaired = repairLegacyDraft( candidate );
 			const applied = repaired.changed ? repaired.document : candidate;
 			const legacy = ambiguousDestinations( applied );
@@ -666,6 +676,7 @@ export default function FieldsScreen( {
 			setLegacyPromptOpen( legacy.length > 0 );
 
 			if ( repaired.changed ) {
+				setLocalDraftRestored( hasLocalDraft );
 				resetDocument( applied );
 				setSaved(
 					__(
@@ -677,6 +688,7 @@ export default function FieldsScreen( {
 				local?.baseRevision === draft.revision &&
 				local.document
 			) {
+				setLocalDraftRestored( true );
 				resetDocument( applied );
 				setSaved(
 					__(
@@ -685,6 +697,7 @@ export default function FieldsScreen( {
 					)
 				);
 			} else {
+				setLocalDraftRestored( false );
 				window.sessionStorage?.removeItem( LOCAL_DRAFT_KEY );
 				resetDocument( applied );
 			}
@@ -703,6 +716,36 @@ export default function FieldsScreen( {
 			}
 		}
 	}, [ client, resetDocument ] );
+
+	/**
+	 * Drops only the browser handoff and restores the last server-confirmed draft.
+	 *
+	 * A page created but not saved exists only in this session. Giving it an explicit
+	 * discard action is safer than asking the merchant to open DevTools, and it avoids
+	 * touching WooCommerce's native account pages or the published schema.
+	 *
+	 * @return {void}
+	 */
+	const discardLocalDraft = useCallback( () => {
+		if (
+			! savedDocument ||
+			! window.confirm(
+				__(
+					'Descartar a edição local e remover as alterações não salvas desta sessão?',
+					'wc-checkoutsuite'
+				)
+			)
+		) {
+			return;
+		}
+
+		window.sessionStorage?.removeItem( LOCAL_DRAFT_KEY );
+		resetDocument( savedDocument );
+		setSaved( '' );
+		setLocalDraftRestored( false );
+		setProblems( [] );
+		setPublishError( '' );
+	}, [ savedDocument, resetDocument ] );
 
 	useEffect( () => {
 		if (
@@ -1308,6 +1351,40 @@ export default function FieldsScreen( {
 		);
 	};
 
+	/**
+	 * Requests removal of the section currently open in the properties dialog.
+	 *
+	 * The action is deliberately shared by the dialog footer and the dependency
+	 * confirmation: the merchant can always see the destructive action without
+	 * scrolling through the section properties, while fields and links still get
+	 * the same dependency protection before anything is removed.
+	 *
+	 * @return {void}
+	 */
+	const requestSectionRemovalById = ( id ) => {
+		if ( ! id ) {
+			return;
+		}
+
+		const impact = sectionImpact( composition, id );
+		const result = removeSection( composition, id );
+
+		if ( result.ok ) {
+			applyComposed( result );
+			if ( editingSection?.id === id ) {
+				setEditingSectionId( null );
+			}
+		} else {
+			setSectionRemoval( {
+				id,
+				impact,
+			} );
+		}
+	};
+
+	const requestSectionRemoval = () =>
+		requestSectionRemovalById( editingSection?.id );
+
 	return (
 		<>
 			<FieldManagerView
@@ -1328,6 +1405,7 @@ export default function FieldsScreen( {
 					linkSections: declaredSections,
 					area,
 					areas: navigation(),
+					accountMenu,
 					onAreaChange: selectArea,
 					onToggleSectionTitle: (
 						/** @type {boolean} */ checked
@@ -1357,6 +1435,8 @@ export default function FieldsScreen( {
 					dirty,
 					saving,
 					saved,
+					localDraftRestored,
+					onDiscardLocalDraft: discardLocalDraft,
 					failure,
 					refusal,
 					problems,
@@ -1420,42 +1500,132 @@ export default function FieldsScreen( {
 						// two customer surfaces, where the value lives with the customer.
 						const collectedHere = collectsAt( area );
 						const customerSurface = isCustomerArea( area );
+						let targetDocument = document;
+						let targetSection = collectedHere ? section : 'order';
 
-						apply(
-							createField( document, {
-								...choice,
-								label: choice.defaults?.label ?? choice.label,
-								// A destination that only shows values collects nothing: the
-								// field is created with its collection home in the checkout, so
-								// it is not a definition nobody can ever fill in.
-								section: collectedHere ? section : 'order',
-								settings: choice.settings,
-								layout: choice.defaults?.layout,
-								collectionSurface: customerSurface
-									? 'my_account'
-									: 'checkout',
-								...( customerSurface
-									? {
-											storage: {
-												scope: 'customer',
-												sensitivity: 'personal',
-											},
-									  }
-									: {} ),
-								destinations: {
-									[ area ]: {
-										enabled: true,
-										section,
-										...( customerSurface
-											? { mode: 'edit' }
-											: {} ),
+						// A native account page is a real WooCommerce context but has no WCCS
+						// container until the merchant adds the first complementary field. Create
+						// that container as part of the same draft operation so the new field has a
+						// valid home and is rendered after the native form instead of disappearing.
+						if (
+							customerSurface &&
+							choice.accountPage &&
+							! document.sections.some(
+								( /** @type {any} */ entry ) =>
+									entry.presentation?.account?.page ===
+									choice.accountPage
+							)
+						) {
+							const created = createSection( document, {
+								title:
+									choice.accountPageLabel ??
+									choice.accountPage,
+								// `customer_account` is the destination area, not the logical
+								// insertion target. Account containers are inserted at the
+								// account location, just like containers created from the page
+								// dialog. Keeping those concepts separate is required by the
+								// server's ContainerDefinition contract.
+								location: defaultSectionLocation( area ),
+								areas: [ 'customer_account' ],
+								presentation: {
+									show_title: false,
+									account: {
+										page: choice.accountPage,
+										mode: 'edit',
 									},
 								},
-							} )
-						);
+							} );
+
+							if ( ! created.ok ) {
+								apply( created );
+
+								return;
+							}
+
+							targetDocument = created.document;
+							targetSection =
+								created.document.sections[
+									created.document.sections.length - 1
+								].id;
+						}
+
+						const createdField = createField( targetDocument, {
+							...choice,
+							label: choice.defaults?.label ?? choice.label,
+							// A destination that only shows values collects nothing: the
+							// field is created with its collection home in the checkout, so
+							// it is not a definition nobody can ever fill in.
+							section: targetSection,
+							settings: choice.settings,
+							layout: choice.defaults?.layout,
+							collectionSurface: customerSurface
+								? 'my_account'
+								: 'checkout',
+							...( customerSurface
+								? {
+										storage: {
+											scope: 'customer',
+											sensitivity: 'personal',
+										},
+								  }
+								: {} ),
+							destinations: {
+								[ area ]: {
+									enabled: true,
+									section: targetSection,
+									...( customerSurface
+										? { mode: 'edit' }
+										: {} ),
+									...( customerSurface &&
+									choice.supports?.file
+										? {
+												actions: [
+													'show_metadata',
+													'view',
+													'download',
+													'resubmit',
+												],
+										  }
+										: {} ),
+								},
+							},
+						} );
+						apply( createdField );
+
+						if ( createdField.ok && choice.accountPage ) {
+							setSection( targetSection );
+						}
 					},
 					onAdoptCore: ( /** @type {any} */ core ) =>
 						apply( adoptCoreField( document, core ) ),
+					onAdoptAccount: ( /** @type {any} */ core ) => {
+						const result = adoptAccountField( document, core );
+
+						if ( result.ok && result.field ) {
+							setEditing( result.field.id );
+						}
+
+						apply(
+							result,
+							__( 'Editar campo nativo', 'wc-checkoutsuite' )
+						);
+					},
+					onToggleAccount: (
+						/** @type {any} */ core,
+						/** @type {boolean} */ enabled
+					) =>
+						apply(
+							setAccountFieldEnabled( document, core, enabled ),
+							enabled
+								? __(
+										'Restaurar campo nativo',
+										'wc-checkoutsuite'
+								  )
+								: __(
+										'Ocultar campo nativo',
+										'wc-checkoutsuite'
+								  )
+						),
 					// «Não mostrar»: o campo passa a ser gerido e já nasce desligado no
 					// checkout. É a resposta para «não quero este campo» num campo do
 					// WooCommerce, que não se apaga da loja — só se deixa de mostrar.
@@ -1512,7 +1682,8 @@ export default function FieldsScreen( {
 										'Esta seção implícita do WooCommerce não pode ser editada. Crie uma seção personalizada para dar-lhe um nome.',
 										'wc-checkoutsuite'
 									)
-							  ),
+								  ),
+					onRemoveSection: requestSectionRemovalById,
 					onCreateSection: () => {
 						setNewSectionLocation( defaultSectionLocation( area ) );
 						setNewSectionIcon( 'user' );
@@ -1709,8 +1880,7 @@ export default function FieldsScreen( {
 									<Button
 										variant="primary"
 										disabled={
-											'' === linkFieldId ||
-											'checkout' === area
+											'' === linkFieldId || ! section
 										}
 										onClick={ () => {
 											const field = document.fields.find(
@@ -1722,23 +1892,21 @@ export default function FieldsScreen( {
 												return;
 											}
 
+											const bindings = addBinding(
+												field,
+												area,
+												section
+											);
+
 											apply(
 												updateField(
 													document,
 													field.id,
 													{
-														destinations: {
-															...( field.destinations ??
-																{} ),
-															[ area ]: {
-																...( field
-																	.destinations?.[
-																	area
-																] ?? {} ),
-																enabled: true,
-																section,
-															},
-														},
+														...withBindings(
+															field,
+															bindings
+														),
 													}
 												)
 											);
@@ -2104,67 +2272,47 @@ export default function FieldsScreen( {
 							title={ containerWords( area ).one }
 							onClose={ () => setEditingSectionId( null ) }
 							footer={
-								<Button
-									variant="primary"
-									onClick={ () =>
-										setEditingSectionId( null )
-									}
-								>
-									{ __( 'Done', 'wc-checkoutsuite' ) }
-								</Button>
+								<>
+									<Button
+										variant="danger"
+										onClick={ requestSectionRemoval }
+									>
+										{ sprintf(
+											/* translators: %s: destination-specific container name. */
+											__(
+												'Remover %s',
+												'wc-checkoutsuite'
+											),
+											containerWords( area ).one
+										) }
+									</Button>
+									<Button
+										variant="primary"
+										onClick={ () =>
+											setEditingSectionId( null )
+										}
+									>
+										{ __( 'Done', 'wc-checkoutsuite' ) }
+									</Button>
+								</>
 							}
 						>
 							{ editingSection ? (
 								<>
-									<TextField
-										id="wccs-section-title"
-										label={ __(
-											'Nome',
-											'wc-checkoutsuite'
-										) }
-										value={ editingSection.title }
-										onChange={ (
-											/** @type {{ target: { value: string } }} */ event
-										) =>
-											applyComposed(
-												updateSection(
-													composition,
-													editingSection.id,
-													{
-														title: event.target
-															.value,
-													}
-												)
-											)
-										}
-									/>
-
-									<SelectField
-										id="wccs-section-location"
-										label={ __(
-											'Local',
-											'wc-checkoutsuite'
-										) }
-										value={ editingSection.location }
-										options={ (
-											catalog?.sectionLocations ?? []
-										).map(
-											( /** @type {any} */ entry ) => ( {
-												value: entry.value,
+									<ContainerProperties
+										value={ editingSection }
+										destinations={ DESTINATIONS.map(
+											( entry ) => ( {
+												value: entry.id,
 												label: entry.label,
 											} )
 										) }
-										onChange={ (
-											/** @type {{ target: { value: string } }} */ event
-										) =>
+										onChange={ ( changes ) =>
 											applyComposed(
 												updateSection(
 													composition,
 													editingSection.id,
-													{
-														location:
-															event.target.value,
-													}
+													changes
 												)
 											)
 										}
@@ -2234,34 +2382,6 @@ export default function FieldsScreen( {
 										</button>
 									</div>
 
-									<Button
-										variant="secondary"
-										onClick={ () => {
-											const impact = sectionImpact(
-												composition,
-												editingSection.id
-											);
-											const result = removeSection(
-												composition,
-												editingSection.id
-											);
-
-											if ( result.ok ) {
-												applyComposed( result );
-												setEditingSectionId( null );
-											} else {
-												setSectionRemoval( {
-													id: editingSection.id,
-													impact,
-												} );
-											}
-										} }
-									>
-										{ __(
-											'Remove section',
-											'wc-checkoutsuite'
-										) }
-									</Button>
 								</>
 							) : null }
 						</Dialog>

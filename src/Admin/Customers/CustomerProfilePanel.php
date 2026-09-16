@@ -17,7 +17,10 @@ use WCCheckoutSuite\Domain\Customers\CustomerSectionFields;
 use WCCheckoutSuite\Domain\Fields\FieldBinding;
 use WCCheckoutSuite\Domain\Fields\FieldDefinition;
 use WCCheckoutSuite\Domain\Uploads\UploadService;
+use WCCheckoutSuite\Domain\Uploads\FilePermissions;
 use WCCheckoutSuite\Domain\Sections\SectionDefinition;
+use WCCheckoutSuite\Http\Admin\SchemaController;
+use WCCheckoutSuite\Http\Checkout\DownloadController;
 
 /**
  * The staff half of the customer's own data.
@@ -120,6 +123,25 @@ final class CustomerProfilePanel {
 	}
 
 	/**
+	 * The authorized download address for a customer document.
+	 *
+	 * @param string $token Upload token.
+	 * @return string
+	 */
+	private static function document_url( string $token ): string {
+		return add_query_arg(
+			array(
+				'destination' => self::DESTINATION,
+				'_wpnonce'    => wp_create_nonce( 'wp_rest' ),
+			),
+			rest_url(
+				SchemaController::rest_namespace()
+					. str_replace( '(?P<token>[a-f0-9]{64})', $token, DownloadController::ROUTE_DOWNLOAD )
+			)
+		);
+	}
+
+	/**
 	 * Draws the panel on the profile screen.
 	 *
 	 * @param mixed $user User the screen is editing.
@@ -163,6 +185,9 @@ final class CustomerProfilePanel {
 			foreach ( $entry['entries'] as $field ) {
 				$definition = $field['field'];
 				$value      = $values[ $definition->id() ] ?? null;
+				$document   = CustomerSectionFields::is_document( $definition )
+					? ( new UploadService() )->for_customer_field( (int) $user->ID, $definition->id() )
+					: null;
 
 				echo '<tr>';
 
@@ -173,14 +198,19 @@ final class CustomerProfilePanel {
 					// this screen can type into. It is shown, and the upload from here is the
 					// next slice of the phase: a file input with no handler would look like an
 					// offer this screen does not make.
+					$download = is_array( $document ) && FilePermissions::allows_binding( $field['binding'], self::DESTINATION, 'download' )
+						? sprintf(
+							'<a href="%s">%s</a>',
+							esc_url( self::document_url( (string) $document['token'] ) ),
+							esc_html__( 'Baixar documento', 'wc-checkoutsuite' )
+						)
+						: '';
+
 					printf(
-						'<th scope="row">%s</th><td><span class="wccs-customer-document">%s</span><br /><small>%s</small></td>',
+						'<th scope="row">%s</th><td><span class="wccs-customer-document">%s</span>%s<br /><small>%s</small></td>',
 						esc_html( $field['title'] ),
-						esc_html(
-							CustomerSectionFields::document_label(
-								( new UploadService() )->for_customer_field( (int) $user->ID, $definition->id() )
-							)
-						),
+						esc_html( CustomerSectionFields::document_label( $document ) ),
+						wp_kses_post( $download ),
 						esc_html__( 'O cliente envia e substitui este documento na página dele.', 'wc-checkoutsuite' )
 					);
 				} elseif ( ! CustomerSectionFields::entry_writable( $field ) ) {

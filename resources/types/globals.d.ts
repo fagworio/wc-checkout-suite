@@ -26,6 +26,15 @@ declare global {
 		routes?: Record< string, string >;
 	}
 
+	interface WccsAdminAccountMenuItem {
+		id: string;
+		label: string;
+		url?: string;
+		logout?: boolean;
+		custom?: boolean;
+		children?: Array< { id: string; label: string; url?: string } >;
+	}
+
 	/**
 	 * Bootstrap payload printed by the plugin before the bundle runs.
 	 */
@@ -37,6 +46,8 @@ declare global {
 		rest?: WccsAdminRest;
 		/** Storefront addresses the editor links to after a save. */
 		urls?: Record< string, string >;
+		/** Current account endpoint menu returned by WooCommerce. */
+		accountMenu?: WccsAdminAccountMenuItem[];
 		/**
 		 * Which checkout the store runs, read from the store by the server.
 		 *

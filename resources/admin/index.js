@@ -39,6 +39,7 @@ if ( mount ) {
 			version={ config.version ?? '' }
 			siteName={ config.siteName ?? '' }
 			urls={ config.urls ?? {} }
+			accountMenu={ config.accountMenu ?? [] }
 			checkoutMode={ config.checkoutMode ?? '' }
 			client={ client }
 		/>,

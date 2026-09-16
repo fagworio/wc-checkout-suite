@@ -21,6 +21,7 @@ import { __, sprintf } from '@wordpress/i18n';
 
 import Button from './components/Button';
 import Notice from './components/Notice';
+import PreviewPanel from './components/PreviewPanel';
 import ConditionBuilder from './components/ConditionBuilder';
 import { TextField, SelectField, CheckboxField } from './components/controls';
 import { Icon } from './design/icons';
@@ -54,6 +55,8 @@ export default function WorkflowsScreen( { client } ) {
 	);
 	const [ selected, setSelected ] = useState( 0 );
 	const [ dirty, setDirty ] = useState( false );
+	const [ revision, setRevision ] = useState( 0 );
+	const [ conflict, setConflict ] = useState( false );
 	const [ sample, setSample ] = useState(
 		/** @type {Record<string, any>} */ ( {} )
 	);
@@ -81,6 +84,8 @@ export default function WorkflowsScreen( { client } ) {
 			);
 			setVocabulary( answer?.vocabulary ?? {} );
 			setStatuses( answer?.statuses ?? [] );
+			setRevision( Number( answer?.revision ?? 0 ) );
+			setConflict( false );
 			setFailure( '' );
 			setDirty( false );
 		} catch ( error ) {
@@ -120,6 +125,7 @@ export default function WorkflowsScreen( { client } ) {
 		setList( ( entries ) => updateWorkflow( entries, selected, changes ) );
 		setDirty( true );
 		setSaved( '' );
+		setConflict( false );
 	};
 
 	/**
@@ -137,6 +143,7 @@ export default function WorkflowsScreen( { client } ) {
 		} );
 		setDirty( true );
 		setSaved( '' );
+		setConflict( false );
 	};
 
 	/**
@@ -149,6 +156,7 @@ export default function WorkflowsScreen( { client } ) {
 		setSelected( 0 );
 		setDirty( true );
 		setSaved( '' );
+		setConflict( false );
 	};
 
 	/** Writes the list. */
@@ -157,16 +165,25 @@ export default function WorkflowsScreen( { client } ) {
 		setFailure( '' );
 
 		try {
-			const answer = await client.saveWorkflows( payloadOf( list ) );
+			const answer = await client.saveWorkflows(
+				payloadOf( list ),
+				revision
+			);
 
 			setList(
 				Array.isArray( answer?.workflows ) ? answer.workflows : list
 			);
+			setRevision( Number( answer?.revision ?? revision + 1 ) );
+			setConflict( false );
 			setDirty( false );
 			setSaved( __( 'Automações guardadas.', 'wc-checkoutsuite' ) );
 		} catch ( error ) {
 			const thrown = /** @type {any} */ ( error );
 			const details = thrown?.payload?.errors;
+			const isConflict =
+				409 === Number( thrown?.status ?? thrown?.payload?.status ) ||
+				'wccs_workflows_conflict' === thrown?.code;
+			setConflict( isConflict );
 
 			setFailure(
 				Array.isArray( details ) && details.length > 0
@@ -220,7 +237,7 @@ export default function WorkflowsScreen( { client } ) {
 			<button
 				type="button"
 				className="btn btn-primary"
-				disabled={ ! dirty || saving || issues.length > 0 }
+				disabled={ ! dirty || saving || issues.length > 0 || conflict }
 				onClick={ save }
 			>
 				<Icon name="save" />
@@ -257,6 +274,26 @@ export default function WorkflowsScreen( { client } ) {
 					</div>
 				</div>
 
+				{ conflict ? (
+					<Notice
+						status="warning"
+						title={ __( 'Conflito de edição', 'wc-checkoutsuite' ) }
+					>
+						<p>
+							{ __(
+								'Outra sessão alterou as automações. Recarregue a configuração antes de salvar.',
+								'wc-checkoutsuite'
+							) }
+						</p>
+						<Button variant="secondary" onClick={ load }>
+							{ __(
+								'Recarregar automações',
+								'wc-checkoutsuite'
+							) }
+						</Button>
+					</Notice>
+				) : null }
+
 				{ failure ? (
 					<Notice
 						status="error"
@@ -267,6 +304,15 @@ export default function WorkflowsScreen( { client } ) {
 						onDismiss={ () => setFailure( '' ) }
 					>
 						{ failure }
+					</Notice>
+				) : null }
+
+				{ saved ? (
+					<Notice
+						status="success"
+						title={ __( 'Alterações salvas', 'wc-checkoutsuite' ) }
+					>
+						{ saved }
 					</Notice>
 				) : null }
 
@@ -377,6 +423,28 @@ export default function WorkflowsScreen( { client } ) {
 									onChange={ ( /** @type {any} */ event ) =>
 										change( {
 											trigger: event.target.value,
+										} )
+									}
+								/>
+								<TextField
+									id="wccs-workflow-priority"
+									label={ __(
+										'Prioridade',
+										'wc-checkoutsuite'
+									) }
+									type="number"
+									value={ String( current.priority ?? 10 ) }
+									help={ __(
+										'Menor número é avaliado primeiro quando mais de uma automação corresponde.',
+										'wc-checkoutsuite'
+									) }
+									onChange={ ( /** @type {any} */ event ) =>
+										change( {
+											priority:
+												parseInt(
+													event.target.value,
+													10
+												) || 0,
 										} )
 									}
 								/>
@@ -650,15 +718,14 @@ export default function WorkflowsScreen( { client } ) {
 						) }
 					</div>
 
-					<div className="panel wccs-workflows__simulation">
-						<h2>{ __( 'Testar cenário', 'wc-checkoutsuite' ) }</h2>
-						<p className="form-help">
-							{ __(
-								'O simulador não executa nada: responde o que a configuração decidiria, e não guarda nem move pedido nenhum.',
-								'wc-checkoutsuite'
-							) }
-						</p>
-
+					<PreviewPanel
+						className="wccs-workflows__simulation"
+						title={ __( 'Simulação', 'wc-checkoutsuite' ) }
+						description={ __(
+							'Teste um cenário sem executar cobrança, estoque ou mudança de pedido.',
+							'wc-checkoutsuite'
+						) }
+					>
 						<TextField
 							id="wccs-sim-categories"
 							label={ __(
@@ -752,7 +819,7 @@ export default function WorkflowsScreen( { client } ) {
 								</ul>
 							</div>
 						) : null }
-					</div>
+					</PreviewPanel>
 				</div>
 			</section>
 

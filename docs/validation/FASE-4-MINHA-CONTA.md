@@ -95,13 +95,24 @@ exige que a implementação declare quais as páginas nativas que podem receber 
 
 ## 5. Prova
 
+### Inventário e overrides nativos usados pelo editor
+
+O editor lê o contrato da página nativa `edit-account` do WooCommerce e mostra
+`account_first_name`, `account_last_name`, `account_display_name`, `account_email` e o grupo
+`password_current` / `password_1` / `password_2`. Cada linha pode ser editada: o rótulo e a
+descrição são gravados como override, e o botão de remoção oculta o controle com possibilidade de
+restaurar. O identificador, o tipo, a validação e a gravação continuam pertencendo ao formulário
+nativo. O override só entra no documento quando usado, para não transformar o inventário padrão em
+uma cópia desnecessária. Ao selecionar `edit-address`, a interface informa que a página possui os
+submenus reais de Cobrança e Entrega e deixa a integração desses campos para uma etapa posterior.
+
 | Prova | Resultado |
 |---|---|
 | `UploadsRetentionTest` (3 testes novos) | um documento de cliente é guardado enquanto o cliente existe; fica órfão quando o cliente desaparece; uma linha `stored` sem cliente é órfã |
 | `CustomerSectionFieldsTest` (2 testes novos) | um documento é recolhível numa superfície de cliente e `is_document()` distingue-o de um valor; `document_label()` nomeia o ficheiro e o tamanho, e diz «Documento enviado.» quando o nome se perdeu |
 | `tests/Integration/FASE4-customer-upload-proof.php` (novo) | **21/0** contra a base e o diretório reais: a tabela tem `user_id` e a versão diz qual build a instalou; o upload de um cliente é aceite e fica `stored`, sem expiração e sem pedido; a página encontra-o **por cliente e campo**; conta na quota dele; **outro cliente recebe `not_yours`**; a **página renderizada** mostra o documento, a ligação com o token, o formulário `multipart` com `name="wccs_account_files[…]"`; sem ambiente protegido mostra a razão **sem** controlo e continua a mostrar o documento; o limpo vê a linha sem expiração; e o `sweep` remove-a, ficheiro e linha |
-| `tests/browser/fase4-my-account-upload.mjs` (novo) | **11/0** com um POST real: o cliente abre a sua página, vê o campo e «Nenhum documento enviado.»; envia um PDF pelo formulário; a página volta a mostrar o documento e a dizer que foi enviado; o campo de texto da **mesma** submissão foi gravado; e o documento continua lá num acesso novo |
-| `tests/Integration/support/seed-customer-document.php` (novo) | escreve e desfaz o cenário: documento publicado, cliente, e — porque esta máquina serve o diretório privado por HTTP — a observação de ambiente, que `teardown` remove |
+| `tests/browser/fase4-my-account-upload.mjs` (novo) | **12/0** com um POST real: o cliente abre a sua página, vê o campo e «Nenhum documento enviado.»; envia um PDF pelo formulário; a página volta a mostrar o documento e a dizer que foi enviado; o campo de texto da **mesma** submissão foi gravado; o documento continua lá num acesso novo; e o link protegido devolve o arquivo |
+| `tests/Integration/support/seed-customer-document.php` (novo) | escreve e desfaz o cenário: documento publicado, cliente e observação real do ambiente; o diretório padrão fica fora do document root e `teardown` remove o cenário |
 | `AccountSurfacesTest` (novo) | 5 testes: as superfícies oferecidas são as seguras; cada uma se explica; uma chave é conhecida e rotulada (e uma desconhecida é devolvida a si mesma, para a recusa poder nomeá-la); cada página recusada diz porquê; o logout é explicado como ligação |
 | `SectionValidatorTest` (3 testes novos) | uma secção pode viver numa página nativa e não precisa de slug; uma página que não pode receber conteúdo é recusada pelo nome (`account_page_not_supported`) em todas as cinco; duas secções em páginas nativas não colidem por um slug |
 | `FASE4-customer-upload-proof.php` (§7.4) | **+3 asserções**: a secção numa página nativa é aceite pelo servidor, **não regista endpoint nem entrada de menu**, e renderiza-se dentro da ação da página com o seu próprio formulário e o marcador de secção |
@@ -110,23 +121,16 @@ exige que a implementação declare quais as páginas nativas que podem receber 
 | Varredura de integração | **70 harnesses, 1593 asserções, 0 falhas** |
 | `npx jest` / `npx tsc --noEmit` / `npm run lint:js` / `npm run build` | limpos (**688 testes**) |
 
-O harness segue a convenção que WCCS-042 fixou para este ambiente: faz a observação **real** primeiro
-e di-lo em nota — nesta máquina o diretório privado é servido por HTTP (`protected=no status=200`),
-portanto o upload está desligado por regra —, e só depois injeta a observação para exercer as regras
-de posse e de retenção, apagando o que escreveu no fim. A observação de browser faz o mesmo e di-lo
-no cabeçalho e no resultado.
+O harness faz a observação **real** primeiro e di-lo em nota. Nesta máquina o diretório privado fica
+fora do document root (`protected=yes status=404`), portanto o upload é exercitado sem injeção de
+estado. O cenário é apagado no fim.
 
 ## 6. Limites que ficam registados
 
-- **A substituição não apaga o documento anterior.** O ficheiro novo é uma linha nova e a página lê
-  a mais recente; a antiga fica sem ninguém a apontar para ela até o cliente ser removido. Não é uma
-  tabela de versões nem uma limpeza de cada substituição: é a escolha de não apagar nada enquanto o
-  histórico puder ser pedido. Recolher as linhas antigas de um cliente que continua a existir é uma
-  decisão de retenção que ainda não foi tomada.
-- **O envio pelo painel de administração não existe.** O painel mostra o documento e di-lo; enviar
-  ou substituir por conta do cliente é a Fase 5 (perfil do cliente para a equipa), onde as permissões
-  de editar/ver por uso passam a ser configuráveis.
-- **Nesta máquina o upload está desligado** porque o `.htaccess` do diretório privado é ignorado pelo
-  Apache do devilbox (`AllowOverride`). A prova de browser injecta a observação — e di-lo no
-  cabeçalho, na nota e no fixture — como o harness faz; a proteção real do diretório é uma decisão de
-  servidor, não deste código.
+- **A substituição mantém somente a versão atual.** O ficheiro novo é gravado com segurança e, depois
+  do registro bem-sucedido, a versão anterior é removida; uma falha nunca apaga o documento atual.
+- **O envio pelo painel de administração não existe.** O painel mostra o documento e oferece download
+  quando a ação está autorizada; enviar ou substituir pela equipe continua sendo uma etapa posterior.
+- **Um ambiente configurado manualmente precisa ser protegido.** `WCCS_PRIVATE_UPLOAD_DIR` permite
+  escolher outro diretório, mas a verificação HTTP continua obrigatória e o upload permanece desligado
+  se o servidor expuser os arquivos.

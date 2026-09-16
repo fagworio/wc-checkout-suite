@@ -212,8 +212,8 @@ wccs_proof_check(
 	'manifest deps: ' . implode( ', ', $wccs_manifest['dependencies'] )
 );
 wccs_proof_check(
-	'The cache busting version is the build hash',
-	'' !== $wccs_manifest['version'] && WCCS_VERSION !== $wccs_manifest['version'],
+	'The production cache busting version is the plugin version',
+	WCCS_VERSION === $wccs_manifest['version'],
 	'version=' . $wccs_manifest['version']
 );
 

@@ -66,14 +66,15 @@ final class UploadRules {
 	/**
 	 * Validates a detected file against the limits.
 	 *
-	 * @param string $mime      MIME type the server detected.
-	 * @param int    $bytes     Size in bytes.
-	 * @param int    $used      Bytes the owner has already stored.
-	 * @param int    $max_bytes Maximum for one file.
-	 * @param int    $quota     Maximum for the owner.
+	 * @param string             $mime               MIME type the server detected.
+	 * @param int                $bytes              Size in bytes.
+	 * @param int                $used               Bytes the owner has already stored.
+	 * @param int                $max_bytes          Maximum for one file.
+	 * @param int                $quota              Maximum for the owner.
+	 * @param array<int, string> $allowed_extensions Extensions allowed by the field, empty for the store defaults.
 	 * @return string Empty when it is acceptable, a stable code otherwise.
 	 */
-	public static function check( string $mime, int $bytes, int $used = 0, int $max_bytes = self::DEFAULT_MAX_BYTES, int $quota = self::DEFAULT_QUOTA_BYTES ): string {
+	public static function check( string $mime, int $bytes, int $used = 0, int $max_bytes = self::DEFAULT_MAX_BYTES, int $quota = self::DEFAULT_QUOTA_BYTES, array $allowed_extensions = array() ): string {
 		if ( $bytes <= 0 ) {
 			return 'empty_file';
 		}
@@ -86,11 +87,53 @@ final class UploadRules {
 			return 'mime_not_allowed';
 		}
 
+		if ( array() !== $allowed_extensions && ! in_array( self::extension_for_mime( $mime ), self::normalise_extensions( $allowed_extensions ), true ) ) {
+			return 'mime_not_allowed';
+		}
+
 		if ( ( $used + $bytes ) > $quota ) {
 			return 'quota_exceeded';
 		}
 
 		return '';
+	}
+
+	/**
+	 * The extension represented by a server-detected MIME type.
+	 *
+	 * @param string $mime MIME type.
+	 * @return string
+	 */
+	private static function extension_for_mime( string $mime ): string {
+		$extensions = array(
+			'image/jpeg'      => 'jpg',
+			'image/png'       => 'png',
+			'image/webp'      => 'webp',
+			'application/pdf' => 'pdf',
+			'text/plain'      => 'txt',
+		);
+
+		return $extensions[ $mime ] ?? '';
+	}
+
+	/**
+	 * Normalises the merchant's extension list without trusting a browser value.
+	 *
+	 * @param array<int, string> $extensions Extensions.
+	 * @return array<int, string>
+	 */
+	private static function normalise_extensions( array $extensions ): array {
+		$normalised = array();
+
+		foreach ( $extensions as $extension ) {
+			$extension = strtolower( ltrim( trim( (string) $extension ), '.' ) );
+
+			if ( '' !== $extension ) {
+				$normalised[] = $extension;
+			}
+		}
+
+		return array_values( array_unique( $normalised ) );
 	}
 
 	/**
