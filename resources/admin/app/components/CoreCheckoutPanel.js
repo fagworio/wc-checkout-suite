@@ -31,6 +31,8 @@ import {
  * @param {import('../schema/types').SchemaDocument}                             props.document       Document being edited.
  * @param {(entry: import('../schema/types').CoreFieldEntry) => void}            props.onAdoptField   Adopt one native field.
  * @param {(section: import('../schema/coreCheckout').CoreSectionState) => void} props.onAdoptSection Adopt every field of a section.
+ * @param {boolean}                                                              [props.inline]       Whether it is drawn inside the field list.
+ * @param {string}                                                               [props.onlyKey]      Draw one section only, by key.
  * @return {*} Rendered panel, or null when it has nothing to say.
  */
 export default function CoreCheckoutPanel( {
@@ -38,13 +40,17 @@ export default function CoreCheckoutPanel( {
 	document,
 	onAdoptField,
 	onAdoptSection,
+	inline = false,
+	onlyKey = '',
 } ) {
 	if ( ! hasCoreCheckout( inventory ) ) {
 		return null;
 	}
 
-	const sections = coreCheckout( inventory, document ).filter( ( section ) =>
-		section.fields.some( ( field ) => ! field.managed )
+	const sections = coreCheckout( inventory, document ).filter(
+		( section ) =>
+			section.fields.some( ( field ) => ! field.managed ) &&
+			( '' === onlyKey || section.key === onlyKey )
 	);
 
 	if ( 0 === sections.length ) {
@@ -56,19 +62,43 @@ export default function CoreCheckoutPanel( {
 		0
 	);
 
+	// Dentro da lista, o bloco deixa de ser um painel com vida própria e passa a ser
+	// o que ele é: os campos que a loja já tem nesta seção e que ainda não são
+	// geridos aqui, na mesma linha dos outros, à espera de serem usados.
 	return (
 		<section
-			className="core-checkout"
-			aria-label={ __( 'Checkout padrão', 'wc-checkoutsuite' ) }
+			className={ `core-checkout${
+				inline ? ' core-checkout--inline' : ''
+			}` }
+			aria-label={
+				inline
+					? __(
+							'Campos do checkout da loja nesta seção',
+							'wc-checkoutsuite'
+					  )
+					: __( 'Checkout padrão', 'wc-checkoutsuite' )
+			}
 		>
 			<div className="core-checkout-head">
 				<div>
-					<h3>{ __( 'Checkout padrão', 'wc-checkoutsuite' ) }</h3>
+					<h3>
+						{ inline
+							? __(
+									'Campos do checkout da loja nesta seção',
+									'wc-checkoutsuite'
+							  )
+							: __( 'Checkout padrão', 'wc-checkoutsuite' ) }
+					</h3>
 					<p className="muted small">
-						{ __(
-							'Estes campos já existem no checkout da loja. Adotar um deles permite configurá-lo aqui sem criar uma cópia: o valor continua a ser do WooCommerce.',
-							'wc-checkoutsuite'
-						) }
+						{ inline
+							? __(
+									'Já existem no checkout da loja. Usar um deles permite desativá-lo ou alterá-lo aqui sem criar uma cópia: o valor continua a ser do WooCommerce.',
+									'wc-checkoutsuite'
+							  )
+							: __(
+									'Estes campos já existem no checkout da loja. Adotar um deles permite configurá-lo aqui sem criar uma cópia: o valor continua a ser do WooCommerce.',
+									'wc-checkoutsuite'
+							  ) }
 					</p>
 				</div>
 				<span className="core-checkout-count">

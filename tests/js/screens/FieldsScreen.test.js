@@ -370,7 +370,7 @@ describe( 'the schema', () => {
 		);
 
 		const panel = await screen.findByRole( 'region', {
-			name: 'Checkout padrão',
+			name: 'Campos do checkout da loja nesta seção',
 		} );
 
 		expect( within( panel ).getByText( 'Cobrança' ) ).toBeInTheDocument();

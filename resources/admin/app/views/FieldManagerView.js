@@ -2042,6 +2042,28 @@ export default function FieldManagerView( { model } ) {
 							</div>
 						</div>
 
+						{ /* Os campos que a loja já tem nesta seção e que ainda não são
+						     geridos aqui (§6.2). Deixaram de ser um painel à parte: são
+						     as últimas linhas da lista, com a mesma cara das outras, e é
+						     nelas que o comerciante usa o campo — para depois o
+						     desativar, alterar ou deixar como está. */ }
+						<CoreCheckoutPanel
+							inventory={ coreFields }
+							document={ composition ?? doc }
+							inline
+							/* A seção aberta pode ser um contentor do comerciante, e o
+							   campo nativo pertence à **localização** do checkout
+							   (`billing`, `shipping`, `order`): é a localização que
+							   diz quais são os campos da loja que faltam aqui. */
+							onlyKey={
+								current?.section?.location ??
+								current?.section?.id ??
+								''
+							}
+							onAdoptField={ onAdoptCore }
+							onAdoptSection={ onAdoptCoreSection }
+						/>
+
 						{ /* O botão tracejado do desenho: o mesmo caminho do cabeçalho,
 						     onde o campo nasce — dentro da seção que está aberta. */ }
 						<button
@@ -2135,24 +2157,6 @@ export default function FieldManagerView( { model } ) {
 								</div>
 							) }
 						</div>
-
-						{ /* O checkout da própria loja, oferecido para adoção (§6.2). Fica
-						     depois da lista e da prévia e não antes delas: o desenho abre
-						     na seção, nos campos e na amostra, e adotar o checkout que a
-						     loja já corre é o passo que se faz depois de ver o que
-						     falta. */ }
-						{ /* The store's own checkout, above the document that configures it (§6.2).
-				     It is offered where fields are collected: the native fields and their
-				     order belong to the checkout, and a screen for a display destination
-				     would be promising a management it cannot perform. */ }
-						{ 'checkout' === area ? (
-							<CoreCheckoutPanel
-								inventory={ coreFields }
-								document={ composition ?? doc }
-								onAdoptField={ onAdoptCore }
-								onAdoptSection={ onAdoptCoreSection }
-							/>
-						) : null }
 
 						<div className="editor-bottom">
 							<div className="tip-card">

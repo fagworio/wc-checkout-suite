@@ -1043,3 +1043,14 @@ body:has(.wccs-admin) #wpfooter {
   .wccs-admin .editor-grid{grid-template-columns:minmax(0,1fr) 288px}
   .wccs-admin .sections-panel{display:none}
 }
+
+/* Os campos que a loja já tem nesta seção, dentro da lista: as mesmas linhas, sem
+   o cartão de um painel à parte. */
+.wccs-admin .core-checkout--inline{margin:14px 22px 0;padding:14px 0 0;border:0;border-top:1px solid var(--border);border-radius:0;background:none;box-shadow:none}
+.wccs-admin .core-checkout--inline .core-checkout-head{padding:0 0 10px}
+.wccs-admin .core-checkout--inline .core-checkout-head h3{font-size:12px;font-weight:650}
+.wccs-admin .core-checkout--inline .core-checkout-head p{font-size:10px;color:var(--muted);margin-top:3px;max-width:70ch}
+.wccs-admin .core-checkout--inline .core-checkout-section{background:none;border:0;padding:0}
+.wccs-admin .core-checkout--inline .core-checkout-section-head{padding:0 0 6px}
+.wccs-admin .core-checkout--inline .core-checkout-fields li{padding:7px 0;border-bottom:1px solid var(--border)}
+.wccs-admin .core-checkout--inline .core-checkout-fields li:last-child{border-bottom:0}

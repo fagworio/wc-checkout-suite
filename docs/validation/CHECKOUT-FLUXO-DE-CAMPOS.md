@@ -66,13 +66,34 @@ a proteção.
 A lixeira fica na tinta discreta das outras ações e só fica vermelha com o rato em cima: é a resposta
 ao gesto, não o estado de repouso de uma linha que ninguém pediu para apagar.
 
+## 2c. O bloco do checkout da loja deixa de ser um painel (pedido seguinte)
+
+O painel «Checkout padrão» — que ocupava o meio com «Usar esta seção» e um «Usar» por campo, e um
+contador «N por adotar» — deixou de existir como painel. O que ele mostrava passa a ser **o fim da
+lista da seção aberta**: os campos que a loja já tem naquela localização do checkout e que ainda não
+são geridos aqui, nas mesmas linhas das outras, com o distintivo `Nativo` e o botão «Usar».
+
+- O bloco é desenhado **dentro do painel da lista**, depois dos campos geridos e antes do
+  «Adicionar campo nesta seção».
+- E é da **seção aberta**: a chave que o liga ao inventário é a **localização** do contentor
+  (`billing`, `shipping`, `order`) e não o identificador da seção — porque um contentor do
+  comerciante pode ser a «Cobrança» da loja sem se chamar assim. Sem isto, um contentor próprio com
+  localização de cobrança não mostrava os campos de cobrança da loja.
+- A partir daí valem as regras novas, as mesmas dos outros campos: usar o campo torna-o gerido, e
+  gerido ele tem o interruptor que o desativa no checkout, o duplicar e a lixeira — que num campo do
+  WooCommerce responde com a razão em vez de o apagar.
+- A contagem da coluna das seções já contava estes campos; agora a lista mostra o que a contagem diz.
+
+`fase3` foi atualizada: o bloco é da seção aberta (o teste abre-a e conta um bloco, não todos) e a
+adoção de uma seção inteira continua a ser uma ação, no mesmo sítio onde os campos estão.
+
 ## 3. Prova
 
 | Prova | Resultado |
 |---|---|
 | `tests/browser/fase16-usability.mjs` | **25/0**, com cinco asserções novas: as seções estão na coluna da esquerda com nome, frase, contagem e o criar tracejado; o interruptor do título existe e chama-se «Exibir título da seção»; «Adicionar campo nesta seção» existe e está visível; o formulário abre com o tipo escolhido; e pede nome, chave, descrição, regras e confirmação |
 | `tests/browser/fase14-custom-checkout.mjs` / `fase15-accessibility.mjs` / `fase10-workflows.mjs` | **11/0**, **20/0**, **16/0** — a lista de seções, o diálogo e a acessibilidade continuam a passar com a coluna nova |
-| `tests/browser/fase3-checkout-reference.mjs` | **14/0** no cenário que o próprio script documenta (o fixture limpo); a adoção de uma seção nativa continua a funcionar com o painel mais abaixo |
+| `tests/browser/fase3-checkout-reference.mjs` | **14/0** no cenário que o próprio script documenta (o fixture limpo): o bloco dos campos da loja aparece no fim da lista da seção aberta, a adoção de uma seção inteira continua a ser uma ação, e o que sobra continua a aparecer na seção onde vive |
 | `tests/js/screens/FieldsScreen.test.js` / `tests/js/design/useNarrowViewport.test.js` | **39/39** e **3/3**. A prévia repete os rótulos dos campos de propósito, e as consultas passaram a ser feitas **dentro da lista** (`role="list"` com o nome «Campos da seção», e as linhas com `role="listitem"`) — que é também a estrutura que um leitor de ecrã passa a ter |
 | `tests/js/screens/FieldsScreen.test.js` | **41/41**, com dois testes novos: a lixeira da linha exclui o campo e a marca como alteração não salva, e o ícone de duplicar cria a cópia — sem passar pelo menu |
 | `tests/browser/fase16-usability.mjs` | **27/0**, com duas asserções novas: «Excluir …» e «Duplicar …» estão na linha como ícones, e o menu deixou de oferecer «Editar campo» |

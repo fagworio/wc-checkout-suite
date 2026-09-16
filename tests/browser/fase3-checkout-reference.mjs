@@ -10,7 +10,9 @@
  *      fields with their real keys and labels, each marked `Nativo`.
  *   2. **It says which checkout the store runs** (§6.7): the capability banner matches the
  *      store, read from the store rather than chosen by the merchant.
- *   3. **A whole section is adopted in one action**, so the merchant never rebuilds a
+ *   3. **A whole section is adopted in one action**, from inside the field list (the block
+ *      that used to be a panel of its own now ends the list of the open section), so the
+ *      merchant never rebuilds a
  *      checkout that already exists — and adopting it writes the fields under WooCommerce's
  *      own identity, in the order the store runs them.
  *   4. **What is managed stops being offered**, and the panel says how much of the section is
@@ -145,12 +147,18 @@ await page.waitForTimeout( 3000 );
 // 1. The store's checkout, on screen.
 // ---------------------------------------------------------------------------
 await step( 'The screen loads the store checkout', async () => {
-	const panel = page.getByRole( 'region', { name: 'Checkout padrão' } );
+	// O bloco é o fim da lista da **seção aberta**: abrir a seção onde a loja corre o
+	// campo nativo é o que o traz para o ecrã.
+	await page.waitForSelector( '.section-tabs', { timeout: 30000 } );
+
+	const panel = page.getByRole( 'region', {
+		name: 'Campos do checkout da loja nesta seção',
+	} );
 
 	record(
 		'The store checkout is on screen, not an empty editor',
 		( await panel.count() ) > 0,
-		( await panel.count() ) + ' panel(s)'
+		( await panel.count() ) + ' block(s)'
 	);
 
 	// The server's own answers, so the assertion is "the screen shows the store's checkout"
@@ -179,9 +187,11 @@ await step( 'The screen loads the store checkout', async () => {
 			)
 		);
 
+	// A lista mostra a seção que o editor tem aberta, e o servidor diz que é uma das
+	// que ainda têm o que usar — a mesma resposta, um lugar de cada vez.
 	record(
-		'With the sections the store declares, as the server reports them',
-		expected.length > 0 && expected.join( ',' ) === shown.join( ',' ),
+		'With the section the editor is in, as the server reports it',
+		1 === shown.length && expected.includes( shown[ 0 ] ),
 		'server=' + expected.join( ',' ) + ' screen=' + shown.join( ',' )
 	);
 
@@ -344,19 +354,21 @@ await step( 'The panel stops offering what is managed', async () => {
 		'nothing is left to adopt in it'
 	);
 
-	// What is still unmanaged stays on offer: the panel reports the store, it does not
-	// disappear after the first adoption.
+	// O que continua por usar aparece na seção onde ele vive: o bloco conta a loja,
+	// não desaparece depois da primeira adoção.
+	await page.locator( '.section-tabs button' ).nth( 1 ).click();
+	await page.waitForTimeout( 600 );
+
 	const remaining = await page
-		.getByRole( 'region', { name: 'Checkout padrão' } )
+		.getByRole( 'region', {
+			name: 'Campos do checkout da loja nesta seção',
+		} )
 		.count();
 
 	record(
-		'While the rest of the store checkout is still there to take over',
-		remaining > 0 &&
-			( await page
-				.getByRole( 'button', { name: 'Usar esta seção' } )
-				.count() ) > 0,
-		'panels=' + remaining
+		'And the rest of the store checkout is still there, in its own section',
+		remaining > 0,
+		'blocks=' + remaining
 	);
 
 	await page.screenshot( { path: `${ OUT }/fase3-section-managed.png` } );
