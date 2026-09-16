@@ -1514,7 +1514,9 @@ describe( 'the row menu', () => {
 		);
 
 		expect(
-			screen.getByRole( 'button', { name: 'Editar campo' } )
+			screen.getByRole( 'button', {
+				name: 'Duplicar como personalizado',
+			} )
 		).toBeInTheDocument();
 
 		await user.keyboard( '{Escape}' );
@@ -1535,6 +1537,55 @@ describe( 'the row menu', () => {
 			).toHaveFocus()
 		);
 	} );
+
+	it( 'exclui o campo pelo ícone da linha, sem passar pelo menu', async () => {
+		const user = userEvent.setup();
+
+		render( <FieldsScreen client={ client() } /> );
+
+		const list = await screen.findByRole( 'list', {
+			name: 'Campos da seção',
+		} );
+
+		await within( list ).findByText( 'CPF' );
+
+		// O desenho põe a lixeira na linha: excluir não é uma decisão escondida
+		// atrás de um menu.
+		await user.click(
+			screen.getByRole( 'button', { name: 'Excluir CPF' } )
+		);
+
+		await waitFor( () =>
+			expect(
+				within( list ).queryByText( 'CPF' )
+			).not.toBeInTheDocument()
+		);
+
+		expect(
+			screen.getByText( 'Alterações não salvas' )
+		).toBeInTheDocument();
+	} );
+
+	it( 'duplica o campo pelo ícone da linha', async () => {
+		const user = userEvent.setup();
+
+		render( <FieldsScreen client={ client() } /> );
+
+		const list = await screen.findByRole( 'list', {
+			name: 'Campos da seção',
+		} );
+
+		await within( list ).findByText( 'CPF' );
+
+		await user.click(
+			screen.getByRole( 'button', { name: 'Duplicar CPF' } )
+		);
+
+		expect(
+			await within( list ).findByText( 'CPF (copy)' )
+		).toBeInTheDocument();
+	} );
+
 	it( 'places a customer section inside a native page instead of a page of its own', async () => {
 		const user = userEvent.setup();
 		const section = {

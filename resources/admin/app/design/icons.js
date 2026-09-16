@@ -42,6 +42,7 @@ export const ICON_PATHS = {
 	down: '<path d="M12 4v16M6 14l6 6 6-6"/>',
 	more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
 	copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M15 8V4H4v11h4"/>',
+	trash: '<path d="M4 7h16M10 7V5h4v2M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
 	edit: '<path d="m14 5 5 5M4 20l5-1L20 8l-5-5L4 14v6Z"/>',
 	lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4M12 14v3"/>',
 	undo: '<path d="m8 5-5 5 5 5M3 10h11a6 6 0 0 1 0 12"/>',

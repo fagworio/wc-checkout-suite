@@ -184,7 +184,7 @@ describe( 'the field properties on a narrow window', () => {
 		expect(
 			globalThis.document.querySelector( '.mobile-inspector' )
 		).toBeNull();
-		// eslint-disable-next-line no-console
+
 		expect( screen.getByLabelText( 'Nome do campo' ) ).toBeInTheDocument();
 	} );
 

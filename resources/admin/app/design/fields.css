@@ -277,6 +277,16 @@ body:has(.wccs-admin) #wpfooter {
 .wccs-admin .toggle input:focus-visible+span{outline:3px solid var(--brand);outline-offset:3px}
 .wccs-admin .toggle input:disabled+span{opacity:.5}
 .wccs-admin .row-actions{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px}
+/* As ações da linha, como o desenho as põe: ícones sempre à vista, não um menu. */
+.wccs-admin .row-quick{display:flex;align-items:center;gap:2px}
+.wccs-admin .row-quick .icon-btn.small-icon{width:26px;min-width:26px;height:26px;border-color:transparent;background:none}
+.wccs-admin .row-quick .icon-btn.small-icon:hover{background:var(--bg);color:var(--brand)}
+/* O desenho põe a lixeira na mesma tinta das outras ações: o vermelho é a
+   resposta ao rato, não o estado de repouso de uma linha que ninguém pediu para
+   apagar. */
+.wccs-admin .row-quick .icon-btn.small-icon.danger,
+.wccs-admin .row-quick .icon-btn.small-icon.danger:hover{color:var(--muted)}
+.wccs-admin .row-quick .icon-btn.small-icon.danger:hover{background:#fdecea;color:#c0322b}
 .wccs-admin .row-menu-trigger{border:0;background:none;width:25px;height:25px;min-width:25px}
 .wccs-admin .row-menu-trigger .icon{width:17px;height:17px}
 .wccs-admin .move-pair{display:flex;gap:1px}

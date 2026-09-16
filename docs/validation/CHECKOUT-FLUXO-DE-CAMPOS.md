@@ -48,6 +48,24 @@ abria a partir de um campo já escolhido. O protótipo desenha outra coisa, e de
   desenho abre na seção, nos campos e na amostra, e adotar o checkout que a loja já corre é o passo
   que se faz depois de ver o que falta.
 
+## 2b. As ações da linha: a lixeira e a duplicação (pedido seguinte)
+
+O desenho põe as ações do campo **na linha** — duplicar e excluir — e não dentro de um menu. A linha
+passou a ter um grupo `.row-quick` com esses dois ícones, sempre à vista:
+
+- **duplicar** (`copy`) — o mesmo `onDuplicate` que o menu já chamava;
+- **excluir** (`trash`, ícone novo — não existia) — o mesmo `onRemove`; e
+- no campo que não se pode excluir, **«Por que não posso excluir?»** (`info`), que é o caminho da
+  proteção nativa: um campo do WooCommerce não se apaga, explica-se.
+
+O item **«Editar campo» saiu do menu**: a área de edição é o painel ao lado, e clicar na linha já a
+abre — um segundo caminho para o mesmo sítio só fazia duvidar de qual estava ativo. O menu continua
+com o que ele é o único sítio para fazer: desativar, arquivar, duplicar como personalizado e explicar
+a proteção.
+
+A lixeira fica na tinta discreta das outras ações e só fica vermelha com o rato em cima: é a resposta
+ao gesto, não o estado de repouso de uma linha que ninguém pediu para apagar.
+
 ## 3. Prova
 
 | Prova | Resultado |
@@ -56,7 +74,9 @@ abria a partir de um campo já escolhido. O protótipo desenha outra coisa, e de
 | `tests/browser/fase14-custom-checkout.mjs` / `fase15-accessibility.mjs` / `fase10-workflows.mjs` | **11/0**, **20/0**, **16/0** — a lista de seções, o diálogo e a acessibilidade continuam a passar com a coluna nova |
 | `tests/browser/fase3-checkout-reference.mjs` | **14/0** no cenário que o próprio script documenta (o fixture limpo); a adoção de uma seção nativa continua a funcionar com o painel mais abaixo |
 | `tests/js/screens/FieldsScreen.test.js` / `tests/js/design/useNarrowViewport.test.js` | **39/39** e **3/3**. A prévia repete os rótulos dos campos de propósito, e as consultas passaram a ser feitas **dentro da lista** (`role="list"` com o nome «Campos da seção», e as linhas com `role="listitem"`) — que é também a estrutura que um leitor de ecrã passa a ter |
-| `npx jest` / `npx tsc --noEmit` / `npm run lint:js` / `npm run build` | limpos (**823 testes**, 51 suites); build compila |
+| `tests/js/screens/FieldsScreen.test.js` | **41/41**, com dois testes novos: a lixeira da linha exclui o campo e a marca como alteração não salva, e o ícone de duplicar cria a cópia — sem passar pelo menu |
+| `tests/browser/fase16-usability.mjs` | **27/0**, com duas asserções novas: «Excluir …» e «Duplicar …» estão na linha como ícones, e o menu deixou de oferecer «Editar campo» |
+| `npx jest` / `npx tsc --noEmit` / `npm run lint:js` / `npm run build` | limpos (**825 testes**, 51 suites); build compila |
 | Comparação visual | a tela foi aberta em `…&section=fields&area=checkout` e fotografada; as três colunas, o botão tracejado e o painel «Adicionar campo» estão como na referência |
 
 ## 4. Deliberadamente fora

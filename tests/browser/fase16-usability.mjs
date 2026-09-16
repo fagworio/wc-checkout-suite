@@ -399,6 +399,62 @@ await step( 'A tela de campos tem o fluxo do protótipo', async () => {
 } );
 
 // ---------------------------------------------------------------------------
+// 4c. As ações da linha, como o desenho as põe.
+// ---------------------------------------------------------------------------
+await step( 'A linha tem as ações à vista, e não um menu', async () => {
+	await open( 'fields', '.section-tabs' );
+
+	const row = await page.evaluate( () => {
+		const first = document.querySelector( '.field-row' );
+
+		if ( ! first ) {
+			return null;
+		}
+
+		const quick = first.querySelector( '.row-quick' );
+		const names = Array.from(
+			quick?.querySelectorAll( 'button' ) ?? []
+		).map( ( node ) => node.getAttribute( 'aria-label' ) ?? '' );
+
+		return {
+			quick: Boolean( quick ),
+			names,
+		};
+	} );
+
+	record(
+		'Excluir e duplicar estão na linha, como ícones',
+		null !== row &&
+			row.quick &&
+			row.names.some( ( name ) => /^Excluir /.test( name ) ) &&
+			row.names.some( ( name ) => /^Duplicar /.test( name ) ),
+		JSON.stringify( row )
+	);
+
+	// «Editar campo» saiu do menu: a área de edição é o painel ao lado, e a linha
+	// já a abre.
+	await page
+		.getByRole( 'button', { name: /^Ações de / } )
+		.first()
+		.click();
+	await page.waitForSelector( '.row-menu', { timeout: 10000 } );
+
+	const menu = await page.evaluate( () =>
+		Array.from(
+			document.querySelectorAll( '.row-menu button' )
+		).map( ( node ) => node.textContent.trim() )
+	);
+
+	record(
+		'E o menu deixou de oferecer «Editar campo»',
+		menu.length > 0 && ! menu.some( ( item ) => /Editar campo/.test( item ) ),
+		menu.join( ' | ' )
+	);
+
+	await page.keyboard.press( 'Escape' );
+} );
+
+// ---------------------------------------------------------------------------
 // 5. A destination is an address: choosing one writes it, and the address reopens it.
 // ---------------------------------------------------------------------------
 await step( 'O destino fica no endereço e o endereço reabre-o', async () => {
