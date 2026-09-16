@@ -135,7 +135,7 @@ export default function FieldManagerView( { model } ) {
 		onProtect,
 		onCreateField,
 		onAdoptCore,
-		onAdoptCoreSection,
+		onHideCore,
 		edits,
 		onSave,
 		report,
@@ -2061,7 +2061,7 @@ export default function FieldManagerView( { model } ) {
 								''
 							}
 							onAdoptField={ onAdoptCore }
-							onAdoptSection={ onAdoptCoreSection }
+							onHideField={ onHideCore }
 						/>
 
 						{ /* O botão tracejado do desenho: o mesmo caminho do cabeçalho,

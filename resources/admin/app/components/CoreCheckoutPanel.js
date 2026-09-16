@@ -15,7 +15,6 @@
 import { __, sprintf } from '@wordpress/i18n';
 
 import { Badge } from './Badge';
-import Button from './Button';
 import { Icon } from '../design/icons';
 import {
 	coreCheckout,
@@ -26,20 +25,20 @@ import {
 /**
  * The panel.
  *
- * @param {Object}                                                               props                Component properties.
- * @param {import('../schema/types').CoreFieldInventory|null}                    props.inventory      Inventory of the store's checkout.
- * @param {import('../schema/types').SchemaDocument}                             props.document       Document being edited.
- * @param {(entry: import('../schema/types').CoreFieldEntry) => void}            props.onAdoptField   Adopt one native field.
- * @param {(section: import('../schema/coreCheckout').CoreSectionState) => void} props.onAdoptSection Adopt every field of a section.
- * @param {boolean}                                                              [props.inline]       Whether it is drawn inside the field list.
- * @param {string}                                                               [props.onlyKey]      Draw one section only, by key.
+ * @param {Object}                                                    props              Component properties.
+ * @param {import('../schema/types').CoreFieldInventory|null}         props.inventory    Inventory of the store's checkout.
+ * @param {import('../schema/types').SchemaDocument}                  props.document     Document being edited.
+ * @param {(entry: import('../schema/types').CoreFieldEntry) => void} props.onAdoptField Use one native field.
+ * @param {(entry: import('../schema/types').CoreFieldEntry) => void} props.onHideField  Use it and leave it out of the checkout.
+ * @param {boolean}                                                   [props.inline]     Whether it is drawn inside the field list.
+ * @param {string}                                                    [props.onlyKey]    Draw one section only, by key.
  * @return {*} Rendered panel, or null when it has nothing to say.
  */
 export default function CoreCheckoutPanel( {
 	inventory,
 	document,
 	onAdoptField,
-	onAdoptSection,
+	onHideField,
 	inline = false,
 	onlyKey = '',
 } ) {
@@ -57,11 +56,6 @@ export default function CoreCheckoutPanel( {
 		return null;
 	}
 
-	const pending = sections.reduce(
-		( total, section ) => total + ( section.total - section.managed ),
-		0
-	);
-
 	// Dentro da lista, o bloco deixa de ser um painel com vida própria e passa a ser
 	// o que ele é: os campos que a loja já tem nesta seção e que ainda não são
 	// geridos aqui, na mesma linha dos outros, à espera de serem usados.
@@ -70,46 +64,8 @@ export default function CoreCheckoutPanel( {
 			className={ `core-checkout${
 				inline ? ' core-checkout--inline' : ''
 			}` }
-			aria-label={
-				inline
-					? __(
-							'Campos do checkout da loja nesta seção',
-							'wc-checkoutsuite'
-					  )
-					: __( 'Checkout padrão', 'wc-checkoutsuite' )
-			}
+			aria-label={ __( 'Campos da loja', 'wc-checkoutsuite' ) }
 		>
-			<div className="core-checkout-head">
-				<div>
-					<h3>
-						{ inline
-							? __(
-									'Campos do checkout da loja nesta seção',
-									'wc-checkoutsuite'
-							  )
-							: __( 'Checkout padrão', 'wc-checkoutsuite' ) }
-					</h3>
-					<p className="muted small">
-						{ inline
-							? __(
-									'Já existem no checkout da loja. Usar um deles permite desativá-lo ou alterá-lo aqui sem criar uma cópia: o valor continua a ser do WooCommerce.',
-									'wc-checkoutsuite'
-							  )
-							: __(
-									'Estes campos já existem no checkout da loja. Adotar um deles permite configurá-lo aqui sem criar uma cópia: o valor continua a ser do WooCommerce.',
-									'wc-checkoutsuite'
-							  ) }
-					</p>
-				</div>
-				<span className="core-checkout-count">
-					{ sprintf(
-						/* translators: %d: number of native fields not managed yet. */
-						__( '%d por adotar', 'wc-checkoutsuite' ),
-						pending
-					) }
-				</span>
-			</div>
-
 			<div className="core-checkout-sections">
 				{ sections.map( ( section ) => (
 					<div
@@ -117,30 +73,6 @@ export default function CoreCheckoutPanel( {
 						key={ section.key }
 						id={ `wccs-core-section-${ section.key }` }
 					>
-						<div className="core-checkout-section-head">
-							<div>
-								<strong>{ section.label }</strong>
-								<small className="muted">
-									{ sprintf(
-										/* translators: 1: managed fields, 2: total fields. */
-										__(
-											'%1$d de %2$d gerenciados',
-											'wc-checkoutsuite'
-										),
-										section.managed,
-										section.total
-									) }
-								</small>
-							</div>
-							<Button
-								size="small"
-								variant="secondary"
-								onClick={ () => onAdoptSection( section ) }
-							>
-								{ __( 'Usar esta seção', 'wc-checkoutsuite' ) }
-							</Button>
-						</div>
-
 						<ul className="core-checkout-fields">
 							{ section.fields.map( ( field ) => (
 								<li key={ field.entry.id }>
@@ -184,17 +116,36 @@ export default function CoreCheckoutPanel( {
 											) }
 										</Badge>
 									) : (
-										<button
-											type="button"
-											className="text-btn"
-											id={ `wccs-core-adopt-${ field.entry.id }` }
-											onClick={ () =>
-												onAdoptField( field.entry )
-											}
-										>
-											<Icon name="plus" />{ ' ' }
-											{ __( 'Usar', 'wc-checkoutsuite' ) }
-										</button>
+										<>
+											<button
+												type="button"
+												className="text-btn"
+												id={ `wccs-core-adopt-${ field.entry.id }` }
+												onClick={ () =>
+													onAdoptField( field.entry )
+												}
+											>
+												<Icon name="plus" />{ ' ' }
+												{ __(
+													'Usar',
+													'wc-checkoutsuite'
+												) }
+											</button>
+											<button
+												type="button"
+												className="text-btn"
+												id={ `wccs-core-hide-${ field.entry.id }` }
+												onClick={ () =>
+													onHideField( field.entry )
+												}
+											>
+												<Icon name="eye" />{ ' ' }
+												{ __(
+													'Não mostrar',
+													'wc-checkoutsuite'
+												) }
+											</button>
+										</>
 									) }
 								</li>
 							) ) }

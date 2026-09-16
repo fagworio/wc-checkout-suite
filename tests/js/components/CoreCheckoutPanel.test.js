@@ -90,36 +90,39 @@ function definition( id ) {
  */
 function renderPanel( overrides = {} ) {
 	const onAdoptField = jest.fn();
-	const onAdoptSection = jest.fn();
+	const onHideField = jest.fn();
 	const result = render(
 		<CoreCheckoutPanel
 			inventory={ inventory() }
 			document={ doc() }
 			onAdoptField={ onAdoptField }
-			onAdoptSection={ onAdoptSection }
+			onHideField={ onHideField }
 			{ ...overrides }
 		/>
 	);
 
-	return { ...result, onAdoptField, onAdoptSection };
+	return { ...result, onAdoptField, onHideField };
 }
 
-describe( 'the store checkout panel', () => {
-	it( 'lists the sections and the native fields the store runs', () => {
+describe( 'the fields the store already has', () => {
+	it( 'lists the native fields of the store, as lines of the list', () => {
 		renderPanel();
 
-		const panel = screen.getByRole( 'region', { name: 'Checkout padrão' } );
+		const block = screen.getByRole( 'region', { name: 'Campos da loja' } );
 
-		expect( within( panel ).getByText( 'Cobrança' ) ).toBeInTheDocument();
-		expect( within( panel ).getByText( 'Nome' ) ).toBeInTheDocument();
+		expect( within( block ).getByText( 'Nome' ) ).toBeInTheDocument();
 		expect(
-			within( panel ).getByText( 'billing_first_name' )
+			within( block ).getByText( 'billing_first_name' )
 		).toBeInTheDocument();
-		expect( within( panel ).getByText( 'Telefone' ) ).toBeInTheDocument();
-		expect( within( panel ).getAllByText( 'Nativo' ) ).toHaveLength( 2 );
+		expect( within( block ).getByText( 'Telefone' ) ).toBeInTheDocument();
+		expect( within( block ).getAllByText( 'Nativo' ) ).toHaveLength( 2 );
+
+		// Sem título, sem explicação e sem contador: o desenho mostra as linhas, e o
+		// que se faz com um campo está na linha dele.
 		expect(
-			within( panel ).getByText( '2 por adotar' )
-		).toBeInTheDocument();
+			screen.queryByText( 'Checkout padrão' )
+		).not.toBeInTheDocument();
+		expect( screen.queryByText( /por adotar/ ) ).not.toBeInTheDocument();
 	} );
 
 	it( 'adopts one field when the merchant asks for it', async () => {
@@ -141,16 +144,20 @@ describe( 'the store checkout panel', () => {
 		);
 	} );
 
-	it( 'adopts the whole section when the merchant asks for it', async () => {
+	it( 'offers to leave a native field out of the checkout', async () => {
 		const user = userEvent.setup();
-		const { onAdoptSection } = renderPanel();
+		const { onHideField } = renderPanel();
 
-		await user.click(
-			screen.getByRole( 'button', { name: 'Usar esta seção' } )
+		const hide = document.getElementById(
+			'wccs-core-hide-billing_first_name'
 		);
 
-		expect( onAdoptSection ).toHaveBeenCalledWith(
-			expect.objectContaining( { key: 'billing' } )
+		expect( hide ).not.toBeNull();
+
+		await user.click( /** @type {Element} */ ( hide ) );
+
+		expect( onHideField ).toHaveBeenCalledWith(
+			expect.objectContaining( { id: 'billing_first_name' } )
 		);
 	} );
 
@@ -160,7 +167,6 @@ describe( 'the store checkout panel', () => {
 		} );
 
 		expect( screen.getByText( 'Gerenciado' ) ).toBeInTheDocument();
-		expect( screen.getByText( '1 de 2 gerenciados' ) ).toBeInTheDocument();
 		expect(
 			document.getElementById( 'wccs-core-adopt-billing_first_name' )
 		).toBeNull();
@@ -187,7 +193,7 @@ describe( 'the store checkout panel', () => {
 		} );
 
 		expect(
-			screen.queryByRole( 'region', { name: 'Checkout padrão' } )
+			screen.queryByRole( 'region', { name: 'Campos da loja' } )
 		).not.toBeInTheDocument();
 	} );
 

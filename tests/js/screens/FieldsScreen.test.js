@@ -369,26 +369,32 @@ describe( 'the schema', () => {
 			/>
 		);
 
-		const panel = await screen.findByRole( 'region', {
-			name: 'Campos do checkout da loja nesta seção',
+		const block = await screen.findByRole( 'region', {
+			name: 'Campos da loja',
 		} );
 
-		expect( within( panel ).getByText( 'Cobrança' ) ).toBeInTheDocument();
-		expect( within( panel ).getByText( 'Nome' ) ).toBeInTheDocument();
+		expect( within( block ).getByText( 'Nome' ) ).toBeInTheDocument();
 		expect(
-			within( panel ).getByText( 'billing_first_name' )
+			within( block ).getByText( 'billing_first_name' )
 		).toBeInTheDocument();
-		expect( within( panel ).getByText( 'Nativo' ) ).toBeInTheDocument();
+		expect( within( block ).getByText( 'Nativo' ) ).toBeInTheDocument();
 
-		// And it can be taken over in one action, without rebuilding the section by hand.
+		// E o campo é usado numa ação, sem reconstruir a seção à mão. O botão tem o
+		// identificador do campo, que é o contrato com a observação de browser.
 		await userEvent
 			.setup()
-			.click( screen.getByRole( 'button', { name: 'Usar esta seção' } ) );
+			.click(
+				/** @type {Element} */ (
+					document.getElementById(
+						'wccs-core-adopt-billing_first_name'
+					)
+				)
+			);
 
-		// The field is part of the document now, and the panel has nothing left to offer.
+		// The field is part of the document now, and the block has nothing left to offer.
 		await screen.findByText( /1 de 1 ativos/ );
 		expect(
-			screen.queryByRole( 'button', { name: 'Usar esta seção' } )
+			screen.queryByRole( 'region', { name: 'Campos da loja' } )
 		).not.toBeInTheDocument();
 	} );
 

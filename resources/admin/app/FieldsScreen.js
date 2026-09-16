@@ -1456,6 +1456,22 @@ export default function FieldsScreen( {
 					},
 					onAdoptCore: ( /** @type {any} */ core ) =>
 						apply( adoptCoreField( document, core ) ),
+					// «Não mostrar»: o campo passa a ser gerido e já nasce desligado no
+					// checkout. É a resposta para «não quero este campo» num campo do
+					// WooCommerce, que não se apaga da loja — só se deixa de mostrar.
+					onHideCore: ( /** @type {any} */ core ) => {
+						const adopted = adoptCoreField( document, core );
+
+						if ( ! adopted.ok ) {
+							apply( adopted );
+
+							return;
+						}
+
+						apply(
+							setFieldEnabled( adopted.document, core.id, false )
+						);
+					},
 					onAdoptCoreSection: ( /** @type {any} */ coreSection ) =>
 						apply( adoptCoreSection( document, coreSection ) ),
 					onChangeField: (

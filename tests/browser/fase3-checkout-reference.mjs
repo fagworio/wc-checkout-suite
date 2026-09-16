@@ -152,7 +152,7 @@ await step( 'The screen loads the store checkout', async () => {
 	await page.waitForSelector( '.section-tabs', { timeout: 30000 } );
 
 	const panel = page.getByRole( 'region', {
-		name: 'Campos do checkout da loja nesta seção',
+		name: 'Campos da loja',
 	} );
 
 	record(
@@ -233,20 +233,32 @@ await step( 'It says which checkout the store runs', async () => {
 } );
 
 // ---------------------------------------------------------------------------
-// 2. Adopting a whole section.
+// 2. Using the fields of a section.
 // ---------------------------------------------------------------------------
-await step( 'A whole section of the store checkout is adopted', async () => {
-	const card = page.locator( `#wccs-core-section-${ SECTION }` );
-
-	await card.getByRole( 'button', { name: 'Usar esta seção' } ).click();
-	await page.waitForTimeout( 800 );
+await step( 'The fields of the section are used, one action each', async () => {
+	// As linhas dos campos da loja estão na lista: usar uma é uma ação, e a partir
+	// daí ela vale as regras de todos os outros campos.
+	const adopt = page.locator( '#wccs-core-adopt-billing_first_name' );
 
 	record(
-		'The section is taken over in one action',
+		'E a seção oferece cada campo da loja para usar',
 		( await page
-			.locator( `#wccs-core-adopt-${ NATIVE_FIELD }` )
-			.count() ) === 0,
-		'the section no longer offers every field one by one'
+			.locator( `#wccs-core-section-${ SECTION } .core-checkout-fields li` )
+			.count() ) > 1,
+		'fields in the store section'
+	);
+
+	while ( ( await page.locator( '.core-checkout-fields .text-btn' ).count() ) > 0 ) {
+		await page.locator( '.core-checkout-fields .text-btn' ).first().click();
+		await page.waitForTimeout( 120 );
+	}
+
+	await page.waitForTimeout( 600 );
+
+	record(
+		'The fields are taken over in one action each, and stop being offered',
+		( await adopt.count() ) === 0,
+		'the section no longer offers its fields to use'
 	);
 
 	await page.evaluate( () => window.sessionStorage.clear() );
@@ -361,7 +373,7 @@ await step( 'The panel stops offering what is managed', async () => {
 
 	const remaining = await page
 		.getByRole( 'region', {
-			name: 'Campos do checkout da loja nesta seção',
+			name: 'Campos da loja',
 		} )
 		.count();
 
