@@ -171,7 +171,8 @@ function client( overrides = {} ) {
 				{
 					value: 'edit-address',
 					label: 'Endereços',
-					description: 'Os endereços de cobrança e entrega do cliente.',
+					description:
+						'Os endereços de cobrança e entrega do cliente.',
 				},
 				{
 					value: 'edit-account',
@@ -768,7 +769,7 @@ describe( 'creating a container', () => {
 
 	it( 'keeps the inline field action available on every native account page', async () => {
 		const user = userEvent.setup();
-			const pages = [
+		const pages = [
 			[ 'dashboard', 'Painel' ],
 			[ 'orders', 'Pedidos' ],
 			[ 'downloads', 'Downloads' ],

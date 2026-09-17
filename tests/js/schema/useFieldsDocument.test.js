@@ -28,7 +28,9 @@ function client( overrides = {} ) {
 describe( 'useFieldsDocument validation state', () => {
 	it( 'clears old problems before retrying and exposes server field errors', async () => {
 		const stub = client();
-		const { result } = renderHook( () => useFieldsDocument( { client: stub } ) );
+		const { result } = renderHook( () =>
+			useFieldsDocument( { client: stub } )
+		);
 
 		await waitFor( () => expect( result.current.document ).toBeTruthy() );
 		stub.saveDraft.mockRejectedValueOnce( {

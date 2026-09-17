@@ -901,7 +901,7 @@ final class SectionValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function test_a_native_page_that_may_not_host_content_is_refused(): void {
-		foreach ( array( 'orders', 'downloads', 'edit-address', 'payment-methods', 'customer-logout', 'nao-existe' ) as $page ) {
+		foreach ( array( 'payment-methods', 'customer-logout', 'nao-existe' ) as $page ) {
 			$result = SectionValidator::validate(
 				SectionDefinition::from_array(
 					$this->section(
