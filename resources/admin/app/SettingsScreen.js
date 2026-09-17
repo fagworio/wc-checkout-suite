@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 
-import { Button, CheckboxField, Notice } from './components';
+import { Badge, Button, CheckboxField, Notice } from './components';
 
 /**
  * Settings and compatibility screen.
@@ -151,9 +151,26 @@ export default function SettingsScreen( { client, editable = true } ) {
 			  )
 			: uploads.reason;
 	}
+	let uploadStatusLabel = /** @type {string} */ (
+		__( 'Verificação pendente', 'wc-checkoutsuite' )
+	);
+	let uploadStatusTone = 'warning';
+
+	if ( 'success' === uploadStatus ) {
+		uploadStatusLabel = __( 'Ambiente aprovado', 'wc-checkoutsuite' );
+		uploadStatusTone = 'success';
+	} else if ( 'error' === uploadStatus ) {
+		uploadStatusLabel = __( 'Upload bloqueado', 'wc-checkoutsuite' );
+		uploadStatusTone = 'danger';
+	}
 
 	return (
 		<div className="wccs-settings">
+			<p className="wccs-settings__eyebrow">
+				{ editable
+					? __( 'CONFIGURAÇÕES DO CHECKOUT', 'wc-checkoutsuite' )
+					: __( 'DIAGNÓSTICO DA LOJA', 'wc-checkoutsuite' ) }
+			</p>
 			<h1 className="wccs-settings__title">
 				{ __( 'Qual checkout a loja deve usar?', 'wc-checkoutsuite' ) }
 			</h1>
@@ -224,15 +241,36 @@ export default function SettingsScreen( { client, editable = true } ) {
 				</div>
 			</div>
 
-			<p className="wccs-settings__mode">
-				{ sprintf(
-					/* translators: %s: the checkout mode the store is in. */
-					__( 'Checkout mode: %s', 'wc-checkoutsuite' ),
-					state.mode
-				) }
-			</p>
-
-			<p className="wccs-settings__reason">{ state.reason }</p>
+			<section
+				className="wccs-settings__state-card"
+				aria-labelledby="wccs-state-heading"
+			>
+				<div className="wccs-settings__state-heading">
+					<div>
+						<p className="wccs-settings__section-kicker">
+							{ __( 'Estado atual', 'wc-checkoutsuite' ) }
+						</p>
+						<h2
+							id="wccs-state-heading"
+							className="wccs-settings__state-title"
+						>
+							{ sprintf(
+								/* translators: %s: the checkout mode the store is in. */
+								__( 'Checkout mode: %s', 'wc-checkoutsuite' ),
+								state.mode
+							) }
+						</h2>
+					</div>
+					<Badge
+						tone={ state.mode === 'store' ? 'neutral' : 'success' }
+					>
+						{ state.mode === 'store'
+							? __( 'WooCommerce padrão', 'wc-checkoutsuite' )
+							: __( 'WCCS ativo', 'wc-checkoutsuite' ) }
+					</Badge>
+				</div>
+				<p className="wccs-settings__reason">{ state.reason }</p>
+			</section>
 
 			{ ( state.blocked_by ?? [] ).length > 0 ? (
 				<Notice
@@ -267,51 +305,66 @@ export default function SettingsScreen( { client, editable = true } ) {
 				) }
 			</p>
 
-			<table className="wccs-settings__gateways">
-				<thead>
-					<tr>
-						<th scope="col">
-							{ __( 'Gateway', 'wc-checkoutsuite' ) }
-						</th>
-						<th scope="col">
-							{ __( 'Mode', 'wc-checkoutsuite' ) }
-						</th>
-						<th scope="col">
-							{ __( 'Enabled', 'wc-checkoutsuite' ) }
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					{ gateways.map( ( /** @type {any} */ gateway ) => (
-						<tr key={ gateway.id }>
-							<td>
-								{ gateway.title }
-								<code className="wccs-settings__id">
-									{ gateway.id }
-								</code>
-							</td>
-							<td>{ gateway.mode }</td>
-							<td>
-								{ gateway.enabled
-									? __( 'Yes', 'wc-checkoutsuite' )
-									: __( 'No', 'wc-checkoutsuite' ) }
-							</td>
+			<div className="wccs-settings__table-frame">
+				<table className="wccs-settings__gateways">
+					<thead>
+						<tr>
+							<th scope="col">
+								{ __( 'Gateway', 'wc-checkoutsuite' ) }
+							</th>
+							<th scope="col">
+								{ __( 'Mode', 'wc-checkoutsuite' ) }
+							</th>
+							<th scope="col">
+								{ __( 'Enabled', 'wc-checkoutsuite' ) }
+							</th>
 						</tr>
-					) ) }
-				</tbody>
-			</table>
+					</thead>
+					<tbody>
+						{ gateways.map( ( /** @type {any} */ gateway ) => (
+							<tr key={ gateway.id }>
+								<td>
+									{ gateway.title }
+									<code className="wccs-settings__id">
+										{ gateway.id }
+									</code>
+								</td>
+								<td>{ gateway.mode }</td>
+								<td>
+									{ gateway.enabled
+										? __( 'Yes', 'wc-checkoutsuite' )
+										: __( 'No', 'wc-checkoutsuite' ) }
+								</td>
+							</tr>
+						) ) }
+					</tbody>
+				</table>
+			</div>
 
 			{ ! editable ? (
 				<section
-					className="wccs-settings__uploads"
+					className={ `wccs-settings__uploads wccs-settings__uploads--${ uploadStatus }` }
 					aria-labelledby="wccs-uploads-heading"
 				>
-					<h2
-						id="wccs-uploads-heading"
-						className="wccs-settings__heading"
-					>
-						{ __( 'Armazenamento de uploads', 'wc-checkoutsuite' ) }
-					</h2>
+					<div className="wccs-settings__section-heading">
+						<div>
+							<p className="wccs-settings__section-kicker">
+								{ __( 'Privacidade', 'wc-checkoutsuite' ) }
+							</p>
+							<h2
+								id="wccs-uploads-heading"
+								className="wccs-settings__heading"
+							>
+								{ __(
+									'Armazenamento de uploads',
+									'wc-checkoutsuite'
+								) }
+							</h2>
+						</div>
+						<Badge tone={ uploadStatusTone }>
+							{ uploadStatusLabel }
+						</Badge>
+					</div>
 					<p className="wccs-settings__summary">
 						{ __(
 							'O WCCS cria um arquivo de teste, verifica se ele não pode ser lido pela URL pública e o remove. A verificação é executada somente quando você solicita esta ação.',
@@ -340,7 +393,7 @@ export default function SettingsScreen( { client, editable = true } ) {
 							) }
 						</Button>
 						{ uploads.checked_at ? (
-							<small>
+							<small className="wccs-settings__timestamp">
 								{ sprintf(
 									/* translators: %s: date and time of the last upload probe. */
 									__(
@@ -372,79 +425,83 @@ export default function SettingsScreen( { client, editable = true } ) {
 				) }
 			</p>
 
-			<table className="wccs-settings__gateways">
-				<thead>
-					<tr>
-						<th scope="col">
-							{ __( 'Gateway', 'wc-checkoutsuite' ) }
-						</th>
-						<th scope="col">
-							{ __(
-								'Actions that may be offered',
-								'wc-checkoutsuite'
-							) }
-						</th>
-						<th scope="col">
-							{ __( 'Evidence', 'wc-checkoutsuite' ) }
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					{ gateways.map( ( /** @type {any} */ gateway ) => {
-						const proven = ( gateway.actions ?? [] ).filter(
-							( /** @type {any} */ action ) =>
-								action.offerable && ! action.fallback
-						);
+			<div className="wccs-settings__table-frame">
+				<table className="wccs-settings__gateways">
+					<thead>
+						<tr>
+							<th scope="col">
+								{ __( 'Gateway', 'wc-checkoutsuite' ) }
+							</th>
+							<th scope="col">
+								{ __(
+									'Actions that may be offered',
+									'wc-checkoutsuite'
+								) }
+							</th>
+							<th scope="col">
+								{ __( 'Evidence', 'wc-checkoutsuite' ) }
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						{ gateways.map( ( /** @type {any} */ gateway ) => {
+							const proven = ( gateway.actions ?? [] ).filter(
+								( /** @type {any} */ action ) =>
+									action.offerable && ! action.fallback
+							);
 
-						return (
-							<tr key={ `caps-${ gateway.id }` }>
-								<td>
-									{ gateway.title }
-									<code className="wccs-settings__id">
-										{ gateway.id }
-									</code>
-								</td>
-								<td>
-									{ ( gateway.offerable ?? [] ).length > 0
-										? ( gateway.offerable ?? [] ).join(
-												', '
-										  )
-										: __( 'nada', 'wc-checkoutsuite' ) }
-								</td>
-								<td>
-									{ proven.length > 0
-										? proven
-												.map(
-													(
-														/** @type {any} */ action
-													) =>
-														sprintf(
-															/* translators: 1: action, 2: evidence mode, 3: version, 4: date */
-															__(
-																'%1$s: %2$s em %3$s, %4$s',
-																'wc-checkoutsuite'
-															),
-															action.label,
-															action.evidence
-																?.mode ?? '',
-															action.evidence
-																?.version ?? '',
-															action.evidence
-																?.proven_at ??
-																''
-														)
-												)
-												.join( '; ' )
-										: __(
-												'nenhuma ação comprovada; só o link «Pagar pedido»',
-												'wc-checkoutsuite'
-										  ) }
-								</td>
-							</tr>
-						);
-					} ) }
-				</tbody>
-			</table>
+							return (
+								<tr key={ `caps-${ gateway.id }` }>
+									<td>
+										{ gateway.title }
+										<code className="wccs-settings__id">
+											{ gateway.id }
+										</code>
+									</td>
+									<td>
+										{ ( gateway.offerable ?? [] ).length > 0
+											? ( gateway.offerable ?? [] ).join(
+													', '
+											  )
+											: __( 'nada', 'wc-checkoutsuite' ) }
+									</td>
+									<td>
+										{ proven.length > 0
+											? proven
+													.map(
+														(
+															/** @type {any} */ action
+														) =>
+															sprintf(
+																/* translators: 1: action, 2: evidence mode, 3: version, 4: date */
+																__(
+																	'%1$s: %2$s em %3$s, %4$s',
+																	'wc-checkoutsuite'
+																),
+																action.label,
+																action.evidence
+																	?.mode ??
+																	'',
+																action.evidence
+																	?.version ??
+																	'',
+																action.evidence
+																	?.proven_at ??
+																	''
+															)
+													)
+													.join( '; ' )
+											: __(
+													'nenhuma ação comprovada; só o link «Pagar pedido»',
+													'wc-checkoutsuite'
+											  ) }
+									</td>
+								</tr>
+							);
+						} ) }
+					</tbody>
+				</table>
+			</div>
 
 			{ ( state.refused ?? [] ).length > 0 ? (
 				<Notice

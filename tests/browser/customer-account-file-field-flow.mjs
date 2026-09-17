@@ -50,8 +50,12 @@ if ( ! user || ! password ) {
 		);
 
 		step = 'select-customer-account';
-		await page.getByRole( 'tab', { name: 'Minha conta', exact: true } ).waitFor();
-		await page.getByRole( 'tab', { name: 'Minha conta', exact: true } ).click();
+		await page
+			.getByRole( 'tab', { name: 'Minha conta', exact: true } )
+			.waitFor();
+		await page
+			.getByRole( 'tab', { name: 'Minha conta', exact: true } )
+			.click();
 
 		const pageTitle = `E2E Upload ${ Date.now() }`;
 		step = 'create-new-section';
@@ -60,15 +64,29 @@ if ( ! user || ! password ) {
 			.last()
 			.click();
 		await page.locator( '#wccs-new-section-title' ).fill( pageTitle );
-		await page.getByRole( 'button', { name: 'Criar página', exact: true } ).click();
+		await page
+			.getByRole( 'button', { name: 'Criar página', exact: true } )
+			.click();
+		// Keep the journey explicit while the editor settles: the field must be
+		// created in this new page, never in the first native account section.
+		await page
+			.locator( '.section-tabs button' )
+			.filter( { hasText: pageTitle } )
+			.click();
 
 		step = 'open-field-picker';
-		await page.getByRole( 'button', { name: 'Novo campo', exact: true } ).click();
+		await page
+			.getByRole( 'button', { name: 'Novo campo', exact: true } )
+			.click();
 		const picker = page.locator( 'dialog.picker-dialog' );
 		await picker.waitFor();
-		const activeCategory = picker.locator( '.picker-categories button.active' );
+		const activeCategory = picker.locator(
+			'.picker-categories button.active'
+		);
 		await activeCategory.waitFor();
-		if ( ! ( await activeCategory.innerText() ).includes( 'Todos os campos' ) ) {
+		if (
+			! ( await activeCategory.innerText() ).includes( 'Todos os campos' )
+		) {
 			throw new Error( 'The picker did not start at Todos os campos.' );
 		}
 		step = 'choose-file-type';
@@ -87,7 +105,9 @@ if ( ! user || ! password ) {
 			.click();
 
 		step = 'verify-field-added';
-		const fieldRow = page.locator( '.field-row' ).filter( { hasText: label } );
+		const fieldRow = page
+			.locator( '.field-row' )
+			.filter( { hasText: label } );
 		await fieldRow.waitFor();
 		await fieldRow.getByText( key, { exact: true } ).waitFor();
 		step = 'verify-picker-reset';
@@ -108,38 +128,43 @@ if ( ! user || ! password ) {
 		);
 		await secondActiveCategory.waitFor();
 		if (
-			!( await secondActiveCategory.innerText() ).includes( 'Todos os campos' )
+			! ( await secondActiveCategory.innerText() ).includes(
+				'Todos os campos'
+			)
 		) {
 			throw new Error( 'The picker did not reset to Todos os campos.' );
 		}
 
 		console.log(
-			JSON.stringify( {
-				ok: true,
-				section: pageTitle,
-				field: label,
-				key,
-				screenshot: 'tmp/wccs-account-file-field-added.png',
-				checks: [
-					'customer-account-url',
-					'new-section-created-in-draft',
-					'file-type-configured',
-					'field-added-to-section',
-					'dirty-state-visible',
-					'picker-resets-to-all-fields',
-				],
-			},
+			JSON.stringify(
+				{
+					ok: true,
+					section: pageTitle,
+					field: label,
+					key,
+					screenshot: 'tmp/wccs-account-file-field-added.png',
+					checks: [
+						'customer-account-url',
+						'new-section-created-in-draft',
+						'file-type-configured',
+						'field-added-to-section',
+						'dirty-state-visible',
+						'picker-resets-to-all-fields',
+					],
+				},
 				null,
-			2
+				2
 			)
 		);
 	} catch ( error ) {
 		failures.push( String( error?.message || error ).split( '\n' )[ 0 ] );
 		failures.unshift( `step=${ step } url=${ page.url() }` );
-		await page.screenshot( {
-			path: 'tmp/wccs-account-file-failure.png',
-			fullPage: true,
-		} ).catch( () => {} );
+		await page
+			.screenshot( {
+				path: 'tmp/wccs-account-file-failure.png',
+				fullPage: true,
+			} )
+			.catch( () => {} );
 		console.log( JSON.stringify( { ok: false, failures }, null, 2 ) );
 		process.exitCode = 1;
 	} finally {

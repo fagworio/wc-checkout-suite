@@ -49,6 +49,7 @@ configure( { asyncUtilTimeout: 5000 } );
  */
 beforeEach( () => {
 	window.history.replaceState( null, '', '/' );
+	window.sessionStorage.clear();
 } );
 
 afterEach( () => {
@@ -264,6 +265,31 @@ describe( 'loading', () => {
 		settle( doc( [] ) );
 
 		await screen.findByText( 'Esta seção está pronta para começar.' );
+	} );
+
+	it( 'discards an old local draft without a server document fingerprint', async () => {
+		window.history.replaceState(
+			null,
+			'',
+			'/wp-admin/admin.php?page=wccs-checkoutsuite&section=fields'
+		);
+		window.sessionStorage.setItem(
+			'wccs-local-draft',
+			JSON.stringify( {
+				baseRevision: 3,
+				document: doc( [ field( { label: 'Rascunho antigo' } ) ] ),
+			} )
+		);
+
+		render( <FieldsScreen client={ client( { draft: doc( [] ) } ) } /> );
+
+		await screen.findByText( 'Esta seção está pronta para começar.' );
+		expect(
+			screen.queryByText( 'Rascunho antigo' )
+		).not.toBeInTheDocument();
+		expect(
+			window.sessionStorage.getItem( 'wccs-local-draft' )
+		).toBeNull();
 	} );
 } );
 
@@ -578,6 +604,9 @@ describe( 'creating a container', () => {
 		await user.click(
 			screen.getByRole( 'button', { name: 'Criar página' } )
 		);
+		expect(
+			screen.getByRole( 'tab', { name: /^Dados profissionais/ } )
+		).toHaveAttribute( 'aria-selected', 'true' );
 
 		// The form no longer asks which areas: the destination decides, and the document
 		// says so.

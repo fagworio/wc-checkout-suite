@@ -472,10 +472,20 @@ export default function FieldManagerView( { model } ) {
 	// A restored local draft can keep the old checkout section id while the account
 	// menu already points at a custom page. Prefer the section belonging to that page
 	// so the builder, its actions and its fields never describe different targets.
-	const current =
-		groups.find(
-			( /** @type {any} */ group ) => group.section.id === section
-		) ?? accountContextSection;
+	// Minha conta has a second address inside the same destination: the WooCommerce
+	// page currently selected in the account menu. A section left over from the
+	// previous context must never win here, or the page list and the editor describe
+	// different targets and "Ações da página" acts on the wrong section.
+	const accountContextOwnsSelection =
+		'customer_account' === area &&
+		contexts.some(
+			( /** @type {any} */ item ) => item.id === contextActive
+		);
+	const current = accountContextOwnsSelection
+		? accountContextSection
+		: groups.find(
+				( /** @type {any} */ group ) => group.section.id === section
+		  ) ?? accountContextSection;
 	const copy = sectionCopy(
 		current?.section ?? { id: section, title: '', description: '' },
 		Boolean( current?.declared )

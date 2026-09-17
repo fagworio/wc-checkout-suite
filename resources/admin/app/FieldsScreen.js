@@ -92,7 +92,6 @@ import {
 	sectionGroups,
 	setFieldEnabled,
 	setAccountFieldEnabled,
-	uniqueSectionId,
 	updateField,
 	updateSection,
 } from './schema/fieldOperations';
@@ -133,6 +132,36 @@ function isCustomerArea( area ) {
 
 /** Local draft handoff used when the shell swaps the editor for another screen. */
 const LOCAL_DRAFT_KEY = 'wccs-local-draft';
+
+/**
+ * Creates a deterministic fingerprint for the server-confirmed document.
+ *
+ * A revision is the normal freshness guard, but it is not enough when a schema
+ * is repaired or migrated without changing its revision. Local browser work is
+ * only safe to restore when it was based on the same confirmed document.
+ *
+ * @param {*} value Value to fingerprint.
+ * @return {string} Deterministic JSON representation.
+ */
+function documentFingerprint( value ) {
+	if ( Array.isArray( value ) ) {
+		return `[${ value.map( documentFingerprint ).join( ',' ) }]`;
+	}
+
+	if ( value && 'object' === typeof value ) {
+		return `{${ Object.keys( value )
+			.sort()
+			.map(
+				( key ) =>
+					`${ JSON.stringify( key ) }:${ documentFingerprint(
+						value[ key ]
+					) }`
+			)
+			.join( ',' ) }}`;
+	}
+
+	return JSON.stringify( value );
+}
 
 /**
  * Returns the logical default location for a section created in one work area.
@@ -662,13 +691,16 @@ export default function FieldsScreen( {
 				local = null;
 			}
 
-			const candidate =
-				local?.baseRevision === draft.revision && local.document
-					? local.document
-					: draft;
-			const hasLocalDraft =
+			const localMatchesServer =
 				local?.baseRevision === draft.revision &&
-				Boolean( local.document );
+				Boolean( local.document ) &&
+				'string' === typeof local.baseDocumentSignature &&
+				local.baseDocumentSignature === documentFingerprint( draft );
+			if ( local && ! localMatchesServer ) {
+				window.sessionStorage?.removeItem( LOCAL_DRAFT_KEY );
+			}
+			const candidate = localMatchesServer ? local.document : draft;
+			const hasLocalDraft = localMatchesServer;
 			const repaired = repairLegacyDraft( candidate );
 			const applied = repaired.changed ? repaired.document : candidate;
 			const legacy = ambiguousDestinations( applied );
@@ -766,6 +798,7 @@ export default function FieldsScreen( {
 				LOCAL_DRAFT_KEY,
 				JSON.stringify( {
 					baseRevision: savedDocument.revision,
+					baseDocumentSignature: documentFingerprint( savedDocument ),
 					document,
 				} )
 			);
@@ -1677,7 +1710,7 @@ export default function FieldsScreen( {
 					isProtected,
 					onOpenSection: ( /** @type {string|null} */ id ) =>
 						id &&
-						document.sections.some(
+						composition.sections.some(
 							( /** @type {any} */ entry ) => entry.id === id
 						)
 							? setEditingSectionId( id )
@@ -2045,11 +2078,18 @@ export default function FieldsScreen( {
 											}
 
 											applyComposed( result );
+											// Use the identifier returned by the operation, not a value
+											// calculated from the previous composition. The section options
+											// effect can run between these state updates; pointing at the
+											// old document made it fall back to the first section and sent
+											// the next field to the wrong container.
+											const createdSection =
+												result.document.sections[
+													result.document.sections
+														.length - 1
+												];
 											setSection(
-												uniqueSectionId(
-													composition,
-													title
-												)
+												createdSection?.id ?? section
 											);
 											setNewSectionTitle( '' );
 											setSectionDraftOpen( false );
