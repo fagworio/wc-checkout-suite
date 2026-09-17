@@ -81,11 +81,18 @@ final class FileFieldType extends AbstractFieldType {
 				'maximum'  => 20,
 				'required' => true,
 			),
+			'maxMegabytes'      => array(
+				'type'    => 'number',
+				'minimum' => 0.1,
+				'maximum' => 10240,
+				'label'   => __( 'Tamanho máximo por arquivo (MB)', 'wc-checkoutsuite' ),
+				'help'    => __( 'Use MB. O valor é convertido para bytes no servidor.', 'wc-checkoutsuite' ),
+			),
+			// Kept so old documents remain valid; the admin hides it when rendering.
 			'maxBytes'          => array(
-				'type'    => 'integer',
-				'minimum' => 1,
-				'label'   => __( 'Tamanho máximo por arquivo (bytes)', 'wc-checkoutsuite' ),
-				'help'    => __( 'Informe o limite em bytes. Exemplo: 5242880 equivale a 5 MB.', 'wc-checkoutsuite' ),
+				'type'       => 'integer',
+				'minimum'    => 1,
+				'deprecated' => true,
 			),
 			'allowedExtensions' => array(
 				'type'     => 'array',

@@ -480,7 +480,9 @@ final class UploadService {
 	 * @return int
 	 */
 	private static function max_bytes( array $settings ): int {
-		$max = isset( $settings['maxBytes'] ) ? (int) $settings['maxBytes'] : UploadRules::DEFAULT_MAX_BYTES;
+		$max = isset( $settings['maxMegabytes'] )
+			? (int) round( (float) $settings['maxMegabytes'] * 1048576 )
+			: ( isset( $settings['maxBytes'] ) ? (int) $settings['maxBytes'] : UploadRules::DEFAULT_MAX_BYTES );
 
 		return $max > 0 ? $max : UploadRules::DEFAULT_MAX_BYTES;
 	}

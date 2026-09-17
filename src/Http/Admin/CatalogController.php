@@ -19,6 +19,7 @@ use WCCheckoutSuite\Domain\Conditions\Sources;
 use WCCheckoutSuite\Domain\Fields\DefinitionVocabulary;
 use WCCheckoutSuite\Domain\Registries;
 use WCCheckoutSuite\Domain\Sections\SectionLocations;
+use WCCheckoutSuite\Domain\Uploads\UploadLimits;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -188,6 +189,7 @@ final class CatalogController {
 		// requires a minimal composition to be verified before it is saved, and a checklist the
 		// browser invented would agree with a store that cannot take a payment.
 		$catalogue['checkoutFacts'] = CheckoutFacts::all();
+		$catalogue['uploadLimits']  = UploadLimits::to_array();
 
 		return new WP_REST_Response( $catalogue, 200 );
 	}

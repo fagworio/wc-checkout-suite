@@ -42,17 +42,18 @@ import {
  * The control is chosen from the schema, never from the property name: a type
  * that declares `maxLength` as a string gets a text input, as it asked for.
  *
- * @param {Object}              props          Component properties.
- * @param {string}              props.name     Setting name.
- * @param {Record<string, any>} props.rules    Declared rules.
- * @param {*}                   props.value    Current value.
- * @param {Function}            props.onChange Called with the new value.
+ * @param {Object}              props                Component properties.
+ * @param {string}              props.name           Setting name.
+ * @param {Record<string, any>} props.rules          Declared rules.
+ * @param {*}                   props.value          Current value.
+ * @param {Function}            props.onChange       Called with the new value.
+ * @param {any}                 [props.uploadLimits] Server upload ceilings.
  * @return {*} Rendered element tree.
  */
-function SettingControl( { name, rules, value, onChange } ) {
+function SettingControl( { name, rules, value, onChange, uploadLimits } ) {
 	const id = `wccs-setting-${ name }`;
-	const label = name;
-	const help = [];
+	const label = 'maxMegabytes' === name ? rules.label ?? name : name;
+	const help = rules.help ? [ rules.help ] : [];
 	const type = String( rules.type ?? 'string' );
 
 	if ( rules.minLength || rules.maxLength ) {
@@ -73,6 +74,21 @@ function SettingControl( { name, rules, value, onChange } ) {
 				__( 'From %1$s to %2$s.', 'wc-checkoutsuite' ),
 				String( rules.minimum ?? '—' ),
 				String( rules.maximum ?? '—' )
+			)
+		);
+	}
+
+	if ( 'maxMegabytes' === name && uploadLimits?.effectiveBytes ) {
+		help.push(
+			sprintf(
+				/* translators: 1: effective limit, 2: upload_max_filesize, 3: post_max_size. */
+				__(
+					'Limite PHP/WordPress: %1$s MB (upload_max_filesize: %2$s MB; post_max_size: %3$s MB). Para aumentar, ajuste essas diretivas e o limite do servidor web.',
+					'wc-checkoutsuite'
+				),
+				( uploadLimits.effectiveBytes / 1048576 ).toFixed( 2 ),
+				( uploadLimits.uploadMaxBytes / 1048576 ).toFixed( 2 ),
+				( uploadLimits.postMaxBytes / 1048576 ).toFixed( 2 )
 			)
 		);
 	}
@@ -388,13 +404,14 @@ function OptionListControl( { name, rules, value, onChange } ) {
  * the half that knows how to read a type's declared settings. It moves to its own
  * module when the previous panel is deleted; until then, one implementation serves both.
  *
- * @param {Object}                              props          Component properties.
- * @param {Record<string, Record<string, any>>} [props.schema] Declared settings schema.
- * @param {Record<string, any>}                 props.value    Current settings.
- * @param {Function}                            props.onChange Called with the new settings.
+ * @param {Object}                              props                Component properties.
+ * @param {Record<string, Record<string, any>>} [props.schema]       Declared settings schema.
+ * @param {Record<string, any>}                 props.value          Current settings.
+ * @param {Function}                            props.onChange       Called with the new settings.
+ * @param {any}                                 [props.uploadLimits] Server upload ceilings.
  * @return {*} Rendered element tree.
  */
-export function SettingsControls( { schema, value, onChange } ) {
+export function SettingsControls( { schema, value, onChange, uploadLimits } ) {
 	const declared = schema ?? {};
 	const names = Object.keys( declared );
 
@@ -422,6 +439,10 @@ export function SettingsControls( { schema, value, onChange } ) {
 	const write = ( name, next ) => {
 		const copy = { ...( value ?? {} ) };
 
+		if ( 'maxMegabytes' === name ) {
+			delete copy.maxBytes;
+		}
+
 		if ( undefined === next || '' === next ) {
 			delete copy[ name ];
 		} else {
@@ -435,7 +456,21 @@ export function SettingsControls( { schema, value, onChange } ) {
 		<>
 			{ names.map( ( name ) => {
 				const rules = declared[ name ] ?? {};
-				const current = ( value ?? {} )[ name ];
+
+				if ( rules.deprecated ) {
+					return null;
+				}
+
+				const current =
+					'maxMegabytes' === name &&
+					undefined === ( value ?? {} )[ name ] &&
+					( value ?? {} ).maxBytes
+						? Number(
+								Number(
+									( value ?? {} ).maxBytes / 1048576
+								).toFixed( 2 )
+						  )
+						: ( value ?? {} )[ name ];
 				const items = rules.items ?? {};
 
 				if ( 'array' === rules.type && items.properties ) {
@@ -486,6 +521,7 @@ export function SettingsControls( { schema, value, onChange } ) {
 						name={ name }
 						rules={ rules }
 						value={ current }
+						uploadLimits={ uploadLimits }
 						onChange={ ( /** @type {any} */ next ) =>
 							write( name, next )
 						}

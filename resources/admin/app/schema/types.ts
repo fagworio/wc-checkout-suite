@@ -235,6 +235,13 @@ export interface FieldCatalog {
 		shipping?: boolean;
 		legal?: boolean;
 	};
+	uploadLimits?: {
+		effectiveBytes: number;
+		uploadMaxBytes: number;
+		postMaxBytes: number;
+		wordpressMaxBytes: number;
+		webServerMayBeLower: boolean;
+	};
 }
 
 /**

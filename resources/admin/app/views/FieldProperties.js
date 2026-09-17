@@ -584,6 +584,7 @@ export default function FieldProperties( {
 						<SettingsControls
 							schema={ type?.settingsSchema }
 							value={ field.settings }
+							uploadLimits={ catalog?.uploadLimits }
 							onChange={ (
 								/** @type {Record<string, any>} */ settings
 							) => onChange( { settings } ) }
