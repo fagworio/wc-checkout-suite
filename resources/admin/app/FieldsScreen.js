@@ -33,7 +33,6 @@ import Notice from './components/Notice';
 import ContainerProperties from './components/ContainerProperties';
 import { TextField, SelectField, CheckboxField } from './components/controls';
 import FieldManagerView from './views/FieldManagerView';
-import { areaHref, readArea, sectionHref } from './sectionUrl';
 import {
 	collectsAt,
 	containerWords,
@@ -45,6 +44,8 @@ import {
 import { Icon } from './design/icons';
 import { adoptCoreSection } from './schema/coreCheckout';
 import useFieldsDocument from './schema/useFieldsDocument';
+import useFieldsNavigation from './schema/useFieldsNavigation';
+import useSectionEditor from './schema/useSectionEditor';
 import { addBinding, withBindings } from './schema/bindings';
 import {
 	classifyFailure,
@@ -85,13 +86,6 @@ import {
 	updateField,
 	updateSection,
 } from './schema/fieldOperations';
-
-/**
- * Default section when the store offers none.
- *
- * @type {string}
- */
-const FALLBACK_SECTION = 'order';
 
 /**
  * Every destination the editor can open, for the address bar.
@@ -392,18 +386,23 @@ export default function FieldsScreen( {
 	const [ problems, setProblems ] = useState(
 		/** @type {Array<{fieldId?: string, message: string}>} */ ( [] )
 	);
-	const [ section, setSection ] = useState( FALLBACK_SECTION );
-
-	/**
-	 * Whether the dialog that creates a section is open.
-	 *
-	 * The design draws the five checkout locations as fixed tabs; this plugin lets a
-	 * merchant add one of their own, so the control lives in the tab strip and opens
-	 * the same kind of dialog the rest of the screen uses.
-	 *
-	 * @type {[boolean, Function]}
-	 */
-	const [ sectionDraftOpen, setSectionDraftOpen ] = useState( false );
+	const navigationState = useFieldsNavigation( {
+		areaIds: AREA_IDS,
+		checkoutMode,
+	} );
+	const {
+		mode,
+		setMode,
+		area,
+		selectArea,
+		section,
+		setSection,
+		activeProfile,
+		setActiveProfile,
+		goTo,
+		onPreview,
+		onOpenRules,
+	} = navigationState;
 
 	/**
 	 * The retired destination keys this document still carries.
@@ -426,7 +425,6 @@ export default function FieldsScreen( {
 	 *
 	 * @type {[string, Function]}
 	 */
-	const [ mode, setMode ] = useState( checkoutMode || 'classic' );
 	/**
 	 * The destination the editor is open on.
 	 *
@@ -436,14 +434,10 @@ export default function FieldsScreen( {
 	 *
 	 * @type {[string, Function]}
 	 */
-	const [ area, setArea ] = useState(
-		() => readArea( window.location?.search ?? '', AREA_IDS ) || 'checkout'
-	);
 	/**
 	 * The checkout the strip is showing: an empty string is the store's own
 	 * composition, and anything else is a profile's id (§6.3).
 	 */
-	const [ activeProfile, setActiveProfile ] = useState( '' );
 	/**
 	 * The composition the section list is editing.
 	 *
@@ -474,6 +468,28 @@ export default function FieldsScreen( {
 		[ document, composingProfile ]
 	);
 
+	const sectionEditor = useSectionEditor( { composition } );
+	const {
+		sectionDraftOpen,
+		editingSectionId,
+		setEditingSectionId,
+		editingSection,
+		sectionRemoval,
+		setSectionRemoval,
+		newSectionTitle,
+		setNewSectionTitle,
+		newSectionLocation,
+		setNewSectionLocation,
+		newSectionIcon,
+		setNewSectionIcon,
+		newSectionMode,
+		setNewSectionMode,
+		newSectionShowTitle,
+		setNewSectionShowTitle,
+		openNewSection,
+		closeNewSection,
+	} = sectionEditor;
+
 	/**
 	 * The code of the last refusal the profile rules answered with.
 	 *
@@ -496,41 +512,6 @@ export default function FieldsScreen( {
 
 	// Annotating the argument rather than the destructured tuple: a JSDoc type on
 	// the tuple does not reach useState and leaves the state as `never`.
-	const [ editingSectionId, setEditingSectionId ] = useState(
-		/** @type {string|null} */ ( null )
-	);
-	const [ sectionRemoval, setSectionRemoval ] = useState(
-		/** @type {{id: string, impact: {fields: string[], links: string[], approvals: string[]}}|null} */ (
-			null
-		)
-	);
-
-	/**
-	 * Resolve the section from the current document on every render. Keeping the
-	 * object itself in state made the inspector display the value from before the
-	 * previous edit was applied.
-	 *
-	 * @type {import('./schema/types').SectionDefinition|null}
-	 */
-	const editingSection = useMemo(
-		() =>
-			composition?.sections?.find(
-				( /** @type {any} */ entry ) => entry.id === editingSectionId
-			) ?? null,
-		[ composition, editingSectionId ]
-	);
-
-	/** @type {[string, Function]} */
-	const [ newSectionTitle, setNewSectionTitle ] = useState( '' );
-
-	/** @type {[string, Function]} */
-	const [ newSectionLocation, setNewSectionLocation ] = useState( 'billing' );
-	/** @type {[string, Function]} */
-	const [ newSectionIcon, setNewSectionIcon ] = useState( 'user' );
-	const [ newSectionMode, setNewSectionMode ] = useState(
-		/** @type {'edit'|'view'} */ ( 'edit' )
-	);
-	const [ newSectionShowTitle, setNewSectionShowTitle ] = useState( false );
 	/**
 	 * The document as the server last confirmed it.
 	 *
@@ -563,69 +544,6 @@ export default function FieldsScreen( {
 				  )
 				: [ ...current, id ]
 		);
-
-	/**
-	 * Opens another destination and keeps the address in step with it.
-	 *
-	 * Replacing rather than pushing, like the shell does for the section: choosing
-	 * a destination is not navigation, and the back button is for leaving.
-	 *
-	 * @param {string} id Destination identifier.
-	 * @return {void}
-	 */
-	const selectArea = useCallback( ( /** @type {string} */ id ) => {
-		setArea( id );
-
-		if ( ! window.history?.replaceState ) {
-			return;
-		}
-
-		window.history.replaceState(
-			null,
-			'',
-			areaHref( window.location.href, id, AREA_IDS )
-		);
-	}, [] );
-
-	/**
-	 * Sends the merchant to another screen of the suite.
-	 *
-	 * The design's footnote and tip card link to the rules and to the checkout
-	 * preview. Both are sections of this screen's shell, and the shell reads the
-	 * address bar, so navigating is replacing the query parameter.
-	 *
-	 * @param {string} id Section identifier.
-	 * @return {void}
-	 */
-	const goTo = ( id ) => {
-		const known = [
-			'fields',
-			'appearance',
-			'sections',
-			'rules',
-			'checkout-page',
-			'import-export',
-			'diagnostics',
-			'settings',
-		];
-
-		if ( window.history?.replaceState ) {
-			window.history.replaceState(
-				null,
-				'',
-				sectionHref( window.location.href, id, known )
-			);
-		}
-
-		// The frame owns the active section; this asks it to move.
-		window.dispatchEvent(
-			new CustomEvent( 'wccs:navigate', { detail: { section: id } } )
-		);
-	};
-
-	const onPreview = () => goTo( 'appearance' );
-
-	const onOpenRules = () => goTo( 'rules' );
 
 	/*
 	useUnsavedChanges(
@@ -1045,7 +963,7 @@ export default function FieldsScreen( {
 		if ( sectionOptions.length > 0 ) {
 			setSection( sectionOptions[ 0 ].id );
 		}
-	}, [ sectionOptions, section ] );
+	}, [ sectionOptions, section, setSection ] );
 
 	/**
 	 * Reloads the publication report and the history.
@@ -1699,11 +1617,10 @@ export default function FieldsScreen( {
 							  ),
 					onRemoveSection: requestSectionRemovalById,
 					onCreateSection: () => {
-						setNewSectionLocation( defaultSectionLocation( area ) );
-						setNewSectionIcon( 'user' );
-						setNewSectionMode( 'edit' );
-						setNewSectionShowTitle( isCustomerArea( area ) );
-						setSectionDraftOpen( true );
+						openNewSection( {
+							location: defaultSectionLocation( area ),
+							showTitle: isCustomerArea( area ),
+						} );
 					},
 					onLinkExisting: () => {
 						setLinkFieldId( '' );
@@ -1983,14 +1900,12 @@ export default function FieldsScreen( {
 						<Dialog
 							open={ sectionDraftOpen }
 							title={ containerWords( area ).create }
-							onClose={ () => setSectionDraftOpen( false ) }
+							onClose={ closeNewSection }
 							footer={
 								<>
 									<Button
 										variant="secondary"
-										onClick={ () =>
-											setSectionDraftOpen( false )
-										}
+										onClick={ closeNewSection }
 									>
 										{ __( 'Cancel', 'wc-checkoutsuite' ) }
 									</Button>
@@ -2068,8 +1983,7 @@ export default function FieldsScreen( {
 											setSection(
 												createdSection?.id ?? section
 											);
-											setNewSectionTitle( '' );
-											setSectionDraftOpen( false );
+											closeNewSection();
 										} }
 									>
 										{ containerWords( area ).submit }
