@@ -24,13 +24,7 @@
  * @see ROADMAP.md sections 4, 7 and 19
  */
 
-import {
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from '@wordpress/element';
+import { useCallback, useEffect, useMemo, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 
 import Button from './components/Button';
@@ -39,7 +33,6 @@ import Notice from './components/Notice';
 import ContainerProperties from './components/ContainerProperties';
 import { TextField, SelectField, CheckboxField } from './components/controls';
 import FieldManagerView from './views/FieldManagerView';
-import useUnsavedChanges from './api/useUnsavedChanges';
 import { areaHref, readArea, sectionHref } from './sectionUrl';
 import {
 	collectsAt,
@@ -51,7 +44,7 @@ import {
 } from './design/destinations';
 import { Icon } from './design/icons';
 import { adoptCoreSection } from './schema/coreCheckout';
-import useDocumentHistory from './schema/useDocumentHistory';
+import useFieldsDocument from './schema/useFieldsDocument';
 import { addBinding, withBindings } from './schema/bindings';
 import {
 	classifyFailure,
@@ -72,7 +65,6 @@ import {
 import {
 	adoptAccountField,
 	adoptCoreField,
-	ambiguousDestinations,
 	bulkImpact,
 	conditionDependents,
 	createField,
@@ -86,7 +78,6 @@ import {
 	removeField,
 	resolveAmbiguousDestinations,
 	removeSectionWithDependents,
-	repairLegacyDraft,
 	sectionImpact,
 	sectionGroups,
 	setFieldEnabled,
@@ -127,39 +118,6 @@ const AREA_IDS = navigation().flatMap( ( /** @type {any} */ entry ) =>
  */
 function isCustomerArea( area ) {
 	return isCustomerDestination( area );
-}
-
-/** Local draft handoff used when the shell swaps the editor for another screen. */
-const LOCAL_DRAFT_KEY = 'wccs-local-draft';
-
-/**
- * Creates a deterministic fingerprint for the server-confirmed document.
- *
- * A revision is the normal freshness guard, but it is not enough when a schema
- * is repaired or migrated without changing its revision. Local browser work is
- * only safe to restore when it was based on the same confirmed document.
- *
- * @param {*} value Value to fingerprint.
- * @return {string} Deterministic JSON representation.
- */
-function documentFingerprint( value ) {
-	if ( Array.isArray( value ) ) {
-		return `[${ value.map( documentFingerprint ).join( ',' ) }]`;
-	}
-
-	if ( value && 'object' === typeof value ) {
-		return `{${ Object.keys( value )
-			.sort()
-			.map(
-				( key ) =>
-					`${ JSON.stringify( key ) }:${ documentFingerprint(
-						value[ key ]
-					) }`
-			)
-			.join( ',' ) }}`;
-	}
-
-	return JSON.stringify( value );
 }
 
 /**
@@ -388,8 +346,32 @@ export default function FieldsScreen( {
 	 * did the store run, and when", and undoing it means publishing again as a new
 	 * revision. ROADMAP.md section 428 keeps the two apart on purpose.
 	 */
-	const edits = useDocumentHistory( null );
-	const document = edits.document;
+	const documentLifecycle = useFieldsDocument( { client } );
+	const {
+		document,
+		catalog,
+		coreFields,
+		loading,
+		failure,
+		saving,
+		saved,
+		setSaved,
+		localDraftRestored,
+		report,
+		revisions,
+		restoring,
+		publishError,
+		restored,
+		commitDocument,
+		edits,
+		discardLocalDraft,
+		save,
+		restore,
+		legacyDestinations,
+		legacyPromptOpen,
+		setLegacyDestinations,
+		setLegacyPromptOpen,
+	} = documentLifecycle;
 
 	// The individual operations, not the object.
 	//
@@ -397,15 +379,6 @@ export default function FieldsScreen( {
 	// whenever the document does — and `load` changes the document. Depending on
 	// the object would therefore make `load` change after it ran, re-run the
 	// mount effect, and loop. Depending on the stable operation does not.
-	const resetDocument = edits.reset;
-	const commitDocument = edits.commit;
-	const [ catalog, setCatalog ] = useState(
-		/** @type {import('./schema/types').FieldCatalog|null} */ ( null )
-	);
-	const [ coreFields, setCoreFields ] = useState(
-		/** @type {import('./schema/types').CoreFieldInventory|null} */ ( null )
-	);
-	const [ loading, setLoading ] = useState( true );
 	/**
 	 * The classified state of the last failure.
 	 *
@@ -413,12 +386,8 @@ export default function FieldsScreen( {
 	 * a conflict is not an error and an expired session is not a bug in the
 	 * schema. See schema/failureState.js.
 	 *
-	 * @type {[any, Function]}
+	 * @type {[string, Function]}
 	 */
-	const [ failure, setFailure ] = useState( /** @type {any} */ ( null ) );
-	const [ saving, setSaving ] = useState( false );
-	const [ saved, setSaved ] = useState( '' );
-	const [ localDraftRestored, setLocalDraftRestored ] = useState( false );
 	const [ refusal, setRefusal ] = useState( '' );
 	const [ problems, setProblems ] = useState(
 		/** @type {Array<{fieldId?: string, message: string}>} */ ( [] )
@@ -442,13 +411,6 @@ export default function FieldsScreen( {
 	 * `customer_profile` was one destination and is now two, so a stored link cannot be
 	 * migrated on the merchant's behalf: only they know which surface was meant.
 	 */
-	const [ legacyDestinations, setLegacyDestinations ] = useState(
-		/** @type {string[]} */ ( [] )
-	);
-
-	/** Whether the migration choice is on screen. */
-	const [ legacyPromptOpen, setLegacyPromptOpen ] = useState( false );
-
 	/**
 	 * The checkout the screen is configuring for.
 	 *
@@ -576,17 +538,9 @@ export default function FieldsScreen( {
 	 * saved state makes the screen clean again instead of claiming there is
 	 * something to save.
 	 *
-	 * @type {[any, Function]}
+	 * @type {boolean}
 	 */
-	const [ savedDocument, setSavedDocument ] = useState( null );
-
-	const dirty = null !== document && document !== savedDocument;
-
-	/** @type {[any, Function]} */
-	const [ report, setReport ] = useState( null );
-
-	/** @type {[any[], Function]} */
-	const [ revisions, setRevisions ] = useState( [] );
+	const dirty = documentLifecycle.dirty;
 
 	/**
 	 * Identifiers selected for a bulk action.
@@ -673,13 +627,7 @@ export default function FieldsScreen( {
 
 	const onOpenRules = () => goTo( 'rules' );
 
-	const [ restoring, setRestoring ] = useState( false );
-	const [ publishError, setPublishError ] = useState( '' );
-	const [ restored, setRestored ] = useState( '' );
-
-	/** @type {{ current: boolean }} */
-	const mounted = useRef( true );
-
+	/*
 	useUnsavedChanges(
 		dirty,
 		__( 'You have unsaved checkout field changes.', 'wc-checkoutsuite' )
@@ -689,7 +637,7 @@ export default function FieldsScreen( {
 	 * Loads the draft and the two catalogues.
 	 *
 	 * @return {Promise<void>} Resolves when loading settles.
-	 */
+	 * /
 	const load = useCallback( async () => {
 		setLoading( true );
 		setFailure( null );
@@ -788,7 +736,7 @@ export default function FieldsScreen( {
 	 * touching WooCommerce's native account pages or the published schema.
 	 *
 	 * @return {void}
-	 */
+	 * /
 	const discardLocalDraft = useCallback( () => {
 		if (
 			! savedDocument ||
@@ -853,7 +801,9 @@ export default function FieldsScreen( {
 	 * @param {import('./schema/types').OperationResult} result  Operation result.
 	 * @param {string}                                   [label] What the edit was.
 	 * @return {void}
-	 */
+	 * /
+	*/
+
 	const apply = useCallback(
 		(
 			/** @type {import('./schema/types').OperationResult} */ result,
@@ -870,7 +820,7 @@ export default function FieldsScreen( {
 			setSaved( '' );
 			commitDocument( result.document, label );
 		},
-		[ commitDocument ]
+		[ commitDocument, setSaved ]
 	);
 
 	/**
@@ -964,7 +914,7 @@ export default function FieldsScreen( {
 				__( 'Destino da configuração antiga', 'wc-checkoutsuite' )
 			);
 		},
-		[ apply, document ]
+		[ apply, document, setLegacyDestinations, setLegacyPromptOpen ]
 	);
 
 	/**
@@ -1105,6 +1055,7 @@ export default function FieldsScreen( {
 	 *
 	 * @return {Promise<void>} Resolves when the refresh settles.
 	 */
+	/*
 	const refreshPublication = useCallback( async () => {
 		try {
 			const [ publication, history ] = await Promise.all( [
@@ -1140,7 +1091,7 @@ export default function FieldsScreen( {
 	 * whole save would throw away work the server accepted.
 	 *
 	 * @return {Promise<void>} Resolves when saving settles.
-	 */
+	 * /
 	const save = useCallback( async () => {
 		if ( ! document ) {
 			return;
@@ -1213,9 +1164,9 @@ export default function FieldsScreen( {
 	 *
 	 * @param {number} revision Revision to restore.
 	 * @return {Promise<void>} Resolves when the restore settles.
-	 */
+	 * /
 	const restore = useCallback(
-		async ( /** @type {number} */ revision ) => {
+		async ( /** @type {number} * / revision ) => {
 			setRestoring( true );
 			setPublishError( '' );
 			setRestored( '' );
@@ -1229,7 +1180,7 @@ export default function FieldsScreen( {
 
 				setRestored(
 					sprintf(
-						/* translators: %d: revision number. */
+						/* translators: %d: revision number. * /
 						__(
 							'Revision %d was published again as a new revision.',
 							'wc-checkoutsuite'
@@ -1251,6 +1202,8 @@ export default function FieldsScreen( {
 		},
 		[ client, refreshPublication ]
 	);
+
+	*/
 
 	if ( loading ) {
 		return (
