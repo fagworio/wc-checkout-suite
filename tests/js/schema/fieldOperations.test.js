@@ -33,6 +33,7 @@ import {
 	ambiguousDestinations,
 	removeField,
 	removeSection,
+	removeSectionWithDependents,
 	reorderField,
 	repairLegacyDraft,
 	resolveAmbiguousDestinations,
@@ -1208,6 +1209,43 @@ describe( 'sections', () => {
 		expect(
 			removeSection( document, 'extra' ).document.sections
 		).toHaveLength( 0 );
+	} );
+
+	it( 'removes every enabled and disabled link when deleting a section with custom fields', () => {
+		const document = doc(
+			[
+				custom( {
+					id: 'shared',
+					destinations: {
+						customer_account: {
+							enabled: true,
+							section: 'extra',
+						},
+						admin_order: {
+							enabled: false,
+							section: 'extra',
+						},
+					},
+				} ),
+			],
+			[
+				{
+					id: 'extra',
+					title: 'Extra',
+					description: '',
+					position: 10,
+					location: 'order',
+				},
+			]
+		);
+
+		const result = removeSectionWithDependents( document, 'extra' );
+		const field = result.document.fields[ 0 ];
+
+		expect( result.ok ).toBe( true );
+		expect( result.document.sections ).toHaveLength( 0 );
+		expect( field.destinations ).toEqual( {} );
+		expect( field.bindings ).toEqual( [] );
 	} );
 
 	it( 'refuses deletion while display links or approval still reference it', () => {

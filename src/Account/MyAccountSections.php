@@ -516,7 +516,7 @@ final class MyAccountSections {
 			$account = $section->account();
 			$slug    = isset( $account['slug'] ) ? sanitize_title( (string) $account['slug'] ) : '';
 			$page    = isset( $account['page'] ) ? sanitize_key( (string) $account['page'] ) : '';
-			if ( ! $section->is_offered_in( self::DESTINATION ) || '' !== $page || '' === $slug || isset( $found[ $slug ] ) ) {
+			if ( ! $section->is_enabled() || ! $section->is_offered_in( self::DESTINATION ) || '' !== $page || '' === $slug || isset( $found[ $slug ] ) ) {
 				continue;
 			}
 			$found[ $slug ] = $section->to_array();
@@ -545,7 +545,7 @@ final class MyAccountSections {
 			$account = $section->account();
 			$page    = isset( $account['page'] ) ? sanitize_key( (string) $account['page'] ) : '';
 
-			if ( ! $section->is_offered_in( self::DESTINATION ) || '' === $page || ! AccountSurfaces::has( $page ) ) {
+			if ( ! $section->is_enabled() || ! $section->is_offered_in( self::DESTINATION ) || '' === $page || ! AccountSurfaces::has( $page ) ) {
 				continue;
 			}
 

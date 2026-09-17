@@ -1788,10 +1788,16 @@ export function removeSectionWithDependents(
 					const bindings = bindingsOf( field ).filter(
 						( binding ) => binding.container_id !== id
 					);
+					const destinations = Object.fromEntries(
+						Object.entries( field.destinations ?? {} ).filter(
+							( [ , link ] ) => link?.section !== id
+						)
+					);
+					const cleaned = { ...field, destinations };
 
 					return {
-						...field,
-						...withBindings( field, bindings ),
+						...cleaned,
+						...withBindings( cleaned, bindings ),
 						approval:
 							field.approval?.require_review &&
 							field.approval.section === id

@@ -84,7 +84,6 @@ import {
 	reorderField,
 	protectionReason,
 	removeField,
-	removeSection,
 	resolveAmbiguousDestinations,
 	removeSectionWithDependents,
 	repairLegacyDraft,
@@ -285,6 +284,37 @@ function AccountSectionPresentation( {
 					/>
 				</>
 			) }
+			<SelectField
+				id="wccs-account-section-icon"
+				label={ __( 'Ícone da aba', 'wc-checkoutsuite' ) }
+				value={ account.icon ?? section.icon ?? 'fields' }
+				options={ [ 'user', 'fields', 'file', 'mail' ].map(
+					( value ) => ( {
+						value,
+						label: value,
+					} )
+				) }
+				onChange={ (
+					/** @type {{ target: { value: string } }} */ event
+				) => update( { icon: event.target.value } ) }
+			/>
+			<TextField
+				id="wccs-account-section-position"
+				type="number"
+				min="0"
+				label={ __( 'Posição no menu', 'wc-checkoutsuite' ) }
+				value={ account.position ?? 0 }
+				onChange={ (
+					/** @type {{ target: { value: string } }} */ event
+				) =>
+					update( {
+						position: Math.max(
+							0,
+							Number( event.target.value ) || 0
+						),
+					} )
+				}
+			/>
 			<SelectField
 				id="wccs-account-section-mode"
 				label={ __( 'Modo', 'wc-checkoutsuite' ) }
@@ -1404,19 +1434,13 @@ export default function FieldsScreen( {
 		}
 
 		const impact = sectionImpact( composition, id );
-		const result = removeSection( composition, id );
-
-		if ( result.ok ) {
-			applyComposed( result );
-			if ( editingSection?.id === id ) {
-				setEditingSectionId( null );
-			}
-		} else {
-			setSectionRemoval( {
-				id,
-				impact,
-			} );
-		}
+		// Even an empty section is destructive configuration. Always show the same
+		// explicit confirmation so the merchant never deletes an account tab by
+		// clicking through an action menu accidentally.
+		setSectionRemoval( {
+			id,
+			impact,
+		} );
 	};
 
 	const requestSectionRemoval = () =>
@@ -1785,7 +1809,7 @@ export default function FieldsScreen( {
 						>
 							<p>
 								{ __(
-									'Esta ação remove a seção e os itens abaixo. Ela não pode ser desfeita pelo botão Desfazer.',
+									'Excluir esta aba removerá permanentemente o item do menu, sua rota e suas configurações. Os campos personalizados vinculados também serão removidos; campos nativos bloqueiam a exclusão. Esta ação não pode ser desfeita pelo botão Desfazer.',
 									'wc-checkoutsuite'
 								) }
 							</p>

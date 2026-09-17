@@ -211,6 +211,13 @@ try {
 	await page.getByRole( 'button', { name: /Ações da seção/ } ).click();
 	stage = 'remover seção';
 	await page.getByRole( 'button', { name: /Remove section/ } ).click();
+	const emptySectionDialog = page.getByRole( 'dialog', {
+		name: 'Remover seção e dependências',
+	} );
+	await emptySectionDialog
+		.getByRole( 'button', { name: /Remove section and fields|Remover seção e campos/ } )
+		.click();
+	await emptySectionDialog.waitFor( { state: 'hidden' } );
 	record(
 		'remove a seção temporária vazia',
 		( await renamedSectionTab.count() ) === 0

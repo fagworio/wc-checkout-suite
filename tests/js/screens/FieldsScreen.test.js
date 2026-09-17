@@ -697,6 +697,97 @@ describe( 'creating a container', () => {
 		expect( created.collection_surface ).toBe( 'checkout' );
 		expect( created.section ).toBe( 'order' );
 	} );
+
+	it( 'creates the first complementary field inside a native account page', async () => {
+		const user = userEvent.setup();
+		const stub = client();
+
+		render(
+			<FieldsScreen
+				client={ stub }
+				accountMenu={ [
+					{ id: 'dashboard', label: 'Painel' },
+					{ id: 'orders', label: 'Pedidos' },
+				] }
+			/>
+		);
+
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
+		await user.click( screen.getByRole( 'tab', { name: /^Minha conta/ } ) );
+		await user.click( screen.getByRole( 'button', { name: /^Pedidos/ } ) );
+		await user.click(
+			screen.getByRole( 'button', { name: 'Novo campo' } )
+		);
+		await user.click(
+			screen.getAllByRole( 'button', { name: /Texto/ } ).slice( -1 )[ 0 ]
+		);
+		await user.click(
+			screen
+				.getAllByRole( 'button', { name: 'Adicionar campo' } )
+				.slice( -1 )[ 0 ]
+		);
+
+		await user.click(
+			screen.getByRole( 'button', { name: 'Salvar alterações' } )
+		);
+		await waitFor( () => expect( stub.saveDraft ).toHaveBeenCalled() );
+
+		const [ saved ] = stub.saveDraft.mock.calls[ 0 ];
+		const ordersSection = ( saved.sections ?? [] ).find(
+			( /** @type {any} */ entry ) =>
+				'orders' === entry.presentation?.account?.page
+		);
+		const created = ( saved.fields ?? [] ).find(
+			( /** @type {any} */ entry ) =>
+				'customer_account' in ( entry.destinations ?? {} ) &&
+				ordersSection?.id ===
+					entry.destinations.customer_account.section
+		);
+
+		expect( ordersSection ).toBeTruthy();
+		expect( created ).toBeTruthy();
+		expect( created.collection_surface ).toBe( 'my_account' );
+	} );
+
+	it( 'keeps the inline field action available on every native account page', async () => {
+		const user = userEvent.setup();
+		const pages = [
+			[ 'dashboard', 'Painel' ],
+			[ 'orders', 'Pedidos' ],
+			[ 'downloads', 'Downloads' ],
+			[ 'edit-address', 'Endereços' ],
+			[ 'edit-account', 'Detalhes da conta' ],
+		];
+
+		render(
+			<FieldsScreen
+				client={ client() }
+				accountMenu={ pages.map( ( [ id, label ] ) => ( {
+					id,
+					label,
+				} ) ) }
+			/>
+		);
+
+		await screen.findByRole( 'list', { name: 'Campos da seção' } );
+		await user.click( screen.getByRole( 'tab', { name: /^Minha conta/ } ) );
+
+		for ( const [ , label ] of pages ) {
+			await user.click(
+				screen.getByRole( 'button', {
+					name: new RegExp( `^${ label }` ),
+				} )
+			);
+			const add = screen.getAllByRole( 'button', {
+				name: 'Adicionar campo nesta seção',
+			} );
+			expect(
+				add.some( ( button ) => ! button.hasAttribute( 'disabled' ) )
+			).toBe( true );
+		}
+	} );
 } );
 
 describe( 'editing', () => {

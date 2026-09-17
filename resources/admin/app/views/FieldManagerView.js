@@ -323,6 +323,7 @@ export default function FieldManagerView( { model } ) {
 					id: account.slug,
 					label: account.menu_label ?? entry.title ?? entry.id,
 					custom: true,
+					enabled: entry.enabled !== false,
 					icon: account.icon ?? 'fields',
 				};
 			} );
@@ -481,26 +482,43 @@ export default function FieldManagerView( { model } ) {
 		contexts.some(
 			( /** @type {any} */ item ) => item.id === contextActive
 		);
-	const current = accountContextOwnsSelection
+	const activeAccountPage = contexts.find(
+		( /** @type {any} */ item ) => item.id === contextActive
+	);
+	const persistedCurrent = accountContextOwnsSelection
 		? accountContextSection
 		: groups.find(
 				( /** @type {any} */ group ) => group.section.id === section
 		  ) ?? accountContextSection;
+	// Native account pages do not have a WCCS section until the merchant adds the
+	// first complementary field. Keep a virtual section while they are empty so
+	// the editor remains useful and points at the selected WooCommerce page.
+	const virtualAccountSection =
+		accountContextOwnsSelection && ! persistedCurrent && activeAccountPage
+			? {
+					declared: false,
+					fields: [],
+					section: {
+						id: contextActive,
+						title: activeAccountPage.label,
+						description: '',
+						areas: [ 'customer_account' ],
+						location: 'account',
+						presentation: {
+							account: { page: contextActive },
+						},
+					},
+			  }
+			: null;
+	const current = persistedCurrent ?? virtualAccountSection;
 	const copy = sectionCopy(
 		current?.section ?? { id: section, title: '', description: '' },
 		Boolean( current?.declared )
 	);
-	const activeAccountPage = contexts.find(
-		( /** @type {any} */ item ) => item.id === contextActive
-	);
-	const accountSectionMatchesContext =
-		Boolean( current ) &&
-		accountPageFor( current.section ) === contextActive;
 	const accountContextEmpty =
 		'customer_account' === area &&
-		( 'edit-account' === contextActive ||
-			'edit-address' === contextActive ) &&
-		! accountSectionMatchesContext;
+		accountContextOwnsSelection &&
+		! accountContextSection;
 	const accountContextSectionId = accountContextSection?.section.id;
 	const selectAccountPage = ( /** @type {string} */ id ) => {
 		onEdit( null );
@@ -1315,7 +1333,7 @@ export default function FieldManagerView( { model } ) {
 									</p>
 									<p>
 										{ __(
-											'A integração desses campos no editor ficará para a próxima etapa; nenhum campo será copiado ou alterado aqui.',
+											'Campos nativos continuam sob o controle do WooCommerce. Você pode adicionar campos complementares nesta página usando o editor abaixo.',
 											'wc-checkoutsuite'
 										) }
 									</p>
@@ -1444,6 +1462,7 @@ export default function FieldManagerView( { model } ) {
 								<button
 									type="button"
 									className="text-btn"
+									disabled={ ! current?.declared }
 									onClick={ () =>
 										onOpenSection(
 											current?.section.id ?? null
@@ -2727,8 +2746,7 @@ export default function FieldManagerView( { model } ) {
 						setPickerOpen( false );
 						onCreateField( {
 							...choice,
-							...( accountContextEmpty &&
-							'edit-account' === contextActive
+							...( accountContextEmpty && contextActive
 								? {
 										accountPage: contextActive,
 										accountPageLabel:

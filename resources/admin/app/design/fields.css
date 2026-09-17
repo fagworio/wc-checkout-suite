@@ -1063,9 +1063,6 @@ body:has(.wccs-admin) #wpfooter {
    custom container attached to the selected WooCommerce endpoint, leave the
    empty editor out of the composition so the screen reads like the storefront
    form it is describing. */
-.wccs-admin .account-context-empty .builder-panel{display:none}
-.wccs-admin .account-context-empty > .core-checkout:not(.account-native-fields){display:none}
-.wccs-admin .account-context-empty > .add-field-inline,.wccs-admin .account-context-empty > .section-preview{display:none}
 
 .wccs-admin .account-native-fields{margin-bottom:18px}
 .wccs-admin .account-native-field{align-items:center}

@@ -78,7 +78,11 @@ export default function ContainerProperties( {
 			) : null }
 			<CheckboxField
 				id="wccs-container-enabled"
-				label={ __( 'Container ativo', 'wc-checkoutsuite' ) }
+				label={ __( 'Aba/seção ativa', 'wc-checkoutsuite' ) }
+				help={ __(
+					'Quando desativada, a configuração e os campos permanecem salvos, mas não aparecem no frontend.',
+					'wc-checkoutsuite'
+				) }
 				checked={ value.enabled !== false }
 				disabled={ disabled }
 				onChange={ (

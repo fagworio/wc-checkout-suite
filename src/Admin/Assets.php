@@ -298,6 +298,33 @@ final class Assets {
 			$menu[] = $entry;
 		}
 
+		// The admin must keep inactive custom tabs visible so the merchant can edit or
+		// reactivate them. The storefront filter intentionally removes those tabs, but
+		// that must not remove their editor context from the bootstrap payload.
+		foreach ( \WCCheckoutSuite\Checkout\Classic\PublishedDocument::read()->sections() as $raw ) {
+			if ( ! is_array( $raw ) ) {
+				continue;
+			}
+
+			$section = \WCCheckoutSuite\Domain\Sections\SectionDefinition::from_array( $raw );
+			$account = $section->account();
+			$slug    = isset( $account['slug'] ) ? sanitize_title( (string) $account['slug'] ) : '';
+
+			if ( '' === $slug || ! $section->is_offered_in( 'customer_account' ) || in_array( $slug, array_column( $menu, 'id' ), true ) ) {
+				continue;
+			}
+
+			$menu[] = array(
+				'id'      => $slug,
+				'label'   => wp_strip_all_tags( (string) ( $account['menu_label'] ?? $section->title() ) ),
+				'url'     => function_exists( 'wc_get_account_endpoint_url' ) ? esc_url_raw( wc_get_account_endpoint_url( $slug ) ) : '',
+				'logout'  => false,
+				'custom'  => true,
+				'enabled' => $section->is_enabled(),
+				'icon'    => $account['icon'] ?? $section->icon(),
+			);
+		}
+
 		return $menu;
 	}
 
@@ -332,7 +359,7 @@ final class Assets {
 			$account = $section->account();
 			$slug    = isset( $account['slug'] ) ? sanitize_title( (string) $account['slug'] ) : '';
 
-			if ( '' === $slug || ! $section->is_offered_in( 'customer_account' ) ) {
+			if ( ! $section->is_enabled() || '' === $slug || ! $section->is_offered_in( 'customer_account' ) ) {
 				continue;
 			}
 

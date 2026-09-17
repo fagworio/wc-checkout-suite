@@ -88,6 +88,12 @@ export default function AccountMenuList( {
 											'Página nativa do WooCommerce',
 											'wc-checkoutsuite'
 									  ) }
+								{ item.custom && item.enabled === false
+									? ` — ${ __(
+											'inativa',
+											'wc-checkoutsuite'
+									  ) }`
+									: null }
 							</small>
 						</span>
 					</button>
