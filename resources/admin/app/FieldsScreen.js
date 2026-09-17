@@ -46,6 +46,7 @@ import { adoptCoreSection } from './schema/coreCheckout';
 import useFieldsDocument from './schema/useFieldsDocument';
 import useFieldsNavigation from './schema/useFieldsNavigation';
 import useSectionEditor from './schema/useSectionEditor';
+import useFieldEditor from './schema/useFieldEditor';
 import { addBinding, withBindings } from './schema/bindings';
 import {
 	classifyFailure,
@@ -70,13 +71,9 @@ import {
 	conditionDependents,
 	createField,
 	createSection,
-	duplicateField,
 	isProtected,
-	moveField,
 	moveSection,
-	reorderField,
 	protectionReason,
-	removeField,
 	resolveAmbiguousDestinations,
 	removeSectionWithDependents,
 	sectionImpact,
@@ -500,19 +497,6 @@ export default function FieldsScreen( {
 	const [ linkDialogOpen, setLinkDialogOpen ] = useState( false );
 	const [ linkFieldId, setLinkFieldId ] = useState( '' );
 	/**
-	 * Identifier of the field open in the inspector.
-	 *
-	 * The identifier is stored rather than the definition, so the inspector always
-	 * reads the current draft. Holding the definition would let the dialog show a
-	 * stale copy after the first change.
-	 *
-	 * @type {[string|null, Function]}
-	 */
-	const [ editing, setEditing ] = useState( null );
-
-	// Annotating the argument rather than the destructured tuple: a JSDoc type on
-	// the tuple does not reach useState and leaves the state as `never`.
-	/**
 	 * The document as the server last confirmed it.
 	 *
 	 * Dirty is derived from this rather than set by hand, so undoing back to the
@@ -522,28 +506,6 @@ export default function FieldsScreen( {
 	 * @type {boolean}
 	 */
 	const dirty = documentLifecycle.dirty;
-
-	/**
-	 * Identifiers selected for a bulk action.
-	 *
-	 * @type {[string[], Function]}
-	 */
-	const [ selected, setSelected ] = useState( [] );
-
-	/**
-	 * Toggles one field's selection.
-	 *
-	 * @param {string} id Field identifier.
-	 * @return {void}
-	 */
-	const toggleSelected = ( /** @type {string} */ id ) =>
-		setSelected( ( /** @type {string[]} */ current ) =>
-			current.includes( id )
-				? current.filter(
-						( /** @type {string} */ entry ) => entry !== id
-				  )
-				: [ ...current, id ]
-		);
 
 	/*
 	useUnsavedChanges(
@@ -740,6 +702,21 @@ export default function FieldsScreen( {
 		},
 		[ commitDocument, setSaved ]
 	);
+
+	const fieldEditor = useFieldEditor( { document, apply } );
+	const {
+		selected,
+		setSelected,
+		toggleSelected,
+		editing,
+		setEditing,
+		editingField,
+		duplicate,
+		toggleEnabled,
+		move,
+		reorder,
+		remove,
+	} = fieldEditor;
 
 	/**
 	 * Applies a change to the profile list.
@@ -1142,13 +1119,6 @@ export default function FieldsScreen( {
 		);
 	}
 
-	// Read from the draft on every render so the inspector shows what is stored,
-	// not a copy taken when the dialog opened.
-	const editingField =
-		document.fields.find(
-			( /** @type {any} */ field ) => field.id === editing
-		) ?? null;
-
 	/** @type {Record<string, string>} */
 	const destinationNames = {
 		admin_order: __(
@@ -1386,43 +1356,11 @@ export default function FieldsScreen( {
 					onClearSelection: () => setSelected( [] ),
 					editing,
 					onEdit: ( id ) => setEditing( id ),
-					onDuplicate: ( /** @type {string|null} */ id ) =>
-						id &&
-						apply(
-							duplicateField( document, id ),
-							__( 'Duplicar campo', 'wc-checkoutsuite' )
-						),
-					onToggleEnabled: ( /** @type {string} */ id ) => {
-						const field = document.fields.find(
-							( /** @type {any} */ entry ) => entry.id === id
-						);
-
-						apply(
-							setFieldEnabled(
-								document,
-								id,
-								! ( field?.enabled ?? true )
-							)
-						);
-					},
-					onMove: (
-						/** @type {string} */ id,
-						/** @type {'up'|'down'} */ direction
-					) =>
-						apply(
-							moveField( document, id, direction ),
-							__( 'Reordenar campo', 'wc-checkoutsuite' )
-						),
-					onReorder: (
-						/** @type {string} */ id,
-						/** @type {string} */ targetId
-					) =>
-						apply(
-							reorderField( document, id, targetId ),
-							__( 'Reordenar campo', 'wc-checkoutsuite' )
-						),
-					onRemove: ( /** @type {string|null} */ id ) =>
-						id && apply( removeField( document, id ) ),
+					onDuplicate: duplicate,
+					onToggleEnabled: toggleEnabled,
+					onMove: move,
+					onReorder: reorder,
+					onRemove: remove,
 					onProtect: explainProtection,
 					onCreateField: ( /** @type {any} */ choice ) => {
 						// A field can be created in any destination the merchant works in
