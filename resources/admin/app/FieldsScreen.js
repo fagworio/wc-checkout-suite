@@ -1514,7 +1514,7 @@ export default function FieldsScreen( {
 					} ),
 					onClearSelection: () => setSelected( [] ),
 					editing,
-					onEdit: setEditing,
+					onEdit: ( id ) => setEditing( id ),
 					onDuplicate: ( /** @type {string|null} */ id ) =>
 						id &&
 						apply(
@@ -1727,7 +1727,7 @@ export default function FieldsScreen( {
 						apply( setFieldEnabled( document, id, true ) ),
 					siteName,
 					reference: mode,
-					onReferenceChange: setMode,
+					onReferenceChange: ( value ) => setMode( value ),
 					onPreview,
 					onOpenRules,
 					onExport: exportConfig,

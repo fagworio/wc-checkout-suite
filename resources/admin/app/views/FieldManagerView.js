@@ -53,6 +53,8 @@ import {
 import { useNarrowViewport } from '../design/useNarrowViewport';
 import { typeGlyph } from '../design/typeGlyph';
 
+/** @typedef {import('./FieldManagerModel').FieldManagerModel} FieldManagerModel */
+
 /**
  * The design's eyebrow and heading for the editor.
  *
@@ -201,12 +203,7 @@ function accountPageFor( section ) {
 /**
  * The field manager's editor view.
  *
- * The model is typed loosely on purpose: it is the whole of the screen's state and
- * the actions that change it, and writing that shape twice — once where it is built
- * and once here — would let the two drift while claiming to check each other.
- *
- * @param {Object} props       Component properties.
- * @param {any}    props.model Everything the view shows and the actions it calls.
+ * @param {{model: FieldManagerModel}} props Component properties and view-model contract.
  * @return {*} Rendered element tree.
  */
 export default function FieldManagerView( { model } ) {
@@ -858,7 +855,11 @@ export default function FieldManagerView( { model } ) {
 	 * @type {boolean}
 	 */
 	const sectionShowsTitle =
-		false !== current?.section?.presentation?.show_title;
+		false !==
+		( current?.section?.presentation &&
+		'show_title' in current.section.presentation
+			? current.section.presentation.show_title
+			: undefined );
 
 	// The field properties are one element with two homes, as the design draws them: the
 	// editor's right column on a wide window, and a dialog over the list below 870px,
@@ -2739,7 +2740,7 @@ export default function FieldManagerView( { model } ) {
 					coreFields={ coreFields }
 					section={ section }
 					sections={ sectionOptions }
-					surface={ area }
+					surface={ /** @type {'checkout'|'my_account'} */ ( area ) }
 					open={ pickerOpen }
 					onSectionChange={ onSectionChange }
 					onChooseType={ ( /** @type {any} */ choice ) => {
