@@ -442,4 +442,5 @@ export interface OperationResult {
 	document: SchemaDocument;
 	reason: string;
 	field?: FieldDefinition;
+	section?: SectionDefinition;
 }

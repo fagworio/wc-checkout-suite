@@ -154,15 +154,30 @@ function client( overrides = {} ) {
 			],
 			accountSurfaces: [
 				{
+					value: 'dashboard',
+					label: 'Painel',
+					description: 'A primeira página da Minha Conta.',
+				},
+				{
+					value: 'orders',
+					label: 'Pedidos',
+					description: 'O histórico de pedidos do cliente.',
+				},
+				{
+					value: 'downloads',
+					label: 'Downloads',
+					description: 'Os downloads disponíveis para o cliente.',
+				},
+				{
+					value: 'edit-address',
+					label: 'Endereços',
+					description: 'Os endereços de cobrança e entrega do cliente.',
+				},
+				{
 					value: 'edit-account',
 					label: 'Detalhes da conta',
 					description:
 						'A página onde o cliente vê e altera os próprios dados.',
-				},
-				{
-					value: 'dashboard',
-					label: 'Painel',
-					description: 'A primeira página da Minha Conta.',
 				},
 			],
 		} ) ),
@@ -753,8 +768,11 @@ describe( 'creating a container', () => {
 
 	it( 'keeps the inline field action available on every native account page', async () => {
 		const user = userEvent.setup();
-		const pages = [
+			const pages = [
 			[ 'dashboard', 'Painel' ],
+			[ 'orders', 'Pedidos' ],
+			[ 'downloads', 'Downloads' ],
+			[ 'edit-address', 'Endereços' ],
 			[ 'edit-account', 'Detalhes da conta' ],
 		];
 

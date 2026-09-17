@@ -358,6 +358,8 @@ export default function FieldsScreen( {
 		discardLocalDraft,
 		save,
 		restore,
+		problems,
+		clearProblems,
 		legacyDestinations,
 		legacyPromptOpen,
 		setLegacyDestinations,
@@ -380,9 +382,6 @@ export default function FieldsScreen( {
 	 * @type {[string, Function]}
 	 */
 	const [ refusal, setRefusal ] = useState( '' );
-	const [ problems, setProblems ] = useState(
-		/** @type {Array<{fieldId?: string, message: string}>} */ ( [] )
-	);
 	const navigationState = useFieldsNavigation( {
 		areaIds: AREA_IDS,
 		checkoutMode,
@@ -636,7 +635,6 @@ export default function FieldsScreen( {
 		resetDocument( savedDocument );
 		setSaved( '' );
 		setLocalDraftRestored( false );
-		setProblems( [] );
 		setPublishError( '' );
 	}, [ savedDocument, resetDocument ] );
 
@@ -696,11 +694,11 @@ export default function FieldsScreen( {
 			}
 
 			setRefusal( '' );
-			setProblems( [] );
+			clearProblems();
 			setSaved( '' );
 			commitDocument( result.document, label );
 		},
-		[ commitDocument, setSaved ]
+		[ clearProblems, commitDocument, setSaved ]
 	);
 
 	const fieldEditor = useFieldEditor( { document, apply } );
@@ -1413,10 +1411,7 @@ export default function FieldsScreen( {
 							}
 
 							targetDocument = created.document;
-							targetSection =
-								created.document.sections[
-									created.document.sections.length - 1
-								].id;
+							targetSection = created.section?.id ?? 'order';
 						}
 
 						const createdField = createField( targetDocument, {
@@ -1913,13 +1908,8 @@ export default function FieldsScreen( {
 											// effect can run between these state updates; pointing at the
 											// old document made it fall back to the first section and sent
 											// the next field to the wrong container.
-											const createdSection =
-												result.document.sections[
-													result.document.sections
-														.length - 1
-												];
 											setSection(
-												createdSection?.id ?? section
+												result.section?.id ?? section
 											);
 											closeNewSection();
 										} }

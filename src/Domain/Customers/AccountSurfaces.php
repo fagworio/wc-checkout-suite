@@ -29,8 +29,8 @@ namespace WCCheckoutSuite\Domain\Customers;
  *   address page renders one form per address type and its meaning is the addresses.
  *
  * What is *not* here is as important as what is: `customer-logout` is a link and not a page at all,
- * which is why it can never host content, and a surface this plugin has never heard of is refused
- * by name rather than accepted and rendered nowhere.
+ * and payment methods are gateway-owned. Those surfaces are refused by name rather than accepted
+ * and rendered nowhere.
  */
 final class AccountSurfaces {
 
@@ -42,18 +42,30 @@ final class AccountSurfaces {
 	public static function all(): array {
 		return array(
 			array(
+				'value'       => 'dashboard',
+				'label'       => __( 'Painel', 'wc-checkoutsuite' ),
+				'description' => __( 'A primeira página da Minha Conta.', 'wc-checkoutsuite' ),
+			),
+			array(
+				'value'       => 'orders',
+				'label'       => __( 'Pedidos', 'wc-checkoutsuite' ),
+				'description' => __( 'O histórico de pedidos do cliente.', 'wc-checkoutsuite' ),
+			),
+			array(
+				'value'       => 'downloads',
+				'label'       => __( 'Downloads', 'wc-checkoutsuite' ),
+				'description' => __( 'Os downloads disponíveis para o cliente.', 'wc-checkoutsuite' ),
+			),
+			array(
+				'value'       => 'edit-address',
+				'label'       => __( 'Endereços', 'wc-checkoutsuite' ),
+				'description' => __( 'Os endereços de cobrança e entrega do cliente.', 'wc-checkoutsuite' ),
+			),
+			array(
 				'value'       => 'edit-account',
 				'label'       => __( 'Detalhes da conta', 'wc-checkoutsuite' ),
 				'description' => __(
 					'A página onde o cliente vê e altera os próprios dados. A secção aparece depois do formulário nativo do WooCommerce, como um bloco à parte.',
-					'wc-checkoutsuite'
-				),
-			),
-			array(
-				'value'       => 'dashboard',
-				'label'       => __( 'Painel', 'wc-checkoutsuite' ),
-				'description' => __(
-					'A primeira página da Minha Conta, que o cliente vê sem estar a editar nada. Recebe a secção pelo mesmo motivo, com o formulário dela próprio.',
 					'wc-checkoutsuite'
 				),
 			),
@@ -111,9 +123,6 @@ final class AccountSurfaces {
 	 */
 	public static function refused(): array {
 		return array(
-			'orders'          => __( 'É a lista de pedidos do cliente. Uma secção de campos por baixo dela pareceria fazer parte da lista.', 'wc-checkoutsuite' ),
-			'downloads'       => __( 'É a lista de downloads. O mesmo motivo: a página é o que ela lista.', 'wc-checkoutsuite' ),
-			'edit-address'    => __( 'Renderiza um formulário por tipo de endereço e o sentido da página são os endereços; a secção pertence a Detalhes da conta.', 'wc-checkoutsuite' ),
 			'payment-methods' => __( 'É gerida pelo gateway: o que aparece ali depende de quem processa o pagamento, e não de um documento desta loja.', 'wc-checkoutsuite' ),
 			'customer-logout' => __( 'Não é uma página, é uma ligação de saída do menu.', 'wc-checkoutsuite' ),
 		);

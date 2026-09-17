@@ -28,7 +28,7 @@ final class AccountSurfacesTest extends TestCase {
 	 * @return void
 	 */
 	public function test_the_offered_surfaces_are_the_safe_ones(): void {
-		self::assertSame( array( 'edit-account', 'dashboard' ), AccountSurfaces::values() );
+		self::assertSame( array( 'dashboard', 'orders', 'downloads', 'edit-address', 'edit-account' ), AccountSurfaces::values() );
 	}
 
 	/**
@@ -54,7 +54,7 @@ final class AccountSurfacesTest extends TestCase {
 	 */
 	public function test_a_surface_is_known_and_labelled(): void {
 		self::assertTrue( AccountSurfaces::has( 'edit-account' ) );
-		self::assertFalse( AccountSurfaces::has( 'orders' ) );
+		self::assertTrue( AccountSurfaces::has( 'orders' ) );
 		self::assertFalse( AccountSurfaces::has( 'nao-existe' ) );
 		self::assertSame( 'Detalhes da conta', AccountSurfaces::label( 'edit-account' ) );
 		// An unknown key is answered with itself rather than with an empty string: the caller is
@@ -73,7 +73,7 @@ final class AccountSurfacesTest extends TestCase {
 	public function test_every_refused_page_says_why(): void {
 		$refused = AccountSurfaces::refused();
 
-		foreach ( array( 'orders', 'downloads', 'edit-address', 'payment-methods', 'customer-logout' ) as $page ) {
+		foreach ( array( 'payment-methods', 'customer-logout' ) as $page ) {
 			self::assertArrayHasKey( $page, $refused );
 			self::assertNotSame( '', trim( $refused[ $page ] ), $page );
 			self::assertFalse( AccountSurfaces::has( $page ), 'a refused page is never offered: ' . $page );

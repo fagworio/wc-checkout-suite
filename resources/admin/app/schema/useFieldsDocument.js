@@ -58,6 +58,10 @@ export default function useFieldsDocument( { client } ) {
 	const [ catalog, setCatalog ] = useState( null );
 	const [ coreFields, setCoreFields ] = useState( null );
 	const [ failure, setFailure ] = useState( /** @type {any} */ ( null ) );
+	const [ problems, setProblems ] = useState(
+		/** @type {Array<{fieldId?: string, message: string}>} */ ( [] )
+	);
+	const clearProblems = useCallback( () => setProblems( [] ), [] );
 	const [ saving, setSaving ] = useState( false );
 	const [ saved, setSaved ] = useState( '' );
 	const [ localDraftRestored, setLocalDraftRestored ] = useState( false );
@@ -105,6 +109,7 @@ export default function useFieldsDocument( { client } ) {
 	const load = useCallback( async () => {
 		setLoading( true );
 		setFailure( null );
+		setProblems( [] );
 
 		try {
 			const [ draft, types, core, publication, history ] =
@@ -260,6 +265,7 @@ export default function useFieldsDocument( { client } ) {
 
 		setSaving( true );
 		setFailure( null );
+		setProblems( [] );
 		setSaved( '' );
 		setPublishError( '' );
 
@@ -294,6 +300,9 @@ export default function useFieldsDocument( { client } ) {
 		} catch ( caught ) {
 			const state = classifyFailure( caught );
 			setFailure( state );
+			if ( 'validation' === state.kind ) {
+				setProblems( state.fields ?? [] );
+			}
 		} finally {
 			if ( mounted.current ) {
 				setSaving( false );
@@ -346,6 +355,8 @@ export default function useFieldsDocument( { client } ) {
 		resetDocument,
 		loading,
 		failure,
+		problems,
+		clearProblems,
 		saving,
 		saved,
 		setSaved,

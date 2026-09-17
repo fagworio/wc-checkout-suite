@@ -1627,6 +1627,7 @@ export function createSection(
 			sections: [ ...( document.sections ?? [] ), section ],
 		},
 		reason: '',
+		section,
 	};
 }
 
