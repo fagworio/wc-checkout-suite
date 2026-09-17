@@ -292,24 +292,29 @@ final class SectionValidator {
 			);
 		}
 
-		if ( '' === $label || mb_strlen( $label ) > 100 ) {
-			$result = $result->merge(
-				ValidationResult::invalid(
-					'invalid_account_menu_label',
-					__( 'A My Account section needs a menu label of at most 100 characters.', 'wc-checkoutsuite' ),
-					array( 'section' => $id )
-				)
-			);
-		}
+		// Native pages already own their menu label and icon. Those properties belong
+		// only to a standalone custom endpoint, where this section creates a new menu
+		// item for the customer.
+		if ( '' === $page ) {
+			if ( '' === $label || mb_strlen( $label ) > 100 ) {
+				$result = $result->merge(
+					ValidationResult::invalid(
+						'invalid_account_menu_label',
+						__( 'A My Account section needs a menu label of at most 100 characters.', 'wc-checkoutsuite' ),
+						array( 'section' => $id )
+					)
+				);
+			}
 
-		if ( ! in_array( $icon, self::ACCOUNT_ICONS, true ) ) {
-			$result = $result->merge(
-				ValidationResult::invalid(
-					'invalid_account_icon',
-					__( 'A My Account section must use one of the supported icons.', 'wc-checkoutsuite' ),
-					array( 'section' => $id )
-				)
-			);
+			if ( ! in_array( $icon, self::ACCOUNT_ICONS, true ) ) {
+				$result = $result->merge(
+					ValidationResult::invalid(
+						'invalid_account_icon',
+						__( 'A My Account section must use one of the supported icons.', 'wc-checkoutsuite' ),
+						array( 'section' => $id )
+					)
+				);
+			}
 		}
 
 		if ( ! in_array( $mode, array( 'edit', 'view' ), true ) ) {

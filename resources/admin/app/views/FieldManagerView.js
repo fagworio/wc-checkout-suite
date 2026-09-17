@@ -290,8 +290,18 @@ export default function FieldManagerView( { model } ) {
 	 * locally until the merchant publishes them and WooCommerce can return them.
 	 */
 	const accountPages = useMemo( () => {
+		const supportedNativePages = new Set(
+			( catalog?.accountSurfaces ?? [] ).map(
+				( /** @type {any} */ surface ) => surface.value
+			)
+		);
 		const nativePages = serverAccountMenu
-			.filter( ( /** @type {any} */ item ) => ! item.logout )
+			.filter(
+				( /** @type {any} */ item ) =>
+					! item.logout &&
+					( Boolean( item.custom ) ||
+						supportedNativePages.has( item.id ) )
+			)
 			.map( ( /** @type {any} */ item ) => ( {
 				...item,
 				custom: Boolean( item.custom ),
@@ -326,7 +336,7 @@ export default function FieldManagerView( { model } ) {
 			} );
 
 		return [ ...nativePages, ...draftPages ];
-	}, [ serverAccountMenu, doc ] );
+	}, [ serverAccountMenu, catalog, doc ] );
 
 	/** The navigation entry this destination belongs to, and its siblings. */
 	const areaGroup =

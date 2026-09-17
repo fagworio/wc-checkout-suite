@@ -716,7 +716,7 @@ describe( 'creating a container', () => {
 			await screen.findByRole( 'list', { name: 'Campos da seção' } )
 		).findByText( 'CPF' );
 		await user.click( screen.getByRole( 'tab', { name: /^Minha conta/ } ) );
-		await user.click( screen.getByRole( 'button', { name: /^Pedidos/ } ) );
+		await user.click( screen.getByRole( 'button', { name: /^Painel/ } ) );
 		await user.click(
 			screen.getByRole( 'button', { name: 'Novo campo' } )
 		);
@@ -735,18 +735,18 @@ describe( 'creating a container', () => {
 		await waitFor( () => expect( stub.saveDraft ).toHaveBeenCalled() );
 
 		const [ saved ] = stub.saveDraft.mock.calls[ 0 ];
-		const ordersSection = ( saved.sections ?? [] ).find(
+		const dashboardSection = ( saved.sections ?? [] ).find(
 			( /** @type {any} */ entry ) =>
-				'orders' === entry.presentation?.account?.page
+				'dashboard' === entry.presentation?.account?.page
 		);
 		const created = ( saved.fields ?? [] ).find(
 			( /** @type {any} */ entry ) =>
 				'customer_account' in ( entry.destinations ?? {} ) &&
-				ordersSection?.id ===
+				dashboardSection?.id ===
 					entry.destinations.customer_account.section
 		);
 
-		expect( ordersSection ).toBeTruthy();
+		expect( dashboardSection ).toBeTruthy();
 		expect( created ).toBeTruthy();
 		expect( created.collection_surface ).toBe( 'my_account' );
 	} );
@@ -755,9 +755,6 @@ describe( 'creating a container', () => {
 		const user = userEvent.setup();
 		const pages = [
 			[ 'dashboard', 'Painel' ],
-			[ 'orders', 'Pedidos' ],
-			[ 'downloads', 'Downloads' ],
-			[ 'edit-address', 'Endereços' ],
 			[ 'edit-account', 'Detalhes da conta' ],
 		];
 

@@ -7,7 +7,7 @@
 
 import { useCallback, useState } from '@wordpress/element';
 
-import { areaHref, sectionHref } from '../sectionUrl';
+import { areaHref, readArea, sectionHref } from '../sectionUrl';
 
 /**
  * @param {{areaIds: string[], checkoutMode?: string}} props Navigation inputs.
@@ -15,7 +15,9 @@ import { areaHref, sectionHref } from '../sectionUrl';
  */
 export default function useFieldsNavigation( { areaIds, checkoutMode = '' } ) {
 	const [ mode, setMode ] = useState( checkoutMode || 'classic' );
-	const [ area, setArea ] = useState( 'checkout' );
+	const [ area, setArea ] = useState(
+		() => readArea( window.location?.search ?? '', areaIds ) || 'checkout'
+	);
 	const [ section, setSection ] = useState( 'order' );
 	const [ activeProfile, setActiveProfile ] = useState( '' );
 

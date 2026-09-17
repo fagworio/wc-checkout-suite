@@ -930,6 +930,32 @@ final class SectionValidatorTest extends TestCase {
 	}
 
 	/**
+	 * Native pages inherit their menu metadata from WooCommerce.
+	 *
+	 * @return void
+	 */
+	public function test_a_supported_native_page_does_not_require_custom_menu_metadata(): void {
+		$result = SectionValidator::validate(
+			SectionDefinition::from_array(
+				$this->section(
+					array(
+						'areas'        => array( 'customer_account' ),
+						'presentation' => array(
+							'account' => array(
+								'page' => 'dashboard',
+								'mode' => 'edit',
+							),
+						),
+					)
+				)
+			)
+		);
+
+		self::assertNotContains( 'invalid_account_menu_label', $result->error_codes() );
+		self::assertNotContains( 'invalid_account_icon', $result->error_codes() );
+	}
+
+	/**
 	 * Two sections on native pages do not collide over a slug neither of them has.
 	 *
 	 * @return void
