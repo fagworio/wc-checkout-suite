@@ -410,9 +410,9 @@ await step( 'A tela de campos tem o fluxo do protótipo', async () => {
 } );
 
 // ---------------------------------------------------------------------------
-// 4c. As ações da linha, como o desenho as põe.
+// 4c. A superfície única de ações da linha.
 // ---------------------------------------------------------------------------
-await step( 'A linha tem as ações à vista, e não um menu', async () => {
+await step( 'A linha concentra ações secundárias em um único menu', async () => {
 	await open( 'fields', '.section-tabs' );
 
 	const row = await page.evaluate( () => {
@@ -423,22 +423,17 @@ await step( 'A linha tem as ações à vista, e não um menu', async () => {
 		}
 
 		const quick = first.querySelector( '.row-quick' );
-		const names = Array.from(
-			quick?.querySelectorAll( 'button' ) ?? []
-		).map( ( node ) => node.getAttribute( 'aria-label' ) ?? '' );
-
 		return {
 			quick: Boolean( quick ),
-			names,
+			menu: Boolean( first.querySelector( '.row-menu-trigger' ) ),
 		};
 	} );
 
 	record(
-		'Excluir e duplicar estão na linha, como ícones',
+		'As ações secundárias ficam em uma única superfície',
 		null !== row &&
-			row.quick &&
-			row.names.some( ( name ) => /^Excluir /.test( name ) ) &&
-			row.names.some( ( name ) => /^Duplicar /.test( name ) ),
+			! row.quick &&
+			row.menu,
 		JSON.stringify( row )
 	);
 

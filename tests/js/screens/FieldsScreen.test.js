@@ -899,6 +899,7 @@ describe( 'UX-001 deterministic admin surfaces', () => {
 		);
 
 		const fieldRow = /** @type {HTMLElement} */ ( row );
+		expect( fieldRow.querySelector( '.row-quick' ) ).toBeNull();
 
 		expect(
 			within( fieldRow ).getAllByRole( 'button', { name: /Duplicar/ } )
@@ -1808,7 +1809,7 @@ describe( 'the row menu', () => {
 		);
 	} );
 
-	it( 'exclui o campo pelo ícone da linha, sem passar pelo menu', async () => {
+	it( 'exclui o campo pela superfície única de ações', async () => {
 		const user = userEvent.setup();
 
 		render( <FieldsScreen client={ client() } /> );
@@ -1819,10 +1820,11 @@ describe( 'the row menu', () => {
 
 		await within( list ).findByText( 'CPF' );
 
-		// O desenho põe a lixeira na linha: excluir não é uma decisão escondida
-		// atrás de um menu.
 		await user.click(
-			screen.getByRole( 'button', { name: 'Excluir CPF' } )
+			screen.getByRole( 'button', { name: 'Ações de CPF' } )
+		);
+		await user.click(
+			screen.getByRole( 'button', { name: 'Excluir campo' } )
 		);
 
 		await waitFor( () =>
@@ -1836,7 +1838,7 @@ describe( 'the row menu', () => {
 		).toBeInTheDocument();
 	} );
 
-	it( 'duplica o campo pelo ícone da linha', async () => {
+	it( 'duplica o campo pela superfície única de ações', async () => {
 		const user = userEvent.setup();
 
 		render( <FieldsScreen client={ client() } /> );
@@ -1847,9 +1849,7 @@ describe( 'the row menu', () => {
 
 		await within( list ).findByText( 'CPF' );
 
-		await user.click(
-			screen.getByRole( 'button', { name: 'Duplicar CPF' } )
-		);
+		await duplicateField( user, 'CPF' );
 
 		expect(
 			await within( list ).findByText( 'CPF (copy)' )
