@@ -940,9 +940,15 @@ describe( 'UX-001 deterministic admin surfaces', () => {
 		await user.click(
 			screen.getByRole( 'button', { name: /^Ações da seção/ } )
 		);
+		const propertiesRemove = screen.getByRole( 'button', {
+			name: 'Remover Seção',
+		} );
+		expect( propertiesRemove ).toBeInTheDocument();
+
+		await user.click( propertiesRemove );
 		expect(
-			within( screen.getByRole( 'dialog' ) ).getByRole( 'button', {
-				name: 'Remover seção',
+			screen.getByRole( 'button', {
+				name: 'Remover Seção e campos',
 			} )
 		).toBeInTheDocument();
 	} );

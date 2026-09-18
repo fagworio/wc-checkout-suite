@@ -1222,7 +1222,6 @@ export default function FieldsScreen( {
 										'wc-checkoutsuite'
 									)
 							  ),
-					onRemoveSection: requestSectionRemovalById,
 					onCreateSection: () => {
 						openNewSection( {
 							location: defaultSectionLocation( area ),

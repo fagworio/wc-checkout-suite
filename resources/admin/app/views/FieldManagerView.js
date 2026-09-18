@@ -262,7 +262,6 @@ export default function FieldManagerView( { model } ) {
 		onExport,
 		onPreview,
 		onOpenSection,
-		onRemoveSection,
 		onCreateSection,
 		onLinkExisting,
 		isProtected,
@@ -1488,27 +1487,6 @@ export default function FieldManagerView( { model } ) {
 								>
 									{ words.actions }
 								</button>
-								{ current?.declared ? (
-									<button
-										type="button"
-										className="text-btn text-btn-danger"
-										onClick={ () =>
-											onRemoveSection?.(
-												current.section.id
-											)
-										}
-										aria-label={ sprintf(
-											/* translators: %s: container title. */
-											__(
-												'Remover %s',
-												'wc-checkoutsuite'
-											),
-											copy.title
-										) }
-									>
-										{ __( 'Remover', 'wc-checkoutsuite' ) }
-									</button>
-								) : null }
 							</div>
 
 							<div className="filterbar">

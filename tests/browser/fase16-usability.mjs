@@ -410,7 +410,55 @@ await step( 'A tela de campos tem o fluxo do protótipo', async () => {
 } );
 
 // ---------------------------------------------------------------------------
-// 4c. A superfície única de ações da linha.
+// 4c. A remoção de uma seção personalizada passa pelas suas propriedades.
+// ---------------------------------------------------------------------------
+await step( 'A remoção da seção usa uma única entrada com confirmação', async () => {
+	await open( 'fields', '.section-tabs' );
+
+	const standaloneRemove = page.locator(
+		'.builder-panel button.text-btn-danger[aria-label^="Remover"]'
+	);
+	const propertiesAction = page.locator(
+		'.builder-panel button[aria-label^="Ações da"]:not([disabled])'
+	);
+
+	record(
+		'Não há remoção destrutiva duplicada no cabeçalho',
+		( await standaloneRemove.count() ) === 0,
+		`count=${ await standaloneRemove.count() }`
+	);
+
+	if ( ( await propertiesAction.count() ) === 0 ) {
+		record(
+			'A seção personalizada mantém as propriedades como entrada de remoção',
+			false,
+			'nenhuma seção personalizada disponível no contexto browser'
+		);
+		return;
+	}
+
+	await propertiesAction.first().click();
+	const propertiesRemove = page.getByRole( 'button', {
+		name: /^Remover (Seção|Página|Bloco|Painel)$/,
+	} );
+
+	record(
+		'A remoção fica dentro das propriedades',
+		( await propertiesRemove.count() ) === 1,
+		`count=${ await propertiesRemove.count() }`
+	);
+
+	await propertiesRemove.click();
+	record(
+		'A remoção abre a confirmação de impacto',
+		( await page.getByRole( 'button', { name: /Remover .* e campos/ } ).count() ) === 1
+	);
+
+	await page.keyboard.press( 'Escape' );
+} );
+
+// ---------------------------------------------------------------------------
+// 4d. A superfície única de ações da linha.
 // ---------------------------------------------------------------------------
 await step( 'A linha concentra ações secundárias em um único menu', async () => {
 	await open( 'fields', '.section-tabs' );

@@ -141,7 +141,6 @@ export interface FieldManagerModel {
 	onToggleSectionTitle?: ( checked: boolean ) => void;
 	onOpenRules: () => void;
 	onOpenSection: ( id: string | null ) => void;
-	onRemoveSection: ( id: string | null ) => void;
 	onCreateSection: () => void;
 	onLinkExisting: () => void;
 	isProtected: ( field: FieldDefinition ) => boolean;
