@@ -1308,6 +1308,64 @@
   margin-top: var(--wccs-space-8);
 }
 
+/* The specialized Checkouts entry makes the active checkout the parent of the editor. */
+.wccs-admin .wccs-checkouts--sidebar {
+	display: grid;
+	grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
+	gap: var(--wccs-space-16);
+	align-items: start;
+}
+
+.wccs-admin .wccs-checkouts--sidebar .wccs-checkouts__strip {
+	grid-column: 1;
+	grid-row: 1 / span 3;
+	align-items: stretch;
+	flex-direction: column;
+	gap: var(--wccs-space-4);
+	padding: 0 var(--wccs-space-12) 0 0;
+	border-right: 1px solid var(--wccs-border-control);
+	border-bottom: 0;
+}
+
+.wccs-admin .wccs-checkouts--sidebar .wccs-checkouts__strip button {
+	width: 100%;
+	justify-content: flex-start;
+	text-align: start;
+}
+
+.wccs-admin .wccs-checkouts--sidebar .wccs-checkouts__conditions {
+	margin-inline-start: 0;
+}
+
+.wccs-admin .wccs-checkouts--sidebar .wccs-checkouts__own,
+.wccs-admin .wccs-checkouts--sidebar .wccs-checkouts__detail {
+	grid-column: 2;
+	margin-top: 0;
+}
+
+.wccs-admin .wccs-checkouts--sidebar > .notice {
+	grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+	.wccs-admin .wccs-checkouts--sidebar {
+		grid-template-columns: 1fr;
+	}
+
+	.wccs-admin .wccs-checkouts--sidebar .wccs-checkouts__strip,
+	.wccs-admin .wccs-checkouts--sidebar .wccs-checkouts__own,
+	.wccs-admin .wccs-checkouts--sidebar .wccs-checkouts__detail {
+		grid-column: 1;
+		grid-row: auto;
+	}
+
+	.wccs-admin .wccs-checkouts--sidebar .wccs-checkouts__strip {
+		padding: 0 0 var(--wccs-space-12);
+		border-right: 0;
+		border-bottom: 1px solid var(--wccs-border-control);
+	}
+}
+
 /* --------------------------------------------------------- Order statuses */
 
 /*

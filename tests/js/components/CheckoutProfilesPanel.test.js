@@ -93,6 +93,48 @@ describe( 'CheckoutProfilesPanel', () => {
 		expect( screen.getByText( /existe sempre/ ) ).toBeInTheDocument();
 	} );
 
+	it( 'keeps one active checkout in the sidebar order and protects the default', () => {
+		renderPanel( {
+			layout: 'sidebar',
+			profiles: [
+				profile(),
+				profile( { id: 'b2b', name: 'Checkout B2B' } ),
+			],
+			active: 'digital',
+		} );
+
+		const list = screen.getByRole( 'tablist', {
+			name: 'Checkouts da loja',
+		} );
+		const tabs = within( list ).getAllByRole( 'tab' );
+
+		expect( tabs.map( ( tab ) => tab.textContent ) ).toEqual( [
+			expect.stringContaining( 'Checkout padrão' ),
+			expect.stringContaining( 'Checkout digital' ),
+			expect.stringContaining( 'Checkout B2B' ),
+		] );
+		expect(
+			tabs.filter(
+				( tab ) => 'true' === tab.getAttribute( 'aria-selected' )
+			)
+		).toHaveLength( 1 );
+		expect(
+			within( list ).getByRole( 'button', { name: 'Novo checkout' } )
+		).toBeInTheDocument();
+	} );
+
+	it( 'does not expose deletion for Checkout padrão', () => {
+		renderPanel( {
+			layout: 'sidebar',
+			profiles: [ profile() ],
+			active: '',
+		} );
+
+		expect(
+			screen.queryByRole( 'button', { name: 'Excluir checkout' } )
+		).not.toBeInTheDocument();
+	} );
+
 	it( 'lists the profiles the store has and marks the fallback', () => {
 		renderPanel( {
 			profiles: [

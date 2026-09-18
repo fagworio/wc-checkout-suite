@@ -1084,6 +1084,7 @@ export default function FieldManagerView( { model } ) {
 					<CheckoutProfilesPanel
 						profiles={ profiles }
 						active={ activeProfile }
+						layout={ checkoutOnly ? 'sidebar' : 'strip' }
 						onSelect={ onProfileSelect }
 						onCreate={ onCreateProfile }
 						onUpdate={ onUpdateProfile }

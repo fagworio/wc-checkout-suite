@@ -81,6 +81,7 @@ const SOURCES = [
  * @param {Function}   props.onUpdate         Called with `( id, changes )`.
  * @param {Function}   props.onRemove         Called with the profile id.
  * @param {Function}   props.onMove           Called with `( id, delta )`.
+ * @param {string}     [props.layout]         Presentation layout.
  * @param {Object}     props.vocabulary       Condition vocabulary.
  * @param {Array<any>} props.fields           Fields of the document, for what the integrations require.
  * @param {any}        props.facts            What the store reports for a minimal composition.
@@ -97,6 +98,7 @@ export default function CheckoutProfilesPanel( {
 	onUpdate,
 	onRemove,
 	onMove,
+	layout = 'strip',
 	vocabulary,
 	fields,
 	facts,
@@ -178,7 +180,12 @@ export default function CheckoutProfilesPanel( {
 	};
 
 	return (
-		<div className="wccs-checkouts">
+		<div
+			className={
+				'wccs-checkouts' +
+				( 'sidebar' === layout ? ' wccs-checkouts--sidebar' : '' )
+			}
+		>
 			<div
 				className="wccs-checkouts__strip"
 				role="tablist"
