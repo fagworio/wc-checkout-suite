@@ -160,6 +160,50 @@ final class DocumentMigratorTest extends TestCase {
 	}
 
 	/**
+	 * A partially persisted split does not emit an existing destination variant twice.
+	 *
+	 * @return void
+	 */
+	public function test_a_partial_split_reuses_the_existing_destination_variant(): void {
+		$document = array(
+			'revision' => 6,
+			'fields'   => array(),
+			'sections' => array(
+				array(
+					'id'           => 'nova',
+					'title'        => 'Nova',
+					'destination'  => 'customer_account',
+					'areas'        => array( 'customer_account', 'checkout' ),
+					'location'     => 'account',
+					'presentation' => array(
+						'account' => array( 'slug' => 'nova' ),
+					),
+				),
+				array(
+					'id'          => 'nova__checkout',
+					'title'       => 'Nova',
+					'destination' => 'checkout',
+					'areas'       => array( 'checkout' ),
+					'location'    => 'account',
+				),
+			),
+			'settings' => array(),
+		);
+
+		$result = DocumentMigrator::migrate( $document );
+
+		self::assertSame(
+			array( 'nova', 'nova__checkout' ),
+			array_column( $result['document']['sections'], 'id' )
+		);
+		self::assertSame(
+			array( 'customer_account' ),
+			$result['document']['sections'][0]['areas']
+		);
+		self::assertFalse( DocumentMigrator::migrate( $result['document'] )['changed'] );
+	}
+
+	/**
 	 * A document already in the final shape is returned untouched.
 	 *
 	 * @return void

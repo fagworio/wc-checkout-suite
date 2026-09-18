@@ -96,9 +96,28 @@ final class DocumentMigrator {
 	 * @return array{0: array<int, mixed>, 1: array<string, string>} Containers and the identifier remap.
 	 */
 	private static function containers( array $document, array &$migrations ): array {
-		$raw   = isset( $document['sections'] ) && is_array( $document['sections'] ) ? $document['sections'] : array();
-		$out   = array();
-		$remap = array();
+		$raw      = isset( $document['sections'] ) && is_array( $document['sections'] ) ? $document['sections'] : array();
+		$out      = array();
+		$remap    = array();
+		$existing = array();
+
+		// A migration can have been interrupted after it wrote the destination variant
+		// but before it narrowed the original multi-area container. When that document is
+		// read again, do not emit the same derived variant a second time. The persisted
+		// variant is already the authority for that destination and the remap below keeps
+		// fields pointing at it.
+		foreach ( $raw as $entry ) {
+			if ( ! is_array( $entry ) || ! isset( $entry['id'] ) ) {
+				continue;
+			}
+
+			$id = (string) $entry['id'];
+			if ( '' === $id ) {
+				continue;
+			}
+
+			$existing[ $id ][] = ContainerDefinition::from_array( $entry );
+		}
 
 		foreach ( $raw as $entry ) {
 			if ( ! is_array( $entry ) ) {
@@ -129,8 +148,22 @@ final class DocumentMigrator {
 			}
 
 			foreach ( $areas as $area ) {
-				$variant = $container->for_destination( $area );
-				$variant = ContainerDefinition::from_array( $variant->to_array() );
+				$variant    = $container->for_destination( $area );
+				$variant    = ContainerDefinition::from_array( $variant->to_array() );
+				$variant_id = $variant->id();
+
+				if (
+					$variant_id !== $container->id() &&
+					isset( $existing[ $variant_id ] ) &&
+					array_filter(
+						$existing[ $variant_id ],
+						static fn ( ContainerDefinition $candidate ): bool => $candidate->destination() === $area
+					)
+				) {
+					$remap[ $area . '|' . $container->id() ] = $variant_id;
+
+					continue;
+				}
 
 				$canonical                               = self::canonical_container( $variant, $variant->id() );
 				$remap[ $area . '|' . $container->id() ] = $variant->id();

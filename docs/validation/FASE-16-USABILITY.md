@@ -75,10 +75,26 @@ guarda (Secção, Painel, Bloco, Página), que é a regra que o `containerWords(
 
 | Prova | Resultado |
 |---|---|
-| `tests/browser/fase16-usability.mjs` (novo) | **16/0**: as quatro telas abrem com um título que diz o que decidem e com a ação principal visível (e as Configurações, sem ação, afirmada como tal); a lista de campos é agrupada pela secção que os preenche e o checkout da loja é oferecido por cima dela; o ecrã de status responde que um estado não cobra nada e nomeia o interruptor «Estado antes do pagamento»; o ecrã de automação responde que uma automação não cobra nada e o passo do pagamento só oferece o que a loja executa; e nenhuma tela mostra o vocabulário do código (`container`, `FieldBinding`, `FieldDefinition`) |
-| `composer check` | phpcs e phpstan sem erros; **619 testes, 2148 asserções** |
-| `npx jest` / `npx tsc --noEmit` / `npm run lint:js` / `npm run build` | limpos (**818 testes**, 51 suites); build compila |
+| `tests/browser/fase16-usability.mjs` (observador histórico) | **16/0** no cenário original: as quatro telas abrem com um título que diz o que decidem e com a ação principal visível (e as Configurações, sem ação, afirmada como tal); a lista de campos é agrupada pela secção que os preenche e o checkout da loja é oferecido por cima dela; o ecrã de status responde que um estado não cobra nada e nomeia o interruptor «Estado antes do pagamento»; o ecrã de automação responde que uma automação não cobra nada e o passo do pagamento só oferece o que a loja executa; e nenhuma tela mostra o vocabulário do código (`container`, `FieldBinding`, `FieldDefinition`) |
+| `composer check` | phpcs e phpstan sem erros; **625 testes, 2158 asserções** |
+| `npx jest` / `npx tsc --noEmit` / `npm run lint:js` / `npm run build` | limpos (**840 testes**, 53 suites); build compila |
 | Varredura de integração | **80 harnesses, 1856 asserções, 0 falhas** |
+
+### 3.1 UX-008 — prova autenticada de persistência e navegação
+
+Após a validação real no navegador, `tests/browser/ux008-account-persistence-flow.mjs` foi
+executado com sessão administrativa temporária e contexto de navegador novo. O fluxo passou por:
+
+`Painel → Pedidos → Downloads → Endereços → Detalhes da conta`
+
+e, em seguida, executou:
+
+`criar página → salvar → reload → criar campo → editar campo e página → salvar → reload → desativar → salvar → reload → reativar → salvar → reload → remover e confirmar → salvar → reload`.
+
+Resultado: **18 verificações, 0 falhas, 0 `pageerror` e 0 erros REST/API**. O campo editado
+permaneceu na página personalizada correta após o reload; a página permaneceu inativa e depois ativa
+conforme cada save; e a remoção confirmou a ausência após o reload. A sessão administrativa
+temporária foi destruída ao final do cenário.
 
 ## 4. Limites que ficam registados
 
@@ -93,3 +109,6 @@ guarda (Secção, Painel, Bloco, Página), que é a regra que o `containerWords(
 - **Os E2E obrigatórios do §24 mantêm o seu estado por fase**: cada um tem prova de integração na
   varredura, e o que depende de gateway homologado (E2E-02 parcial, E2E-10, E2E-12) continua limitado
   pela ausência de credenciais de sandbox, como as Fases 11 a 15 registaram.
+- **A prova UX-008 não é uma medição de usabilidade humana nem uma aprovação visual**: ela valida
+  persistência, navegação, lifecycle e erros do browser em sessão autenticada; não substitui
+  observação de pessoas nem baseline de screenshots.
