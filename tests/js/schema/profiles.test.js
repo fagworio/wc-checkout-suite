@@ -522,6 +522,42 @@ describe( 'profiles', () => {
 			);
 		} );
 
+		test( 'the default checkout baseline has no artificial profile', () => {
+			const activeProfile = '';
+			const composition = compositionOf( document, null );
+			const sectionId = compositionSections( document, null )[ 0 ]?.id;
+
+			// This is the baseline state the dedicated Checkouts entry must open with:
+			// document-owned composition, no selected profile, and a real section from it.
+			expect( profilesOf( document ) ).toEqual( [] );
+			expect( composition ).toBe( document );
+			expect( activeProfile ).toBe( '' );
+			expect( sectionId ).toBe( 'contato' );
+		} );
+
+		test( 'a stale profile section does not leak into the default composition', () => {
+			const defaultSection = section( { id: 'checkout_default' } );
+			const profileSection = section( { id: 'checkout_digital' } );
+			const draft = {
+				...document,
+				sections: [ defaultSection ],
+				profiles: [ profile( { sections: [ profileSection ] } ) ],
+			};
+
+			const defaultComposition = compositionOf( draft, null );
+			const profileComposition = compositionOf(
+				draft,
+				profilesOf( draft )[ 0 ]
+			);
+
+			expect(
+				defaultComposition.sections.map( ( entry ) => entry.id )
+			).toEqual( [ 'checkout_default' ] );
+			expect(
+				profileComposition.sections.map( ( entry ) => entry.id )
+			).toContain( 'checkout_digital' );
+		} );
+
 		test( 'a profile owns the checkout containers and the document keeps the rest', () => {
 			const digital = profile( {
 				id: 'digital',

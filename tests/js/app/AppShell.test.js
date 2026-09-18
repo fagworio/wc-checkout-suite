@@ -88,6 +88,20 @@ function renderShell() {
 }
 
 describe( 'the section in the address bar', () => {
+	it( 'exposes the dedicated Checkouts entry', () => {
+		const restore = withUrl( '?page=wccs-checkoutsuite' );
+
+		try {
+			renderShell();
+
+			expect(
+				screen.getByRole( 'button', { name: 'Checkouts' } )
+			).toBeInTheDocument();
+		} finally {
+			restore();
+		}
+	} );
+
 	it( 'opens the section the address names', () => {
 		const restore = withUrl( '?page=wccs-checkoutsuite&section=rules' );
 
