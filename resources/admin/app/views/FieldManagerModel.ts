@@ -82,7 +82,7 @@ export interface FieldManagerModel {
 	onSectionChange: ( id: string ) => void;
 	catalog: FieldCatalog | null;
 	coreFields: CoreFieldInventory | null;
-	sectionOptions: FieldManagerSectionOption[];
+	fieldTargetOptions: FieldManagerSectionOption[];
 	sections: Array< FieldManagerSectionOption & { areas: string[] } >;
 	linkSections: Array< FieldManagerSectionOption & { areas: string[] } >;
 	area: string;

@@ -767,23 +767,20 @@ export default function FieldsScreen( {
 		[ document ]
 	);
 
-	const sectionOptions = useMemo( () => {
-		/** @type {Array<{id: string, label: string}>} */
-		const options = [];
-		/** @type {Set<string>} */
-		const seen = new Set();
-
-		for ( const group of groups ) {
-			if ( seen.has( group.section.id ) ) {
-				continue;
-			}
-
-			seen.add( group.section.id );
-			options.push( {
+	const visibleSections = useMemo(
+		() =>
+			groups.map( ( /** @type {any} */ group ) => ( {
 				id: group.section.id,
 				label: group.section.title,
-			} );
-		}
+			} ) ),
+		[ groups ]
+	);
+
+	const fieldTargetOptions = useMemo( () => {
+		/** @type {Array<{id: string, label: string}>} */
+		const options = [ ...visibleSections ];
+		/** @type {Set<string>} */
+		const seen = new Set( visibleSections.map( ( entry ) => entry.id ) );
 
 		// Native locations are collection concepts. They are useful fallbacks only
 		// while configuring Checkout; adding them in a display area would retain a
@@ -800,11 +797,11 @@ export default function FieldsScreen( {
 		}
 
 		return options;
-	}, [ groups, catalog, area ] );
+	}, [ visibleSections, catalog, area ] );
 
 	const activeSection =
-		sectionOptions.find( ( entry ) => entry.id === section )?.id ??
-		sectionOptions[ 0 ]?.id ??
+		visibleSections.find( ( entry ) => entry.id === section )?.id ??
+		visibleSections[ 0 ]?.id ??
 		'';
 
 	/**
@@ -1028,7 +1025,7 @@ export default function FieldsScreen( {
 					onSectionChange: setSection,
 					catalog,
 					coreFields,
-					sectionOptions,
+					fieldTargetOptions,
 					sections: groups.map( ( /** @type {any} */ group ) => ( {
 						id: group.section.id,
 						label: group.section.title ?? group.section.id,

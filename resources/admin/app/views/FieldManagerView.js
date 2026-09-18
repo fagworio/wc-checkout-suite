@@ -215,7 +215,7 @@ export default function FieldManagerView( { model } ) {
 		onSectionChange,
 		catalog,
 		coreFields,
-		sectionOptions,
+		fieldTargetOptions,
 		sections,
 		linkSections,
 		area,
@@ -2634,7 +2634,7 @@ export default function FieldManagerView( { model } ) {
 					catalog={ catalog }
 					coreFields={ coreFields }
 					section={ section }
-					sections={ sectionOptions }
+					sections={ fieldTargetOptions }
 					surface={ /** @type {'checkout'|'my_account'} */ ( area ) }
 					open={ pickerOpen }
 					onSectionChange={ onSectionChange }

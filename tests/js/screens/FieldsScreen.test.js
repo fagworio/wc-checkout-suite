@@ -559,6 +559,29 @@ describe( 'the schema', () => {
 		} );
 	} );
 
+	it( 'does not promote a catalog location to an active section', async () => {
+		const user = userEvent.setup();
+
+		render( <FieldsScreen client={ client( { draft: doc( [] ) } ) } /> );
+
+		await waitFor( () =>
+			expect( screen.queryByText( 'Loading the schema…' ) ).toBeNull()
+		);
+		expect(
+			screen.getByRole( 'button', {
+				name: 'Vincular campo existente',
+			} )
+		).toBeDisabled();
+		await user.click(
+			screen.getByRole( 'button', { name: /^Adicionar campo$/ } )
+		);
+		await user.click( screen.getByTestId( 'field-type-text' ) );
+
+		expect(
+			screen.getByRole( 'option', { name: 'Billing' } )
+		).toBeInTheDocument();
+	} );
+
 	it( 'groups the fields by the section they are in', async () => {
 		render(
 			<FieldsScreen
