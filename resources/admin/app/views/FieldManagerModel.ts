@@ -74,6 +74,7 @@ export interface FieldManagerReport {
 }
 
 export interface FieldManagerModel {
+	scope?: 'all' | 'checkout';
 	document: SchemaDocument;
 	composition: SchemaDocument;
 	groups: SectionGroup[];

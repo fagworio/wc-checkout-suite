@@ -102,6 +102,23 @@ describe( 'the section in the address bar', () => {
 		}
 	} );
 
+	it( 'opens Checkouts as the active section', () => {
+		const restore = withUrl( '?page=wccs-checkoutsuite&section=checkouts' );
+
+		try {
+			renderShell();
+
+			expect(
+				screen.getByRole( 'button', { name: 'Checkouts' } )
+			).toHaveAttribute( 'aria-current', 'page' );
+			expect(
+				screen.getByRole( 'button', { name: 'Editor de campos' } )
+			).toBeInTheDocument();
+		} finally {
+			restore();
+		}
+	} );
+
 	it( 'opens the section the address names', () => {
 		const restore = withUrl( '?page=wccs-checkoutsuite&section=rules' );
 

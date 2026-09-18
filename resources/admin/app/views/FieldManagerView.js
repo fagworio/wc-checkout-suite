@@ -272,6 +272,7 @@ export default function FieldManagerView( { model } ) {
 		migrationDialog,
 		profiles,
 		activeProfile,
+		scope = 'all',
 		onProfileSelect,
 		onCreateProfile,
 		onUpdateProfile,
@@ -283,6 +284,12 @@ export default function FieldManagerView( { model } ) {
 
 	/** What this destination calls the group of fields the merchant works on. */
 	const words = containerWords( area );
+	const checkoutOnly = 'checkout' === scope;
+	const scopedAreas = checkoutOnly
+		? areas.filter(
+				( /** @type {any} */ entry ) => 'checkout' === entry.id
+		  )
+		: areas;
 
 	/**
 	 * Native account pages come from WooCommerce. Draft-only WCCS pages are added
@@ -453,7 +460,7 @@ export default function FieldManagerView( { model } ) {
 			)
 		);
 
-	const activeArea = areas.find(
+	const activeArea = scopedAreas.find(
 		( /** @type {any} */ entry ) => entry.id === area
 	);
 	const contexts = contextOptions( area, accountPages );
@@ -587,7 +594,7 @@ export default function FieldManagerView( { model } ) {
 	const sectionAreaIds = current?.section.areas ?? [ 'checkout' ];
 	const sectionAreas = sectionAreaIds
 		.map( ( /** @type {string} */ id ) =>
-			areas.find( ( /** @type {any} */ entry ) => entry.id === id )
+			scopedAreas.find( ( /** @type {any} */ entry ) => entry.id === id )
 		)
 		.filter( Boolean );
 
@@ -1034,7 +1041,9 @@ export default function FieldManagerView( { model } ) {
 					) }
 				</div>
 
-				<SurfaceTabs active={ area } onChange={ onAreaChange } />
+				{ ! checkoutOnly ? (
+					<SurfaceTabs active={ area } onChange={ onAreaChange } />
+				) : null }
 
 				{ /* A group opens its own destinations under it, rather than putting every
 				     destination in one row of checkboxes (§3). */ }

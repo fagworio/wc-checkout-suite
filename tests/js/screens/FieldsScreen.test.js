@@ -440,6 +440,33 @@ describe( 'the schema', () => {
 		).not.toBeInTheDocument();
 	} );
 
+	it( 'opens the checkout-only scope on Checkout padrão with a valid section', async () => {
+		window.history.replaceState(
+			null,
+			'',
+			'/?page=wccs-checkoutsuite&section=checkouts&area=customer_account'
+		);
+
+		render(
+			<FieldsScreen
+				client={ client( { draft: doc( [ field() ] ) } ) }
+				scope="checkout"
+			/>
+		);
+
+		const checkout = await screen.findByRole( 'tab', {
+			name: /Checkout padrão/,
+		} );
+
+		expect( checkout ).toHaveAttribute( 'aria-selected', 'true' );
+		expect(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole( 'tab', { name: 'Minha conta' } )
+		).not.toBeInTheDocument();
+	} );
+
 	it( 'groups the fields by the section they are in', async () => {
 		render(
 			<FieldsScreen

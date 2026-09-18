@@ -318,6 +318,7 @@ function AccountSectionPresentation( {
  * @param {Array<{id: string, label: string, url?: string, logout?: boolean}>} [props.accountMenu]  WooCommerce account menu.
  * @param {string}                                                             [props.checkoutMode] Which checkout the store runs (`blocks` or
  *                                                                                                  `classic`), read from the store by the server.
+ * @param {'all'|'checkout'}                                                   [props.scope]        Optional destination scope for specialized entries.
  * @return {*} Rendered element tree.
  */
 export default function FieldsScreen( {
@@ -327,6 +328,7 @@ export default function FieldsScreen( {
 	urls = {},
 	accountMenu = [],
 	checkoutMode = '',
+	scope = 'all',
 } ) {
 	/**
 	 * The document and its local edit history.
@@ -382,7 +384,7 @@ export default function FieldsScreen( {
 	 */
 	const [ refusal, setRefusal ] = useState( '' );
 	const navigationState = useFieldsNavigation( {
-		areaIds: AREA_IDS,
+		areaIds: 'checkout' === scope ? [ 'checkout' ] : AREA_IDS,
 		checkoutMode,
 	} );
 	const {
@@ -398,6 +400,23 @@ export default function FieldsScreen( {
 		onPreview,
 		onOpenRules,
 	} = navigationState;
+
+	useEffect( () => {
+		if ( 'checkout' !== scope ) {
+			return;
+		}
+
+		// A specialized entry can reuse this component instance after the advanced editor
+		// was on another destination or profile. Reset both identities before the checkout
+		// composition is rendered so the entry never exposes the previous context.
+		if ( 'checkout' !== area ) {
+			selectArea( 'checkout' );
+		}
+
+		if ( '' !== activeProfile ) {
+			setActiveProfile( '' );
+		}
+	}, [ scope, area, activeProfile, selectArea, setActiveProfile ] );
 
 	/**
 	 * The retired destination keys this document still carries.
@@ -957,6 +976,7 @@ export default function FieldsScreen( {
 		<>
 			<FieldManagerView
 				model={ {
+					scope,
 					document,
 					composition,
 					groups,

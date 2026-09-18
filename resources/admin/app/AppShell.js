@@ -45,6 +45,11 @@ const DESIGNED_SECTIONS = [
 		icon: 'fields',
 	},
 	{
+		id: 'checkouts',
+		label: __( 'Checkouts', 'wc-checkoutsuite' ),
+		icon: 'card',
+	},
+	{
 		id: 'appearance',
 		label: __( 'Prévia do checkout', 'wc-checkoutsuite' ),
 		icon: 'eye',
@@ -76,7 +81,13 @@ const DESIGNED_SECTIONS = [
  *
  * @type {Array<string>}
  */
-const MANAGER_VIEWS = [ 'fields', 'appearance', 'archive', 'rules' ];
+const MANAGER_VIEWS = [
+	'fields',
+	'checkouts',
+	'appearance',
+	'archive',
+	'rules',
+];
 
 /**
  * Glyph for a section, chosen from the design's own set.
@@ -192,8 +203,10 @@ function SectionContent( {
 	if ( MANAGER_VIEWS.includes( section ) && client ) {
 		return (
 			<FieldsScreen
+				key={ 'checkouts' === section ? 'checkouts' : 'editor' }
 				client={ client }
-				view={ section }
+				view={ 'checkouts' === section ? 'fields' : section }
+				scope={ 'checkouts' === section ? 'checkout' : 'all' }
 				siteName={ siteName }
 				urls={ urls }
 				accountMenu={ accountMenu }
