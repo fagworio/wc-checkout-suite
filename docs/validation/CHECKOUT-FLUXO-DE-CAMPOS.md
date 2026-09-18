@@ -103,13 +103,13 @@ a aparecer por si — as nativas pelas localizações do checkout e as do comerc
 
 | Prova | Resultado |
 |---|---|
-| `tests/browser/fase16-usability.mjs` | **25/0**, com cinco asserções novas: as seções estão na coluna da esquerda com nome, frase, contagem e o criar tracejado; o interruptor do título existe e chama-se «Exibir título da seção»; «Adicionar campo nesta seção» existe e está visível; o formulário abre com o tipo escolhido; e pede nome, chave, descrição, regras e confirmação |
+| Observador FASE-16 legado (resultado histórico) | **25/0**, com cinco asserções novas: as seções estavam na coluna da esquerda com nome, frase, contagem e o criar tracejado; o interruptor do título existia e chamava-se «Exibir título da seção»; «Adicionar campo nesta seção» existia e estava visível; o formulário abria com o tipo escolhido; e pedia nome, chave, descrição, regras e confirmação. O observador foi aposentado após a matriz UX-008. |
 | `tests/browser/fase14-custom-checkout.mjs` / `fase15-accessibility.mjs` / `fase10-workflows.mjs` | **11/0**, **20/0**, **16/0** — a lista de seções, o diálogo e a acessibilidade continuam a passar com a coluna nova |
 | `tests/browser/fase3-checkout-reference.mjs` | **15/0** no cenário que o próprio script documenta (o fixture limpo): os campos da loja estão no fim da lista da seção aberta, cada um é usado numa ação, e o que sobra continua a aparecer na seção onde vive |
 | `tests/js/components/CoreCheckoutPanel.test.js` | **7/7**: as linhas dos campos nativos, sem título, sem contador, com «Usar» e «Não mostrar» |
 | `tests/js/screens/FieldsScreen.test.js` / `tests/js/design/useNarrowViewport.test.js` | **39/39** e **3/3**. A prévia repete os rótulos dos campos de propósito, e as consultas passaram a ser feitas **dentro da lista** (`role="list"` com o nome «Campos da seção», e as linhas com `role="listitem"`) — que é também a estrutura que um leitor de ecrã passa a ter |
 | `tests/js/screens/FieldsScreen.test.js` | **41/41**, com dois testes novos: a lixeira da linha exclui o campo e a marca como alteração não salva, e o ícone de duplicar cria a cópia — sem passar pelo menu |
-| `tests/browser/fase16-usability.mjs` | **27/0**, com duas asserções novas: «Excluir …» e «Duplicar …» estão na linha como ícones, e o menu deixou de oferecer «Editar campo» |
+| Observador FASE-16 legado (resultado histórico) | **27/0**, com duas asserções novas: «Excluir …» e «Duplicar …» estavam na linha como ícones, e o menu deixou de oferecer «Editar campo». O observador foi aposentado após a matriz UX-008. |
 | `npx jest` / `npx tsc --noEmit` / `npm run lint:js` / `npm run build` | limpos (**825 testes**, 51 suites); build compila |
 | Comparação visual | a tela foi aberta em `…&section=fields&area=checkout` e fotografada; as três colunas, o botão tracejado e o painel «Adicionar campo» estão como na referência |
 
