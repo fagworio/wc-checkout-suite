@@ -136,7 +136,7 @@ export default function AccountNativeFields( {
 						) }
 						onClick={ () => onToggle( entry, ! enabled ) }
 					>
-						<Icon name={ enabled ? 'trash' : 'reset' } />
+						<Icon name={ enabled ? 'eye' : 'reset' } />
 					</button>
 				</span>
 			</li>

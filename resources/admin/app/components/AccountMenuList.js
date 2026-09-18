@@ -83,11 +83,14 @@ export default function AccountMenuList( {
 											'Campos personalizados',
 											'wc-checkoutsuite'
 									  )
-									: ACCOUNT_DESCRIPTIONS[ item.id ] ??
-									  __(
+									: __(
 											'Página nativa do WooCommerce',
 											'wc-checkoutsuite'
 									  ) }
+								{ ! item.custom &&
+								ACCOUNT_DESCRIPTIONS[ item.id ]
+									? ` — ${ ACCOUNT_DESCRIPTIONS[ item.id ] }`
+									: null }
 								{ item.custom && item.enabled === false
 									? ` — ${ __(
 											'inativa',

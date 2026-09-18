@@ -525,6 +525,10 @@ export default function FieldManagerView( { model } ) {
 		'customer_account' === area &&
 		accountContextOwnsSelection &&
 		! accountContextSection;
+	const nativeAccountPage =
+		'customer_account' === area &&
+		accountContextOwnsSelection &&
+		! current?.declared;
 	const accountContextSectionId = accountContextSection?.section.id;
 	const selectAccountPage = ( /** @type {string} */ id ) => {
 		onEdit( null );
@@ -1416,38 +1420,47 @@ export default function FieldManagerView( { model } ) {
 								     checkout sem perder o nome no admin. A seção implícita do
 								     WooCommerce não tem onde guardar a escolha, e o controlo
 								     di-lo em vez de fingir que a guardou. */ }
-								<label
-									className="switch-row section-title-switch"
-									htmlFor="wccs-section-show-title"
-								>
-									<input
-										id="wccs-section-show-title"
-										type="checkbox"
-										checked={ sectionShowsTitle }
-										disabled={ ! current?.declared }
-										title={
-											current?.declared
-												? undefined
-												: __(
-														'Uma seção do próprio WooCommerce não guarda esta escolha: crie uma seção personalizada para a controlar.',
-														'wc-checkoutsuite'
-												  )
-										}
-										onChange={ (
-											/** @type {{ target: { checked: boolean } }} */ event
-										) =>
-											model.onToggleSectionTitle?.(
-												event.target.checked
-											)
-										}
-									/>
-									<span>
+								{ nativeAccountPage ? (
+									<span className="badge">
 										{ __(
-											'Exibir título da seção',
+											'Página nativa do WooCommerce',
 											'wc-checkoutsuite'
 										) }
 									</span>
-								</label>
+								) : (
+									<label
+										className="switch-row section-title-switch"
+										htmlFor="wccs-section-show-title"
+									>
+										<input
+											id="wccs-section-show-title"
+											type="checkbox"
+											checked={ sectionShowsTitle }
+											disabled={ ! current?.declared }
+											title={
+												current?.declared
+													? undefined
+													: __(
+															'Uma seção do próprio WooCommerce não guarda esta escolha: crie uma seção personalizada para a controlar.',
+															'wc-checkoutsuite'
+													  )
+											}
+											onChange={ (
+												/** @type {{ target: { checked: boolean } }} */ event
+											) =>
+												model.onToggleSectionTitle?.(
+													event.target.checked
+												)
+											}
+										/>
+										<span>
+											{ __(
+												'Exibir título da seção',
+												'wc-checkoutsuite'
+											) }
+										</span>
+									</label>
+								) }
 
 								<span
 									className="badge"
@@ -1469,24 +1482,29 @@ export default function FieldManagerView( { model } ) {
 										( current?.fields ?? [] ).length
 									) }
 								</span>
-								<button
-									type="button"
-									className="text-btn"
-									disabled={ ! current?.declared }
-									onClick={ () =>
-										onOpenSection(
-											current?.section.id ?? null
-										)
-									}
-									aria-label={ sprintf(
-										/* translators: 1: what this destination calls the actions, 2: container title. */
-										__( '%1$s: %2$s', 'wc-checkoutsuite' ),
-										words.actions,
-										copy.title
-									) }
-								>
-									{ words.actions }
-								</button>
+								{ nativeAccountPage ? null : (
+									<button
+										type="button"
+										className="text-btn"
+										disabled={ ! current?.declared }
+										onClick={ () =>
+											onOpenSection(
+												current?.section.id ?? null
+											)
+										}
+										aria-label={ sprintf(
+											/* translators: 1: what this destination calls the actions, 2: container title. */
+											__(
+												'%1$s: %2$s',
+												'wc-checkoutsuite'
+											),
+											words.actions,
+											copy.title
+										) }
+									>
+										{ words.actions }
+									</button>
+								) }
 							</div>
 
 							<div className="filterbar">

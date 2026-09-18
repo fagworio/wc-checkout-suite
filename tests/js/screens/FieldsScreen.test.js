@@ -988,6 +988,85 @@ describe( 'UX-001 deterministic admin surfaces', () => {
 	} );
 } );
 
+describe( 'UX-007 account ownership actions', () => {
+	it( 'makes native and custom page ownership explicit', async () => {
+		const user = userEvent.setup();
+		const customSection = {
+			id: 'custom-account-page',
+			title: 'Documentos pessoais',
+			description: '',
+			position: 10,
+			location: 'account',
+			areas: [ 'customer_account' ],
+			enabled: true,
+			presentation: {
+				account: {
+					slug: 'custom-account-page',
+					menu_label: 'Documentos pessoais',
+					page: '',
+				},
+			},
+		};
+
+		render(
+			<FieldsScreen
+				client={ client( {
+					draft: {
+						...doc( [
+							field( {
+								section: customSection.id,
+								destinations: {
+									customer_account: {
+										section: customSection.id,
+										enabled: true,
+									},
+								},
+							} ),
+						] ),
+						sections: [ customSection ],
+					},
+				} ) }
+				accountMenu={ [ { id: 'dashboard', label: 'Painel' } ] }
+			/>
+		);
+
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
+		await user.click( screen.getByRole( 'tab', { name: /^Minha conta/ } ) );
+
+		const accountMenu = screen.getByRole( 'complementary', {
+			name: 'Páginas da minha conta',
+		} );
+		const nativePage = within( accountMenu ).getByRole( 'button', {
+			name: /^Painel/,
+		} );
+		const customPage = within( accountMenu ).getByRole( 'button', {
+			name: /^Documentos pessoais/,
+		} );
+
+		expect( nativePage ).toHaveTextContent(
+			'Página nativa do WooCommerce'
+		);
+		expect( customPage ).toHaveTextContent( 'Campos personalizados' );
+
+		await user.click( nativePage );
+		expect(
+			screen.queryByRole( 'button', { name: /^Ações da página/ } )
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByLabelText( 'Exibir título da seção' )
+		).not.toBeInTheDocument();
+
+		await user.click( customPage );
+		expect(
+			screen.getByRole( 'button', {
+				name: /^Ações da página: Documentos pessoais/,
+			} )
+		).toBeInTheDocument();
+	} );
+} );
+
 describe( 'editing', () => {
 	it( 'offers to undo an edit only after there is one', async () => {
 		const user = userEvent.setup();
