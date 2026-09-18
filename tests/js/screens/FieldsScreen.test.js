@@ -734,7 +734,9 @@ describe( 'creating a container', () => {
 		await user.click( screen.getByRole( 'tab', { name: /^Minha conta/ } ) );
 		await user.click( screen.getByRole( 'button', { name: /^Painel/ } ) );
 		await user.click(
-			screen.getByRole( 'button', { name: 'Novo campo' } )
+			screen.getByRole( 'button', {
+				name: /^Adicionar campo$/,
+			} )
 		);
 		await user.click(
 			screen.getAllByRole( 'button', { name: /Texto/ } ).slice( -1 )[ 0 ]
@@ -796,12 +798,16 @@ describe( 'creating a container', () => {
 					name: new RegExp( `^${ label }` ),
 				} )
 			);
-			const add = screen.getAllByRole( 'button', {
-				name: 'Adicionar campo nesta seção',
-			} );
 			expect(
-				add.some( ( button ) => ! button.hasAttribute( 'disabled' ) )
-			).toBe( true );
+				screen.queryAllByRole( 'button', {
+					name: 'Adicionar campo nesta seção',
+				} )
+			).toHaveLength( 0 );
+			expect(
+				screen.getByRole( 'button', {
+					name: /^Adicionar campo$/,
+				} )
+			).toBeInTheDocument();
 		}
 	} );
 } );
@@ -856,10 +862,24 @@ describe( 'UX-001 deterministic admin surfaces', () => {
 		).findByText( 'CPF' );
 
 		expect(
-			screen.getAllByRole( 'button', {
+			screen.queryAllByRole( 'button', {
 				name: 'Adicionar campo nesta seção',
 			} )
+		).toHaveLength( 0 );
+		expect(
+			screen.getAllByRole( 'button', {
+				name: /^Adicionar campo$/,
+			} )
 		).toHaveLength( 1 );
+		expect(
+			screen.queryByRole( 'button', { name: 'Novo campo' } )
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole( 'button', { name: 'Campo existente' } )
+		).not.toBeInTheDocument();
+		expect(
+			screen.getByText( /Use os botões do cabeçalho/ )
+		).toBeInTheDocument();
 	} );
 
 	it( 'exposes duplicate and delete through one field-row action surface', async () => {

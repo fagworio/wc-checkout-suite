@@ -76,7 +76,10 @@ if ( ! user || ! password ) {
 
 		step = 'open-field-picker';
 		await page
-			.getByRole( 'button', { name: 'Novo campo', exact: true } )
+			.getByRole( 'button', {
+				name: 'Adicionar campo',
+				exact: true,
+			} )
 			.click();
 		const picker = page.locator( 'dialog.picker-dialog' );
 		await picker.waitFor();
@@ -121,7 +124,12 @@ if ( ! user || ! password ) {
 		} );
 
 		// Opening the picker again must start from the catalogue, not the previous type.
-		await page.locator( 'button.inline-add' ).click();
+		await page
+			.getByRole( 'button', {
+				name: 'Adicionar campo',
+				exact: true,
+			} )
+			.click();
 		const secondPicker = page.locator( 'dialog.picker-dialog' );
 		const secondActiveCategory = secondPicker.locator(
 			'.picker-categories button.active'

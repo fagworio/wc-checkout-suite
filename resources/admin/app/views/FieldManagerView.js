@@ -2298,18 +2298,6 @@ export default function FieldManagerView( { model } ) {
 								) }
 							</div>
 
-							<button
-								type="button"
-								className="inline-add"
-								onClick={ () => setPickerOpen( true ) }
-							>
-								<Icon name="plus" />
-								{ __(
-									'Adicionar campo nesta seção',
-									'wc-checkoutsuite'
-								) }
-							</button>
-
 							<div className="builder-footer">
 								<span>
 									<Icon name="grip" />
@@ -2380,21 +2368,6 @@ export default function FieldManagerView( { model } ) {
 							onAdoptField={ onAdoptCore }
 							onHideField={ onHideCore }
 						/>
-
-						{ /* O botão tracejado do desenho: o mesmo caminho do cabeçalho,
-						     onde o campo nasce — dentro da seção que está aberta. */ }
-						<button
-							type="button"
-							className="add-field-inline"
-							disabled={ ! collectsAt( area ) }
-							onClick={ () => setPickerOpen( true ) }
-						>
-							<Icon name="plus" />
-							{ __(
-								'Adicionar campo nesta seção',
-								'wc-checkoutsuite'
-							) }
-						</button>
 
 						{ /* A prévia da seção, como o desenho a põe: o mesmo documento, os
 						     mesmos rótulos, a mesma largura por campo — uma amostra do que o
@@ -2564,39 +2537,10 @@ export default function FieldManagerView( { model } ) {
 
 								<p className="muted small">
 									{ __(
-										'Crie um campo novo para esta seção, ou use um que a loja já tem. Escolha um campo da lista para editar as propriedades dele.',
+										'Use os botões do cabeçalho para adicionar um campo novo ou vincular um campo existente. Escolha um campo da lista para editar as propriedades dele.',
 										'wc-checkoutsuite'
 									) }
 								</p>
-
-								{ /* As duas entradas do desenho — «Novo campo» e «Campo
-								     existente» — como dois caminhos e não como um
-								     interruptor: cada um leva a um sítio diferente, e um
-								     segmentado que muda o que está por baixo faria o
-								     comerciante pensar que escolheu um campo. */ }
-								<div className="add-field-actions">
-									<button
-										type="button"
-										className="btn btn-primary"
-										onClick={ () => setPickerOpen( true ) }
-									>
-										<Icon name="plus" />
-										{ __(
-											'Novo campo',
-											'wc-checkoutsuite'
-										) }
-									</button>
-									<button
-										type="button"
-										className="btn"
-										onClick={ onLinkExisting }
-									>
-										{ __(
-											'Campo existente',
-											'wc-checkoutsuite'
-										) }
-									</button>
-								</div>
 
 								{ /* O que o desenho põe por baixo do formulário: o campo
 								     nativo da loja que esta seção ainda não adotou. É o

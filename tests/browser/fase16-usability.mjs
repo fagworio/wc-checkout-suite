@@ -348,25 +348,27 @@ await step( 'A tela de campos tem o fluxo do protótipo', async () => {
 		titleSwitch.label
 	);
 
-	// O botão tracejado do meio abre o mesmo caminho de criação, e o formulário
-	// traz os campos que o protótipo desenha.
-	const dashed = page.locator( '.add-field-inline' );
+	// A criação fica no cabeçalho; o builder não repete a mesma entrada abaixo da lista.
+	const headerAdd = page.getByRole( 'button', {
+		name: 'Adicionar campo',
+		exact: true,
+	} );
 	const equivalentCreates = page.locator(
 		'.builder-panel .inline-add, .builder-panel .add-field-inline'
 	);
 
 	record(
-		'Existe um único ponto equivalente para adicionar campo no builder',
-		( await equivalentCreates.count() ) === 1,
+		'O builder não repete o ponto de criação de campo',
+		( await equivalentCreates.count() ) === 0,
 		`count=${ await equivalentCreates.count() }`
 	);
 
 	record(
-		'E «Adicionar campo nesta seção» está onde os campos nascem',
-		( await dashed.count() ) === 1 && ( await dashed.isVisible() )
+		'Adicionar campo fica uma única vez no cabeçalho',
+		( await headerAdd.count() ) === 1 && ( await headerAdd.isVisible() )
 	);
 
-	await dashed.click();
+	await headerAdd.click();
 
 	// O passo 1 é o catálogo; o formulário do protótipo é o passo 2, depois de
 	// escolher um tipo.
