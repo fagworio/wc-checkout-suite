@@ -54,6 +54,7 @@ import {
 } from './schema/failureState';
 import {
 	createProfile,
+	isCheckoutSection,
 	moveProfile,
 	readableProfiles,
 	removeProfile,
@@ -646,14 +647,37 @@ export default function FieldsScreen( {
 		[ apply, document, setLegacyDestinations, setLegacyPromptOpen ]
 	);
 
+	const compositionForGroups = useMemo( () => {
+		if ( ! composition || ! composingProfile || 'checkout' !== area ) {
+			return composition;
+		}
+
+		const ownedSectionIds = new Set(
+			( composition.sections ?? [] )
+				.filter( isCheckoutSection )
+				.map( ( /** @type {any} */ entry ) => entry.id )
+		);
+
+		return {
+			...composition,
+			fields: ( composition.fields ?? [] ).filter(
+				( /** @type {any} */ field ) =>
+					ownedSectionIds.has( field.section ?? 'order' )
+			),
+		};
+	}, [ composition, composingProfile, area ] );
+
 	/**
 	 * Sections in display order, including the ones fields imply.
 	 *
 	 * @type {import('./schema/types').SectionGroup[]}
 	 */
 	const groups = useMemo(
-		() => ( composition ? sectionGroups( composition, area ) : [] ),
-		[ composition, area ]
+		() =>
+			compositionForGroups
+				? sectionGroups( compositionForGroups, area )
+				: [],
+		[ compositionForGroups, area ]
 	);
 
 	/**
@@ -761,20 +785,23 @@ export default function FieldsScreen( {
 		return options;
 	}, [ groups, catalog, area ] );
 
+	const activeSection =
+		sectionOptions.find( ( entry ) => entry.id === section )?.id ??
+		sectionOptions[ 0 ]?.id ??
+		'';
+
 	/**
 	 * Keeps the target section valid as the list of sections arrives.
 	 *
 	 * @return {void}
 	 */
 	useEffect( () => {
-		if ( sectionOptions.some( ( entry ) => entry.id === section ) ) {
+		if ( ! activeSection || activeSection === section ) {
 			return;
 		}
 
-		if ( sectionOptions.length > 0 ) {
-			setSection( sectionOptions[ 0 ].id );
-		}
-	}, [ sectionOptions, section, setSection ] );
+		setSection( activeSection );
+	}, [ activeSection, section, setSection ] );
 
 	/**
 	 * Reloads the publication report and the history.
@@ -980,7 +1007,7 @@ export default function FieldsScreen( {
 					document,
 					composition,
 					groups,
-					section,
+					section: activeSection,
 					onSectionChange: setSection,
 					catalog,
 					coreFields,
@@ -999,7 +1026,8 @@ export default function FieldsScreen( {
 						/** @type {boolean} */ checked
 					) => {
 						const found = composition?.sections?.find(
-							( /** @type {any} */ entry ) => entry.id === section
+							( /** @type {any} */ entry ) =>
+								entry.id === activeSection
 						);
 
 						if ( ! found ) {
@@ -1010,7 +1038,7 @@ export default function FieldsScreen( {
 						}
 
 						applyComposed(
-							updateSection( composition, section, {
+							updateSection( composition, activeSection, {
 								presentation: {
 									...( found.presentation ?? {} ),
 									show_title: checked,
@@ -1057,7 +1085,9 @@ export default function FieldsScreen( {
 						const collectedHere = collectsAt( area );
 						const customerSurface = isCustomerArea( area );
 						let targetDocument = document;
-						let targetSection = collectedHere ? section : 'order';
+						let targetSection = collectedHere
+							? activeSection
+							: 'order';
 
 						// A native account page is a real WooCommerce context but has no WCCS
 						// container until the merchant adds the first complementary field. Create
@@ -1430,7 +1460,8 @@ export default function FieldsScreen( {
 									<Button
 										variant="primary"
 										disabled={
-											'' === linkFieldId || ! section
+											'' === linkFieldId ||
+											! activeSection
 										}
 										onClick={ () => {
 											const field = document.fields.find(
@@ -1445,7 +1476,7 @@ export default function FieldsScreen( {
 											const bindings = addBinding(
 												field,
 												area,
-												section
+												activeSection
 											);
 
 											apply(
@@ -1599,7 +1630,8 @@ export default function FieldsScreen( {
 											// old document made it fall back to the first section and sent
 											// the next field to the wrong container.
 											setSection(
-												result.section?.id ?? section
+												result.section?.id ??
+													activeSection
 											);
 											closeNewSection();
 										} }

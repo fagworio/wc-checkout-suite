@@ -467,6 +467,82 @@ describe( 'the schema', () => {
 		).not.toBeInTheDocument();
 	} );
 
+	it( 'switches to a valid section owned by the selected checkout', async () => {
+		const user = userEvent.setup();
+		const defaultSection = {
+			id: 'checkout_default',
+			title: 'Seção padrão',
+			description: '',
+			position: 10,
+			location: 'billing',
+			areas: [ 'checkout' ],
+		};
+		const digitalSection = {
+			id: 'checkout_digital',
+			title: 'Seção digital',
+			description: '',
+			position: 10,
+			location: 'billing',
+			areas: [ 'checkout' ],
+		};
+		const draft = {
+			...doc( [
+				field( {
+					id: 'default_field',
+					label: 'Campo padrão',
+					section: defaultSection.id,
+				} ),
+				field( {
+					id: 'digital_field',
+					label: 'Campo digital',
+					section: digitalSection.id,
+				} ),
+			] ),
+			sections: [ defaultSection ],
+			profiles: [
+				{
+					id: 'digital',
+					name: 'Checkout digital',
+					enabled: true,
+					source: 'woocommerce_current',
+					priority: 10,
+					fallback: false,
+					conditions: {},
+					sections: [ digitalSection ],
+					presentation: {},
+				},
+			],
+		};
+
+		const stub = client( { draft } );
+
+		render( <FieldsScreen client={ stub } /> );
+
+		const sectionButton = ( /** @type {RegExp} */ name ) =>
+			screen
+				.queryAllByRole( 'button', { name } )
+				.find( ( button ) => button.hasAttribute( 'aria-pressed' ) );
+
+		await waitFor( () =>
+			expect( sectionButton( /Seção padrão/ ) ).toBeInTheDocument()
+		);
+		const digitalCheckout = screen.getByRole( 'tab', {
+			name: /Checkout digital/,
+		} );
+		await user.click( digitalCheckout );
+		await waitFor( () =>
+			expect( digitalCheckout ).toHaveAttribute( 'aria-selected', 'true' )
+		);
+
+		await waitFor( () => {
+			expect( sectionButton( /Seção digital/ ) ).toHaveAttribute(
+				'aria-pressed',
+				'true'
+			);
+			expect( sectionButton( /Seção padrão/ ) ).toBeUndefined();
+		} );
+	} );
+
 	it( 'groups the fields by the section they are in', async () => {
 		render(
 			<FieldsScreen
