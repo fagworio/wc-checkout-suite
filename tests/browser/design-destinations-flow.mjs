@@ -144,9 +144,7 @@ try {
 		.fill( `E2E container ${ Date.now() }` );
 	await page.getByRole( 'button', { name: 'Criar página' } ).click();
 	await page.getByRole( 'button', { name: /Ações da página/ } ).click();
-	await page
-		.getByLabel( 'Nome do container' )
-		.fill( 'E2E container renamed' );
+	await page.getByLabel( 'Nome da página' ).fill( 'E2E container renamed' );
 	await page.getByRole( 'button', { name: 'Done' } ).click();
 	await page
 		.locator( '.context-status .badge' )

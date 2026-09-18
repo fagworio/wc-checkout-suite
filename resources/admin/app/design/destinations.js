@@ -22,11 +22,12 @@ import { __, sprintf } from '@wordpress/i18n';
  * The words one place uses for the group of fields it holds.
  *
  * @typedef {Object} ContainerWords
- * @property {string} one     Singular name, as in a heading.
- * @property {string} many    Plural name, as in a list.
- * @property {string} create  The button that opens the creation form.
- * @property {string} submit  The button that confirms it.
- * @property {string} actions The label of the container's own actions.
+ * @property {string} one       Singular name, as in a heading.
+ * @property {string} many      Plural name, as in a list.
+ * @property {string} create    The button that opens the creation form.
+ * @property {string} submit    The button that confirms it.
+ * @property {string} actions   The label of the container's own actions.
+ * @property {string} nameLabel The label for the container name field.
  */
 
 /**
@@ -67,6 +68,7 @@ export const DESTINATIONS = [
 			create: __( 'Nova seção', 'wc-checkoutsuite' ),
 			submit: __( 'Adicionar seção', 'wc-checkoutsuite' ),
 			actions: __( 'Ações da seção', 'wc-checkoutsuite' ),
+			nameLabel: __( 'Nome da seção', 'wc-checkoutsuite' ),
 		},
 	},
 	{
@@ -85,6 +87,7 @@ export const DESTINATIONS = [
 			create: __( 'Nova página', 'wc-checkoutsuite' ),
 			submit: __( 'Criar página', 'wc-checkoutsuite' ),
 			actions: __( 'Ações da página', 'wc-checkoutsuite' ),
+			nameLabel: __( 'Nome da página', 'wc-checkoutsuite' ),
 		},
 	},
 	{
@@ -103,6 +106,7 @@ export const DESTINATIONS = [
 			create: __( 'Novo bloco', 'wc-checkoutsuite' ),
 			submit: __( 'Criar bloco', 'wc-checkoutsuite' ),
 			actions: __( 'Ações do bloco', 'wc-checkoutsuite' ),
+			nameLabel: __( 'Nome do bloco', 'wc-checkoutsuite' ),
 		},
 	},
 	{
@@ -121,6 +125,7 @@ export const DESTINATIONS = [
 			create: __( 'Novo painel', 'wc-checkoutsuite' ),
 			submit: __( 'Criar painel', 'wc-checkoutsuite' ),
 			actions: __( 'Ações do painel', 'wc-checkoutsuite' ),
+			nameLabel: __( 'Nome do painel', 'wc-checkoutsuite' ),
 		},
 	},
 	{
@@ -139,6 +144,7 @@ export const DESTINATIONS = [
 			create: __( 'Novo painel', 'wc-checkoutsuite' ),
 			submit: __( 'Criar painel', 'wc-checkoutsuite' ),
 			actions: __( 'Ações do painel', 'wc-checkoutsuite' ),
+			nameLabel: __( 'Nome do painel', 'wc-checkoutsuite' ),
 		},
 	},
 	{
@@ -157,6 +163,7 @@ export const DESTINATIONS = [
 			create: __( 'Novo bloco', 'wc-checkoutsuite' ),
 			submit: __( 'Criar bloco', 'wc-checkoutsuite' ),
 			actions: __( 'Ações do bloco', 'wc-checkoutsuite' ),
+			nameLabel: __( 'Nome do bloco', 'wc-checkoutsuite' ),
 		},
 	},
 	{
@@ -175,6 +182,7 @@ export const DESTINATIONS = [
 			create: __( 'Novo bloco', 'wc-checkoutsuite' ),
 			submit: __( 'Criar bloco', 'wc-checkoutsuite' ),
 			actions: __( 'Ações do bloco', 'wc-checkoutsuite' ),
+			nameLabel: __( 'Nome do bloco', 'wc-checkoutsuite' ),
 		},
 	},
 	{
@@ -193,6 +201,7 @@ export const DESTINATIONS = [
 			create: __( 'Novo bloco', 'wc-checkoutsuite' ),
 			submit: __( 'Criar bloco', 'wc-checkoutsuite' ),
 			actions: __( 'Ações do bloco', 'wc-checkoutsuite' ),
+			nameLabel: __( 'Nome do bloco', 'wc-checkoutsuite' ),
 		},
 	},
 ];
@@ -242,6 +251,7 @@ export function containerWords( id ) {
 			create: __( 'Nova seção', 'wc-checkoutsuite' ),
 			submit: __( 'Adicionar seção', 'wc-checkoutsuite' ),
 			actions: __( 'Ações da seção', 'wc-checkoutsuite' ),
+			nameLabel: __( 'Nome da seção', 'wc-checkoutsuite' ),
 		}
 	);
 }

@@ -351,6 +351,15 @@ await step( 'A tela de campos tem o fluxo do protótipo', async () => {
 	// O botão tracejado do meio abre o mesmo caminho de criação, e o formulário
 	// traz os campos que o protótipo desenha.
 	const dashed = page.locator( '.add-field-inline' );
+	const equivalentCreates = page.locator(
+		'.builder-panel .inline-add, .builder-panel .add-field-inline'
+	);
+
+	record(
+		'Existe um único ponto equivalente para adicionar campo no builder',
+		( await equivalentCreates.count() ) === 1,
+		`count=${ await equivalentCreates.count() }`
+	);
 
 	record(
 		'E «Adicionar campo nesta seção» está onde os campos nascem',
@@ -443,6 +452,25 @@ await step( 'A linha tem as ações à vista, e não um menu', async () => {
 		Array.from(
 			document.querySelectorAll( '.row-menu button' )
 		).map( ( node ) => node.textContent.trim() )
+	);
+
+	const actionCounts = await page.evaluate( () => {
+		const row = document.querySelector( '.field-row' );
+		const buttons = Array.from( row?.querySelectorAll( 'button' ) ?? [] );
+		const labels = buttons.map(
+			( node ) => node.getAttribute( 'aria-label' ) ?? node.textContent ?? ''
+		);
+
+		return {
+			duplicate: labels.filter( ( label ) => /Duplicar/i.test( label ) ).length,
+			remove: labels.filter( ( label ) => /Excluir/i.test( label ) ).length,
+		};
+	} );
+
+	record(
+		'Cada linha tem uma única superfície para duplicar e excluir',
+		actionCounts.duplicate <= 1 && actionCounts.remove <= 1,
+		JSON.stringify( actionCounts )
 	);
 
 	record(

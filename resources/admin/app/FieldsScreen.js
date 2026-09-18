@@ -36,7 +36,6 @@ import FieldManagerView from './views/FieldManagerView';
 import {
 	collectsAt,
 	containerWords,
-	DESTINATIONS,
 	isCustomerDestination,
 	navigation,
 	offeredInSentence,
@@ -1839,12 +1838,7 @@ export default function FieldsScreen( {
 								<>
 									<ContainerProperties
 										value={ editingSection }
-										destinations={ DESTINATIONS.map(
-											( entry ) => ( {
-												value: entry.id,
-												label: entry.label,
-											} )
-										) }
+										words={ containerWords( area ) }
 										onChange={ ( changes ) =>
 											applyComposed(
 												updateSection(

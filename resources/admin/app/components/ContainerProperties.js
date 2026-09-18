@@ -1,24 +1,19 @@
 import { __ } from '@wordpress/i18n';
 
-import {
-	CheckboxField,
-	SelectField,
-	TextareaField,
-	TextField,
-} from './controls';
+import { CheckboxField, TextareaField, TextField } from './controls';
 
 /**
- * @param {Object}                                               props                Props.
- * @param {Partial<import('../schema/types').SectionDefinition>} [props.value]        Container.
- * @param {(changes: Object) => void}                            props.onChange       Change callback.
- * @param {Array<{value: string, label: string}>}                [props.destinations] Destinations.
- * @param {boolean}                                              [props.disabled]     Disable controls.
+ * @param {Object}                                               props            Props.
+ * @param {Partial<import('../schema/types').SectionDefinition>} [props.value]    Container.
+ * @param {(changes: Object) => void}                            props.onChange   Change callback.
+ * @param {{nameLabel: string}}                                  props.words      Destination vocabulary.
+ * @param {boolean}                                              [props.disabled] Disable controls.
  * @return {*} Properties form.
  */
 export default function ContainerProperties( {
 	value = {},
 	onChange,
-	destinations = [],
+	words,
 	disabled = false,
 } ) {
 	/** @param {Object} changes Changed values. */
@@ -29,7 +24,7 @@ export default function ContainerProperties( {
 		<div className="wccs-container-properties">
 			<TextField
 				id="wccs-container-name"
-				label={ __( 'Nome do container', 'wc-checkoutsuite' ) }
+				label={ words.nameLabel }
 				value={ name }
 				disabled={ disabled }
 				onChange={ (
@@ -59,23 +54,6 @@ export default function ContainerProperties( {
 					/** @type {{ target: { value: string } }} */ event
 				) => update( { description: event.target.value } ) }
 			/>
-			{ destinations.length ? (
-				<SelectField
-					id="wccs-container-destination"
-					label={ __( 'Destino', 'wc-checkoutsuite' ) }
-					value={ value.destination ?? value.areas?.[ 0 ] ?? '' }
-					options={ destinations }
-					disabled={ disabled }
-					onChange={ (
-						/** @type {{ target: { value: string } }} */ event
-					) =>
-						update( {
-							destination: event.target.value,
-							areas: [ event.target.value ],
-						} )
-					}
-				/>
-			) : null }
 			<CheckboxField
 				id="wccs-container-enabled"
 				label={ __( 'Aba/seção ativa', 'wc-checkoutsuite' ) }

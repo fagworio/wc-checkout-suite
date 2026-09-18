@@ -806,6 +806,127 @@ describe( 'creating a container', () => {
 	} );
 } );
 
+describe( 'UX-001 deterministic admin surfaces', () => {
+	const declaredSection = {
+		id: 'customer_documents',
+		title: 'Documentos',
+		description: '',
+		position: 10,
+		location: 'order',
+		areas: [ 'checkout' ],
+	};
+
+	it( 'does not expose internal container vocabulary in section properties', async () => {
+		const user = userEvent.setup();
+		const stub = client( {
+			draft: {
+				...doc( [ field( { section: declaredSection.id } ) ] ),
+				sections: [ declaredSection ],
+			},
+		} );
+
+		render( <FieldsScreen client={ stub } /> );
+
+		const list = await screen.findByRole( 'list', {
+			name: 'Campos da seção',
+		} );
+		await within( list ).findByText( 'CPF' );
+		await user.click(
+			screen.getByRole( 'button', { name: /^Documentos/ } )
+		);
+		await user.click(
+			screen.getByRole( 'button', { name: /^Ações da seção/ } )
+		);
+
+		const dialog = screen.getByRole( 'dialog' );
+
+		expect( dialog ).not.toHaveTextContent( /\bcontainer\b/i );
+		expect(
+			screen.queryByLabelText( 'Nome do container' )
+		).not.toBeInTheDocument();
+		expect( screen.getByLabelText( 'Nome da seção' ) ).toBeInTheDocument();
+		expect( screen.queryByLabelText( 'Destino' ) ).not.toBeInTheDocument();
+	} );
+
+	it( 'exposes one equivalent field-create entry point in the active builder', async () => {
+		render( <FieldsScreen client={ client() } /> );
+
+		await within(
+			await screen.findByRole( 'list', { name: 'Campos da seção' } )
+		).findByText( 'CPF' );
+
+		expect(
+			screen.getAllByRole( 'button', {
+				name: 'Adicionar campo nesta seção',
+			} )
+		).toHaveLength( 1 );
+	} );
+
+	it( 'exposes duplicate and delete through one field-row action surface', async () => {
+		const user = userEvent.setup();
+
+		render( <FieldsScreen client={ client() } /> );
+
+		const list = await screen.findByRole( 'list', {
+			name: 'Campos da seção',
+		} );
+		const fieldLabel = await within( list ).findByText( 'CPF' );
+		const row = fieldLabel.closest( '.field-row' );
+
+		expect( row ).not.toBeNull();
+		await user.click(
+			screen.getByRole( 'button', { name: 'Ações de CPF' } )
+		);
+
+		const fieldRow = /** @type {HTMLElement} */ ( row );
+
+		expect(
+			within( fieldRow ).getAllByRole( 'button', { name: /Duplicar/ } )
+		).toHaveLength( 1 );
+		expect(
+			within( fieldRow ).getAllByRole( 'button', { name: /Excluir/ } )
+		).toHaveLength( 1 );
+	} );
+
+	it( 'keeps custom container removal inside its properties flow', async () => {
+		const user = userEvent.setup();
+		const stub = client( {
+			draft: {
+				...doc( [ field( { section: declaredSection.id } ) ] ),
+				sections: [ declaredSection ],
+			},
+		} );
+
+		render( <FieldsScreen client={ stub } /> );
+
+		const list = await screen.findByRole( 'list', {
+			name: 'Campos da seção',
+		} );
+		await within( list ).findByText( 'CPF' );
+		await user.click(
+			screen.getByRole( 'button', { name: /^Documentos/ } )
+		);
+
+		const builder = /** @type {HTMLElement} */ (
+			document.querySelector( '.builder-panel' )
+		);
+
+		expect( builder ).not.toBeNull();
+		expect(
+			within( builder ).queryByRole( 'button', { name: /^Remover/ } )
+		).not.toBeInTheDocument();
+
+		await user.click(
+			screen.getByRole( 'button', { name: /^Ações da seção/ } )
+		);
+		expect(
+			within( screen.getByRole( 'dialog' ) ).getByRole( 'button', {
+				name: 'Remover seção',
+			} )
+		).toBeInTheDocument();
+	} );
+} );
+
 describe( 'editing', () => {
 	it( 'offers to undo an edit only after there is one', async () => {
 		const user = userEvent.setup();

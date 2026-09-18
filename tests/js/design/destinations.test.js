@@ -116,6 +116,21 @@ describe( 'what each place calls the group of fields', () => {
 		);
 	} );
 
+	it( 'provides the label for each place\u2019s name field', () => {
+		expect( containerWords( 'checkout' ).nameLabel ).toBe(
+			'Nome da seção'
+		);
+		expect( containerWords( 'customer_account' ).nameLabel ).toBe(
+			'Nome da página'
+		);
+		expect( containerWords( 'customer_order' ).nameLabel ).toBe(
+			'Nome do bloco'
+		);
+		expect( containerWords( 'admin_order' ).nameLabel ).toBe(
+			'Nome do painel'
+		);
+	} );
+
 	it( 'gives each one the create button the specification names', () => {
 		expect( containerWords( 'checkout' ).create ).toBe( 'Nova seção' );
 		expect( containerWords( 'customer_account' ).create ).toBe(
