@@ -613,6 +613,18 @@ describe( 'creating a container', () => {
 		await user.click(
 			screen.getByRole( 'button', { name: 'Nova página' } )
 		);
+		const createDialog = screen.getByRole( 'dialog' );
+		expect(
+			within( createDialog ).queryByLabelText( 'Ícone' )
+		).not.toBeInTheDocument();
+		expect(
+			within( createDialog ).queryByLabelText( 'Modo' )
+		).not.toBeInTheDocument();
+		expect(
+			within( createDialog ).queryByLabelText(
+				'Exibir título no conteúdo'
+			)
+		).not.toBeInTheDocument();
 		await user.type(
 			screen.getByLabelText( 'Nome' ),
 			'Dados profissionais'
@@ -630,6 +642,28 @@ describe( 'creating a container', () => {
 		expect(
 			screen.getByText( 'Aparece em: Minha conta' )
 		).toBeInTheDocument();
+
+		await user.click(
+			screen.getByRole( 'button', { name: /^Ações da página/ } )
+		);
+		const propertiesDialog = screen.getByRole( 'dialog' );
+		expect(
+			within( propertiesDialog ).getByLabelText( 'Ícone da aba' )
+		).toBeInTheDocument();
+		expect(
+			within( propertiesDialog ).getByLabelText( 'Modo' )
+		).toBeInTheDocument();
+		expect(
+			within( propertiesDialog ).getByLabelText(
+				'Exibir título no conteúdo',
+				{
+					selector: '#wccs-account-section-show-title',
+				}
+			)
+		).toBeInTheDocument();
+		await user.click(
+			within( propertiesDialog ).getByRole( 'button', { name: 'Done' } )
+		);
 
 		await user.click(
 			screen.getByRole( 'button', { name: 'Salvar alterações' } )

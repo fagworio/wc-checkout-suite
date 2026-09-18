@@ -18,9 +18,6 @@ export default function useSectionEditor( { composition } ) {
 	const [ sectionRemoval, setSectionRemoval ] = useState( null );
 	const [ newSectionTitle, setNewSectionTitle ] = useState( '' );
 	const [ newSectionLocation, setNewSectionLocation ] = useState( 'billing' );
-	const [ newSectionIcon, setNewSectionIcon ] = useState( 'user' );
-	const [ newSectionMode, setNewSectionMode ] = useState( 'edit' );
-	const [ newSectionShowTitle, setNewSectionShowTitle ] = useState( false );
 
 	const editingSection = useMemo(
 		() =>
@@ -32,16 +29,10 @@ export default function useSectionEditor( { composition } ) {
 	);
 
 	const openNewSection = (
-		/** @type {{location: string, showTitle: boolean}} */ {
-			location,
-			showTitle,
-		}
+		/** @type {{location: string}} */ { location }
 	) => {
 		setNewSectionTitle( '' );
 		setNewSectionLocation( location );
-		setNewSectionIcon( 'user' );
-		setNewSectionMode( 'edit' );
-		setNewSectionShowTitle( showTitle );
 		setSectionDraftOpen( true );
 	};
 
@@ -62,12 +53,6 @@ export default function useSectionEditor( { composition } ) {
 		setNewSectionTitle,
 		newSectionLocation,
 		setNewSectionLocation,
-		newSectionIcon,
-		setNewSectionIcon,
-		newSectionMode,
-		setNewSectionMode,
-		newSectionShowTitle,
-		setNewSectionShowTitle,
 		openNewSection,
 		closeNewSection,
 	};

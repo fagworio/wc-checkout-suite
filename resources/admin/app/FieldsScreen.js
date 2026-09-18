@@ -475,12 +475,6 @@ export default function FieldsScreen( {
 		setNewSectionTitle,
 		newSectionLocation,
 		setNewSectionLocation,
-		newSectionIcon,
-		setNewSectionIcon,
-		newSectionMode,
-		setNewSectionMode,
-		newSectionShowTitle,
-		setNewSectionShowTitle,
 		openNewSection,
 		closeNewSection,
 	} = sectionEditor;
@@ -1225,7 +1219,6 @@ export default function FieldsScreen( {
 					onCreateSection: () => {
 						openNewSection( {
 							location: defaultSectionLocation( area ),
-							showTitle: isCustomerArea( area ),
 						} );
 					},
 					onLinkExisting: () => {
@@ -1533,8 +1526,12 @@ export default function FieldsScreen( {
 													// working in: creating one here offers it here (§18).
 													areas: [ area ],
 													presentation: {
+														// Preserve the existing account defaults without asking
+														// optional presentation choices during creation.
 														show_title:
-															newSectionShowTitle,
+															isCustomerArea(
+																area
+															),
 														...( isCustomerArea(
 															area
 														)
@@ -1561,9 +1558,9 @@ export default function FieldsScreen( {
 																			),
 																		menu_label:
 																			title,
-																		icon: newSectionIcon,
+																		icon: 'user',
 																		position: 5,
-																		mode: newSectionMode,
+																		mode: 'edit',
 																	},
 															  }
 															: {} ),
@@ -1642,88 +1639,12 @@ export default function FieldsScreen( {
 								{ offeredInSentence( [ area ] ) }
 							</p>
 							{ isCustomerArea( area ) ? (
-								<>
-									<Notice status="info">
-										{ __(
-											'Esta seção criará uma nova aba autenticada em Minha conta. Ela não será exibida no checkout ou nos pedidos.',
-											'wc-checkoutsuite'
-										) }
-									</Notice>
-									<SelectField
-										id="wccs-new-section-icon"
-										label={ __(
-											'Ícone',
-											'wc-checkoutsuite'
-										) }
-										value={ newSectionIcon }
-										options={ [
-											'user',
-											'fields',
-											'file',
-											'mail',
-										].map( ( value ) => ( {
-											value,
-											label: value,
-										} ) ) }
-										onChange={ (
-											/** @type {{ target: { value: string } }} */ event
-										) =>
-											setNewSectionIcon(
-												event.target.value
-											)
-										}
-									/>
-									<SelectField
-										id="wccs-new-section-mode"
-										label={ __(
-											'Modo',
-											'wc-checkoutsuite'
-										) }
-										value={ newSectionMode }
-										options={ [
-											{
-												value: 'edit',
-												label: __(
-													'Formulário editável',
-													'wc-checkoutsuite'
-												),
-											},
-											{
-												value: 'view',
-												label: __(
-													'Somente consulta',
-													'wc-checkoutsuite'
-												),
-											},
-										] }
-										onChange={ (
-											/** @type {{ target: { value: 'edit'|'view' } }} */ event
-										) =>
-											setNewSectionMode(
-												event.target.value
-											)
-										}
-									/>
-									<CheckboxField
-										id="wccs-new-section-show-title"
-										label={ __(
-											'Exibir título no conteúdo',
-											'wc-checkoutsuite'
-										) }
-										help={ __(
-											'O nome no menu continua visível mesmo quando este título é ocultado.',
-											'wc-checkoutsuite'
-										) }
-										checked={ newSectionShowTitle }
-										onChange={ (
-											/** @type {{ target: { checked: boolean } }} */ event
-										) =>
-											setNewSectionShowTitle(
-												event.target.checked
-											)
-										}
-									/>
-								</>
+								<Notice status="info">
+									{ __(
+										'Esta seção criará uma nova aba autenticada em Minha conta. Ela não será exibida no checkout ou nos pedidos.',
+										'wc-checkoutsuite'
+									) }
+								</Notice>
 							) : null }
 							{ 'checkout' !== area &&
 							! isCustomerArea( area ) ? (

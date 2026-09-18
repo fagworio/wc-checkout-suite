@@ -139,13 +139,40 @@ try {
 		.getByRole( 'button', { name: /^Detalhes da conta/ } )
 		.click();
 	await page.getByRole( 'button', { name: /Nova página/ } ).click();
+	const createDialog = page.getByRole( 'dialog' );
+	for ( const label of [ 'Ícone', 'Modo', 'Exibir título no conteúdo' ] ) {
+		if ( ( await createDialog.getByLabel( label ).count() ) !== 0 ) {
+			throw new Error(
+				`Structural page creation must not expose optional control: ${ label }`
+			);
+		}
+	}
 	await page
 		.locator( '#wccs-new-section-title' )
 		.fill( `E2E container ${ Date.now() }` );
 	await page.getByRole( 'button', { name: 'Criar página' } ).click();
 	await page.getByRole( 'button', { name: /Ações da página/ } ).click();
-	await page.getByLabel( 'Nome da página' ).fill( 'E2E container renamed' );
-	await page.getByRole( 'button', { name: 'Done' } ).click();
+	const propertiesDialog = page.getByRole( 'dialog' );
+	for ( const label of [ 'Ícone da aba', 'Modo' ] ) {
+		if ( ( await propertiesDialog.getByLabel( label ).count() ) !== 1 ) {
+			throw new Error(
+				`Page properties must expose optional control: ${ label }`
+			);
+		}
+	}
+	if (
+		( await propertiesDialog
+			.getByLabel( 'Exibir título no conteúdo' )
+			.count() ) !== 1
+	) {
+		throw new Error(
+			'Page properties must expose the content title visibility control'
+		);
+	}
+	await propertiesDialog
+		.getByLabel( 'Nome da página' )
+		.fill( 'E2E container renamed' );
+	await propertiesDialog.getByRole( 'button', { name: 'Done' } ).click();
 	await page
 		.locator( '.context-status .badge' )
 		.getByText( 'Alterações não salvas', { exact: true } )
