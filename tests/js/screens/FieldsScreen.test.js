@@ -781,6 +781,25 @@ describe( 'creating a container', () => {
 				.slice( -1 )[ 0 ]
 		);
 
+		const builder = /** @type {HTMLElement|null} */ (
+			screen
+				.getByText(
+					'Gerencie os campos desta seção. Arraste para reordenar.'
+				)
+				.closest( '.builder-panel' )
+		);
+		if ( ! builder ) {
+			throw new Error( 'The native account builder was not rendered.' );
+		}
+		expect(
+			within( builder ).getByText( 'Página nativa do WooCommerce' )
+		).toBeInTheDocument();
+		expect(
+			within( builder ).queryByRole( 'button', {
+				name: /^Ações da página/,
+			} )
+		).not.toBeInTheDocument();
+
 		await user.click(
 			screen.getByRole( 'button', { name: 'Salvar alterações' } )
 		);

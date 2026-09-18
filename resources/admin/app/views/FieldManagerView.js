@@ -488,8 +488,10 @@ export default function FieldManagerView( { model } ) {
 		contexts.some(
 			( /** @type {any} */ item ) => item.id === contextActive
 		);
-	const activeAccountPage = contexts.find(
-		( /** @type {any} */ item ) => item.id === contextActive
+	const activeAccountPage = /** @type {any} */ (
+		contexts.find(
+			( /** @type {any} */ item ) => item.id === contextActive
+		)
 	);
 	const persistedCurrent = accountContextOwnsSelection
 		? accountContextSection
@@ -525,11 +527,15 @@ export default function FieldManagerView( { model } ) {
 		'customer_account' === area &&
 		accountContextOwnsSelection &&
 		! accountContextSection;
+	const accountContextSectionId = accountContextSection?.section.id;
+	// The WCCS section is complementary content, not proof that the account page belongs
+	// to WCCS. Native ownership comes from the WooCommerce account menu entry, so a native
+	// endpoint stays protected after the first field creates its supporting section.
 	const nativeAccountPage =
 		'customer_account' === area &&
 		accountContextOwnsSelection &&
-		! current?.declared;
-	const accountContextSectionId = accountContextSection?.section.id;
+		Boolean( activeAccountPage ) &&
+		! activeAccountPage.custom;
 	const selectAccountPage = ( /** @type {string} */ id ) => {
 		onEdit( null );
 		setSurfaceContext( id );
