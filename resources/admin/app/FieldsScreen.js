@@ -648,11 +648,22 @@ export default function FieldsScreen( {
 	);
 
 	const compositionForGroups = useMemo( () => {
-		if ( ! composition || ! composingProfile || 'checkout' !== area ) {
+		if ( ! composition || 'checkout' !== area ) {
 			return composition;
 		}
 
-		const ownedSectionIds = new Set(
+		const knownCheckoutSectionIds = new Set( [
+			...( document?.sections ?? [] )
+				.filter( isCheckoutSection )
+				.map( ( /** @type {any} */ entry ) => entry.id ),
+			...( document?.profiles ?? [] ).flatMap(
+				( /** @type {any} */ profile ) =>
+					( profile.sections ?? [] )
+						.filter( isCheckoutSection )
+						.map( ( /** @type {any} */ entry ) => entry.id )
+			),
+		] );
+		const activeCheckoutSectionIds = new Set(
 			( composition.sections ?? [] )
 				.filter( isCheckoutSection )
 				.map( ( /** @type {any} */ entry ) => entry.id )
@@ -661,11 +672,17 @@ export default function FieldsScreen( {
 		return {
 			...composition,
 			fields: ( composition.fields ?? [] ).filter(
-				( /** @type {any} */ field ) =>
-					ownedSectionIds.has( field.section ?? 'order' )
+				( /** @type {any} */ field ) => {
+					const sectionId = field.section ?? 'order';
+
+					return (
+						! knownCheckoutSectionIds.has( sectionId ) ||
+						activeCheckoutSectionIds.has( sectionId )
+					);
+				}
 			),
 		};
-	}, [ composition, composingProfile, area ] );
+	}, [ composition, document, area ] );
 
 	/**
 	 * Sections in display order, including the ones fields imply.

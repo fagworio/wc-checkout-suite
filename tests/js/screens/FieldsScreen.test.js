@@ -541,6 +541,22 @@ describe( 'the schema', () => {
 			);
 			expect( sectionButton( /Seção padrão/ ) ).toBeUndefined();
 		} );
+
+		const defaultCheckout = screen.getByRole( 'tab', {
+			name: /Checkout padrão/,
+		} );
+		await user.click( defaultCheckout );
+		await waitFor( () =>
+			expect( defaultCheckout ).toHaveAttribute( 'aria-selected', 'true' )
+		);
+
+		await waitFor( () => {
+			expect( sectionButton( /Seção padrão/ ) ).toHaveAttribute(
+				'aria-pressed',
+				'true'
+			);
+			expect( sectionButton( /Seção digital/ ) ).toBeUndefined();
+		} );
 	} );
 
 	it( 'groups the fields by the section they are in', async () => {
