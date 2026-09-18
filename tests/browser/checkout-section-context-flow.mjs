@@ -190,6 +190,47 @@ try {
   await page.locator("#editorView").waitFor();
   await page.locator(".wccs-checkouts__strip").waitFor();
 
+  step = "visual-workspace";
+  const workspaceLayout = await page.evaluate(() => {
+    const workspace = document.querySelector(
+      "#editorView.wccs-checkout-workspace",
+    );
+    const profileRail = workspace?.querySelector(".wccs-checkouts--sidebar");
+    const editorGrid = workspace?.querySelector(".editor-grid");
+
+    return {
+      display: workspace ? getComputedStyle(workspace).display : "",
+      profileColumn: profileRail
+        ? getComputedStyle(profileRail).gridColumn
+        : "",
+      editorColumn: editorGrid ? getComputedStyle(editorGrid).gridColumn : "",
+    };
+  });
+  if (
+    workspaceLayout.display !== "grid" ||
+    workspaceLayout.profileColumn !== "1" ||
+    workspaceLayout.editorColumn !== "2"
+  ) {
+    throw new Error(
+      `Checkout workspace columns are invalid: ${JSON.stringify(
+        workspaceLayout,
+      )}`,
+    );
+  }
+  findings.push("visual:checkout rail and editor share the workspace grid");
+
+  await page.setViewportSize({ width: 820, height: 1050 });
+  const mobileColumns = await page.locator("#editorView").evaluate((node) => {
+    return getComputedStyle(node).gridTemplateColumns;
+  });
+  if (mobileColumns.split(" ").length !== 1) {
+    throw new Error(
+      `Checkout workspace did not collapse on narrow viewport: ${mobileColumns}`,
+    );
+  }
+  findings.push("visual:narrow workspace collapses to one column");
+  await page.setViewportSize({ width: 1668, height: 1050 });
+
   step = "default-checkout";
   const initialName = await selectedCheckoutName();
   if (!initialName.includes("Checkout padrão")) {

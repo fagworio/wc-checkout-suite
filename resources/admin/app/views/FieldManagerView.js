@@ -956,7 +956,9 @@ export default function FieldManagerView( { model } ) {
 			{ topbarActions }
 
 			<section
-				className="view active"
+				className={ `view active${
+					checkoutOnly ? ' wccs-checkout-workspace' : ''
+				}` }
 				id="editorView"
 				aria-labelledby="editorTitle"
 			>
@@ -1077,6 +1079,8 @@ export default function FieldManagerView( { model } ) {
 					</div>
 				) : null }
 
+				{ /* The checkout selector is the parent rail of the same workspace as
+				     sections, fields and the inspector when Checkouts is active. */ }
 				{ /* A store may run more than one checkout (§6.3), and they are all compositions of the
 				     same document. The strip is offered where the checkouts are: the checkout
 				     destination, which is what a profile composes. */ }

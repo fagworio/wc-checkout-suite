@@ -618,6 +618,18 @@ describe( 'the schema', () => {
 		const digitalCheckout = await screen.findByRole( 'tab', {
 			name: /Checkout digital/,
 		} );
+		const checkoutList = screen.getByRole( 'tablist', {
+			name: 'Checkouts da loja',
+		} );
+		expect(
+			checkoutList.closest( '.wccs-checkout-workspace' )
+		).not.toBeNull();
+		const fieldList = await screen.findByRole( 'list', {
+			name: 'Campos da seção',
+		} );
+		expect(
+			fieldList.closest( '.wccs-checkout-workspace' )
+		).not.toBeNull();
 		await user.click( digitalCheckout );
 
 		await waitFor( () =>
