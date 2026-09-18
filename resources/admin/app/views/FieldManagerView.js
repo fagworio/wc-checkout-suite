@@ -360,6 +360,11 @@ export default function FieldManagerView( { model } ) {
 		/** @type {string|null} */ ( null )
 	);
 	const [ pickerOpen, setPickerOpen ] = useState( false );
+	const [ creationTarget, setCreationTarget ] = useState(
+		/** @type {{profileId: string, sectionId: string, area: string}|null} */ (
+			null
+		)
+	);
 
 	/** Whether the window is narrow enough for the properties to open in a dialog. */
 	const narrow = useNarrowViewport();
@@ -500,6 +505,50 @@ export default function FieldManagerView( { model } ) {
 			( /** @type {any} */ item ) => item.id === contextActive
 		)
 	);
+
+	/**
+	 * Opens field creation with the current editor owner captured once.
+	 *
+	 * The picker is a form, not a second navigation surface. Keeping this identity outside the
+	 * picker means a profile or section change elsewhere in the screen cannot redirect the field
+	 * after the merchant has started configuring it.
+	 *
+	 * @return {void}
+	 */
+	const openFieldPicker = () => {
+		setCreationTarget( {
+			profileId: activeProfile,
+			sectionId: section,
+			area,
+		} );
+		setPickerOpen( true );
+	};
+
+	/**
+	 * Closes field creation and discards its captured target.
+	 *
+	 * @return {void}
+	 */
+	const closeFieldPicker = () => {
+		setPickerOpen( false );
+		setCreationTarget( null );
+	};
+
+	const creationSectionLabel = creationTarget
+		? [ ...sections, ...fieldTargetOptions ].find(
+				( /** @type {any} */ entry ) =>
+					entry.id === creationTarget.sectionId
+		  )?.label ?? creationTarget.sectionId
+		: '';
+	const creationProfileLabel = creationTarget
+		? profiles.find(
+				( /** @type {any} */ entry ) =>
+					entry.id === creationTarget.profileId
+		  )?.name ?? __( 'Checkout padrão', 'wc-checkoutsuite' )
+		: '';
+	const creationContextLabel = creationTarget
+		? `${ creationProfileLabel } · ${ creationSectionLabel }`
+		: '';
 	const persistedCurrent = accountContextOwnsSelection
 		? accountContextSection
 		: groups.find(
@@ -996,7 +1045,7 @@ export default function FieldManagerView( { model } ) {
 									( accountContextEmpty &&
 										'edit-address' === contextActive )
 								}
-								onClick={ () => setPickerOpen( true ) }
+								onClick={ openFieldPicker }
 							>
 								<Icon name="plus" />
 								{ __( 'Adicionar campo', 'wc-checkoutsuite' ) }
@@ -1035,7 +1084,7 @@ export default function FieldManagerView( { model } ) {
 									( ! accountContextEmpty ||
 										'edit-account' === contextActive )
 								}
-								onClick={ () => setPickerOpen( true ) }
+								onClick={ openFieldPicker }
 							>
 								{ __( 'Adicionar campo', 'wc-checkoutsuite' ) }
 							</button>
@@ -2632,20 +2681,28 @@ export default function FieldManagerView( { model } ) {
 					'Escolha um tipo ou comece com um preset pronto.',
 					'wc-checkoutsuite'
 				) }
-				onClose={ () => setPickerOpen( false ) }
+				onClose={ closeFieldPicker }
 			>
 				<FieldPicker
 					catalog={ catalog }
 					coreFields={ coreFields }
-					section={ section }
+					section={ creationTarget?.sectionId ?? section }
 					sections={ fieldTargetOptions }
 					surface={ /** @type {'checkout'|'my_account'} */ ( area ) }
 					open={ pickerOpen }
 					onSectionChange={ onSectionChange }
+					lockedSection={ checkoutOnly && Boolean( creationTarget ) }
+					sectionLabel={ creationContextLabel }
 					onChooseType={ ( /** @type {any} */ choice ) => {
-						setPickerOpen( false );
+						const target = creationTarget ?? {
+							profileId: activeProfile,
+							sectionId: section,
+							area,
+						};
+						closeFieldPicker();
 						onCreateField( {
 							...choice,
+							creationTarget: target,
 							...( accountContextEmpty && contextActive
 								? {
 										accountPage: contextActive,
@@ -2656,10 +2713,10 @@ export default function FieldManagerView( { model } ) {
 						} );
 					} }
 					onAdoptCore={ ( /** @type {any} */ core ) => {
-						setPickerOpen( false );
+						closeFieldPicker();
 						onAdoptCore( core );
 					} }
-					onClose={ () => setPickerOpen( false ) }
+					onClose={ closeFieldPicker }
 				/>
 			</Dialog>
 

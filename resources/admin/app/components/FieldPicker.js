@@ -85,6 +85,8 @@ function suggestedKey( label ) {
  * @param {Function}                                          props.onClose         Called to close the dialog.
  * @param {boolean}                                           [props.open]          Whether the dialog is open.
  * @param {'checkout'|'my_account'}                           [props.surface]       Where a new field is collected.
+ * @param {boolean}                                           [props.lockedSection] Whether the section is fixed by the editor context.
+ * @param {string}                                            [props.sectionLabel]  Human label for the fixed section.
  * @return {*} Rendered element tree.
  */
 export default function FieldPicker( {
@@ -98,6 +100,8 @@ export default function FieldPicker( {
 	onClose,
 	open = false,
 	surface = 'checkout',
+	lockedSection = false,
+	sectionLabel = '',
 } ) {
 	const [ category, setCategory ] = useState( 'all' );
 	const [ query, setQuery ] = useState( '' );
@@ -357,28 +361,60 @@ export default function FieldPicker( {
 						</div>
 
 						<div className="form-group">
-							<label htmlFor="wccs-new-section">
-								{ __( 'Seção', 'wc-checkoutsuite' ) }
-							</label>
-							<select
-								id="wccs-new-section"
-								className="input"
-								value={ section }
-								onChange={ (
-									/** @type {{ target: { value: string } }} */ event
-								) => onSectionChange( event.target.value ) }
-							>
-								{ sections.map(
-									( /** @type {any} */ entry ) => (
-										<option
-											key={ entry.id }
-											value={ entry.id }
-										>
-											{ entry.label ?? entry.id }
-										</option>
-									)
-								) }
-							</select>
+							{ lockedSection ? (
+								<>
+									<p className="form-label">
+										{ __(
+											'Seção atual',
+											'wc-checkoutsuite'
+										) }
+									</p>
+									<div
+										className="input field-picker-context"
+										aria-label={ __(
+											'Seção atual',
+											'wc-checkoutsuite'
+										) }
+									>
+										{ sectionLabel || section }
+									</div>
+									<p className="form-help">
+										{ __(
+											'O campo será criado nesta seção do checkout selecionado.',
+											'wc-checkoutsuite'
+										) }
+									</p>
+								</>
+							) : (
+								<>
+									<label htmlFor="wccs-new-section">
+										{ __( 'Seção', 'wc-checkoutsuite' ) }
+									</label>
+									<select
+										id="wccs-new-section"
+										className="input"
+										value={ section }
+										onChange={ (
+											/** @type {{ target: { value: string } }} */ event
+										) =>
+											onSectionChange(
+												event.target.value
+											)
+										}
+									>
+										{ sections.map(
+											( /** @type {any} */ entry ) => (
+												<option
+													key={ entry.id }
+													value={ entry.id }
+												>
+													{ entry.label ?? entry.id }
+												</option>
+											)
+										) }
+									</select>
+								</>
+							) }
 						</div>
 
 						<div className="form-row">

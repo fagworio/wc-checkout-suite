@@ -356,6 +356,19 @@ describe( 'searching and filtering', () => {
 } );
 
 describe( 'choosing', () => {
+	it( 'shows the captured checkout section without offering a second destination', async () => {
+		const user = userEvent.setup();
+
+		renderPicker( {
+			lockedSection: true,
+			sectionLabel: 'Cobrança',
+		} );
+		await openConfigure( user, 'Text' );
+
+		expect( screen.queryByLabelText( 'Seção' ) ).not.toBeInTheDocument();
+		expect( screen.getByText( 'Cobrança' ) ).toBeInTheDocument();
+	} );
+
 	it( 'hands back the type key, with the key the merchant accepted', async () => {
 		const user = userEvent.setup();
 		const { onChooseType } = renderPicker();

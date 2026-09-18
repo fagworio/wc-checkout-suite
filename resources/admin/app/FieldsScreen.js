@@ -1103,11 +1103,44 @@ export default function FieldsScreen( {
 						// *collected* is a property of the field, not of the container it was
 						// created in: it is the checkout, unless the destination is one of the
 						// two customer surfaces, where the value lives with the customer.
-						const collectedHere = collectsAt( area );
-						const customerSurface = isCustomerArea( area );
+						const creationTarget = choice.creationTarget ?? {
+							profileId: activeProfile,
+							sectionId: activeSection,
+							area,
+						};
+						const targetArea = creationTarget.area ?? area;
+						const targetProfileId =
+							'checkout' === targetArea
+								? creationTarget.profileId ?? ''
+								: '';
+						const targetProfile = targetProfileId
+							? ( document?.profiles ?? [] ).find(
+									( /** @type {any} */ entry ) =>
+										entry.id === targetProfileId
+							  ) ?? null
+							: null;
+
+						// A captured profile that disappeared while the picker was open is an invalid
+						// target. Refuse explicitly instead of silently moving the field to the store
+						// checkout, which would hide the ownership error in the draft.
+						if ( targetProfileId && ! targetProfile ) {
+							apply( {
+								ok: false,
+								document,
+								reason: __(
+									'O checkout selecionado deixou de existir. Reabra o criador de campo.',
+									'wc-checkoutsuite'
+								),
+							} );
+
+							return;
+						}
+
+						const collectedHere = collectsAt( targetArea );
+						const customerSurface = isCustomerArea( targetArea );
 						let targetDocument = document;
 						let targetSection = collectedHere
-							? activeSection
+							? creationTarget.sectionId ?? activeSection
 							: 'order';
 
 						// A native account page is a real WooCommerce context but has no WCCS
@@ -1132,7 +1165,7 @@ export default function FieldsScreen( {
 								// account location, just like containers created from the page
 								// dialog. Keeping those concepts separate is required by the
 								// server's ContainerDefinition contract.
-								location: defaultSectionLocation( area ),
+								location: defaultSectionLocation( targetArea ),
 								areas: [ 'customer_account' ],
 								presentation: {
 									show_title: false,
@@ -1153,8 +1186,10 @@ export default function FieldsScreen( {
 							targetSection = created.section?.id ?? 'order';
 						}
 
+						const fieldChoice = { ...choice };
+						delete fieldChoice.creationTarget;
 						const createdField = createField( targetDocument, {
-							...choice,
+							...fieldChoice,
 							label: choice.defaults?.label ?? choice.label,
 							// A destination that only shows values collects nothing: the
 							// field is created with its collection home in the checkout, so
@@ -1174,7 +1209,7 @@ export default function FieldsScreen( {
 								  }
 								: {} ),
 							destinations: {
-								[ area ]: {
+								[ targetArea ]: {
 									enabled: true,
 									section: targetSection,
 									...( customerSurface
