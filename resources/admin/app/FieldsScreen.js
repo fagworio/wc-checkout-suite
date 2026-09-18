@@ -408,16 +408,23 @@ export default function FieldsScreen( {
 		}
 
 		// A specialized entry can reuse this component instance after the advanced editor
-		// was on another destination or profile. Reset both identities before the checkout
+		// was on another destination. Normalize the destination before the checkout
 		// composition is rendered so the entry never exposes the previous context.
 		if ( 'checkout' !== area ) {
 			selectArea( 'checkout' );
 		}
+	}, [ scope, area, selectArea ] );
 
-		if ( '' !== activeProfile ) {
-			setActiveProfile( '' );
+	useEffect( () => {
+		if ( 'checkout' !== scope ) {
+			return;
 		}
-	}, [ scope, area, activeProfile, selectArea, setActiveProfile ] );
+
+		// Reset the profile only when entering the specialized entry. Keeping this effect
+		// independent from activeProfile is what lets the merchant select an alternate
+		// checkout without the initialization guard immediately undoing that choice.
+		setActiveProfile( '' );
+	}, [ scope, setActiveProfile ] );
 
 	/**
 	 * The retired destination keys this document still carries.

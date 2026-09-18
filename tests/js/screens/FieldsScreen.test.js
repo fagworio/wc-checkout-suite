@@ -559,6 +559,79 @@ describe( 'the schema', () => {
 		} );
 	} );
 
+	it( 'keeps an alternate checkout selected in the dedicated checkout scope', async () => {
+		const user = userEvent.setup();
+		const defaultSection = {
+			id: 'checkout_default',
+			title: 'Seção padrão',
+			description: '',
+			position: 10,
+			location: 'billing',
+			areas: [ 'checkout' ],
+		};
+		const digitalSection = {
+			id: 'checkout_digital',
+			title: 'Seção digital',
+			description: '',
+			position: 10,
+			location: 'billing',
+			areas: [ 'checkout' ],
+		};
+		const draft = {
+			...doc( [
+				field( {
+					id: 'default_field',
+					label: 'Campo padrão',
+					section: defaultSection.id,
+				} ),
+				field( {
+					id: 'digital_field',
+					label: 'Campo digital',
+					section: digitalSection.id,
+				} ),
+			] ),
+			sections: [ defaultSection ],
+			profiles: [
+				{
+					id: 'digital',
+					name: 'Checkout digital',
+					enabled: true,
+					source: 'woocommerce_current',
+					priority: 10,
+					fallback: false,
+					conditions: {},
+					sections: [ digitalSection ],
+					presentation: {},
+				},
+			],
+		};
+
+		window.history.replaceState(
+			null,
+			'',
+			'/?page=wccs-checkoutsuite&section=checkouts'
+		);
+		render(
+			<FieldsScreen client={ client( { draft } ) } scope="checkout" />
+		);
+
+		const digitalCheckout = await screen.findByRole( 'tab', {
+			name: /Checkout digital/,
+		} );
+		await user.click( digitalCheckout );
+
+		await waitFor( () =>
+			expect( digitalCheckout ).toHaveAttribute( 'aria-selected', 'true' )
+		);
+		await waitFor( () =>
+			expect(
+				screen
+					.queryAllByRole( 'button', { name: /Seção digital/ } )
+					.find( ( button ) => button.hasAttribute( 'aria-pressed' ) )
+			).toHaveAttribute( 'aria-pressed', 'true' )
+		);
+	} );
+
 	it( 'does not promote a catalog location to an active section', async () => {
 		const user = userEvent.setup();
 
