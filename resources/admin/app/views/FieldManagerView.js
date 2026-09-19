@@ -2375,142 +2375,144 @@ export default function FieldManagerView( { model } ) {
 							</div>
 						</div>
 
-						{ /* A prévia da seção, como o desenho a põe: o mesmo documento, os
+						<div className="editor-secondary">
+							{ /* A prévia da seção, como o desenho a põe: o mesmo documento, os
 						     mesmos rótulos, a mesma largura por campo — uma amostra do que o
 						     cliente vai ver. Não é o renderizador do WooCommerce, e a prévia
 						     completa continua a ser a da seção «Prévia do checkout». */ }
-						<PreviewPanel
-							title={ __(
-								'Prévia da seção',
-								'wc-checkoutsuite'
-							) }
-							description={ __(
-								'Veja como esta seção aparecerá para o cliente.',
-								'wc-checkoutsuite'
-							) }
-							onOpen={ model.onPreview }
-							className="section-preview"
-						>
-							{ ( current?.fields ?? [] ).length === 0 ? (
-								<p className="muted small">
-									{ __(
-										'Assim que houver um campo nesta seção, ele aparece aqui.',
-										'wc-checkoutsuite'
-									) }
-								</p>
-							) : (
-								<div className="section-preview-grid">
-									{ ( current?.fields ?? [] ).map(
-										( /** @type {any} */ field ) => {
-											const width = Number(
-												field.layout?.desktop ?? 12
-											);
-
-											return (
-												<div
-													key={ field.id }
-													className="section-preview-field"
-													style={ {
-														gridColumn: `span ${ Math.max(
-															1,
-															Math.min(
-																12,
-																width
-															)
-														) }`,
-													} }
-												>
-													<span className="sample-label">
-														{ field.label ||
-															__(
-																'Campo sem nome',
-																'wc-checkoutsuite'
-															) }
-														{ field.required ? (
-															<span
-																className="required-star"
-																aria-label={ __(
-																	'obrigatório',
-																	'wc-checkoutsuite'
-																) }
-															>
-																*
-															</span>
-														) : null }
-													</span>
-													<span className="section-preview-control">
-														{ field.description ||
-															field.placeholder ||
-															'' }
-													</span>
-												</div>
-											);
-										}
-									) }
-								</div>
-							) }
-						</PreviewPanel>
-
-						<div className="editor-bottom">
-							<div className="tip-card">
-								<div className="tip-icon">
-									<Icon name="branch" />
-								</div>
-								<div>
-									<strong>
+							<PreviewPanel
+								title={ __(
+									'Prévia da seção',
+									'wc-checkoutsuite'
+								) }
+								description={ __(
+									'Veja como esta seção aparecerá para o cliente.',
+									'wc-checkoutsuite'
+								) }
+								onOpen={ model.onPreview }
+								className="section-preview"
+							>
+								{ ( current?.fields ?? [] ).length === 0 ? (
+									<p className="muted small">
 										{ __(
-											'Um formulário que entende contexto.',
-											'wc-checkoutsuite'
-										) }
-									</strong>
-									<p>
-										{ __(
-											'CPF para pessoa física, CNPJ para jurídica. Configure em',
-											'wc-checkoutsuite'
-										) }{ ' ' }
-										<b>
-											{ __(
-												'Regras',
-												'wc-checkoutsuite'
-											) }
-										</b>{ ' ' }
-										{ __(
-											'e experimente na prévia.',
+											'Assim que houver um campo nesta seção, ele aparece aqui.',
 											'wc-checkoutsuite'
 										) }
 									</p>
+								) : (
+									<div className="section-preview-grid">
+										{ ( current?.fields ?? [] ).map(
+											( /** @type {any} */ field ) => {
+												const width = Number(
+													field.layout?.desktop ?? 12
+												);
+
+												return (
+													<div
+														key={ field.id }
+														className="section-preview-field"
+														style={ {
+															gridColumn: `span ${ Math.max(
+																1,
+																Math.min(
+																	12,
+																	width
+																)
+															) }`,
+														} }
+													>
+														<span className="sample-label">
+															{ field.label ||
+																__(
+																	'Campo sem nome',
+																	'wc-checkoutsuite'
+																) }
+															{ field.required ? (
+																<span
+																	className="required-star"
+																	aria-label={ __(
+																		'obrigatório',
+																		'wc-checkoutsuite'
+																	) }
+																>
+																	*
+																</span>
+															) : null }
+														</span>
+														<span className="section-preview-control">
+															{ field.description ||
+																field.placeholder ||
+																'' }
+														</span>
+													</div>
+												);
+											}
+										) }
+									</div>
+								) }
+							</PreviewPanel>
+
+							<div className="editor-bottom">
+								<div className="tip-card">
+									<div className="tip-icon">
+										<Icon name="branch" />
+									</div>
+									<div>
+										<strong>
+											{ __(
+												'Um formulário que entende contexto.',
+												'wc-checkoutsuite'
+											) }
+										</strong>
+										<p>
+											{ __(
+												'CPF para pessoa física, CNPJ para jurídica. Configure em',
+												'wc-checkoutsuite'
+											) }{ ' ' }
+											<b>
+												{ __(
+													'Regras',
+													'wc-checkoutsuite'
+												) }
+											</b>{ ' ' }
+											{ __(
+												'e experimente na prévia.',
+												'wc-checkoutsuite'
+											) }
+										</p>
+									</div>
+									<button
+										type="button"
+										className="icon-btn"
+										aria-label={ __(
+											'Ver campos no checkout',
+											'wc-checkoutsuite'
+										) }
+										onClick={ model.onPreview }
+									>
+										<Icon name="arrow" />
+									</button>
 								</div>
-								<button
-									type="button"
-									className="icon-btn"
-									aria-label={ __(
-										'Ver campos no checkout',
-										'wc-checkoutsuite'
-									) }
-									onClick={ model.onPreview }
-								>
-									<Icon name="arrow" />
-								</button>
-							</div>
-							<div className="editor-footnote">
-								<span>
-									<Icon name="shield" />
-									{ __(
-										'Nativos protegidos. Personalizados arquivados, nunca apagados.',
-										'wc-checkoutsuite'
-									) }
-								</span>
-								<button
-									type="button"
-									className="text-btn"
-									onClick={ model.onOpenRules }
-								>
-									{ __(
-										'Entenda as regras',
-										'wc-checkoutsuite'
-									) }
-									<Icon name="arrow" />
-								</button>
+								<div className="editor-footnote">
+									<span>
+										<Icon name="shield" />
+										{ __(
+											'Nativos protegidos. Personalizados arquivados, nunca apagados.',
+											'wc-checkoutsuite'
+										) }
+									</span>
+									<button
+										type="button"
+										className="text-btn"
+										onClick={ model.onOpenRules }
+									>
+										{ __(
+											'Entenda as regras',
+											'wc-checkoutsuite'
+										) }
+										<Icon name="arrow" />
+									</button>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -2526,24 +2528,22 @@ export default function FieldManagerView( { model } ) {
 							properties
 						) : (
 							<div
-								className="add-field-panel"
+								className="inspector-empty empty-state"
 								aria-label={ __(
-									'Adicionar campo',
+									'Nenhum campo selecionado',
 									'wc-checkoutsuite'
 								) }
 							>
-								<div className="add-field-head">
-									<h2>
-										{ __(
-											'Adicionar campo',
-											'wc-checkoutsuite'
-										) }
-									</h2>
-								</div>
-
-								<p className="muted small">
+								<Icon name="sliders" />
+								<h3>
 									{ __(
-										'Use os botões do cabeçalho para adicionar um campo novo ou vincular um campo existente. Escolha um campo da lista para editar as propriedades dele.',
+										'Um campo, todos os detalhes.',
+										'wc-checkoutsuite'
+									) }
+								</h3>
+								<p>
+									{ __(
+										'Selecione um campo para editar suas propriedades.',
 										'wc-checkoutsuite'
 									) }
 								</p>

@@ -1017,6 +1017,7 @@ body:has(.wccs-admin) #wpfooter {
 
 /* A prévia da seção: o mesmo documento, os mesmos rótulos. */
 .wccs-admin .section-preview{margin:20px 22px 0;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
+.wccs-admin .editor-secondary{display:grid;gap:20px}
 .wccs-admin .section-preview-head h3{font-size:12px;font-weight:650}
 .wccs-admin .section-preview-head p{font-size:10px;color:var(--muted);margin-top:3px}
 .wccs-admin .section-preview-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;margin-top:14px}

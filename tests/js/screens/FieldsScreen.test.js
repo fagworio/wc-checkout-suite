@@ -660,6 +660,17 @@ describe( 'the schema', () => {
 				name: 'Propriedades do campo',
 			} )
 		).toHaveClass( 'wccs-workspace-region-properties' );
+		const inspector = screen.getByRole( 'complementary', {
+			name: 'Propriedades do campo',
+		} );
+		expect(
+			within( inspector ).getByText( 'Um campo, todos os detalhes.' )
+		).toBeInTheDocument();
+		expect(
+			within( inspector ).queryByRole( 'button', {
+				name: 'Adicionar campo',
+			} )
+		).not.toBeInTheDocument();
 		await user.click( digitalCheckout );
 
 		await waitFor( () =>
@@ -1517,7 +1528,7 @@ describe( 'UX-001 deterministic admin surfaces', () => {
 			screen.queryByRole( 'button', { name: 'Campo existente' } )
 		).not.toBeInTheDocument();
 		expect(
-			screen.getByText( /Use os botões do cabeçalho/ )
+			screen.getByText( 'Um campo, todos os detalhes.' )
 		).toBeInTheDocument();
 	} );
 
