@@ -618,6 +618,9 @@ describe( 'the schema', () => {
 		const digitalCheckout = await screen.findByRole( 'tab', {
 			name: /Checkout digital/,
 		} );
+		expect(
+			screen.getByRole( 'heading', { name: 'Checkout padrão' } )
+		).toBeInTheDocument();
 		const checkoutList = screen.getByRole( 'tablist', {
 			name: 'Checkouts da loja',
 		} );
@@ -635,6 +638,14 @@ describe( 'the schema', () => {
 		await waitFor( () =>
 			expect( digitalCheckout ).toHaveAttribute( 'aria-selected', 'true' )
 		);
+		expect(
+			screen.getByRole( 'heading', { name: 'Checkout digital' } )
+		).toBeInTheDocument();
+		expect(
+			within(
+				screen.getByRole( 'region', { name: 'Checkout digital' } )
+			).getByText( 'Checkout alternativo' )
+		).toBeInTheDocument();
 		await waitFor( () =>
 			expect(
 				screen

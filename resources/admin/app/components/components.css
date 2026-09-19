@@ -1317,9 +1317,29 @@
 }
 
 .wccs-admin .wccs-checkout-workspace > .page-heading,
+.wccs-admin .wccs-checkout-workspace > .wccs-checkout-workspace-view,
 .wccs-admin .wccs-checkout-workspace > .wccs-editor-subareas,
 .wccs-admin .wccs-checkout-workspace > .bottom-status {
 	grid-column: 1 / -1;
+}
+
+.wccs-admin .wccs-checkout-workspace-view {
+	align-items: flex-start;
+}
+
+.wccs-admin .wccs-checkout-workspace-view h1 {
+	margin-bottom: var(--wccs-space-8);
+}
+
+.wccs-admin .wccs-checkout-workspace-kind {
+	display: inline-flex;
+	margin-top: var(--wccs-space-4);
+}
+
+.wccs-admin .wccs-checkout-workspace-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--wccs-space-8);
 }
 
 .wccs-admin .wccs-checkout-workspace > .wccs-checkouts--sidebar {

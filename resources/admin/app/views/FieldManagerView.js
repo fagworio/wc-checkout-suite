@@ -28,6 +28,7 @@ import CheckoutProfilesPanel from '../components/CheckoutProfilesPanel';
 import CoreCheckoutPanel from '../components/CoreCheckoutPanel';
 import FieldPicker from '../components/FieldPicker';
 import ArchiveView from './ArchiveView';
+import CheckoutWorkspaceView from './CheckoutWorkspaceView';
 import FieldProperties from './FieldProperties';
 import PreviewView from './PreviewView';
 import RulesView from './RulesView';
@@ -285,6 +286,15 @@ export default function FieldManagerView( { model } ) {
 	/** What this destination calls the group of fields the merchant works on. */
 	const words = containerWords( area );
 	const checkoutOnly = 'checkout' === scope;
+	const activeCheckoutProfile = profiles.find(
+		( /** @type {any} */ profile ) => profile.id === activeProfile
+	);
+	const checkoutWorkspaceName =
+		activeCheckoutProfile?.name ??
+		__( 'Checkout padrão', 'wc-checkoutsuite' );
+	const checkoutWorkspaceKind = activeCheckoutProfile
+		? __( 'Checkout alternativo', 'wc-checkoutsuite' )
+		: __( 'Checkout padrão', 'wc-checkoutsuite' );
 	const scopedAreas = checkoutOnly
 		? areas.filter(
 				( /** @type {any} */ entry ) => 'checkout' === entry.id
@@ -920,6 +930,57 @@ export default function FieldManagerView( { model } ) {
 		</TopbarActions>
 	);
 
+	/* Keep the builder's create/link operations in one action group while the
+	 * checkout-specific heading changes presentation only. */
+	const fieldActions = collectsAt( area ) ? (
+		<>
+			<button
+				type="button"
+				className="btn btn-primary btn-add"
+				disabled={
+					! collectsAt( area ) ||
+					( accountContextEmpty && 'edit-address' === contextActive )
+				}
+				onClick={ openFieldPicker }
+			>
+				<Icon name="plus" />
+				{ __( 'Adicionar campo', 'wc-checkoutsuite' ) }
+			</button>
+			<button
+				type="button"
+				className="btn"
+				disabled={ ! section }
+				onClick={ onLinkExisting }
+			>
+				{ __( 'Vincular campo existente', 'wc-checkoutsuite' ) }
+			</button>
+		</>
+	) : (
+		<>
+			<button
+				type="button"
+				className="btn btn-primary btn-add"
+				disabled={ ! section }
+				onClick={ onLinkExisting }
+			>
+				<Icon name="plus" />
+				{ __( 'Vincular campo existente', 'wc-checkoutsuite' ) }
+			</button>
+			<button
+				type="button"
+				className="btn"
+				disabled={
+					collectsAt( area ) &&
+					( ! accountContextEmpty ||
+						'edit-account' === contextActive )
+				}
+				onClick={ openFieldPicker }
+			>
+				{ __( 'Adicionar campo', 'wc-checkoutsuite' ) }
+			</button>
+		</>
+	);
+
 	/**
 	 * Whether the checkout shows this section's title.
 	 *
@@ -1009,88 +1070,43 @@ export default function FieldManagerView( { model } ) {
 					checkoutOnly ? ' wccs-checkout-workspace' : ''
 				}` }
 				id="editorView"
-				aria-labelledby="editorTitle"
+				aria-labelledby={
+					checkoutOnly ? 'checkoutWorkspaceTitle' : 'editorTitle'
+				}
 			>
-				<div className="page-heading">
-					<div>
-						<div className="eyebrow">
-							<span className="tiny-line" />
-							{ EYEBROW }
+				{ checkoutOnly ? (
+					<CheckoutWorkspaceView
+						checkoutName={ checkoutWorkspaceName }
+						checkoutKind={ checkoutWorkspaceKind }
+					>
+						{ fieldActions }
+					</CheckoutWorkspaceView>
+				) : (
+					<div className="page-heading">
+						<div>
+							<div className="eyebrow">
+								<span className="tiny-line" />
+								{ EYEBROW }
+							</div>
+							<h1 id="editorTitle">
+								{ activeArea?.label ??
+									__(
+										'Campos do checkout',
+										'wc-checkoutsuite'
+									) }
+								<span className="heading-dot">.</span>
+							</h1>
+							<p>
+								{ activeArea?.description ??
+									__(
+										'Adicione e organize os campos exibidos no checkout da sua loja.',
+										'wc-checkoutsuite'
+									) }
+							</p>
 						</div>
-						<h1 id="editorTitle">
-							{ activeArea?.label ??
-								__( 'Campos do checkout', 'wc-checkoutsuite' ) }
-							<span className="heading-dot">.</span>
-						</h1>
-						<p>
-							{ activeArea?.description ??
-								__(
-									'Adicione e organize os campos exibidos no checkout da sua loja.',
-									'wc-checkoutsuite'
-								) }
-						</p>
+						{ fieldActions }
 					</div>
-					{ /* Both ways are offered everywhere (§9): a field can be created here
-					     and bound to this container, or an existing one reused. Which of the
-					     two is the main action is what the destination is for — where a
-					     customer fills a value in, creating is the ordinary path; where the
-					     value is only shown, reusing what was collected is (§6). */ }
-					{ collectsAt( area ) ? (
-						<>
-							<button
-								type="button"
-								className="btn btn-primary btn-add"
-								disabled={
-									! collectsAt( area ) ||
-									( accountContextEmpty &&
-										'edit-address' === contextActive )
-								}
-								onClick={ openFieldPicker }
-							>
-								<Icon name="plus" />
-								{ __( 'Adicionar campo', 'wc-checkoutsuite' ) }
-							</button>
-							<button
-								type="button"
-								className="btn"
-								disabled={ ! section }
-								onClick={ onLinkExisting }
-							>
-								{ __(
-									'Vincular campo existente',
-									'wc-checkoutsuite'
-								) }
-							</button>
-						</>
-					) : (
-						<>
-							<button
-								type="button"
-								className="btn btn-primary btn-add"
-								disabled={ ! section }
-								onClick={ onLinkExisting }
-							>
-								<Icon name="plus" />
-								{ __(
-									'Vincular campo existente',
-									'wc-checkoutsuite'
-								) }
-							</button>
-							<button
-								type="button"
-								className="btn"
-								disabled={
-									collectsAt( area ) &&
-									( ! accountContextEmpty ||
-										'edit-account' === contextActive )
-								}
-								onClick={ openFieldPicker }
-							>
-								{ __( 'Adicionar campo', 'wc-checkoutsuite' ) }
-							</button>
-						</>
-					) }
-				</div>
+				) }
 
 				{ ! checkoutOnly ? (
 					<SurfaceTabs active={ area } onChange={ onAreaChange } />
