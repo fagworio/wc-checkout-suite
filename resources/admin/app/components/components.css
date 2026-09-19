@@ -1311,7 +1311,7 @@
 /* The specialized Checkouts entry makes the active checkout the parent of the editor. */
 .wccs-admin .wccs-checkout-workspace {
 	display: grid;
-	grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr);
+	grid-template-columns: minmax(0, 1fr);
 	gap: var(--wccs-space-16);
 	align-items: start;
 }
@@ -1325,6 +1325,15 @@
 
 .wccs-admin .wccs-checkout-workspace-view {
 	align-items: flex-start;
+}
+
+.wccs-admin .wccs-checkout-workspace > .wccs-workspace-region-checkouts,
+.wccs-admin .wccs-checkout-workspace > .contextbar,
+.wccs-admin .wccs-checkout-workspace > .notice,
+.wccs-admin .wccs-checkout-workspace > .mode-banner,
+.wccs-admin .wccs-checkout-workspace > .editor-grid {
+	grid-column: 1;
+	min-width: 0;
 }
 
 .wccs-admin .wccs-checkout-workspace-view h1 {
@@ -1347,14 +1356,6 @@
 	grid-row: 2 / span 8;
 	min-width: 0;
 	align-self: stretch;
-}
-
-.wccs-admin .wccs-checkout-workspace > .contextbar,
-.wccs-admin .wccs-checkout-workspace > .notice,
-.wccs-admin .wccs-checkout-workspace > .mode-banner,
-.wccs-admin .wccs-checkout-workspace > .editor-grid {
-	grid-column: 2;
-	min-width: 0;
 }
 
 .wccs-admin .wccs-checkouts--sidebar {

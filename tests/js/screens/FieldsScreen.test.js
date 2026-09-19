@@ -638,6 +638,14 @@ describe( 'the schema', () => {
 			name: 'Seções desta área',
 		} );
 		expect( sectionList ).toHaveClass( 'wccs-workspace-region-sections' );
+		expect(
+			within( sectionList ).getByRole( 'button', { name: 'Nova seção' } )
+		).toBeInTheDocument();
+		expect(
+			within(
+				screen.getByRole( 'group', { name: 'Checkout padrão' } )
+			).queryByRole( 'button', { name: 'Adicionar campo' } )
+		).not.toBeInTheDocument();
 		const fieldList = await screen.findByRole( 'list', {
 			name: 'Campos da seção',
 		} );
@@ -672,6 +680,28 @@ describe( 'the schema', () => {
 					.find( ( button ) => button.hasAttribute( 'aria-pressed' ) )
 			).toHaveAttribute( 'aria-pressed', 'true' )
 		);
+		const builder = screen
+			.getByRole( 'heading', { name: 'Seção digital' } )
+			.closest( '.builder-panel' );
+		expect( builder ).not.toBeNull();
+		expect(
+			within( /** @type {HTMLElement} */ ( builder ) ).getByRole(
+				'button',
+				{ name: 'Adicionar campo' }
+			)
+		).toBeInTheDocument();
+		expect(
+			within( /** @type {HTMLElement} */ ( builder ) ).getByRole(
+				'button',
+				{ name: 'Vincular campo existente' }
+			)
+		).toBeInTheDocument();
+		expect(
+			within( /** @type {HTMLElement} */ ( builder ) ).getByRole(
+				'button',
+				{ name: /Ações da seção/ }
+			)
+		).toBeInTheDocument();
 	} );
 
 	it( 'selects the new checkout and its first section after creation', async () => {

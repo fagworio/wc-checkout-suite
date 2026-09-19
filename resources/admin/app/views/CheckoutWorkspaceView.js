@@ -8,7 +8,7 @@
  * @param {Object} props              Component properties.
  * @param {string} props.checkoutName Active checkout name.
  * @param {string} props.checkoutKind Active checkout type label.
- * @param {*}      props.children     Header actions supplied by the owning view.
+ * @param {*}      [props.children]   Header actions supplied by the owning view.
  * @return {*}                         Rendered workspace heading.
  */
 export default function CheckoutWorkspaceView( {
@@ -35,7 +35,11 @@ export default function CheckoutWorkspaceView( {
 					{ checkoutKind }
 				</span>
 			</div>
-			<div className="wccs-checkout-workspace-actions">{ children }</div>
+			{ children ? (
+				<div className="wccs-checkout-workspace-actions">
+					{ children }
+				</div>
+			) : null }
 		</div>
 	);
 }

@@ -1078,9 +1078,7 @@ export default function FieldManagerView( { model } ) {
 					<CheckoutWorkspaceView
 						checkoutName={ checkoutWorkspaceName }
 						checkoutKind={ checkoutWorkspaceKind }
-					>
-						{ fieldActions }
-					</CheckoutWorkspaceView>
+					/>
 				) : (
 					<div className="page-heading">
 						<div>
@@ -1104,7 +1102,6 @@ export default function FieldManagerView( { model } ) {
 									) }
 							</p>
 						</div>
-						{ fieldActions }
 					</div>
 				) }
 
@@ -1153,7 +1150,7 @@ export default function FieldManagerView( { model } ) {
 					<CheckoutProfilesPanel
 						profiles={ profiles }
 						active={ activeProfile }
-						layout={ checkoutOnly ? 'sidebar' : 'strip' }
+						layout="strip"
 						onSelect={ onProfileSelect }
 						onCreate={ onCreateProfile }
 						onUpdate={ onUpdateProfile }
@@ -1500,6 +1497,9 @@ export default function FieldManagerView( { model } ) {
 											</p>
 										) : null }
 									</div>
+								</div>
+								<div className="builder-header-actions">
+									{ fieldActions }
 								</div>
 								{ /* §6.4: o título é do comerciante e pode ser escondido no
 								     checkout sem perder o nome no admin. A seção implícita do
