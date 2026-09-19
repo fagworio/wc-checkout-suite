@@ -38,7 +38,7 @@ export default function AccountMenuList( {
 } ) {
 	return (
 		<aside
-			className="wccs-container-list wccs-account-menu-list"
+			className="wccs-container-list wccs-account-menu-list wccs-workspace-region-sections"
 			aria-label={ __( 'Páginas da minha conta', 'wc-checkoutsuite' ) }
 		>
 			<div className="wccs-container-list__heading">

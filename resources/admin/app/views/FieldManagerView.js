@@ -1397,7 +1397,7 @@ export default function FieldManagerView( { model } ) {
 
 					<div
 						className={
-							'editor-column' +
+							'editor-column wccs-workspace-region-fields' +
 							( accountContextEmpty
 								? ' account-context-empty'
 								: '' )
@@ -2520,7 +2520,7 @@ export default function FieldManagerView( { model } ) {
 					</div>
 
 					<aside
-						className="panel inspector"
+						className="panel inspector wccs-workspace-region-properties"
 						aria-label={ __(
 							'Propriedades do campo',
 							'wc-checkoutsuite'

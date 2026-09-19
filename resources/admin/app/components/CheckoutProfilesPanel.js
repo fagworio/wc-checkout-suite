@@ -191,6 +191,7 @@ export default function CheckoutProfilesPanel( {
 		<div
 			className={
 				'wccs-checkouts' +
+				' wccs-workspace-region-checkouts' +
 				( 'sidebar' === layout ? ' wccs-checkouts--sidebar' : '' )
 			}
 		>

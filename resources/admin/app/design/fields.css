@@ -1045,7 +1045,31 @@ body:has(.wccs-admin) #wpfooter {
 
 @media (max-width:1280px){
   .wccs-admin .editor-grid{grid-template-columns:minmax(0,1fr) 288px}
-  .wccs-admin .sections-panel{display:none}
+  .wccs-admin .wccs-checkout-workspace .editor-grid{
+    grid-template-columns:minmax(170px,22%) minmax(0,1fr) minmax(250px,30%);
+  }
+}
+
+/* The checkout workspace keeps section navigation available at every width.
+   At the compact breakpoint it becomes a horizontal rail instead of being
+   removed from the grid, so the active section remains changeable. */
+.wccs-admin .wccs-workspace-region-sections{min-width:0}
+@media(max-width:1080px){
+  .wccs-admin .wccs-checkout-workspace .editor-grid > .wccs-workspace-region-sections,
+  .wccs-admin .wccs-checkout-workspace .editor-grid > .wccs-account-menu-list{
+    grid-column:1 / -1;
+    position:static;
+  }
+  .wccs-admin .wccs-checkout-workspace .wccs-workspace-region-sections .wccs-container-list__items{
+    display:flex;
+    overflow-x:auto;
+    gap:6px;
+    padding-bottom:4px;
+    scrollbar-width:thin;
+  }
+  .wccs-admin .wccs-checkout-workspace .wccs-workspace-region-sections .wccs-container-list__items button{
+    flex:0 0 min(240px, 62vw);
+  }
 }
 
 /* Os campos que a loja já tem nesta seção, dentro da lista: as mesmas linhas, sem

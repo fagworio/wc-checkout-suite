@@ -627,12 +627,27 @@ describe( 'the schema', () => {
 		expect(
 			checkoutList.closest( '.wccs-checkout-workspace' )
 		).not.toBeNull();
+		expect(
+			checkoutList.closest( '.wccs-workspace-region-checkouts' )
+		).not.toBeNull();
+		const sectionList = screen.getByRole( 'complementary', {
+			name: 'Seções desta área',
+		} );
+		expect( sectionList ).toHaveClass( 'wccs-workspace-region-sections' );
 		const fieldList = await screen.findByRole( 'list', {
 			name: 'Campos da seção',
 		} );
 		expect(
 			fieldList.closest( '.wccs-checkout-workspace' )
 		).not.toBeNull();
+		expect(
+			fieldList.closest( '.wccs-workspace-region-fields' )
+		).not.toBeNull();
+		expect(
+			screen.getByRole( 'complementary', {
+				name: 'Propriedades do campo',
+			} )
+		).toHaveClass( 'wccs-workspace-region-properties' );
 		await user.click( digitalCheckout );
 
 		await waitFor( () =>
@@ -643,7 +658,7 @@ describe( 'the schema', () => {
 		).toBeInTheDocument();
 		expect(
 			within(
-				screen.getByRole( 'region', { name: 'Checkout digital' } )
+				screen.getByRole( 'group', { name: 'Checkout digital' } )
 			).getByText( 'Checkout alternativo' )
 		).toBeInTheDocument();
 		await waitFor( () =>

@@ -42,7 +42,7 @@ describe( 'CheckoutWorkspaceView', () => {
 		);
 
 		expect(
-			screen.getByRole( 'region', { name: 'Checkout padrão' } )
+			screen.getByRole( 'group', { name: 'Checkout padrão' } )
 		).toHaveClass( 'wccs-checkout-workspace-view' );
 	} );
 } );

@@ -19,7 +19,7 @@ export default function CheckoutWorkspaceView( {
 	return (
 		<div
 			className="page-heading wccs-checkout-workspace-view"
-			role="region"
+			role="group"
 			aria-labelledby="checkoutWorkspaceTitle"
 		>
 			<div>

@@ -22,7 +22,10 @@ export default function ContainerList( {
 	label,
 } ) {
 	return (
-		<aside className="wccs-container-list" aria-label={ label }>
+		<aside
+			className="wccs-container-list wccs-workspace-region-sections"
+			aria-label={ label }
+		>
 			<div className="wccs-container-list__heading">
 				<div>
 					<h2>
