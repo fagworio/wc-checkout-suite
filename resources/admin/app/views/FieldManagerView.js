@@ -2308,6 +2308,24 @@ export default function FieldManagerView( { model } ) {
 								) }
 							</div>
 
+							{ /* Os campos que a loja já tem nesta seção e que ainda não são
+							     geridos aqui vivem no mesmo painel visual da lista de campos.
+							     A adoção continua sendo a operação existente do domínio. */ }
+							<CoreCheckoutPanel
+								inventory={ coreFields }
+								document={ composition ?? doc }
+								inline
+								/* A seção aberta pode ser um contentor do comerciante, e o
+								   campo nativo pertence à localização do checkout. */
+								onlyKey={
+									current?.section?.location ??
+									current?.section?.id ??
+									''
+								}
+								onAdoptField={ onAdoptCore }
+								onHideField={ onHideCore }
+							/>
+
 							<div className="builder-footer">
 								<span>
 									<Icon name="grip" />
@@ -2356,28 +2374,6 @@ export default function FieldManagerView( { model } ) {
 								</div>
 							</div>
 						</div>
-
-						{ /* Os campos que a loja já tem nesta seção e que ainda não são
-						     geridos aqui (§6.2). Deixaram de ser um painel à parte: são
-						     as últimas linhas da lista, com a mesma cara das outras, e é
-						     nelas que o comerciante usa o campo — para depois o
-						     desativar, alterar ou deixar como está. */ }
-						<CoreCheckoutPanel
-							inventory={ coreFields }
-							document={ composition ?? doc }
-							inline
-							/* A seção aberta pode ser um contentor do comerciante, e o
-							   campo nativo pertence à **localização** do checkout
-							   (`billing`, `shipping`, `order`): é a localização que
-							   diz quais são os campos da loja que faltam aqui. */
-							onlyKey={
-								current?.section?.location ??
-								current?.section?.id ??
-								''
-							}
-							onAdoptField={ onAdoptCore }
-							onHideField={ onHideCore }
-						/>
 
 						{ /* A prévia da seção, como o desenho a põe: o mesmo documento, os
 						     mesmos rótulos, a mesma largura por campo — uma amostra do que o
@@ -2551,80 +2547,6 @@ export default function FieldManagerView( { model } ) {
 										'wc-checkoutsuite'
 									) }
 								</p>
-
-								{ /* O que o desenho põe por baixo do formulário: o campo
-								     nativo da loja que esta seção ainda não adotou. É o
-								     mesmo caminho do painel «Checkout padrão», aqui onde o
-								     campo nasce. */ }
-								{ ( coreFields?.fields ?? [] ).length > 0 ? (
-									<div className="add-field-native">
-										<h3>
-											{ __(
-												'Campos do próprio WooCommerce',
-												'wc-checkoutsuite'
-											) }
-										</h3>
-										<p className="muted small">
-											{ sprintf(
-												/* translators: 1: adopted count, 2: total count. */
-												__(
-													'%1$d de %2$d gerenciados nesta tela.',
-													'wc-checkoutsuite'
-												),
-												(
-													coreFields?.fields ?? []
-												).filter(
-													(
-														/** @type {any} */ entry
-													) => entry.managed
-												).length,
-												( coreFields?.fields ?? [] )
-													.length
-											) }
-										</p>
-										<ul className="add-field-native-list">
-											{ ( coreFields?.fields ?? [] )
-												.filter(
-													(
-														/** @type {any} */ entry
-													) => ! entry.managed
-												)
-												.slice( 0, 6 )
-												.map(
-													(
-														/** @type {any} */ entry
-													) => (
-														<li key={ entry.id }>
-															<span>
-																<strong>
-																	{ entry.label ??
-																		entry.id }
-																</strong>
-																<code>
-																	{ entry.id }
-																</code>
-															</span>
-															<button
-																type="button"
-																className="text-btn"
-																onClick={ () =>
-																	onAdoptCore(
-																		entry
-																	)
-																}
-															>
-																<Icon name="plus" />
-																{ __(
-																	'Usar',
-																	'wc-checkoutsuite'
-																) }
-															</button>
-														</li>
-													)
-												) }
-										</ul>
-									</div>
-								) : null }
 							</div>
 						) }
 					</aside>

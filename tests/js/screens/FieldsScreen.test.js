@@ -420,6 +420,10 @@ describe( 'the schema', () => {
 			within( block ).getByText( 'billing_first_name' )
 		).toBeInTheDocument();
 		expect( within( block ).getByText( 'Nativo' ) ).toBeInTheDocument();
+		expect( block.closest( '.builder-panel' ) ).not.toBeNull();
+		expect(
+			screen.queryByText( 'Campos do próprio WooCommerce' )
+		).not.toBeInTheDocument();
 
 		// E o campo é usado numa ação, sem reconstruir a seção à mão. O botão tem o
 		// identificador do campo, que é o contrato com a observação de browser.
