@@ -23,6 +23,7 @@ import {
 	profilesOf,
 	readableProfiles,
 	removeProfile,
+	removeProfileFromDocument,
 	setFallback,
 	uniqueProfileId,
 	updateProfile,
@@ -278,6 +279,29 @@ describe( 'profiles', () => {
 
 			expect( removed.refusal ).toBeNull();
 			expect( removed.profiles ).toEqual( [] );
+		} );
+
+		test( 'removing a profile also removes fields orphaned by its owned sections', () => {
+			const owned = section( { id: 'profile_only' } );
+			const shared = section( { id: 'shared' } );
+			const document = /** @type {any} */ ( {
+				revision: 1,
+				fields: [
+					{ id: 'owned_field', section: owned.id },
+					{ id: 'shared_field', section: shared.id },
+				],
+				sections: [ shared ],
+				settings: {},
+				profiles: [ profile( { sections: [ owned, shared ] } ) ],
+			} );
+
+			const removed = removeProfileFromDocument( document, 'digital' );
+
+			expect( removed.refusal ).toBeNull();
+			expect( removed.document.profiles ).toEqual( [] );
+			expect( removed.document.fields ).toEqual( [
+				{ id: 'shared_field', section: shared.id },
+			] );
 		} );
 	} );
 

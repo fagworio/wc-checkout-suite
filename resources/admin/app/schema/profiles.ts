@@ -421,6 +421,57 @@ export function removeProfile(
 }
 
 /**
+ * Removes a checkout profile and fields whose containers disappear with it.
+ *
+ * Fields are stored once for the document, while checkout containers may belong only to one
+ * profile. Removing the profile must therefore remove an orphaned field, but keep a field whose
+ * section is still declared by the store checkout or by another profile.
+ *
+ * @param document Document being edited.
+ * @param id       Profile identifier.
+ * @return The updated document, and the stable refusal code when removal is not allowed.
+ */
+export function removeProfileFromDocument(
+	document: SchemaDocument,
+	id: string
+): {
+	document: SchemaDocument;
+	refusal: 'only_fallback' | null;
+} {
+	const profiles = profilesOf( document );
+	const target = profiles.find( ( profile ) => profile.id === id ) ?? null;
+	const removed = removeProfile( profiles, id );
+
+	if ( removed.refusal || ! target ) {
+		return { document, refusal: removed.refusal };
+	}
+
+	const remainingSectionIds = new Set( [
+		...( document.sections ?? [] ).map( ( section ) => section.id ),
+		...removed.profiles.flatMap( ( profile ) =>
+			( profile.sections ?? [] ).map( ( section ) => section.id )
+		),
+	] );
+	const removedSectionIds = new Set(
+		( target.sections ?? [] ).map( ( section ) => section.id )
+	);
+
+	return {
+		document: {
+			...document,
+			profiles:
+				removed.profiles as unknown as SchemaDocument[ 'profiles' ],
+			fields: ( document.fields ?? [] ).filter(
+				( field ) =>
+					! removedSectionIds.has( field.section ) ||
+					remainingSectionIds.has( field.section )
+			),
+		},
+		refusal: null,
+	};
+}
+
+/**
  * The profiles marked as the fallback.
  *
  * @param profiles Profiles.

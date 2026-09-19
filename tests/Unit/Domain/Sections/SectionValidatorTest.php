@@ -436,6 +436,36 @@ final class SectionValidatorTest extends TestCase {
 	}
 
 	/**
+	 * A field may belong to a checkout section owned by a profile.
+	 *
+	 * Profile sections are stored below the profile rather than in the document's
+	 * own section list, but they are still valid field containers for that checkout.
+	 *
+	 * @return void
+	 */
+	public function test_a_field_in_a_profile_owned_checkout_section_is_accepted(): void {
+		$result = SectionValidator::validate_references(
+			array(),
+			array(
+				array(
+					'id'      => 'profile_field',
+					'section' => 'profile_delivery',
+				),
+			),
+			array(
+				array(
+					'id'       => 'profile_delivery',
+					'title'    => 'Entrega alternativa',
+					'location' => 'shipping',
+					'areas'    => array( 'checkout' ),
+				),
+			)
+		);
+
+		self::assertTrue( $result->is_valid(), implode( ', ', $result->error_codes() ) );
+	}
+
+	/**
 	 * Collection happens only in a section that explicitly offers checkout. A
 	 * customer/admin-only section can still be a valid display destination, but
 	 * cannot be used as the field's own checkout section.

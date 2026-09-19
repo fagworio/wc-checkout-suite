@@ -467,16 +467,18 @@ final class SectionValidator {
 	/**
 	 * Validates that every field points at a section that exists.
 	 *
-	 * @param array<int, mixed> $sections Raw section list.
-	 * @param array<int, mixed> $fields   Raw field list.
+	 * @param array<int, mixed> $sections         Raw document section list.
+	 * @param array<int, mixed> $fields           Raw field list.
+	 * @param array<int, mixed> $profile_sections Sections owned by checkout profiles.
 	 * @return ValidationResult
 	 */
-	public static function validate_references( array $sections, array $fields ): ValidationResult {
+	public static function validate_references( array $sections, array $fields, array $profile_sections = array() ): ValidationResult {
 		$result              = ValidationResult::valid();
 		$known               = SectionLocations::values();
 		$collection_sections = array_fill_keys( $known, true );
+		$all_sections        = array_merge( $sections, $profile_sections );
 
-		foreach ( $sections as $raw ) {
+		foreach ( $all_sections as $raw ) {
 			if ( is_array( $raw ) && isset( $raw['id'] ) ) {
 				$known[] = (string) $raw['id'];
 
@@ -529,7 +531,7 @@ final class SectionValidator {
 		$offered  = array();
 		$declared = array();
 
-		foreach ( $sections as $raw_section ) {
+		foreach ( $all_sections as $raw_section ) {
 			if ( ! is_array( $raw_section ) || ! isset( $raw_section['id'] ) ) {
 				continue;
 			}

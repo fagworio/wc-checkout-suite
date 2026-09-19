@@ -57,7 +57,7 @@ import {
 	isCheckoutSection,
 	moveProfile,
 	readableProfiles,
-	removeProfile,
+	removeProfileFromDocument,
 	setFallback,
 	updateProfile,
 	withComposition,
@@ -1213,26 +1213,29 @@ export default function FieldsScreen( {
 										},
 								  }
 								: {} ),
-							destinations: {
-								[ targetArea ]: {
-									enabled: true,
-									section: targetSection,
-									...( customerSurface
-										? { mode: 'edit' }
-										: {} ),
-									...( customerSurface &&
-									choice.supports?.file
-										? {
-												actions: [
-													'show_metadata',
-													'view',
-													'download',
-													'resubmit',
-												],
-										  }
-										: {} ),
-								},
-							},
+							destinations:
+								'checkout' === targetArea
+									? {}
+									: {
+											[ targetArea ]: {
+												enabled: true,
+												section: targetSection,
+												...( customerSurface
+													? { mode: 'edit' }
+													: {} ),
+												...( customerSurface &&
+												choice.supports?.file
+													? {
+															actions: [
+																'show_metadata',
+																'view',
+																'download',
+																'resubmit',
+															],
+													  }
+													: {} ),
+											},
+									  },
 						} );
 						apply( createdField );
 
@@ -2005,8 +2008,8 @@ export default function FieldsScreen( {
 						);
 					},
 					onRemoveProfile: ( /** @type {string} */ id ) => {
-						const removed = removeProfile(
-							readableProfiles( document ),
+						const removed = removeProfileFromDocument(
+							document,
 							id
 						);
 
@@ -2017,8 +2020,12 @@ export default function FieldsScreen( {
 						}
 
 						setProfileRefusal( '' );
-						applyProfiles(
-							removed.profiles,
+						apply(
+							{
+								ok: true,
+								document: removed.document,
+								reason: '',
+							},
 							__( 'Excluir checkout', 'wc-checkoutsuite' )
 						);
 

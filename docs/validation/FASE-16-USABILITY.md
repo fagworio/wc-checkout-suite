@@ -96,6 +96,18 @@ permaneceu na página personalizada correta após o reload; a página permaneceu
 conforme cada save; e a remoção confirmou a ausência após o reload. A sessão administrativa
 temporária foi destruída ao final do cenário.
 
+### 3.2 CHK-007 — matriz autenticada de checkouts
+
+Após a validação real no navegador, `tests/browser/checkout-profiles-deterministic-flow.mjs` foi
+executado com sessão administrativa temporária e dados exclusivos da execução. O cenário passou por:
+
+`Checkout padrão → Campo A → save → reload → checkout alternativo herdado → seção Entrega → Campo B → save → reload → retorno ao padrão → retorno ao alternativo → seção Documentos + Campo C → reload → remoção da seção → remoção do checkout alternativo → reload`.
+
+Resultado: **14 verificações, 0 falhas, 0 `pageerror` e 0 erros REST/API**. Campo B permaneceu
+associado à seção do checkout alternativo, não apareceu no checkout padrão, e a exclusão do checkout
+removeu o campo órfão antes da persistência. A sessão administrativa temporária foi destruída ao
+final do cenário.
+
 ## 4. Limites que ficam registados
 
 - **Nenhum usuário foi observado.** Tempo para localizar a função, quantidade de erros, quantidade de

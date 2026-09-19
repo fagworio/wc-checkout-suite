@@ -239,8 +239,34 @@ final class SchemaRepository {
 	 */
 	private function check_sections( SchemaDocument $document ): ValidationResult {
 		return SectionValidator::validate_sections( $document->sections() )->merge(
-			SectionValidator::validate_references( $document->sections(), $document->fields() )
+			SectionValidator::validate_references(
+				$document->sections(),
+				$document->fields(),
+				$this->profile_sections( $document )
+			)
 		);
+	}
+
+	/**
+	 * Returns all checkout containers owned by profiles.
+	 *
+	 * Profile containers are stored outside the document's own section list but
+	 * still participate in field reference validation for the compositions that
+	 * own them.
+	 *
+	 * @param SchemaDocument $document Document.
+	 * @return array<int, mixed>
+	 */
+	private function profile_sections( SchemaDocument $document ): array {
+		$sections = array();
+
+		foreach ( $document->profiles() as $profile ) {
+			if ( is_array( $profile ) && isset( $profile['sections'] ) && is_array( $profile['sections'] ) ) {
+				$sections = array_merge( $sections, $profile['sections'] );
+			}
+		}
+
+		return $sections;
 	}
 
 	/**
@@ -406,7 +432,13 @@ final class SchemaRepository {
 		$result = ValidationResult::valid();
 
 		$result = $result->merge( SectionValidator::validate_sections( $document->sections() ) );
-		$result = $result->merge( SectionValidator::validate_references( $document->sections(), $document->fields() ) );
+		$result = $result->merge(
+			SectionValidator::validate_references(
+				$document->sections(),
+				$document->fields(),
+				$this->profile_sections( $document )
+			)
+		);
 
 		// Conditions are the one thing a field declares about another field, and
 		// the questions that raises — does the field exist, can this operator read

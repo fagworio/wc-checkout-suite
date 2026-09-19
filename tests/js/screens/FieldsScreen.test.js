@@ -824,9 +824,8 @@ describe( 'the schema', () => {
 
 		expect( created ).toBeTruthy();
 		expect( created.section ).toBe( defaultSection.id );
-		expect( created.destinations.checkout.section ).toBe(
-			defaultSection.id
-		);
+		expect( created.collection_surface ).toBe( 'checkout' );
+		expect( created.destinations ).toEqual( {} );
 	} );
 
 	it( 'removes a section and its dependencies only inside the active checkout composition', async () => {

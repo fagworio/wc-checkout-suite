@@ -21,6 +21,7 @@ const fieldA = `Campo A CHK-007 ${ runId }`;
 const fieldB = `Campo B CHK-007 ${ runId }`;
 const fieldC = `Campo C CHK-007 ${ runId }`;
 const fieldKey = ( suffix ) => `chk007_${ suffix }_${ runId }`;
+const defaultSetupSectionTitle = `Checkout padrão CHK-007 ${ runId }`;
 
 const failures = [];
 const findings = [];
@@ -28,6 +29,7 @@ const pageErrors = [];
 const apiErrors = [];
 let step = 'initialising';
 let profileWasPersisted = false;
+let defaultSetupSectionWasCreated = false;
 
 const browser = await chromium.launch( {
 	executablePath: process.env.WCCS_CHROME || '/usr/bin/google-chrome',
@@ -140,7 +142,10 @@ async function saveAndWait( description ) {
 	await saveButton.click();
 	const response = await responsePromise;
 	if ( ! response.ok() ) {
-		throw new Error( `Save failed for ${ description }: ${ response.status() }.` );
+		const body = await response.text();
+		throw new Error(
+			`Save failed for ${ description }: ${ response.status() } ${ body.slice( 0, 600 ) }.`
+		);
 	}
 	await page
 		.getByText( 'Alterações salvas com sucesso.', { exact: true } )
@@ -188,13 +193,19 @@ async function selectSection( title ) {
 }
 
 async function createField( label, key ) {
+	step = `create-field:${ label }:open-picker`;
 	await page.getByRole( 'button', { name: 'Adicionar campo', exact: true } ).click();
 	const picker = page.locator( 'dialog.picker-dialog' );
+	step = `create-field:${ label }:wait-picker`;
 	await picker.waitFor();
+	step = `create-field:${ label }:choose-type`;
 	await picker.locator( '.picker-card' ).first().click();
+	step = `create-field:${ label }:fill-form`;
 	await page.locator( '#wccs-new-label' ).fill( label );
 	await page.locator( '#wccs-new-key' ).fill( key );
+	step = `create-field:${ label }:submit`;
 	await picker.getByRole( 'button', { name: 'Adicionar campo', exact: true } ).click();
+	step = `create-field:${ label }:wait-row`;
 	await page.locator( '.field-row' ).filter( { hasText: label } ).waitFor();
 }
 
@@ -239,6 +250,24 @@ async function removeTemporaryProfile() {
 	}
 }
 
+async function removeTemporaryDefaultSection() {
+	if ( ! defaultSetupSectionWasCreated ) {
+		return;
+	}
+
+	await selectCheckout( 'Checkout padrão' );
+	const section = page
+		.locator( '.wccs-container-list__items [aria-pressed]' )
+		.filter( { hasText: defaultSetupSectionTitle } )
+		.first();
+	if ( 0 === ( await section.count() ) ) {
+		return;
+	}
+
+	await removeSection( defaultSetupSectionTitle );
+	await saveAndWait( 'cleanup default setup section' );
+}
+
 try {
 	await addAuthentication();
 
@@ -257,6 +286,15 @@ try {
 	findings.push( 'default:Checkout padrão active' );
 
 	step = 'create-field-a';
+	const initialSections = ( await listedSections() ).filter( ( label ) =>
+		label.trim()
+	);
+	if ( 0 === initialSections.length ) {
+		await createSection( defaultSetupSectionTitle );
+		await selectSection( defaultSetupSectionTitle );
+		defaultSetupSectionWasCreated = true;
+		findings.push( 'setup:created temporary default section' );
+	}
 	await createField( fieldA, fieldKey( 'a' ) );
 	await saveAndWait( 'field A in Checkout padrão' );
 	await reloadEditor();
@@ -362,6 +400,9 @@ try {
 	}
 	findings.push( 'default:restored after alternate checkout removal' );
 
+	step = 'cleanup-default-setup-section';
+	await removeTemporaryDefaultSection();
+
 	if ( pageErrors.length > 0 ) {
 		throw new Error( `Browser pageerror detected: ${ pageErrors.join( ' | ' ) }` );
 	}
@@ -380,6 +421,7 @@ try {
 		if ( profileWasPersisted ) {
 			await removeTemporaryProfile();
 		}
+		await removeTemporaryDefaultSection();
 	} catch ( cleanupError ) {
 		failures.push(
 			`cleanup=${ String( cleanupError?.message || cleanupError ).split( '\n' )[ 0 ] }`
