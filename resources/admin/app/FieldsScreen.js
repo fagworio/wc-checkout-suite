@@ -595,11 +595,16 @@ export default function FieldsScreen( {
 			apply(
 				{
 					...result,
-					document: withComposition(
-						document,
-						composingProfile ? composingProfile.id : '',
-						result.document
-					),
+					document: {
+						...withComposition(
+							document,
+							composingProfile ? composingProfile.id : '',
+							result.document
+						),
+						// Section removal can also return field/dependency changes. Keep those
+						// changes while projecting the section list back to its profile owner.
+						fields: result.document.fields,
+					},
 				},
 				label
 			);
@@ -1363,6 +1368,12 @@ export default function FieldsScreen( {
 												);
 											if ( result.ok ) {
 												applyComposed( result );
+												const nextSection =
+													sectionGroups(
+														result.document,
+														area
+													)[ 0 ]?.section.id;
+												setSection( nextSection ?? '' );
 												setEditingSectionId( null );
 												setSectionRemoval( null );
 											} else {

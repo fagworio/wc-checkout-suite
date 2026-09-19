@@ -740,6 +740,121 @@ describe( 'the schema', () => {
 		);
 	} );
 
+	it( 'removes a section and its dependencies only inside the active checkout composition', async () => {
+		const user = userEvent.setup();
+		const defaultSection = {
+			id: 'checkout_default',
+			title: 'Seção padrão',
+			description: '',
+			position: 10,
+			location: 'billing',
+			areas: [ 'checkout' ],
+		};
+		const blackFridaySection = {
+			id: 'black_friday',
+			title: 'Black Friday',
+			description: '',
+			position: 10,
+			location: 'billing',
+			areas: [ 'checkout' ],
+		};
+		const digitalKeepSection = {
+			id: 'digital_keep',
+			title: 'Entrega digital',
+			description: '',
+			position: 20,
+			location: 'shipping',
+			areas: [ 'checkout' ],
+		};
+		const draft = {
+			...doc( [
+				field( {
+					id: 'default_field',
+					label: 'Campo padrão',
+					section: defaultSection.id,
+				} ),
+				field( {
+					id: 'black_friday_field',
+					label: 'Campo Black Friday',
+					section: blackFridaySection.id,
+				} ),
+			] ),
+			sections: [ defaultSection ],
+			profiles: [
+				{
+					id: 'digital',
+					name: 'Checkout digital',
+					enabled: true,
+					source: 'woocommerce_current',
+					priority: 10,
+					fallback: false,
+					conditions: {},
+					sections: [ blackFridaySection, digitalKeepSection ],
+					presentation: {},
+				},
+			],
+		};
+		const stub = client( { draft } );
+
+		window.history.replaceState(
+			null,
+			'',
+			'/?page=wccs-checkoutsuite&section=checkouts'
+		);
+		render( <FieldsScreen client={ stub } scope="checkout" /> );
+
+		await user.click(
+			await screen.findByRole( 'tab', { name: /Checkout digital/ } )
+		);
+		const activeSection = screen
+			.queryAllByRole( 'button', { name: /Black Friday/ } )
+			.find( ( button ) => button.hasAttribute( 'aria-pressed' ) );
+		await waitFor( () =>
+			expect( activeSection ).toHaveAttribute( 'aria-pressed', 'true' )
+		);
+
+		await user.click(
+			screen.getByRole( 'button', { name: /^Ações da seção/ } )
+		);
+		await user.click(
+			screen.getByRole( 'button', { name: 'Remover Seção' } )
+		);
+		await user.click(
+			screen.getByRole( 'button', {
+				name: 'Remover Seção e campos',
+			} )
+		);
+
+		await waitFor( () =>
+			expect(
+				screen
+					.queryAllByRole( 'button', { name: /Entrega digital/ } )
+					.find( ( button ) => button.hasAttribute( 'aria-pressed' ) )
+			).toHaveAttribute( 'aria-pressed', 'true' )
+		);
+		expect(
+			screen.queryByRole( 'button', { name: /Black Friday/ } )
+		).not.toBeInTheDocument();
+
+		await user.click(
+			screen.getByRole( 'button', { name: 'Salvar alterações' } )
+		);
+		await waitFor( () =>
+			expect( stub.saveDraft ).toHaveBeenCalledTimes( 1 )
+		);
+
+		const [ saved ] = stub.saveDraft.mock.calls[ 0 ];
+		const savedProfile = saved.profiles.find(
+			( /** @type {any} */ entry ) => entry.id === 'digital'
+		);
+
+		expect( saved.sections ).toEqual( [ defaultSection ] );
+		expect(
+			saved.fields.map( ( /** @type {any} */ entry ) => entry.id )
+		).toEqual( [ 'default_field' ] );
+		expect( savedProfile.sections ).toEqual( [ digitalKeepSection ] );
+	} );
+
 	it( 'does not promote a catalog location to an active section', async () => {
 		const user = userEvent.setup();
 
