@@ -1048,6 +1048,9 @@ body:has(.wccs-admin) #wpfooter {
    removed from the grid, so the active section remains changeable. */
 .wccs-admin .wccs-workspace-region-sections{min-width:0}
 @media(max-width:1080px){
+  .wccs-admin .wccs-checkout-workspace .editor-grid{
+    grid-template-columns:minmax(0,1fr) minmax(250px,30%);
+  }
   .wccs-admin .wccs-checkout-workspace .editor-grid > .wccs-workspace-region-sections,
   .wccs-admin .wccs-checkout-workspace .editor-grid > .wccs-account-menu-list{
     grid-column:1 / -1;
