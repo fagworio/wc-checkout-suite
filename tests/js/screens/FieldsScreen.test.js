@@ -644,6 +644,95 @@ describe( 'the schema', () => {
 		);
 	} );
 
+	it( 'selects the new checkout and its first section after creation', async () => {
+		const user = userEvent.setup();
+		const defaultSection = {
+			id: 'checkout_default',
+			title: 'Seção padrão',
+			description: '',
+			position: 10,
+			location: 'billing',
+			areas: [ 'checkout' ],
+		};
+		const secondSection = {
+			id: 'checkout_shipping',
+			title: 'Entrega',
+			description: '',
+			position: 20,
+			location: 'shipping',
+			areas: [ 'checkout' ],
+		};
+		const draft = {
+			...doc( [
+				field( {
+					id: 'default_field',
+					label: 'Campo padrão',
+					section: defaultSection.id,
+				} ),
+			] ),
+			sections: [ defaultSection, secondSection ],
+		};
+		const stub = client( { draft } );
+
+		window.history.replaceState(
+			null,
+			'',
+			'/?page=wccs-checkoutsuite&section=checkouts'
+		);
+		render( <FieldsScreen client={ stub } scope="checkout" /> );
+
+		await waitFor( () =>
+			expect(
+				screen
+					.queryAllByRole( 'button', { name: /Seção padrão/ } )
+					.find( ( button ) => button.hasAttribute( 'aria-pressed' ) )
+			).toHaveAttribute( 'aria-pressed', 'true' )
+		);
+		await user.click(
+			screen.getByRole( 'button', { name: 'Novo checkout' } )
+		);
+		const dialog = screen.getByRole( 'dialog', {
+			hidden: true,
+			name: 'Novo checkout',
+		} );
+		await user.type(
+			within( dialog ).getByLabelText( 'Nome' ),
+			'Checkout herdado'
+		);
+		await user.click(
+			within( dialog ).getByRole( 'button', { name: /Criar checkout/ } )
+		);
+
+		const createdCheckout = await screen.findByRole( 'tab', {
+			name: /Checkout herdado/,
+		} );
+		await waitFor( () =>
+			expect( createdCheckout ).toHaveAttribute( 'aria-selected', 'true' )
+		);
+		await waitFor( () =>
+			expect(
+				screen
+					.queryAllByRole( 'button', { name: /Seção padrão/ } )
+					.find( ( button ) => button.hasAttribute( 'aria-pressed' ) )
+			).toHaveAttribute( 'aria-pressed', 'true' )
+		);
+
+		await user.click(
+			screen.getByRole( 'button', { name: 'Salvar alterações' } )
+		);
+		await waitFor( () =>
+			expect( stub.saveDraft ).toHaveBeenCalledTimes( 1 )
+		);
+
+		const [ saved ] = stub.saveDraft.mock.calls[ 0 ];
+		expect( saved.sections ).toEqual( [ defaultSection, secondSection ] );
+		expect( saved.profiles ).toHaveLength( 1 );
+		expect( saved.profiles[ 0 ].sections ).toEqual( [
+			defaultSection,
+			secondSection,
+		] );
+	} );
+
 	it( 'creates a field in the checkout and section captured before configuration', async () => {
 		const user = userEvent.setup();
 		const defaultSection = {

@@ -21,7 +21,7 @@
  * @package
  */
 
-import { useState } from '@wordpress/element';
+import { useEffect, useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 
 import Button from './Button';
@@ -111,6 +111,14 @@ export default function CheckoutProfilesPanel( {
 	const [ name, setName ] = useState( '' );
 	const [ source, setSource ] = useState( 'woocommerce_current' );
 	const [ from, setFrom ] = useState( profiles[ 0 ]?.id ?? '' );
+
+	useEffect( () => {
+		if ( profiles.some( ( profile ) => profile.id === from ) ) {
+			return;
+		}
+
+		setFrom( profiles[ 0 ]?.id ?? '' );
+	}, [ profiles, from ] );
 
 	/*
 	 * The sample the overlap question is asked with. The merchant types it, because the only

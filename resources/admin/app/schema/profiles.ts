@@ -75,6 +75,34 @@ export const DUPLICATION_SOURCE: ProfileSource = 'duplicate_profile';
 export const COMPOSED_AREA = 'checkout';
 
 /**
+ * Copies a section without sharing mutable presentation data with its source composition.
+ *
+ * A new checkout is an independent composition. Keeping the section object or its arrays shared
+ * would make a later edit depend on which tab created it, even though both profiles live in one
+ * document.
+ *
+ * @param section Section to copy.
+ * @return Independent section copy.
+ */
+function copySection( section: SectionDefinition ): SectionDefinition {
+	return {
+		...section,
+		areas: [ ...( section.areas ?? [] ) ],
+		...( section.settings ? { settings: { ...section.settings } } : {} ),
+		...( section.presentation
+			? {
+					presentation: {
+						...section.presentation,
+						...( section.presentation.account
+							? { account: { ...section.presentation.account } }
+							: {} ),
+					},
+			  }
+			: {} ),
+	};
+}
+
+/**
  * Whether a stored container is offered in the checkout.
  *
  * Exported and single, because two readers ask it and they must not answer differently: the minimal
@@ -258,7 +286,7 @@ export function startingSections(
 	from: CheckoutProfile | null
 ): SectionDefinition[] {
 	if ( DUPLICATION_SOURCE === source && from ) {
-		return from.sections.map( ( section ) => ( { ...section } ) );
+		return from.sections.map( copySection );
 	}
 
 	if ( 'minimal' === source ) {
@@ -267,13 +295,16 @@ export function startingSections(
 		 * rest: what the merchant adds back is a decision, and starting from everything would
 		 * make "minimal" mean "the same, but called minimal".
 		 */
-		return checkoutSections( document ).filter(
-			( section ) =>
-				'contact' === section.location || 'billing' === section.location
-		);
+		return checkoutSections( document )
+			.filter(
+				( section ) =>
+					'contact' === section.location ||
+					'billing' === section.location
+			)
+			.map( copySection );
 	}
 
-	return checkoutSections( document );
+	return checkoutSections( document ).map( copySection );
 }
 
 /**

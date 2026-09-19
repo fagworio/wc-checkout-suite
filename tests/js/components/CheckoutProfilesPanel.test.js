@@ -293,6 +293,80 @@ describe( 'CheckoutProfilesPanel', () => {
 		expect( created ).toEqual( [] );
 	} );
 
+	it( 'selects the first available profile when duplication is opened after creation', () => {
+		/** @type {Array<any>} */
+		const created = [];
+		const view = renderPanel( {
+			onCreate: ( /** @type {any} */ choice ) => created.push( choice ),
+		} );
+
+		fireEvent.click(
+			screen.getByRole( 'button', { name: /Novo checkout/ } )
+		);
+		let dialog = screen.getByRole( 'dialog', {
+			hidden: true,
+			name: 'Novo checkout',
+		} );
+		fireEvent.change( within( dialog ).getByLabelText( 'Nome' ), {
+			target: { value: 'Checkout base' },
+		} );
+		fireEvent.click(
+			within( dialog ).getByRole( 'button', { name: /Criar checkout/ } )
+		);
+
+		const sourceProfile = profile( {
+			id: 'checkout_base',
+			name: 'Checkout base',
+			sections: [ { id: 'base-section', title: 'Base' } ],
+		} );
+		view.rerender(
+			<CheckoutProfilesPanel
+				profiles={ [ sourceProfile ] }
+				active="checkout_base"
+				onSelect={ () => {} }
+				onCreate={ ( /** @type {any} */ choice ) =>
+					created.push( choice )
+				}
+				onUpdate={ () => {} }
+				onRemove={ () => {} }
+				onMove={ () => {} }
+				vocabulary={ VOCABULARY }
+				fields={ [] }
+				facts={ null }
+				factsChecked={ false }
+				refusal=""
+				onDismissRefusal={ () => {} }
+			/>
+		);
+
+		fireEvent.click(
+			screen.getByRole( 'button', { name: /Novo checkout/ } )
+		);
+		dialog = screen.getByRole( 'dialog', {
+			hidden: true,
+			name: 'Novo checkout',
+		} );
+		fireEvent.change( within( dialog ).getByLabelText( 'Nome' ), {
+			target: { value: 'Checkout cópia' },
+		} );
+		fireEvent.click(
+			within( dialog ).getByLabelText( /Duplicar outro checkout/ )
+		);
+
+		expect( within( dialog ).getByLabelText( 'Duplicar de' ) ).toHaveValue(
+			'checkout_base'
+		);
+		fireEvent.click(
+			within( dialog ).getByRole( 'button', { name: /Criar checkout/ } )
+		);
+
+		expect( created[ 1 ] ).toEqual( {
+			name: 'Checkout cópia',
+			source: 'duplicate_profile',
+			from: 'checkout_base',
+		} );
+	} );
+
 	it( 'checks a minimal composition against what the store reports', () => {
 		renderPanel( {
 			profiles: [ profile( { source: 'minimal' } ) ],

@@ -175,6 +175,9 @@ describe( 'profiles', () => {
 				'contato',
 				'entrega',
 			] );
+			expect( created.sections[ 0 ] ).not.toBe( document.sections[ 0 ] );
+			created.sections[ 0 ].title = 'Alterado no novo checkout';
+			expect( document.sections[ 0 ].title ).toBe( 'Contato' );
 			expect( created.conditions ).toEqual( {} );
 			expect( created.fallback ).toBe( false );
 			expect( created.enabled ).toBe( true );
